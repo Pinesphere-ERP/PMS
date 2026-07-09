@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/presentation/widgets/ambient_forest_glow.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../../core/presentation/widgets/ambient_forest_glow.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/auth_notifier.dart';
 
 class PinLoginScreen extends ConsumerStatefulWidget {
@@ -114,7 +114,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
             child: Image.network(
               'https://lh3.googleusercontent.com/aida/AP1WRLsNZfpr3SqCh2qriKKtYjH3uwarOjm8WmUIl71HNz8fYek1c5NKdyXhRSPtmTbLkKFU775bH_e2t5xTAHDFce_0YZTY-D26wL-oUlvXoJHFIu7BgyA6yZFUMgK4P0KfUJbWXascFNRKodev-4l532l1SA6F-NJ8SStFQQLLv_RI-t95BeAkN2cFYlnXuR7SC9oZ2zlaWLIsmcHu_z01tIoyhkn5Mczc6MUYcROmCzq3Qo6Y3-WAZ_tpnPc',
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(Icons.hotel, size: 40, color: AppColors.primary),
+              errorBuilder: (_, __, ___) => const Icon(Icons.hotel, size: 40),
             ),
           ),
         ),
@@ -217,7 +217,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_done_rounded, size: 18, color: AppColors.onSecondaryContainer),
+              Icon(Icons.cloud_done_rounded, size: 18, color: AppColors.onSecondaryContainer),
               const SizedBox(width: 8),
               Text(
                 'Offline-first Sync Active',

@@ -12,7 +12,7 @@ class PinesphereApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Pinesphere Stay',
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

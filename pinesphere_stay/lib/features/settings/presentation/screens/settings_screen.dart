@@ -114,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
               color: AppColors.primaryContainer.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.potted_plant, color: AppColors.primary, size: 32),
+            child: const Icon(Icons.local_florist, color: AppColors.primary, size: 32),
           ),
           const SizedBox(width: 16),
           Column(

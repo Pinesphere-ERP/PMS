@@ -146,7 +146,7 @@ class _RoomGridScreenState extends State<RoomGridScreen> {
           price: '\$95/night',
           guestName: 'In progress...',
           guestNameItalic: true,
-          guestIcon: Icons.mop_outlined,
+          guestIcon: Icons.cleaning_services_outlined,
         ),
         _buildRoomCard(
           context,

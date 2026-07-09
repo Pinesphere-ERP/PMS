@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/ambient_forest_glow.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/auth_notifier.dart';
 
 class PinLoginScreen extends ConsumerStatefulWidget {
@@ -55,7 +56,12 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
   void _handleLogin() {
     // Simulate validation
     if (_pin == '1234') {
-      ref.read(authProvider.notifier).login('admin@pinesphere.com', _pin);
+      ref.read(authProvider.notifier).login('admin@pinesphere.com', _pin).then((_) {
+        if (mounted) {
+          // Force navigate to dashboard
+          GoRouter.of(context).go('/dashboard');
+        }
+      });
     } else {
       _shakeController.forward(from: 0).then((_) {
         setState(() => _pin = '');

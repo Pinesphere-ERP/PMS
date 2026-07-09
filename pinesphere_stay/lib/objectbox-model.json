@@ -55,10 +55,105 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "2:4713810608890448517",
+      "lastPropertyId": "7:7596923131156569766",
+      "name": "RoomEntity",
+      "properties": [
+        {
+          "id": "1:4517471256846531402",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8316242147467889495",
+          "name": "uuid",
+          "indexId": "3:5571832571850040683",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:7663083862143678281",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:3423909967570567187",
+          "name": "type",
+          "type": 9
+        },
+        {
+          "id": "5:7466888729255366679",
+          "name": "status",
+          "type": 9
+        },
+        {
+          "id": "6:50749940883394103",
+          "name": "pricePerNight",
+          "type": 8
+        },
+        {
+          "id": "7:7596923131156569766",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:1555509189638963268",
+      "lastPropertyId": "8:7331648130451764623",
+      "name": "SyncQueueEntity",
+      "properties": [
+        {
+          "id": "1:1878886669847972723",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4867101220748482666",
+          "name": "entityType",
+          "type": 9
+        },
+        {
+          "id": "3:4763573936787682385",
+          "name": "entityId",
+          "type": 6
+        },
+        {
+          "id": "4:8495670056425771149",
+          "name": "operation",
+          "type": 9
+        },
+        {
+          "id": "5:8748174432563745490",
+          "name": "payload",
+          "type": 9
+        },
+        {
+          "id": "6:5328232975510807314",
+          "name": "hlcTimestamp",
+          "type": 9
+        },
+        {
+          "id": "7:6071884653774100936",
+          "name": "status",
+          "type": 6
+        },
+        {
+          "id": "8:7331648130451764623",
+          "name": "createdAt",
+          "type": 10
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "1:6745416085832758094",
-  "lastIndexId": "2:7620158859322961069",
+  "lastEntityId": "3:1555509189638963268",
+  "lastIndexId": "3:5571832571850040683",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

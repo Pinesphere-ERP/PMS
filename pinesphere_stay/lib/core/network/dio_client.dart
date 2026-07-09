@@ -13,9 +13,12 @@ FlutterSecureStorage secureStorage(Ref ref) {
 
 @riverpod
 Dio dioClient(Ref ref) {
+  // Use dart-define for physical device IP, fallback to emulator IP 10.0.2.2 or localhost
+  const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'http://10.0.2.2:8000/api/v1');
+
   final dio = Dio(
     BaseOptions(
-      baseUrl: 'https://api.pinespherestay.com/v1/', // Change according to env
+      baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       contentType: 'application/json',

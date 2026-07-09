@@ -15,6 +15,8 @@ import 'package:objectbox/objectbox.dart' as obx;
 import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
 import 'core/sync/queue/sync_operation.dart';
+import 'features/rooms/domain/models/room_entity.dart';
+import 'features/sync/domain/models/sync_queue_entity.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 
@@ -79,6 +81,117 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(2, 4713810608890448517),
+    name: 'RoomEntity',
+    lastPropertyId: const obx_int.IdUid(7, 7596923131156569766),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 4517471256846531402),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 8316242147467889495),
+        name: 'uuid',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(3, 5571832571850040683),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 7663083862143678281),
+        name: 'name',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 3423909967570567187),
+        name: 'type',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 7466888729255366679),
+        name: 'status',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 50749940883394103),
+        name: 'pricePerNight',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 7596923131156569766),
+        name: 'lastModifiedHlc',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(3, 1555509189638963268),
+    name: 'SyncQueueEntity',
+    lastPropertyId: const obx_int.IdUid(8, 7331648130451764623),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 1878886669847972723),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 4867101220748482666),
+        name: 'entityType',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 4763573936787682385),
+        name: 'entityId',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 8495670056425771149),
+        name: 'operation',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 8748174432563745490),
+        name: 'payload',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 5328232975510807314),
+        name: 'hlcTimestamp',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 6071884653774100936),
+        name: 'status',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 7331648130451764623),
+        name: 'createdAt',
+        type: 10,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -124,8 +237,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(1, 6745416085832758094),
-    lastIndexId: const obx_int.IdUid(2, 7620158859322961069),
+    lastEntityId: const obx_int.IdUid(3, 1555509189638963268),
+    lastIndexId: const obx_int.IdUid(3, 5571832571850040683),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -211,6 +324,149 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    RoomEntity: obx_int.EntityDefinition<RoomEntity>(
+      model: _entities[1],
+      toOneRelations: (RoomEntity object) => [],
+      toManyRelations: (RoomEntity object) => {},
+      getId: (RoomEntity object) => object.id,
+      setId: (RoomEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (RoomEntity object, fb.Builder fbb) {
+        final uuidOffset = fbb.writeString(object.uuid);
+        final nameOffset = fbb.writeString(object.name);
+        final typeOffset = fbb.writeString(object.type);
+        final statusOffset = fbb.writeString(object.status);
+        final lastModifiedHlcOffset = fbb.writeString(object.lastModifiedHlc);
+        fbb.startTable(8);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, uuidOffset);
+        fbb.addOffset(2, nameOffset);
+        fbb.addOffset(3, typeOffset);
+        fbb.addOffset(4, statusOffset);
+        fbb.addFloat64(5, object.pricePerNight);
+        fbb.addOffset(6, lastModifiedHlcOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final uuidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final nameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final typeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final statusParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final pricePerNightParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          0,
+        );
+        final lastModifiedHlcParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 16, '');
+        final object = RoomEntity(
+          id: idParam,
+          uuid: uuidParam,
+          name: nameParam,
+          type: typeParam,
+          status: statusParam,
+          pricePerNight: pricePerNightParam,
+          lastModifiedHlc: lastModifiedHlcParam,
+        );
+
+        return object;
+      },
+    ),
+    SyncQueueEntity: obx_int.EntityDefinition<SyncQueueEntity>(
+      model: _entities[2],
+      toOneRelations: (SyncQueueEntity object) => [],
+      toManyRelations: (SyncQueueEntity object) => {},
+      getId: (SyncQueueEntity object) => object.id,
+      setId: (SyncQueueEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (SyncQueueEntity object, fb.Builder fbb) {
+        final entityTypeOffset = fbb.writeString(object.entityType);
+        final operationOffset = fbb.writeString(object.operation);
+        final payloadOffset = fbb.writeString(object.payload);
+        final hlcTimestampOffset = fbb.writeString(object.hlcTimestamp);
+        fbb.startTable(9);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, entityTypeOffset);
+        fbb.addInt64(2, object.entityId);
+        fbb.addOffset(3, operationOffset);
+        fbb.addOffset(4, payloadOffset);
+        fbb.addOffset(5, hlcTimestampOffset);
+        fbb.addInt64(6, object.status);
+        fbb.addInt64(7, object.createdAt.millisecondsSinceEpoch);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final entityTypeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final entityIdParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          8,
+          0,
+        );
+        final operationParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final payloadParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final hlcTimestampParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final statusParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          16,
+          0,
+        );
+        final createdAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 18, 0),
+        );
+        final object = SyncQueueEntity(
+          id: idParam,
+          entityType: entityTypeParam,
+          entityId: entityIdParam,
+          operation: operationParam,
+          payload: payloadParam,
+          hlcTimestamp: hlcTimestampParam,
+          status: statusParam,
+          createdAt: createdAtParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -256,5 +512,86 @@ class SyncOperation_ {
   /// See [SyncOperation.status].
   static final status = obx.QueryStringProperty<SyncOperation>(
     _entities[0].properties[7],
+  );
+}
+
+/// [RoomEntity] entity fields to define ObjectBox queries.
+class RoomEntity_ {
+  /// See [RoomEntity.id].
+  static final id = obx.QueryIntegerProperty<RoomEntity>(
+    _entities[1].properties[0],
+  );
+
+  /// See [RoomEntity.uuid].
+  static final uuid = obx.QueryStringProperty<RoomEntity>(
+    _entities[1].properties[1],
+  );
+
+  /// See [RoomEntity.name].
+  static final name = obx.QueryStringProperty<RoomEntity>(
+    _entities[1].properties[2],
+  );
+
+  /// See [RoomEntity.type].
+  static final type = obx.QueryStringProperty<RoomEntity>(
+    _entities[1].properties[3],
+  );
+
+  /// See [RoomEntity.status].
+  static final status = obx.QueryStringProperty<RoomEntity>(
+    _entities[1].properties[4],
+  );
+
+  /// See [RoomEntity.pricePerNight].
+  static final pricePerNight = obx.QueryDoubleProperty<RoomEntity>(
+    _entities[1].properties[5],
+  );
+
+  /// See [RoomEntity.lastModifiedHlc].
+  static final lastModifiedHlc = obx.QueryStringProperty<RoomEntity>(
+    _entities[1].properties[6],
+  );
+}
+
+/// [SyncQueueEntity] entity fields to define ObjectBox queries.
+class SyncQueueEntity_ {
+  /// See [SyncQueueEntity.id].
+  static final id = obx.QueryIntegerProperty<SyncQueueEntity>(
+    _entities[2].properties[0],
+  );
+
+  /// See [SyncQueueEntity.entityType].
+  static final entityType = obx.QueryStringProperty<SyncQueueEntity>(
+    _entities[2].properties[1],
+  );
+
+  /// See [SyncQueueEntity.entityId].
+  static final entityId = obx.QueryIntegerProperty<SyncQueueEntity>(
+    _entities[2].properties[2],
+  );
+
+  /// See [SyncQueueEntity.operation].
+  static final operation = obx.QueryStringProperty<SyncQueueEntity>(
+    _entities[2].properties[3],
+  );
+
+  /// See [SyncQueueEntity.payload].
+  static final payload = obx.QueryStringProperty<SyncQueueEntity>(
+    _entities[2].properties[4],
+  );
+
+  /// See [SyncQueueEntity.hlcTimestamp].
+  static final hlcTimestamp = obx.QueryStringProperty<SyncQueueEntity>(
+    _entities[2].properties[5],
+  );
+
+  /// See [SyncQueueEntity.status].
+  static final status = obx.QueryIntegerProperty<SyncQueueEntity>(
+    _entities[2].properties[6],
+  );
+
+  /// See [SyncQueueEntity.createdAt].
+  static final createdAt = obx.QueryDateProperty<SyncQueueEntity>(
+    _entities[2].properties[7],
   );
 }

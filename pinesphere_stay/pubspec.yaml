@@ -47,6 +47,7 @@ dependencies:
   uuid: any
   google_fonts: ^8.1.0
   path_provider: ^2.1.6
+  connectivity_plus: ^7.2.0
 
 dev_dependencies:
   flutter_test:

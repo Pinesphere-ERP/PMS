@@ -14,7 +14,7 @@ final GlobalKey<NavigatorState> _settingsNavigatorKey = GlobalKey<NavigatorState
 
 @riverpod
 GoRouter appRouter(Ref ref) {
-  final authState = ref.watch(authNotifierProvider);
+  final authState = ref.watch(authProvider);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -22,9 +22,9 @@ GoRouter appRouter(Ref ref) {
     debugLogDiagnostics: true,
     redirect: (context, state) {
       // Allow initial state to resolve (checking secure storage)
-      if (authState is AuthStateInitial) return null;
+      if (authState == const AuthState.initial()) return null;
 
-      final isAuth = authState is AuthStateAuthenticated;
+      final isAuth = authState == const AuthState.authenticated();
       final isGoingToLogin = state.matchedLocation == '/login';
 
       if (!isAuth && !isGoingToLogin) {

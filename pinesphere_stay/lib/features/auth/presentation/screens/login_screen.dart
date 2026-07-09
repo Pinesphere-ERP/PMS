@@ -19,14 +19,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final password = _passwordController.text;
     if (email.isEmpty || password.isEmpty) return;
     
-    ref.read(authNotifierProvider.notifier).login(email, password);
+    ref.read(authProvider.notifier).login(email, password);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authProvider);
 
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
       next.maybeWhen(
         error: (message) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(

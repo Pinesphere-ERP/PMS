@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../data/repositories/auth_repository_impl.dart';
+import '../../data/repositories/auth_repository_impl.dart';
 
 part 'auth_notifier.freezed.dart';
 part 'auth_notifier.g.dart';
@@ -40,13 +40,7 @@ class AuthNotifier extends _$AuthNotifier {
 
     result.fold(
       (failure) {
-        failure.when(
-          network: (msg) => state = AuthState.error(msg),
-          server: (msg, code) => state = AuthState.error(msg),
-          cache: (msg) => state = AuthState.error(msg),
-          auth: (msg) => state = AuthState.error(msg),
-          unknown: (msg, err, stack) => state = AuthState.error(msg),
-        );
+        state = AuthState.error(failure.message);
       },
       (_) {
         state = const AuthState.authenticated();

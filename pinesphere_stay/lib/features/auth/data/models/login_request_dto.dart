@@ -1,30 +1,49 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:json_annotation/json_annotation.dart';
 
-part 'login_request_dto.freezed.dart';
 part 'login_request_dto.g.dart';
 
-@freezed
-class LoginRequestDto with _$LoginRequestDto {
-  const factory LoginRequestDto({
-    required String email,
-    required String password,
-    @JsonKey(name: 'device_id') required String deviceId,
-    @JsonKey(name: 'device_name') required String deviceName,
-    @JsonKey(name: 'device_fingerprint') required String deviceFingerprint,
-  }) = _LoginRequestDto;
+@JsonSerializable()
+class LoginRequestDto {
+  final String email;
+  final String password;
+  @JsonKey(name: 'device_id')
+  final String deviceId;
+  @JsonKey(name: 'device_name')
+  final String deviceName;
+  @JsonKey(name: 'device_fingerprint')
+  final String deviceFingerprint;
+
+  LoginRequestDto({
+    required this.email,
+    required this.password,
+    required this.deviceId,
+    required this.deviceName,
+    required this.deviceFingerprint,
+  });
 
   factory LoginRequestDto.fromJson(Map<String, dynamic> json) =>
       _$LoginRequestDtoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$LoginRequestDtoToJson(this);
 }
 
-@freezed
-class TokenResponseDto with _$TokenResponseDto {
-  const factory TokenResponseDto({
-    @JsonKey(name: 'access_token') required String accessToken,
-    @JsonKey(name: 'refresh_token') required String refreshToken,
-    @JsonKey(name: 'token_type') required String tokenType,
-  }) = _TokenResponseDto;
+@JsonSerializable()
+class TokenResponseDto {
+  @JsonKey(name: 'access_token')
+  final String accessToken;
+  @JsonKey(name: 'refresh_token')
+  final String refreshToken;
+  @JsonKey(name: 'token_type')
+  final String tokenType;
+
+  TokenResponseDto({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.tokenType,
+  });
 
   factory TokenResponseDto.fromJson(Map<String, dynamic> json) =>
       _$TokenResponseDtoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TokenResponseDtoToJson(this);
 }

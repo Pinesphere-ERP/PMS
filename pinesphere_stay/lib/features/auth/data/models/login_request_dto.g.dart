@@ -6,8 +6,8 @@ part of 'login_request_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_LoginRequestDto _$LoginRequestDtoFromJson(Map<String, dynamic> json) =>
-    _LoginRequestDto(
+LoginRequestDto _$LoginRequestDtoFromJson(Map<String, dynamic> json) =>
+    LoginRequestDto(
       email: json['email'] as String,
       password: json['password'] as String,
       deviceId: json['device_id'] as String,
@@ -15,7 +15,7 @@ _LoginRequestDto _$LoginRequestDtoFromJson(Map<String, dynamic> json) =>
       deviceFingerprint: json['device_fingerprint'] as String,
     );
 
-Map<String, dynamic> _$LoginRequestDtoToJson(_LoginRequestDto instance) =>
+Map<String, dynamic> _$LoginRequestDtoToJson(LoginRequestDto instance) =>
     <String, dynamic>{
       'email': instance.email,
       'password': instance.password,
@@ -24,14 +24,14 @@ Map<String, dynamic> _$LoginRequestDtoToJson(_LoginRequestDto instance) =>
       'device_fingerprint': instance.deviceFingerprint,
     };
 
-_TokenResponseDto _$TokenResponseDtoFromJson(Map<String, dynamic> json) =>
-    _TokenResponseDto(
+TokenResponseDto _$TokenResponseDtoFromJson(Map<String, dynamic> json) =>
+    TokenResponseDto(
       accessToken: json['access_token'] as String,
       refreshToken: json['refresh_token'] as String,
       tokenType: json['token_type'] as String,
     );
 
-Map<String, dynamic> _$TokenResponseDtoToJson(_TokenResponseDto instance) =>
+Map<String, dynamic> _$TokenResponseDtoToJson(TokenResponseDto instance) =>
     <String, dynamic>{
       'access_token': instance.accessToken,
       'refresh_token': instance.refreshToken,

@@ -11,7 +11,7 @@ import '../models/login_request_dto.dart';
 part 'auth_repository_impl.g.dart';
 
 @riverpod
-AuthRepository authRepository(AuthRepositoryRef ref) {
+AuthRepository authRepository(Ref ref) {
   final dio = ref.watch(dioClientProvider);
   final secureStorage = ref.watch(secureStorageProvider);
   return AuthRepository(dio, secureStorage);

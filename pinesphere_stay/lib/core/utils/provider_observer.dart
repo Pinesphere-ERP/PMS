@@ -1,37 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AppProviderObserver extends ProviderObserver {
+import 'logger.dart';
+
+base class AppProviderObserver extends ProviderObserver {
   @override
-  void didAddProvider(
-    ProviderBase<Object?> provider,
-    Object? value,
-    ProviderContainer container,
-  ) {
-    if (kDebugMode) {
-      print('Provider ${provider.name ?? provider.runtimeType} initialized');
-    }
+  void didAddProvider(ProviderObserverContext context, Object? value) {
+    AppLogger.d('Provider ${context.provider.name ?? context.provider.runtimeType} initialized with $value');
   }
 
   @override
   void didUpdateProvider(
-    ProviderBase<Object?> provider,
+    ProviderObserverContext context,
     Object? previousValue,
     Object? newValue,
-    ProviderContainer container,
   ) {
-    if (kDebugMode) {
-      print('Provider ${provider.name ?? provider.runtimeType} updated');
-    }
+    AppLogger.d('Provider ${context.provider.name ?? context.provider.runtimeType} updated from $previousValue to $newValue');
   }
 
   @override
-  void didDisposeProvider(
-    ProviderBase<Object?> provider,
-    ProviderContainer container,
-  ) {
-    if (kDebugMode) {
-      print('Provider ${provider.name ?? provider.runtimeType} disposed');
-    }
+  void didDisposeProvider(ProviderObserverContext context) {
+    AppLogger.d('Provider ${context.provider.name ?? context.provider.runtimeType} disposed');
   }
 }

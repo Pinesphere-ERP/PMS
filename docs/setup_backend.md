@@ -1,74 +1,69 @@
-# FastAPI Backend Setup Guide
+# Pinesphere Stay Backend Setup Guide
 
-This guide covers setting up the Python FastAPI backend, database migrations, and the required Docker infrastructure.
+This document outlines the steps required to set up the Python FastAPI backend, PostgreSQL database, and Redis cache for Pinesphere Stay.
 
 ## Prerequisites
+- **Python**: v3.11 or higher
+- **Poetry**: (Optional, but recommended for dependency management) or `pip`
+- **Docker & Docker Compose**: For running PostgreSQL, Redis, and MinIO locally.
 
-- **Python**: 3.11 or higher
-- **Docker & Docker Compose**: Required for running PostgreSQL, Redis, and MinIO.
+## 1. Local Infrastructure (Docker)
+The easiest way to spin up the required databases and object storage is using Docker.
 
-## 1. Infrastructure Setup (Docker)
+Ensure you have a `docker-compose.yml` configured at the root of `pinesphere_backend` that includes:
+- PostgreSQL 16
+- Redis 7
+- MinIO
 
-The backend relies on three external services. From the `pinesphere_backend` directory, start the infrastructure:
-
+To start the infrastructure:
 ```bash
 cd pinesphere_backend
-docker compose up -d
+docker-compose up -d
 ```
-
-This will spin up:
-- **PostgreSQL 16** on port `5432`
-- **Redis 7** on port `6379`
-- **MinIO** on ports `9000` (API) and `9001` (Console)
 
 ## 2. Python Environment Setup
-
-It is highly recommended to use a virtual environment.
+Navigate to the backend directory and create a virtual environment:
 
 ```bash
 cd pinesphere_backend
-
-# Create a virtual environment
 python3 -m venv venv
-
-# Activate the virtual environment
-# On Linux/macOS:
-source venv/bin/activate
-# On Windows:
-# .\venv\Scripts\activate
-
-# Install all dependencies
-pip install fastapi uvicorn sqlalchemy asyncpg alembic redis minio pydantic-settings pyjwt passlib bcrypt python-multipart celery psycopg2-binary
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-## 3. Database Migrations (Alembic)
+Install the dependencies:
+```bash
+pip install -r requirements.txt
+```
+*(If using Poetry: `poetry install`)*
 
-Before starting the server, you need to apply the database migrations to set up the PostgreSQL schema.
+## 3. Database Migrations
+Pinesphere Stay utilizes SQLAlchemy 2.0 with Async drivers and Alembic for migrations.
+Once PostgreSQL is running, apply the migrations to construct the multi-tenant schema:
 
 ```bash
-# Generate an initial migration (if one doesn't exist yet)
-alembic revision --autogenerate -m "Initial schema"
-
-# Apply migrations to the database
 alembic upgrade head
 ```
 
-## 4. Running the Development Server
+## 4. Environment Variables
+Create a `.env` file in the root of `pinesphere_backend`. You can copy the template:
+```bash
+cp .env.example .env
+```
+Ensure the database URL points to your local Docker instance:
+`DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/pinesphere`
 
-Start the FastAPI application using Uvicorn with hot-reloading enabled:
+## 5. Running the Server
+Run the FastAPI development server using Uvicorn:
 
 ```bash
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Once running, you can access the automatic interactive API documentation at:
-- **Swagger UI**: `http://localhost:8000/docs`
-- **ReDoc**: `http://localhost:8000/redoc`
+The API will be available at `http://localhost:8000`. 
+Interactive API documentation (Swagger UI) is available at `http://localhost:8000/docs`.
 
-## 5. Background Tasks (Celery)
-
-If you are working on features that require background processing (like emails or heavy sync resolution), you must start the Celery worker:
-
+## 6. Running Celery (Background Tasks)
+For the background sync and email processors:
 ```bash
-celery -A src.worker.celery_app worker --loglevel=info
+celery -A app.core.celery_app worker --loglevel=info
 ```

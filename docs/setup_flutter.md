@@ -1,75 +1,73 @@
-# Flutter Frontend Setup Guide
+# Pinesphere Stay Frontend Setup Guide
 
-This guide covers setting up the Flutter environment to run the **Pinesphere Stay** offline-first client on Mobile (Android/iOS) and Web.
+This guide details the setup instructions for the Pinesphere Stay Flutter application, designed with an offline-first architecture.
 
 ## Prerequisites
+- **Dart SDK**: 3.x
+- **Flutter SDK**: 3.13 or higher (Stable channel)
+- **Android Studio / Xcode**: For running mobile emulators.
 
-- **Dart SDK**: >= 3.1.0 < 4.0.0
-- **Flutter SDK**: 3.13.0 or higher
-- **Android Studio** (for Android development)
-- **Xcode** (for iOS development, macOS only)
-- **Chrome** (for Web debugging)
+## 1. Flutter SDK Setup
+If you haven't installed Flutter, follow the official documentation:
+https://docs.flutter.dev/get-started/install
 
-## 1. Install Flutter & Dart
-
-1. Download the Flutter SDK from the [official website](https://docs.flutter.dev/get-started/install).
-2. Extract the archive and add the `flutter/bin` directory to your system's `PATH`.
-3. Run `flutter doctor` to verify your installation and resolve any missing platform dependencies (like Android SDK command-line tools).
-
-## 2. Project Initialization
-
-Navigate to the Flutter project directory:
+Verify your installation and ensure all toolchains are valid:
 ```bash
-cd pinesphere_stay
+flutter doctor -v
 ```
 
-Fetch all dependencies:
+## 2. Project Initialization
+Navigate to the Flutter project directory and fetch all dependencies:
+
 ```bash
+cd pinesphere_stay
+flutter clean
 flutter pub get
 ```
 
-## 3. Code Generation (Required)
+## 3. Code Generation (Crucial Step)
+Pinesphere Stay relies heavily on code generation for State Management (Riverpod), Data Transfer Objects (Freezed/JSON Serializable), and Local Database entities (ObjectBox).
 
-This project heavily utilizes code generation for state management (Riverpod), models (Freezed), routing (GoRouter), and local database (ObjectBox). 
+**You MUST run the build runner before launching the app:**
 
-**You MUST run the build_runner before running the app for the first time, or whenever you change annotated classes.**
-
-Run the generator in one-time build mode:
 ```bash
 dart run build_runner build -d
 ```
-*Or, keep it watching for changes during active development:*
-```bash
-dart run build_runner watch -d
-```
+*Note: The `-d` flag deletes conflicting outputs, which is highly recommended during branch switches or major entity updates.*
 
-## 4. Running the App
+## 4. Running on Emulators / Devices
 
-### Running on Android/iOS (Emulator or Physical Device)
+### Android / iOS
+To run the application on a connected device or emulator:
 ```bash
 flutter run
 ```
 
-### Running on Web (Development)
+### Web Target
+To run the dashboard on Chrome for rapid UI testing:
 ```bash
 flutter run -d chrome
 ```
 
 ## 5. Building for Production
 
-### Build Android APK / AppBundle
+### Android APK / AppBundle
 ```bash
 flutter build apk --release
 flutter build appbundle --release
 ```
 
-### Build Web (Wasm / HTML)
-To build an optimized web production bundle:
+### Web Build
+For deploying the admin dashboard to a web server:
 ```bash
-flutter build web --release --web-renderer canvaskit
+flutter build web --web-renderer canvaskit --release
 ```
-The compiled files will be in `build/web/`. You can serve them using any static web server (e.g., Nginx, Python http.server, etc.).
 
-## Troubleshooting
-- **ObjectBox Sync Errors**: Ensure you have the `objectbox_flutter_libs` package correctly fetched.
-- **Generator Conflicts**: If `build_runner` fails with conflicting outputs, always use the `-d` (delete conflicting outputs) flag: `dart run build_runner build -d`.
+## 6. Database Schema (ObjectBox)
+Because this is an offline-first app, ObjectBox is used heavily. 
+Whenever you modify an `@Entity` class inside `lib/features/.../domain/`, you must regenerate the ObjectBox schema:
+```bash
+flutter clean
+flutter pub get
+dart run build_runner build -d
+```

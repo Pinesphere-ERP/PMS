@@ -244,10 +244,15 @@ class InvoiceItem(Base, TimestampMixin):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = (
+        Index("ix_audit_logs_property_timestamp", "property_id", "timestamp"),
+        Index("ix_audit_logs_target", "target_entity", "target_record_id"),
+        {'extend_existing': True},
+    )
     log_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    device_id: Mapped[Optional[str]] = mapped_column(String(100))
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)
     module_name: Mapped[Optional[str]] = mapped_column(String(50), index=True)
     action_type: Mapped[Optional[str]] = mapped_column(String(50))
@@ -255,6 +260,7 @@ class AuditLog(Base):
     target_record_id: Mapped[Optional[uuid.UUID]] = mapped_column(PGUUID(as_uuid=True))
     old_value_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB)
     new_value_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45))
     previous_log_hash: Mapped[Optional[str]] = mapped_column(String(64))
     entry_hash: Mapped[Optional[str]] = mapped_column(String(64))
 

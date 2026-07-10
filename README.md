@@ -7,6 +7,7 @@ This repository contains both the Flutter mobile/web frontend and the FastAPI Py
 ## Architecture Highlights
 - **Frontend**: Flutter 3.13+, Riverpod (v2+), GoRouter, ObjectBox (Offline-First local DB)
 - **Backend**: Python 3.11+, FastAPI, SQLAlchemy 2.0 (Async), PostgreSQL 16 (Row-Level Security for Multi-Tenancy), Redis, MinIO
+
 - **Sync Engine**: Hybrid Logical Clocks (HLC) with Operation-based outbox syncing.
 
 ## Documentation

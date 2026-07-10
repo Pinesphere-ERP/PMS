@@ -5,6 +5,7 @@ import '../../../../core/presentation/widgets/ambient_forest_glow.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_notifier.dart';
+import '../../../../core/permissions/user_role.dart';
 
 class PinLoginScreen extends ConsumerStatefulWidget {
   const PinLoginScreen({super.key});
@@ -16,6 +17,7 @@ class PinLoginScreen extends ConsumerStatefulWidget {
 class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTickerProviderStateMixin {
   String _pin = '';
   late final AnimationController _shakeController;
+  UserRole _selectedRole = UserRole.owner;
 
   @override
   void initState() {
@@ -55,7 +57,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
 
   void _handleLogin() {
     if (_pin == '1234') {
-      ref.read(authProvider.notifier).login('admin@pinesphere.com', _pin);
+      ref.read(authProvider.notifier).login('${_selectedRole.name}@pinesphere.com', _pin);
     } else {
       _shakeController.forward(from: 0).then((_) {
         setState(() => _pin = '');
@@ -66,13 +68,10 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    // Note: We don't use ref.listen to navigate. The GoRouter redirect in app_router.dart handles it!
+    // We only listen for errors.
     ref.listen<AuthState>(authProvider, (previous, next) {
       next.maybeWhen(
-        authenticated: (user) {
-          if (mounted) {
-            context.go('/dashboard');
-          }
-        },
         error: (message) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
           _shakeController.forward(from: 0).then((_) {
@@ -137,8 +136,27 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
           ),
         ),
         const SizedBox(height: 24),
+        DropdownButton<UserRole>(
+          value: _selectedRole,
+          dropdownColor: AppColors.surface,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primary),
+          underline: Container(height: 2, color: AppColors.primary),
+          icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+          items: UserRole.values.map((role) {
+            return DropdownMenuItem(
+              value: role,
+              child: Text('Login as: ${role.displayName}'),
+            );
+          }).toList(),
+          onChanged: (role) {
+            if (role != null) {
+              setState(() => _selectedRole = role);
+            }
+          },
+        ),
+        const SizedBox(height: 12),
         Text(
-          'Welcome back, Reception',
+          'Welcome back, Kavinila',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: AppColors.primary,
               ),

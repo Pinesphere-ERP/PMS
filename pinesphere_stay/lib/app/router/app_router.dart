@@ -23,11 +23,6 @@ import '../../features/device_management/presentation/screens/device_sync_status
 part 'app_router.g.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-final GlobalKey<NavigatorState> _dashboardNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'dashboard');
-final GlobalKey<NavigatorState> _roomsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'rooms');
-final GlobalKey<NavigatorState> _bookingsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'bookings');
-final GlobalKey<NavigatorState> _reportsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'reports');
-final GlobalKey<NavigatorState> _settingsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'settings');
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -89,7 +84,6 @@ GoRouter appRouter(Ref ref) {
         },
         branches: [
           StatefulShellBranch(
-            navigatorKey: _dashboardNavigatorKey,
             routes: [
               GoRoute(
                 path: '/dashboard',
@@ -130,7 +124,6 @@ GoRouter appRouter(Ref ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: _roomsNavigatorKey,
             routes: [
               GoRoute(
                 path: '/rooms',
@@ -139,7 +132,6 @@ GoRouter appRouter(Ref ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: _bookingsNavigatorKey,
             routes: [
               GoRoute(
                 path: '/bookings',
@@ -148,7 +140,6 @@ GoRouter appRouter(Ref ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: _reportsNavigatorKey,
             routes: [
               GoRoute(
                 path: '/reports',
@@ -157,7 +148,6 @@ GoRouter appRouter(Ref ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: _settingsNavigatorKey,
             routes: [
               GoRoute(
                 path: '/settings',

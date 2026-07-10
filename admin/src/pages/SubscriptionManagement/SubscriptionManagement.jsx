@@ -1,220 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  Search, 
-  Filter, 
-  MoreVertical, 
-  X, 
-  CheckCircle2, 
-  Ban, 
-  ShieldCheck, 
-  Calendar,
-  CreditCard,
-  ChevronRight,
-  Smartphone,
-  RefreshCw,
-  Plus,
-  Minus,
-  Power,
-  Key,
-  Activity,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  AlertCircle,
-  Trash2,
-  FileText,
-  MapPin,
-  Clock,
-  User,
-  Phone
+  Search, Filter, MoreVertical, X, CheckCircle2, Ban, ShieldCheck, Calendar,
+  CreditCard, ChevronRight, Smartphone, RefreshCw, Plus, Minus, Power, Key,
+  Activity, ArrowUpCircle, ArrowDownCircle, AlertCircle, Trash2, FileText,
+  MapPin, Clock, User, Phone, Loader2
 } from 'lucide-react';
-
-const mockSubscriptions = [
-  { 
-    id: '1', 
-    propertyName: 'Grand Plaza Hotel', 
-    propertyType: 'Hotel',
-    propertyId: 'PROP-1001',
-    city: 'New York',
-    state: 'NY',
-    ownerName: 'John Doe', 
-    ownerMobile: '+1 555-0101',
-    ownerWhatsApp: '+1 555-0101',
-    plan: 'Professional', 
-    startDate: '2025-01-01', 
-    expiryDate: '2026-01-01', 
-    remainingDays: 365, 
-    billingCycle: 'Yearly',
-    status: 'Active', 
-    licenseId: 'PS-LIC-2026-00125',
-    licenseStatus: 'Valid',
-    licenseIssueDate: '2025-01-01',
-    deviceLimit: 50,
-    registeredDevices: 15,
-    lastPayment: '$499.00',
-    lastInvoice: 'INV-2025-001',
-    nextRenewal: '2026-01-01',
-    outstandingAmount: '$0.00',
-    primaryDevice: 'Front Desk Terminal 1',
-    lastSync: 'Today 09:45 AM',
-    deviceStatus: 'Active',
-    totalPaid: '$499.00',
-    recentActivities: [
-      { date: '2025-01-01', action: 'Subscription Created', by: 'System' },
-      { date: '2025-01-01', action: 'License Generated', by: 'System' }
-    ],
-    devicesList: [
-      { name: 'Reception Tablet', status: 'Active', lastLogin: 'Today' },
-      { name: 'Owner Mobile', status: 'Active', lastLogin: 'Yesterday' }
-    ]
-  },
-  { 
-    id: '2', 
-    propertyName: 'Sea View Resort', 
-    propertyType: 'Resort',
-    propertyId: 'PROP-1002',
-    city: 'Miami',
-    state: 'FL',
-    ownerName: 'Jane Smith', 
-    ownerMobile: '+1 555-0102',
-    ownerWhatsApp: '+1 555-0102',
-    plan: 'Enterprise', 
-    startDate: '2025-03-15', 
-    expiryDate: '2025-09-15', 
-    remainingDays: 45, 
-    billingCycle: 'Yearly',
-    status: 'Active', 
-    licenseId: 'PS-LIC-2026-00126',
-    licenseStatus: 'Valid',
-    licenseIssueDate: '2025-03-15',
-    deviceLimit: 100,
-    registeredDevices: 42,
-    lastPayment: '$999.00',
-    lastInvoice: 'INV-2025-002',
-    nextRenewal: '2025-09-15',
-    outstandingAmount: '$0.00',
-    primaryDevice: 'Main Server',
-    lastSync: 'Today 10:15 AM',
-    deviceStatus: 'Active',
-    totalPaid: '$1998.00',
-    recentActivities: [
-      { date: '2025-03-15', action: 'Renewed', by: 'Admin' },
-      { date: '2025-03-15', action: 'License Generated', by: 'System' }
-    ],
-    devicesList: [
-      { name: 'Main Server', status: 'Active', lastLogin: 'Today' },
-      { name: 'Manager Phone', status: 'Active', lastLogin: 'Today' },
-      { name: 'Backup Device', status: 'Pending Approval', lastLogin: '-' }
-    ]
-  },
-  { 
-    id: '3', 
-    propertyName: 'City Lights Hostel', 
-    propertyType: 'Hostel',
-    propertyId: 'PROP-1003',
-    city: 'Chicago',
-    state: 'IL',
-    ownerName: 'Mike Johnson', 
-    ownerMobile: '+1 555-0103',
-    ownerWhatsApp: '+1 555-0103',
-    plan: 'Basic', 
-    startDate: '2024-05-10', 
-    expiryDate: '2025-05-10', 
-    remainingDays: 0, 
-    billingCycle: 'Yearly',
-    status: 'Expired', 
-    licenseId: 'PS-LIC-2025-00080',
-    licenseStatus: 'Expired',
-    licenseIssueDate: '2024-05-10',
-    deviceLimit: 10,
-    registeredDevices: 5,
-    lastPayment: '$199.00',
-    lastInvoice: 'INV-2024-050',
-    nextRenewal: '2025-05-10',
-    outstandingAmount: '$199.00',
-    primaryDevice: 'Reception PC',
-    lastSync: 'Yesterday 11:30 PM',
-    deviceStatus: 'Inactive',
-    totalPaid: '$199.00',
-    recentActivities: [
-      { date: '2025-05-11', action: 'Subscription Expired', by: 'System' },
-    ],
-    devicesList: [
-      { name: 'Reception PC', status: 'Inactive', lastLogin: 'Yesterday' }
-    ]
-  },
-  { 
-    id: '4', 
-    propertyName: 'Mountain Inn', 
-    propertyType: 'Homestay',
-    propertyId: 'PROP-1004',
-    city: 'Denver',
-    state: 'CO',
-    ownerName: 'Sarah Wilson', 
-    ownerMobile: '+1 555-0104',
-    ownerWhatsApp: '+1 555-0104',
-    plan: 'Professional', 
-    startDate: '2025-02-20', 
-    expiryDate: '2026-02-20', 
-    remainingDays: 2, 
-    billingCycle: 'Yearly',
-    status: 'Grace Period', 
-    licenseId: 'PS-LIC-2025-00200',
-    licenseStatus: 'Expiring Soon',
-    licenseIssueDate: '2025-02-20',
-    deviceLimit: 50,
-    registeredDevices: 12,
-    lastPayment: '$499.00',
-    lastInvoice: 'INV-2025-080',
-    nextRenewal: '2026-02-20',
-    outstandingAmount: '$499.00',
-    primaryDevice: 'Front Desk',
-    lastSync: 'Today 08:00 AM',
-    deviceStatus: 'Active',
-    totalPaid: '$499.00',
-    recentActivities: [
-      { date: '2026-02-18', action: 'Entered Grace Period', by: 'System' },
-    ],
-    devicesList: [
-      { name: 'Front Desk', status: 'Active', lastLogin: 'Today' }
-    ]
-  },
-  { 
-    id: '5', 
-    propertyName: 'Sunset Villa', 
-    propertyType: 'Villa',
-    propertyId: 'PROP-1005',
-    city: 'Los Angeles',
-    state: 'CA',
-    ownerName: 'Robert Brown', 
-    ownerMobile: '+1 555-0105',
-    ownerWhatsApp: '+1 555-0105',
-    plan: 'Basic', 
-    startDate: '2025-01-10', 
-    expiryDate: '2026-01-10', 
-    remainingDays: 300, 
-    billingCycle: 'Monthly',
-    status: 'Disabled', 
-    licenseId: 'PS-LIC-2025-00100',
-    licenseStatus: 'Revoked',
-    licenseIssueDate: '2025-01-10',
-    deviceLimit: 5,
-    registeredDevices: 2,
-    lastPayment: '$19.00',
-    lastInvoice: 'INV-2025-010',
-    nextRenewal: '2026-01-10',
-    outstandingAmount: '$0.00',
-    primaryDevice: 'Admin iPad',
-    lastSync: '2 Weeks Ago',
-    deviceStatus: 'Revoked',
-    totalPaid: '$19.00',
-    recentActivities: [
-      { date: '2025-03-01', action: 'Property Disabled', by: 'Super Admin' },
-    ],
-    devicesList: [
-      { name: 'Admin iPad', status: 'Revoked', lastLogin: '2 Weeks Ago' }
-    ]
-  },
-];
+import { subscriptionService } from '../../services/subscriptionService';
 
 const ActionDropdown = ({ property, onAction }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -296,14 +87,42 @@ export default function SubscriptionManagement() {
   const [selectedProp, setSelectedProp] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // API State
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [kpis, setKpis] = useState({
+    totalSubscriptions: 0,
+    activePlans: 0,
+    expiredPlans: 0,
+    disabledSubscriptions: 0,
+    upgradesThisMonth: 0,
+    downgradesThisMonth: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // KPIs
-  const totalSubscriptions = mockSubscriptions.length;
-  const activePlans = mockSubscriptions.filter(s => s.status === 'Active' || s.status === 'Grace Period').length;
-  const expiredPlans = mockSubscriptions.filter(s => s.status === 'Expired').length;
-  const disabledSubscriptions = mockSubscriptions.filter(s => s.status === 'Disabled').length;
-  const upgradesThisMonth = 12; // Mock value
-  const downgradesThisMonth = 3; // Mock value
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [subsData, kpisData] = await Promise.all([
+          subscriptionService.getSubscriptions(),
+          subscriptionService.getKPIs()
+        ]);
+        // Handle array response or object containing array
+        setSubscriptions(Array.isArray(subsData) ? subsData : (subsData.data || []));
+        setKpis(kpisData || {});
+      } catch (err) {
+        setError(err.message || 'Failed to load subscription data');
+        console.error('Error fetching subscriptions:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   const handleOpenDrawer = (prop) => {
     setSelectedProp(prop);
@@ -315,22 +134,27 @@ export default function SubscriptionManagement() {
     setTimeout(() => setSelectedProp(null), 300);
   };
 
-  const handleRowAction = (action, property) => {
+  const handleRowAction = async (action, property) => {
     if (action === 'view') {
       handleOpenDrawer(property);
+    } else if (action === 'enable' || action === 'disable') {
+      try {
+        await subscriptionService.toggleSubscriptionStatus(property.id || property.propertyId, action);
+        // Refresh data or update local state
+      } catch (err) {
+        alert(`Failed to ${action} property: ${err.message}`);
+      }
     } else {
       console.log(`Action: ${action} on property: ${property.propertyName}`);
-      // Implement specific actions here, e.g. open a modal for Upgrade
-      // alert(`Action "${action}" triggered for ${property.propertyName}`);
     }
   };
 
-  const filteredSubscriptions = mockSubscriptions.filter(sub => {
+  const filteredSubscriptions = subscriptions.filter(sub => {
     if (!searchQuery) return true;
     const lowerQuery = searchQuery.toLowerCase();
-    return sub.propertyName.toLowerCase().includes(lowerQuery) ||
-           sub.ownerName.toLowerCase().includes(lowerQuery) ||
-           sub.licenseId.toLowerCase().includes(lowerQuery);
+    return sub.propertyName?.toLowerCase().includes(lowerQuery) ||
+           sub.ownerName?.toLowerCase().includes(lowerQuery) ||
+           sub.licenseId?.toLowerCase().includes(lowerQuery);
   });
 
   const getStatusBadge = (status) => {
@@ -356,27 +180,27 @@ export default function SubscriptionManagement() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="saas-card p-4">
           <p className="text-sm font-medium text-gray-500 truncate">Total Subscriptions</p>
-          <p className="mt-2 text-2xl font-semibold text-gray-900">{totalSubscriptions}</p>
+          <p className="mt-2 text-2xl font-semibold text-gray-900">{kpis.totalSubscriptions}</p>
         </div>
         <div className="saas-card p-4">
           <p className="text-sm font-medium text-gray-500 truncate">Active Plans</p>
-          <p className="mt-2 text-2xl font-semibold text-green-600">{activePlans}</p>
+          <p className="mt-2 text-2xl font-semibold text-green-600">{kpis.activePlans}</p>
         </div>
         <div className="saas-card p-4">
           <p className="text-sm font-medium text-gray-500 truncate">Expired Plans</p>
-          <p className="mt-2 text-2xl font-semibold text-red-600">{expiredPlans}</p>
+          <p className="mt-2 text-2xl font-semibold text-red-600">{kpis.expiredPlans}</p>
         </div>
         <div className="saas-card p-4">
           <p className="text-sm font-medium text-gray-500 truncate">Disabled</p>
-          <p className="mt-2 text-2xl font-semibold text-gray-900">{disabledSubscriptions}</p>
+          <p className="mt-2 text-2xl font-semibold text-gray-900">{kpis.disabledSubscriptions}</p>
         </div>
         <div className="saas-card p-4">
           <p className="text-sm font-medium text-gray-500 truncate">Upgrades This Month</p>
-          <p className="mt-2 text-2xl font-semibold text-blue-600">{upgradesThisMonth}</p>
+          <p className="mt-2 text-2xl font-semibold text-blue-600">{kpis.upgradesThisMonth}</p>
         </div>
         <div className="saas-card p-4">
           <p className="text-sm font-medium text-gray-500 truncate">Downgrades</p>
-          <p className="mt-2 text-2xl font-semibold text-orange-600">{downgradesThisMonth}</p>
+          <p className="mt-2 text-2xl font-semibold text-orange-600">{kpis.downgradesThisMonth}</p>
         </div>
       </div>
 
@@ -424,7 +248,23 @@ export default function SubscriptionManagement() {
 
       {/* Data Table */}
       <div className="saas-card overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[300px] relative">
+          {loading ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
+              <Loader2 className="h-8 w-8 text-pine animate-spin mb-2" />
+              <p className="text-gray-500 text-sm">Loading subscriptions...</p>
+            </div>
+          ) : error ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
+              <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
+              <p className="text-gray-800 text-sm font-medium">Failed to load data</p>
+              <p className="text-gray-500 text-xs mt-1 max-w-sm text-center">{error}</p>
+            </div>
+          ) : filteredSubscriptions.length === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
+              <p className="text-gray-500 text-sm">No subscriptions found</p>
+            </div>
+          ) : null}
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -438,7 +278,7 @@ export default function SubscriptionManagement() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredSubscriptions.map((sub) => (
-                <tr key={sub.id} className="hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => handleOpenDrawer(sub)}>
+                <tr key={sub.id || sub.propertyId} className="hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => handleOpenDrawer(sub)}>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{sub.propertyName}</div>
                     <div className="text-xs text-gray-500 mt-1">{sub.propertyType} • {sub.city}</div>
@@ -466,14 +306,14 @@ export default function SubscriptionManagement() {
                       <Smartphone className="h-3 w-3 mr-1" /> {sub.registeredDevices} / {sub.deviceLimit} Devices
                     </div>
                     <div className="text-xs text-gray-500 mt-1 flex items-center">
-                      <Clock className="h-3 w-3 mr-1" /> Last Sync: {sub.lastSync.split(' ')[0]}
+                      <Clock className="h-3 w-3 mr-1" /> Last Sync: {sub.lastSync?.split(' ')[0]}
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{sub.lastPayment}</div>
                     <div className="text-xs text-gray-500 mt-1">Last: {sub.lastInvoice}</div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {sub.outstandingAmount !== '$0.00' ? (
+                      {sub.outstandingAmount !== '$0.00' && sub.outstandingAmount !== '0' ? (
                         <span className="text-red-500 font-medium">Due: {sub.outstandingAmount}</span>
                       ) : 'Paid in full'}
                     </div>
@@ -624,7 +464,7 @@ export default function SubscriptionManagement() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {selectedProp.devicesList.map((dev, idx) => (
+                        {selectedProp.devicesList?.map((dev, idx) => (
                           <tr key={idx}>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 font-medium">{dev.name}</td>
                             <td className="px-4 py-2 whitespace-nowrap">
@@ -682,7 +522,7 @@ export default function SubscriptionManagement() {
                     <Clock className="h-4 w-4 mr-2" /> Recent Activities
                   </h3>
                   <div className="space-y-4">
-                    {selectedProp.recentActivities.map((act, idx) => (
+                    {selectedProp.recentActivities?.map((act, idx) => (
                       <div key={idx} className="flex space-x-3">
                         <div className="mt-1">
                           <div className="h-2 w-2 rounded-full bg-pine"></div>

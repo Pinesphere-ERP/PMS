@@ -3,65 +3,15 @@ import {
   Search, Filter, Download, ExternalLink, DollarSign, ArrowUpRight, 
   Clock, AlertTriangle, FileText, CheckCircle2, TrendingUp, RefreshCw, 
   Send, X, CreditCard, ShieldCheck, PieChart as PieChartIcon, BarChart2,
-  MoreVertical, Eye
+  MoreVertical, Eye, Loader2
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
+import { paymentService } from '../../services/paymentService';
 
-const mockKPIs = [
-  { name: 'Total Revenue', value: '₹ 48,75,000', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50' },
-  { name: 'Monthly Revenue', value: '₹ 5,20,000', icon: TrendingUp, color: 'text-pine', bg: 'bg-pine/10' },
-  { name: 'Pending Collections', value: '₹ 1,45,000', icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  { name: 'Failed Payments', value: '12', icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50' },
-  { name: 'Total Invoices', value: '285', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { name: 'Avg Sub Value', value: '₹ 17,500', icon: ArrowUpRight, color: 'text-purple-600', bg: 'bg-purple-50' },
-  { name: 'Collection Rate', value: '92%', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-];
-
-const mockMonthlyTrend = [
-  { month: 'Jan', revenue: 380000 },
-  { month: 'Feb', revenue: 420000 },
-  { month: 'Mar', revenue: 390000 },
-  { month: 'Apr', revenue: 450000 },
-  { month: 'May', revenue: 510000 },
-  { month: 'Jun', revenue: 520000 },
-];
-
-const mockPlanRevenue = [
-  { plan: 'Basic', revenue: 1500000 },
-  { plan: 'Professional', revenue: 2200000 },
-  { plan: 'Enterprise', revenue: 1175000 },
-];
-
-const mockMethodRevenue = [
-  { name: 'UPI', value: 45 },
-  { name: 'Credit Card', value: 30 },
-  { name: 'Net Banking', value: 15 },
-  { name: 'Debit Card', value: 10 },
-];
 const COLORS = ['#059669', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
-
-const mockOutstanding = [
-  { name: 'Revenue Health', collected: 4875000, pending: 145000 },
-];
-
-const mockTransactions = [
-  { id: '1', paymentId: 'PAY-88219', invoice: 'INV-2026-042', property: 'Grand Plaza Hotel', owner: 'John Doe', plan: 'Professional', billingCycle: 'Yearly', amount: '₹ 49,900', method: 'Credit Card', date: '2026-07-10 10:23 AM', status: 'Successful', collectedBy: 'System', bankRef: 'HDFC123456789' },
-  { id: '2', paymentId: 'PAY-88220', invoice: 'INV-2026-043', property: 'Sea View Resort', owner: 'Jane Smith', plan: 'Enterprise', billingCycle: 'Yearly', amount: '₹ 99,900', method: 'UPI', date: '2026-07-09 14:15 PM', status: 'Processing', collectedBy: 'System', bankRef: 'UPI987654321' },
-  { id: '3', paymentId: 'PAY-88221', invoice: 'INV-2026-044', property: 'City Lights Hostel', owner: 'Mike Johnson', plan: 'Basic', billingCycle: 'Monthly', amount: '₹ 1,990', method: 'Debit Card', date: '2026-07-09 09:00 AM', status: 'Failed', collectedBy: 'System', bankRef: 'SBI456123' },
-];
-
-const mockPendingDues = [
-  { id: '4', property: 'Mountain Inn', plan: 'Professional', dueDate: '2026-07-05', amountDue: '₹ 49,900', daysOverdue: 5, reminderStatus: 'Sent Today' },
-  { id: '5', property: 'Valley Lodge', plan: 'Basic', dueDate: '2026-07-01', amountDue: '₹ 19,900', daysOverdue: 9, reminderStatus: 'Sent 3 times' },
-];
-
-const mockInvoices = [
-  { id: 'INV-2026-042', property: 'Grand Plaza Hotel', plan: 'Professional', date: '2026-07-01', dueDate: '2026-07-10', amount: '₹ 49,900', gst: '₹ 8,982', status: 'Paid' },
-  { id: 'INV-2026-044', property: 'City Lights Hostel', plan: 'Basic', date: '2026-07-01', dueDate: '2026-07-05', amount: '₹ 1,990', gst: '₹ 358', status: 'Overdue' },
-];
 
 const ActionDropdown = ({ actions, onAction, item }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -110,6 +60,55 @@ export default function PaymentManagement() {
   const [selectedTx, setSelectedTx] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  // API State
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const [kpis, setKpis] = useState([]);
+  const [dashboardData, setDashboardData] = useState({
+    monthlyTrend: [],
+    planRevenue: [],
+    methodRevenue: [],
+    outstanding: []
+  });
+  const [transactions, setTransactions] = useState([]);
+  const [pendingDues, setPendingDues] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        if (activeTab === 'overview') {
+          const [kpisRes, dashRes] = await Promise.all([
+            paymentService.getKPIs(),
+            paymentService.getDashboardData()
+          ]);
+          setKpis(kpisRes?.data || []);
+          setDashboardData(dashRes?.data || {
+            monthlyTrend: [], planRevenue: [], methodRevenue: [], outstanding: []
+          });
+        } else if (activeTab === 'transactions') {
+          const res = await paymentService.getTransactions();
+          setTransactions(Array.isArray(res) ? res : res.data || []);
+        } else if (activeTab === 'pending') {
+          const res = await paymentService.getPendingDues();
+          setPendingDues(Array.isArray(res) ? res : res.data || []);
+        } else if (activeTab === 'invoices') {
+          const res = await paymentService.getInvoices();
+          setInvoices(Array.isArray(res) ? res : res.data || []);
+        }
+      } catch (err) {
+        setError(err.message || `Failed to load ${activeTab} data`);
+        console.error('API Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [activeTab]);
+
   const handleOpenDrawer = (tx) => {
     setSelectedTx(tx);
     setTimeout(() => setIsDrawerOpen(true), 10);
@@ -120,9 +119,34 @@ export default function PaymentManagement() {
     setTimeout(() => setSelectedTx(null), 300);
   };
 
-  const handleAction = (key, item) => {
-    if (key === 'view') handleOpenDrawer(item);
-    else console.log(`Action: ${key} on ${item.property || item.id}`);
+  const handleAction = async (key, item) => {
+    if (key === 'view') {
+      handleOpenDrawer(item);
+    } else if (key === 'remind') {
+      try {
+        await paymentService.sendReminder(item.id);
+        alert('Reminder sent!');
+      } catch (e) {
+        alert('Failed to send reminder: ' + e.message);
+      }
+    } else if (key === 'link') {
+      try {
+        await paymentService.sendPaymentLink(item.id);
+        alert('Payment link sent!');
+      } catch (e) {
+        alert('Failed to send link: ' + e.message);
+      }
+    } else if (key === 'mark_paid') {
+      try {
+        await paymentService.markAsPaid(item.id);
+        // Optimistically remove from pending array
+        setPendingDues(prev => prev.filter(due => due.id !== item.id));
+      } catch (e) {
+        alert('Failed to mark as paid: ' + e.message);
+      }
+    } else {
+      console.log(`Action: ${key} on ${item.property || item.id}`);
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -133,6 +157,11 @@ export default function PaymentManagement() {
       case 'Refunded': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const mapIcon = (iconName) => {
+    const icons = { DollarSign, TrendingUp, Clock, AlertTriangle, FileText, ArrowUpRight, CheckCircle2 };
+    return icons[iconName] || DollarSign;
   };
 
   return (
@@ -157,15 +186,22 @@ export default function PaymentManagement() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-        {mockKPIs.map((stat) => (
-          <div key={stat.name} className="saas-card p-4">
-            <div className="flex justify-between items-start">
-              <p className="text-xs font-medium text-gray-500 truncate">{stat.name}</p>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+        {kpis.length > 0 ? kpis.map((stat) => {
+          const Icon = mapIcon(stat.icon);
+          return (
+            <div key={stat.name} className="saas-card p-4">
+              <div className="flex justify-between items-start">
+                <p className="text-xs font-medium text-gray-500 truncate">{stat.name}</p>
+                <Icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+              <p className="mt-2 text-lg lg:text-xl font-bold text-gray-900 truncate">{stat.value}</p>
             </div>
-            <p className="mt-2 text-lg lg:text-xl font-bold text-gray-900 truncate">{stat.value}</p>
+          )
+        }) : (
+          <div className="col-span-full saas-card p-4 text-center text-sm text-gray-500">
+            {loading ? 'Loading metrics...' : 'No metrics available'}
           </div>
-        ))}
+        )}
       </div>
 
       {/* Tabs */}
@@ -186,9 +222,24 @@ export default function PaymentManagement() {
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px]">
+      <div className="min-h-[400px] relative">
+        {loading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 min-h-[300px]">
+             <Loader2 className="h-8 w-8 text-pine animate-spin mb-2" />
+             <p className="text-gray-500 text-sm">Loading data...</p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 min-h-[300px]">
+             <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
+             <p className="text-gray-800 text-sm font-medium">Failed to load {activeTab}</p>
+             <p className="text-gray-500 text-xs mt-1 max-w-sm text-center">{error}</p>
+          </div>
+        )}
+
         {/* OVERVIEW CHARTS */}
-        {activeTab === 'overview' && (
+        {activeTab === 'overview' && !error && !loading && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-4">
 
             <div className="saas-card p-5">
@@ -197,7 +248,7 @@ export default function PaymentManagement() {
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={mockMonthlyTrend}>
+                  <LineChart data={dashboardData.monthlyTrend}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6b7280'}} />
                     <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6b7280'}} tickFormatter={(val) => `₹${val/1000}k`} />
@@ -214,7 +265,7 @@ export default function PaymentManagement() {
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={mockPlanRevenue}>
+                  <BarChart data={dashboardData.planRevenue}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                     <XAxis dataKey="plan" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6b7280'}} />
                     <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6b7280'}} tickFormatter={(val) => `₹${val/100000}L`} />
@@ -232,8 +283,8 @@ export default function PaymentManagement() {
               <div className="h-64 flex justify-center items-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={mockMethodRevenue} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      {mockMethodRevenue.map((entry, index) => (
+                    <Pie data={dashboardData.methodRevenue} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {dashboardData.methodRevenue?.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -250,7 +301,7 @@ export default function PaymentManagement() {
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={mockOutstanding} layout="vertical">
+                  <BarChart data={dashboardData.outstanding} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
                     <XAxis type="number" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6b7280'}} tickFormatter={(val) => `₹${val/100000}L`} />
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6b7280'}} />
@@ -266,7 +317,7 @@ export default function PaymentManagement() {
         )}
 
         {/* TRANSACTIONS TAB */}
-        {activeTab === 'transactions' && (
+        {activeTab === 'transactions' && !error && !loading && (
           <div className="saas-card overflow-hidden">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <div className="relative max-w-sm w-full">
@@ -276,158 +327,170 @@ export default function PaymentManagement() {
               <button className="saas-button-secondary"><Filter className="h-4 w-4 mr-2"/> Filters</button>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Payment Info</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount & Method</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                    <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {mockTransactions.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-gray-50/50 cursor-pointer" onClick={() => handleOpenDrawer(tx)}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{tx.paymentId}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{tx.date}</div>
-                        <div className="text-xs text-gray-400 mt-0.5 font-mono">Inv: {tx.invoice}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{tx.property}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{tx.owner}</div>
-                        <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded text-[10px] font-medium bg-gray-100 text-gray-800">{tx.plan}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">{tx.amount}</div>
-                        <div className="text-xs text-gray-500 mt-1 flex items-center">
-                          <CreditCard className="h-3 w-3 mr-1"/> {tx.method}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`status-badge ${getStatusBadge(tx.status)}`}>{tx.status}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <ActionDropdown 
-                          item={tx} 
-                          onAction={handleAction}
-                          actions={[
-                            { key: 'view', label: 'View Details', icon: Eye },
-                            { key: 'receipt', label: 'Download Receipt', icon: Download },
-                            { key: 'invoice', label: 'View Invoice', icon: FileText }
-                          ]} 
-                        />
-                      </td>
+              {transactions.length === 0 ? (
+                <div className="p-8 text-center text-sm text-gray-500">No transactions found.</div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Payment Info</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Property</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount & Method</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                      <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {transactions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-gray-50/50 cursor-pointer" onClick={() => handleOpenDrawer(tx)}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{tx.paymentId}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{tx.date}</div>
+                          <div className="text-xs text-gray-400 mt-0.5 font-mono">Inv: {tx.invoice}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{tx.property}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{tx.owner}</div>
+                          <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded text-[10px] font-medium bg-gray-100 text-gray-800">{tx.plan}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">{tx.amount}</div>
+                          <div className="text-xs text-gray-500 mt-1 flex items-center">
+                            <CreditCard className="h-3 w-3 mr-1"/> {tx.method}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`status-badge ${getStatusBadge(tx.status)}`}>{tx.status}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <ActionDropdown 
+                            item={tx} 
+                            onAction={handleAction}
+                            actions={[
+                              { key: 'view', label: 'View Details', icon: Eye },
+                              { key: 'receipt', label: 'Download Receipt', icon: Download },
+                              { key: 'invoice', label: 'View Invoice', icon: FileText }
+                            ]} 
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
 
         {/* PENDING DUES TAB */}
-        {activeTab === 'pending' && (
+        {activeTab === 'pending' && !error && !loading && (
           <div className="saas-card overflow-hidden">
              <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Due Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount Due</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Reminder Status</th>
-                    <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {mockPendingDues.map((due) => (
-                    <tr key={due.id} className="hover:bg-gray-50/50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{due.property}</div>
-                        <div className="text-xs text-gray-500">{due.plan}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-red-600 font-medium">{due.daysOverdue} Days Overdue</div>
-                        <div className="text-xs text-gray-500">Due: {due.dueDate}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        {due.amountDue}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{due.reminderStatus}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <ActionDropdown 
-                          item={due} 
-                          onAction={handleAction}
-                          actions={[
-                            { key: 'remind', label: 'Send Reminder', icon: Send },
-                            { key: 'link', label: 'Send Payment Link', icon: ExternalLink },
-                            { key: 'mark_paid', label: 'Mark as Paid', icon: CheckCircle2 }
-                          ]} 
-                        />
-                      </td>
+              {pendingDues.length === 0 ? (
+                <div className="p-8 text-center text-sm text-gray-500">No pending dues found.</div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Property</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Due Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount Due</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Reminder Status</th>
+                      <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {pendingDues.map((due) => (
+                      <tr key={due.id} className="hover:bg-gray-50/50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{due.property}</div>
+                          <div className="text-xs text-gray-500">{due.plan}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-red-600 font-medium">{due.daysOverdue} Days Overdue</div>
+                          <div className="text-xs text-gray-500">Due: {due.dueDate}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                          {due.amountDue}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{due.reminderStatus}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <ActionDropdown 
+                            item={due} 
+                            onAction={handleAction}
+                            actions={[
+                              { key: 'remind', label: 'Send Reminder', icon: Send },
+                              { key: 'link', label: 'Send Payment Link', icon: ExternalLink },
+                              { key: 'mark_paid', label: 'Mark as Paid', icon: CheckCircle2 }
+                            ]} 
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
 
         {/* INVOICES TAB */}
-        {activeTab === 'invoices' && (
+        {activeTab === 'invoices' && !error && !loading && (
           <div className="saas-card overflow-hidden">
              <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Invoice Number</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Dates</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                    <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {mockInvoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-gray-50/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-pine">
-                        {inv.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{inv.property}</div>
-                        <div className="text-xs text-gray-500">{inv.plan}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-xs text-gray-900">Issued: {inv.date}</div>
-                        <div className="text-xs text-gray-500">Due: {inv.dueDate}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">{inv.amount}</div>
-                        <div className="text-xs text-gray-500">Inc. GST: {inv.gst}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`status-badge ${getStatusBadge(inv.status)}`}>{inv.status}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <ActionDropdown 
-                          item={inv} 
-                          onAction={handleAction}
-                          actions={[
-                            { key: 'view', label: 'View Invoice', icon: Eye },
-                            { key: 'download', label: 'Download PDF', icon: Download },
-                            { key: 'email', label: 'Email Invoice', icon: Send }
-                          ]} 
-                        />
-                      </td>
+              {invoices.length === 0 ? (
+                <div className="p-8 text-center text-sm text-gray-500">No invoices found.</div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Invoice Number</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Property</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Dates</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                      <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {invoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-gray-50/50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-pine">
+                          {inv.id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{inv.property}</div>
+                          <div className="text-xs text-gray-500">{inv.plan}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-xs text-gray-900">Issued: {inv.date}</div>
+                          <div className="text-xs text-gray-500">Due: {inv.dueDate}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">{inv.amount}</div>
+                          <div className="text-xs text-gray-500">Inc. GST: {inv.gst}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`status-badge ${getStatusBadge(inv.status)}`}>{inv.status}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <ActionDropdown 
+                            item={inv} 
+                            onAction={handleAction}
+                            actions={[
+                              { key: 'view', label: 'View Invoice', icon: Eye },
+                              { key: 'download', label: 'Download PDF', icon: Download },
+                              { key: 'email', label: 'Email Invoice', icon: Send }
+                            ]} 
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -509,7 +572,7 @@ export default function PaymentManagement() {
                   <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900">Receipt Details</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">RCPT-{selectedTx.paymentId.split('-')[1]} • {selectedTx.date}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">RCPT-{selectedTx.paymentId?.split('-')[1]} • {selectedTx.date}</p>
                     </div>
                     <button className="text-pine hover:text-pine-dark bg-pine/10 p-2 rounded-lg transition-colors">
                       <Download className="h-5 w-5" />
@@ -527,12 +590,12 @@ export default function PaymentManagement() {
                       <div className="relative">
                         <div className="absolute -left-[21px] top-1 h-3 w-3 bg-gray-200 rounded-full border-2 border-white"></div>
                         <p className="text-sm font-medium text-gray-900">Invoice Generated</p>
-                        <p className="text-xs text-gray-500">System • {selectedTx.date.split(' ')[0]} 08:00 AM</p>
+                        <p className="text-xs text-gray-500">System • {selectedTx.date?.split(' ')[0]} 08:00 AM</p>
                       </div>
                       <div className="relative">
                         <div className="absolute -left-[21px] top-1 h-3 w-3 bg-gray-200 rounded-full border-2 border-white"></div>
                         <p className="text-sm font-medium text-gray-900">Payment Link Sent</p>
-                        <p className="text-xs text-gray-500">System • {selectedTx.date.split(' ')[0]} 08:05 AM</p>
+                        <p className="text-xs text-gray-500">System • {selectedTx.date?.split(' ')[0]} 08:05 AM</p>
                       </div>
                       <div className="relative">
                         <div className="absolute -left-[21px] top-1 h-3 w-3 bg-pine rounded-full border-2 border-white"></div>

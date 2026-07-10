@@ -2,6 +2,7 @@ import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 
 from app.infra.database import get_db
 from app.modules.devices.schemas import (
@@ -11,8 +12,66 @@ from app.modules.devices.schemas import (
     AuditLogEntryResponse, SyncLogEntryResponse
 )
 from app.modules.devices import service
+from app.infra.models import Device
 
 router = APIRouter()
+
+@router.get("/kpis")
+async def get_device_kpis(db: AsyncSession = Depends(get_db)):
+    """Global KPI counts for device management console."""
+    query = select(Device.status, func.count(Device.id)).group_by(Device.status)
+    result = await db.execute(query)
+    status_counts = {row[0]: row[1] for row in result.all()}
+    total = sum(status_counts.values())
+    return [
+        { "name": "Total Registered Devices", "value": str(total), "icon": "Smartphone", "color": "text-pine-DEFAULT", "bg": "bg-pine-50" },
+        { "name": "Pending Approval", "value": str(status_counts.get("pending_approval", 0)), "icon": "Clock", "color": "text-yellow-600", "bg": "bg-yellow-50" },
+        { "name": "Active & Synced", "value": str(status_counts.get("active", 0)), "icon": "CheckCircle2", "color": "text-green-600", "bg": "bg-green-50" },
+        { "name": "Locked / Disabled", "value": str(status_counts.get("locked", 0) + status_counts.get("disabled", 0)), "icon": "Lock", "color": "text-purple-600", "bg": "bg-purple-50" },
+        { "name": "Offline (> 24h)", "value": "0", "icon": "WifiOff", "color": "text-amber-600", "bg": "bg-amber-50" },
+        { "name": "Failed Syncs (24h)", "value": "0", "icon": "AlertTriangle", "color": "text-red-600", "bg": "bg-red-50" },
+    ]
+
+@router.get("/diagnostics")
+async def get_device_diagnostics(db: AsyncSession = Depends(get_db)):
+    """Return device list enriched with sync diagnostics for the diagnostics panel."""
+    devices = await service.list_devices(db)
+    return [
+        {
+            "id": str(d.id),
+            "name": d.device_name or "Unnamed Device",
+            "model": d.os_type or "Unknown",
+            "uid": d.device_uid,
+            "property": str(d.property_id),
+            "battery": 0,
+            "lastSync": "Unknown",
+            "appVersion": "Unknown",
+            "osVersion": d.os_type or "Unknown",
+            "syncStatus": "SYNCED" if d.status == "active" else "OFFLINE",
+            "approvalStatus": d.status,
+            "syncAttempts": []
+        }
+        for d in devices
+    ]
+
+@router.get("/my")
+async def get_my_devices(db: AsyncSession = Depends(get_db)):
+    """Property-scoped device list (future: filtered by auth token's property)."""
+    devices = await service.list_devices(db)
+    return [
+        {
+            "id": str(d.id),
+            "name": d.device_name or "Unnamed Device",
+            "model": d.os_type or "Unknown",
+            "uid": d.device_uid,
+            "primaryUser": str(d.primary_user_id) if d.primary_user_id else "Unassigned",
+            "status": d.status,
+            "battery": 0,
+            "lastSync": "Unknown",
+            "appVersion": "Unknown",
+        }
+        for d in devices
+    ]
 
 @router.post("/register", response_model=DeviceResponse, status_code=status.HTTP_201_CREATED)
 async def register_device(
@@ -174,6 +233,17 @@ async def force_sync_device(
     db: AsyncSession = Depends(get_db)
 ):
     """Support/Owner-triggered immediate sync check."""
+    action_req = req or DeviceActionRequest(action_type="force-sync")
+    action_req.action_type = "force-sync"
+    return await service.perform_device_action(db, id, action_req)
+
+@router.post("/{id}/sync", response_model=DeviceResponse)
+async def trigger_sync(
+    id: uuid.UUID,
+    req: Optional[DeviceActionRequest] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Alias for force-sync from admin console."""
     action_req = req or DeviceActionRequest(action_type="force-sync")
     action_req.action_type = "force-sync"
     return await service.perform_device_action(db, id, action_req)

@@ -17,8 +17,7 @@ import {
 import { useState } from 'react';
 
 const propertyNavigation = [
-  { name: 'Property Dashboard', to: '/properties', icon: Building2 },
-  { name: 'Add Property', to: '/properties/add', icon: ClipboardCheck },
+  { name: 'Property Dashboard', to: '/properties', icon: Building2 }
 ];
 
 const subscriptionNavigation = [

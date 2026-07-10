@@ -2,3 +2,4 @@ pinesphere_backend/venv
 *.pyc
 pinesphere_backend/alembic/versions/__pycache__/
 pinesphere_backend/scratch/
+pinesphere_backend/.env

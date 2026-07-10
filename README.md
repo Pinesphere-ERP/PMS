@@ -9,12 +9,12 @@ This repository contains both the Flutter mobile/web frontend and the FastAPI Py
 - **Backend**: Python 3.11+, FastAPI, SQLAlchemy 2.0 (Async), PostgreSQL 16 (Row-Level Security for Multi-Tenancy), Redis, MinIO
 - **Sync Engine**: Hybrid Logical Clocks (HLC) with Operation-based outbox syncing.
 
-## Getting Started
+## Documentation
 
-To get the project running locally, please follow the detailed setup guides in the `docs/` folder:
-
-1. **[Backend Setup Guide](docs/setup_backend.md)** - Setting up Docker (Postgres, Redis, MinIO) and the FastAPI environment.
-2. **[Flutter Frontend Setup Guide](docs/setup_flutter.md)** - Setting up Dart, Flutter, and running the app for Mobile and Web.
+Extensive documentation for developers can be found in the `docs/` directory:
+- [Architecture Overview](docs/architecture.md): Deep dive into the Offline-First Sync Engine, ObjectBox, and Riverpod structure.
+- [Mobile Setup Guide](docs/setup_flutter.md): Instructions to build and run the Flutter app.
+- [Backend Setup Guide](docs/setup_backend.md): Instructions to run the FastAPI PostgreSQL server.
 
 ## Directory Structure
 - `/pinesphere_backend` - The FastAPI Python backend service

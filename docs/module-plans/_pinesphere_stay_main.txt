@@ -1,0 +1,1276 @@
+Pinesphere Stay
+Offline First Property Management System
+
+A mobile-first PMS that allows property owners to run their entire business even without
+internet, while automatically syncing whenever connectivity returns.
+
+Owner Application
+
+The owner never depends on the internet.
+Everything works offline.
+Examples
+•
+
+Check In
+
+•
+
+Check Out
+
+•
+
+Room Booking
+
+•
+
+Guest Registration
+
+•
+
+Cash Payments
+
+•
+
+Expense Entry
+
+•
+
+Housekeeping
+
+•
+
+Staff Attendance
+
+•
+
+Reports
+
+•
+
+Printing
+
+•
+
+Occupancy
+
+•
+
+Inventory
+
+All are stored locally.
+
+When internet returns
+
+Upload Changes
+
+↓
+
+Download Updates
+
+↓
+
+Resolve Conflicts
+
+↓
+
+Continue Offline
+
+Offline Database
+SQLite / ObjectBox
+Rooms
+Bookings
+Guests
+Payments
+Expenses
+Invoices
+Settings
+Subscription Token
+Staff
+Housekeeping
+
+Inventory
+Restaurant Orders
+(No internet required.)
+
+Synchronization Engine
+
+Background Sync
+↓
+Detect Internet
+↓
+Push Local Changes
+↓
+Download Cloud Changes
+↓
+Merge
+↓
+Continue Working
+
+Features
+Incremental Sync
+Conflict Resolution
+Auto Retry
+Data Compression
+Encrypted Sync
+Resume after interruption
+
+Subscription Model
+
+Do NOT validate subscription every login.
+Instead create an Offline License System.
+Example
+Customer purchases
+Monthly Plan
+Server generates
+Encrypted License Token
+Valid till
+31 August
+Device ID
+Property ID
+Digital Signature
+
+Token is downloaded.
+Stored locally.
+The app verifies the signature locally.
+No internet required.
+
+Grace Period
+Subscription expires
+↓
+App still works
+↓
+7 days Grace
+↓
+Notifications shown
+↓
+Internet available
+↓
+Renew Subscription
+↓
+New Token downloaded
+
+If no renewal
+Day 8
+↓
+Create Booking Disabled
+↓
+Check-in Disabled
+↓
+Reports View Only
+↓
+Export Allowed
+↓
+Renew anytime
+This avoids sudden business disruption while still enforcing subscriptions.
+
+Owner Features
+Dashboard
+Today's Arrival
+Today's Departure
+Occupied Rooms
+Vacant Rooms
+Revenue Today
+Pending Payments
+Housekeeping Status
+Pending Check-outs
+
+Room Management
+Room Types
+Photos
+Pricing
+Season Pricing
+Weekend Pricing
+Holiday Pricing
+Extra Bed
+Amenities
+Room Status
+Maintenance
+Cleaning
+Blocked Rooms
+
+Booking
+Walk-in
+Phone Booking
+WhatsApp Booking
+Online Booking
+Advance Booking
+Group Booking
+Corporate Booking
+Recurring Booking
+Guest Management
+Guest History
+ID Proof
+Passport
+Visa
+Police Register
+Returning Guest
+Guest Preferences
+Notes
+Family Members
+Check In
+Capture ID
+OCR Reading
+Digital Signature
+Room Assignment
+Deposit Collection
+Invoice
+WhatsApp Confirmation
+
+Check Out
+Pending Amount
+Damage Charges
+Restaurant Bills
+Laundry
+Mini Bar
+Tax
+Invoice
+Payment Link
+Feedback Request
+
+Housekeeping
+Cleaning Status
+Laundry
+Maintenance
+Lost and Found
+Cleaning Checklist
+Photo Upload
+Assign Staff
+
+Maintenance
+Broken Furniture
+Electrical
+Plumbing
+AC
+TV
+Fan
+Complaint Tracking
+
+Restaurant Module (Addons )
+Order Taking
+Kitchen Status
+Billing
+Room Service
+Inventory Deduction
+
+Inventory
+Bedsheets
+Towels
+Soap
+Water Bottles
+Cleaning Materials
+Consumables
+Low Stock Alert
+Purchase Entry
+Vendor Management
+
+Staff Management
+Attendance
+Leave
+Salary
+Roles
+Performance
+Task Assignment
+
+Expense Management
+Electricity
+Gas
+Salary
+Food
+Repairs
+Petty Cash
+Other Expenses
+
+Accounting
+Income
+Expenses
+Profit
+GST
+Invoices
+Reports
+
+Reports
+Daily Report
+Monthly Report
+Occupancy
+Revenue
+Collection
+Outstanding
+Expenses
+Best Customers
+Room Utilization
+Staff Performance
+
+WhatsApp Integration
+The owner only needs the guest's phone number.
+The app automatically sends:
+Before arrival
+Booking Confirmation
+Location
+Check-in Time
+Directions
+
+On Check-in
+Welcome Message
+Wi-Fi Password
+Reception Number
+Room Number
+Rules
+
+During Stay
+Restaurant Menu
+Laundry
+Housekeeping Request
+Extra Bed Request
+Maintenance Request
+Checkout Reminder
+
+After Checkout
+Invoice
+Payment Link
+Feedback Link
+
+Google Review Link
+Visit Again Coupon
+
+Guest Portal
+The guest does NOT need to install the owner app.
+They receive a secure WhatsApp link.
+The link opens a lightweight web portal (or PWA) where they can:
+•
+
+View booking details
+
+•
+
+Complete online check-in
+
+•
+
+Upload ID proof
+
+•
+
+View room information
+
+•
+
+Request housekeeping
+
+•
+
+Request extra towels or amenities
+
+•
+
+Order food (if enabled)
+
+•
+
+View outstanding balance
+
+•
+
+Pay securely through UPI, cards, or net banking
+
+•
+
+Download invoices
+
+•
+
+Extend their stay
+
+•
+
+Chat with the property
+
+•
+
+Leave feedback and ratings
+
+The portal should work well on mobile browsers and can be installed as a Progressive
+Web App (PWA).
+
+Online Payments
+Because guests usually have internet access on mobile data, payments can remain
+cloud-based.
+Supported methods:
+•
+
+UPI
+
+•
+
+Credit/Debit Cards
+
+•
+
+Net Banking
+
+•
+
+Wallets
+
+Flow:
+Guest receives WhatsApp Link
+
+↓
+
+Opens Payment Page
+
+↓
+
+Payment Gateway
+
+↓
+
+Payment Success
+
+↓
+
+Cloud Updated
+
+↓
+
+Owner App Syncs Later
+
+Even if the owner's device is offline, the payment is safely recorded in the cloud and
+synchronized automatically when connectivity returns.
+
+AI Features
+•
+
+Smart pricing recommendations based on occupancy and season
+
+•
+
+Predict expected occupancy
+
+•
+
+Revenue forecasting
+
+•
+
+Auto-detect duplicate guests
+
+•
+
+OCR for Aadhaar, Passport, and Driving License
+
+•
+
+Voice-based booking entry in regional languages
+
+•
+
+AI-generated daily business summary
+
+•
+
+Intelligent housekeeping scheduling
+
+•
+
+Fraud and unusual activity alerts
+
+Security
+•
+
+End-to-end encryption for synchronization
+
+•
+
+Local database encryption
+
+•
+
+Biometric login
+
+•
+
+PIN fallback
+
+•
+
+Device registration and activation
+
+•
+
+Offline license validation with digital signatures
+
+•
+
+Secure backups
+
+•
+
+Audit logs for all critical actions
+
+•
+
+Role-based permissions
+
+•
+
+Remote device deactivation when a device reconnects
+
+SaaS Subscription Plans
+Plan
+
+Suitable For
+
+Rooms
+
+Monthly Fee (Example)
+
+Starter
+
+Homestays
+
+Up to 10 ₹
+
+Plan
+
+Suitable For
+
+Rooms
+
+Monthly Fee (Example)
+
+Basic
+
+Small Lodges
+
+Up to 25 ₹
+
+Standard
+
+Cottages & Guest Houses Up to 50 ₹
+
+Professional Resorts
+
+Up to 100 ₹
+
+Enterprise
+
+Unlimited Custom
+
+Large Properties
+
+Include a 7-day free trial, online renewal, yearly discounts, and automatic license
+renewal when the device reconnects.
+
+Technology Stack
+Mobile App
+•
+
+Flutter (Android first, iOS later)
+
+•
+
+Local encrypted SQLite database
+
+•
+
+Background sync service
+
+•
+
+Offline-first architecture
+
+Backend
+•
+
+Python FastAPI
+
+•
+
+PostgreSQL
+
+•
+
+Redis
+
+•
+
+Celery for background jobs
+
+•
+
+Object storage for photos and documents
+
+Integrations
+•
+
+WhatsApp Business API
+
+•
+
+SMS gateway (optional)
+
+•
+
+Payment gateway
+
+•
+
+Email service
+
+•
+
+Push notifications
+
+To make this a scalable SaaS product, you should think of it as three separate
+applications sharing one backend, rather than a single app.
+1. Pinesphere Admin Portal (Super Admin)
+2. Property Owner App
+3. Guest Portal (via WhatsApp/PWA)
+This gives Pinesphere complete control over every customer, subscription, and
+property.
+Overall SaaS Architecture
+
+User Hierarchy
+
+Super Admin (Pinesphere)
+Only Pinesphere employees access this.
+Dashboard
+Shows
+•
+
+Total Customers
+
+•
+
+Active Properties
+
+•
+
+Expired Properties
+
+•
+
+Trial Customers
+
+•
+
+Monthly Revenue
+
+•
+
+Pending Renewals
+
+•
+
+Online Users
+
+•
+
+Offline Users
+
+•
+
+Sync Status
+
+•
+
+Failed Syncs
+
+•
+
+Device Status
+
+•
+
+Total Rooms
+
+•
+
+Today's Check-ins
+
+•
+
+Today's Revenue
+
+•
+
+Support Tickets
+
+•
+
+WhatsApp Usage
+
+•
+
+Payment Statistics
+
+Customer Onboarding
+The onboarding team can create new customers.
+Example
+Create Property
+
+↓
+
+Business Name
+
+↓
+
+Owner Name
+
+↓
+
+Mobile Number
+
+↓
+
+Email
+
+↓
+
+GST
+
+↓
+
+PAN
+
+↓
+
+Address
+
+↓
+
+Location
+
+↓
+
+Subscription Plan
+
+↓
+
+Number of Rooms
+
+↓
+
+WhatsApp Number
+
+↓
+
+Primary Device
+
+↓
+
+Generate License
+
+↓
+
+Send Welcome WhatsApp
+
+Property Management
+View every customer.
+Example
+Green Valley Cottage
+Owner
+Subscription
+Plan
+Rooms
+Devices
+Staff
+Revenue
+
+Sync Status
+Last Login
+Support History
+
+You can
+Edit
+Suspend
+Deactivate
+Delete
+Transfer Ownership
+Upgrade
+Downgrade
+Clone
+Backup
+Restore
+
+Subscription Management
+Complete control.
+You decide
+Monthly
+Quarterly
+Half-Yearly
+Yearly
+Lifetime
+Free Trial
+Corporate Plan
+Custom Plan
+
+Each plan controls
+Maximum Rooms
+Maximum Users
+Maximum Devices
+Reports
+Restaurant Module
+Inventory
+Housekeeping
+API Access
+WhatsApp Messages
+SMS Credits
+Storage
+Backups
+AI Features
+
+License Engine
+Every property receives
+License ID
+Property ID
+Expiry Date
+Features
+Device Count
+Digital Signature
+Offline Token
+Stored locally.
+
+Renewal Flow
+Customer Pays
+↓
+Server Generates New Token
+↓
+Sync
+↓
+Offline App Updated
+
+Non-Payment Flow
+Instead of immediately deleting the property, use a controlled lifecycle.
+Day 1
+•
+
+Subscription expires
+
+•
+
+Warning shown
+
+•
+
+All features continue
+
+Day 7
+•
+
+Grace period ends
+
+•
+
+New bookings disabled
+
+•
+
+Check-in disabled
+
+•
+
+Existing guests can still check out
+
+•
+
+Reports remain available
+
+•
+
+Data export remains available
+
+Day 30
+•
+
+Property becomes suspended
+
+•
+
+Offline token expires
+
+•
+
+App enters read-only mode
+
+Day 60–90
+•
+
+Archive property
+
+•
+
+Notify customer before archival
+
+•
+
+Retain data for the configured retention period
+
+After retention period
+•
+
+Permanently delete only after multiple reminders and according to your terms of
+service.
+
+This approach protects customer trust while still enforcing subscriptions.
+
+Device Management
+Every mobile must be registered.
+Example
+Samsung M35
+Device ID
+Android Version
+IMEI (or Android ID)
+Last Sync
+Last Login
+Current User
+Battery
+Location
+
+You can
+Approve
+Reject
+Lock
+Logout
+Disable
+Rename
+Transfer
+
+Remote Device Control
+If staff resign
+Super Admin
+↓
+Select Device
+↓
+Revoke License
+↓
+Logout
+↓
+Erase Local Database when device reconnects
+↓
+Disable Login
+
+Staff Management
+Property Owner creates staff.
+Roles
+Owner
+Manager
+Reception
+Cashier
+Housekeeping
+Maintenance
+Restaurant
+Security
+Auditor
+Accountant
+
+Permissions
+Bookings
+Check-in
+Payments
+Expenses
+Reports
+Delete
+Refund
+Room Pricing
+Discount
+Users
+Inventory
+Restaurant
+Settings
+
+Owner Login
+Only one primary owner.
+Can
+Create Staff
+Change Prices
+Manage Subscription
+Manage Devices
+View All Reports
+Approve Refunds
+Manage Settings
+
+Staff Login
+Reception
+Can
+Create Booking
+Check In
+Check Out
+Collect Payments
+View Rooms
+Cannot
+Delete Data
+Change Subscription
+Manage Users
+Export Data
+
+Housekeeping
+Only
+Cleaning
+Laundry
+Room Status
+Lost and Found
+Maintenance
+
+Restaurant
+Orders
+Kitchen
+Billing
+Stock
+
+Accountant
+Payments
+Expenses
+GST
+Reports
+Invoices
+
+Sales Team Portal
+Pinesphere sales team.
+Features
+Lead Management
+Demo Booking
+Quotation
+Trial Activation
+Customer Conversion
+Renewal Reminder
+Commission
+Pipeline
+
+Support Portal
+Support engineers.
+Can
+View Logs
+View Sync Status
+Reset Password
+Reset License
+Force Sync
+View Errors
+
+Generate Backup
+Restore Backup
+Chat with Customer
+Remote Diagnostics
+
+Billing Module
+Generate
+Invoices
+GST Bills
+Renewals
+Receipts
+Credit Notes
+Coupons
+Discounts
+Promo Codes
+Affiliate Commission
+
+Notification Center
+Automatic
+Subscription Expiry
+Low Storage
+Failed Backup
+Sync Failure
+Device Offline
+Payment Success
+New Booking
+Review Received
+
+Analytics
+Most Popular Plans
+Revenue
+Churn Rate
+Retention
+Occupancy
+Average Revenue per Property
+Support Calls
+Renewal %
+Payment Success
+Device Usage
+WhatsApp Usage
+
+Audit Log
+Every activity is recorded.
+Example
+09:15 AM
+Reception
+Created Booking
+
+Room 203
+-------------------09:22 AM
+Owner
+Changed Room Price
+₹2000 → ₹2500
+
+--------------------
+
+09:45 AM
+Super Admin
+Extended Subscription
+30 Days
+Nothing can be deleted from the audit log.
+
+Recommended Role Matrix
+
+Module
+
+Sup
+er
+Ad
+min
+
+Owner
+
+Manag
+er
+
+Recep
+tion
+
+Houseke
+eping
+
+Limite
+d
+
+Update
+Status
+
+Accou
+ntant
+
+Guest
+
+Property
+Onboar
+ding
+Subscri
+ption
+Manage
+ment
+
+View/R
+enew
+
+User &
+Role
+Manage
+ment
+
+Limited
+
+Device
+Manage
+ment
+
+View
+
+Room
+Manage
+ment
+
+Vie
+w
+
+Booking
+Manage
+ment
+
+Vie
+w
+
+View
+
+View
+
+Create/M
+anage
+Own
+
+Module
+
+Sup
+er
+Ad
+min
+
+Checkin /
+Checkout
+
+Vie
+w
+
+Paymen
+ts
+
+Vie
+w
+
+Reports
+
+Glo
+bal
+
+Full
+
+Full
+
+Propert
+y Only
+
+Audit
+Logs
+
+Owner
+
+Manag
+er
+
+Recep
+tion
+
+Limited
+
+Collec
+t
+
+Operati
+onal
+
+Limite
+d
+
+Limited
+
+Own
+Action
+s
+
+Houseke
+eping
+
+Accou
+ntant
+
+Guest
+
+View
+
+Digital
+Check-in
+
+Pay
+Online
+Financi
+al
+Own
+Actions
+
+Own Stay
+
+Financi
+al
+
+connectivity returns, and securely manage owner, manager, staff, and guest access
+through role-based permissions.
+
+

@@ -1,0 +1,956 @@
+Pinesphere Stay
+Functional Design Document
+Modules: Check-In, Check-Out & Payments
+This document summarizes the workflows, fields, validations, database entities, user
+permissions, and future enhancements for the core operational modules of Pinesphere Stay.
+
+1. Overall Workflow
+Booking Created
+↓
+Guest Arrival
+↓
+Check-In
+↓
+Stay Period
+↓
+Additional Charges (Restaurant/Laundry/etc.)
+↓
+Check-Out
+↓
+Payment Settlement
+↓
+Invoice Generated
+↓
+Room Available
+
+2. Check-In Module
+Objective
+Register guest, verify identity, assign room, collect advance, generate invoice, and mark
+room occupied.
+Workflow
+Guest Arrives → Search Booking/Walk-in → Guest Details → Verify Identity → Assign Room
+→ Collect Advance → Generate Check-In → Invoice → Room Occupied → WhatsApp
+Welcome
+Fields
+ Booking ID, Booking Type, Status, Arrival Date, Departure Date, Nights
+ Adults, Children, Total Guests
+ Guest ID, Full Name, Mobile, Email, Address, City, State, Country
+
+
+
+
+
+
+
+Nationality, DOB, Gender
+ID Type, ID Number, Front/Back Image, OCR Result, Passport, Visa
+Room Number, Room Type, Floor, Occupancy Limit, Extra Bed
+Room Rent, Deposit, Discount, Taxes, Total Payable, Advance Paid, Pending Amount
+Guest Preferences, Notes, Vehicle Number, Emergency Contact
+
+Actions
+ Save
+ Save Offline
+ Print Registration
+ Print Invoice
+ WhatsApp Confirmation
+ Cancel Check-In
+Validations
+ Mandatory mobile and ID
+ Room availability
+ Occupancy limit
+ Duplicate guest detection
+ Deposit validation
+ Offline storage
+Database Entities
+ Guests
+ Bookings
+ CheckIns
+ Rooms
+ RoomAssignments
+ IdentityProofs
+ Invoices
+ Payments
+ GuestPreferences
+
+3. Check-Out Module
+Objective
+Finalize stay, calculate all charges, collect payments, generate invoice, and release room.
+Workflow
+Search Guest → Active Stay → Calculate Bills → Restaurant/Laundry/Mini Bar/Damage →
+Taxes & Discounts → Payment → Invoice → Room Dirty → Housekeeping → Available
+Billing Fields
+ Room Charges
+
+
+
+
+
+
+
+
+
+
+Restaurant Bills
+Laundry
+Mini Bar
+Damage Charges
+Miscellaneous
+Discount
+GST
+Total
+
+Payment Summary
+ Advance Paid
+ Remaining Balance
+ Refund Amount
+ Payment Status
+Database Entities
+ CheckOut
+ Invoices
+ InvoiceItems
+ PaymentTransactions
+ RoomStatus
+ Housekeeping
+ Feedback
+
+4. Payments Module
+Objective
+Manage every financial transaction during the guest lifecycle.
+Payment Sources
+ Booking Advance
+ Deposit
+ Room Rent
+ Restaurant
+ Laundry
+ Mini Bar
+ Extra Bed
+ Damage Charges
+ Other Services
+Payment Methods
+ Cash
+ UPI
+ Credit Card
+
+
+
+
+
+
+Debit Card
+Net Banking
+Wallet
+Split Payment
+
+Payment Fields
+ Transaction ID
+ Invoice Number
+ Guest Name
+ Booking ID
+ Payment Date
+ Payment Mode
+ Amount
+ Reference Number
+ UPI ID
+ Bank Name
+ Card Last 4 Digits
+ Collected By
+ Remarks
+Payment Status
+ Pending
+ Partially Paid
+ Fully Paid
+ Refunded
+ Cancelled
+Database Entities
+ Payments
+ PaymentMethods
+ PaymentTransactions
+ Invoices
+ Receipts
+ Refunds
+ CashRegister
+
+5. Offline Flow
+Collect Payment → Store Locally → Generate Receipt → Internet Available → Background
+Sync → Cloud Updated
+
+6. Integrations
+
+
+
+Check-In: Booking, Guest, Room Management, OCR, WhatsApp, Invoice, Payments
+Check-Out: Housekeeping, Maintenance, Restaurant, Laundry, Inventory, Feedback
+
+
+
+Payments: Accounting, GST, Reports, Refunds, Analytics
+
+7. User Permissions
+Action
+
+Owner
+
+Manager
+
+Reception
+
+Accountant
+
+Create Check-In
+
+✓
+
+✓
+
+✓
+
+✗
+
+Collect
+Payments
+
+✓
+
+✓
+
+✓
+
+✓
+
+Refund
+Payment
+
+✓
+
+Limited
+
+✗
+
+✓
+
+Generate
+Invoice
+
+✓
+
+✓
+
+✓
+
+✓
+
+Complete
+Check-Out
+
+✓
+
+✓
+
+✓
+
+✗
+
+8. Future Enhancements
+
+
+
+
+
+
+
+
+
+AI room assignment
+Face recognition
+OCR ID extraction
+Dynamic pricing
+Self Check-In via Guest Portal
+QR room access
+Automated refunds
+Revenue analytics
+
+Pinesphere Stay - Database Planning (MVP)
+Guests
+Column
+
+Format
+
+Notes
+
+guest_id
+
+UUID (PK)
+
+Unique guest identifier
+
+full_name
+
+TEXT
+
+Guest full name
+
+mobile
+
+TEXT
+
+Primary contact
+
+email
+
+TEXT
+
+Optional
+
+address
+
+TEXT
+
+Address
+
+id_type
+
+ENUM
+
+Aadhaar/Passport/DL
+
+id_number
+
+TEXT
+
+ID number
+
+verification_status
+
+ENUM
+
+Pending/Reception Verified
+
+created_at
+
+DATETIME
+
+Created timestamp
+
+Column
+
+Format
+
+Notes
+
+booking_id
+
+UUID (PK)
+
+Unique booking
+
+guest_id
+
+UUID (FK)
+
+Guest
+
+room_id
+
+UUID (FK)
+
+Room
+
+checkin_date
+
+DATE
+
+Arrival
+
+checkout_date
+
+DATE
+
+Departure
+
+status
+
+ENUM
+
+Booking status
+
+Column
+
+Format
+
+Notes
+
+room_id
+
+UUID (PK)
+
+Unique room
+
+room_number
+
+TEXT
+
+Display number
+
+room_type
+
+TEXT
+
+Category
+
+capacity
+
+INTEGER
+
+Occupancy
+
+price_per_night
+
+DECIMAL
+
+Tariff
+
+status
+
+ENUM
+
+Availability
+
+Column
+
+Format
+
+Notes
+
+checkin_id
+
+UUID (PK)
+
+Unique
+
+booking_id
+
+UUID (FK)
+
+Booking
+
+staff_id
+
+UUID (FK)
+
+Reception
+
+Bookings
+
+Rooms
+
+CheckIns
+
+deposit
+
+DECIMAL
+
+Deposit
+
+checked_in_at
+
+DATETIME
+
+Time
+
+Column
+
+Format
+
+Notes
+
+checkout_id
+
+UUID (PK)
+
+Unique
+
+checkin_id
+
+UUID (FK)
+
+Check-in
+
+checkout_time
+
+DATETIME
+
+Departure
+
+damage_charge
+
+DECIMAL
+
+Damage fee
+
+Column
+
+Format
+
+Notes
+
+invoice_id
+
+UUID (PK)
+
+Unique
+
+booking_id
+
+UUID (FK)
+
+Booking
+
+invoice_number
+
+TEXT
+
+Invoice no
+
+grand_total
+
+DECIMAL
+
+Final amount
+
+Column
+
+Format
+
+Notes
+
+payment_id
+
+UUID (PK)
+
+Unique
+
+invoice_id
+
+UUID (FK)
+
+Invoice
+
+transaction_id
+
+TEXT
+
+Internal ID
+
+reference_number
+
+TEXT
+
+UTR/POS Ref
+
+payment_method
+
+ENUM
+
+Cash/UPI/Card
+
+amount
+
+DECIMAL
+
+Received
+
+status
+
+ENUM
+
+Payment status
+
+Column
+
+Format
+
+Notes
+
+proof_id
+
+UUID (PK)
+
+Unique
+
+guest_id
+
+UUID (FK)
+
+Guest
+
+image_path
+
+TEXT
+
+Encrypted image
+
+ocr_json
+
+JSON
+
+OCR output
+
+verified_by
+
+UUID (FK)
+
+Staff
+
+Format
+
+Notes
+
+CheckOuts
+
+Invoices
+
+Payments
+
+IdentityProofs
+
+Staff
+Column
+
+staff_id
+
+UUID (PK)
+
+Employee
+
+name
+
+TEXT
+
+Name
+
+role
+
+ENUM
+
+Role
+
+mobile
+
+TEXT
+
+Phone
+
+Column
+
+Format
+
+Notes
+
+log_id
+
+UUID (PK)
+
+Unique
+
+user_id
+
+UUID
+
+Actor
+
+action
+
+TEXT
+
+Action
+
+entity
+
+TEXT
+
+Module
+
+timestamp
+
+DATETIME
+
+Time
+
+AuditLogs
+
+Pinesphere Stay
+Housekeeping & Maintenance Module Plan +
+Database Plan
+Module Objective: Manage room cleaning, inspections, maintenance requests, task assignments,
+and room readiness while working completely offline.
+
+Workflow
+Guest Checks Out → Room marked Dirty → Housekeeping Task Created → Staff Assigned →
+Cleaning Checklist Completed → Inspection → If issue found → Maintenance Ticket → Technician
+Assigned → Repair Completed → Final Inspection → Room Available
+
+Housekeeping Features
+• Room cleaning queue
+• Assign housekeeping staff
+• Cleaning checklist
+• Photo before/after cleaning
+• Lost & Found
+• Laundry status
+• Cleaning remarks
+• Room ready notification
+• Offline task management
+
+Maintenance Features
+• Create maintenance ticket
+• Priority (Low/Medium/High/Critical)
+• Electrical, Plumbing, AC, TV, Furniture categories
+• Assign technician
+• Repair status tracking
+• Cost tracking
+• Photo attachments
+• Room blocking until repaired
+
+Table: HousekeepingTasks
+Column
+
+Format
+
+Notes
+
+task_id
+
+UUID (PK)
+
+Unique task
+
+room_id
+
+UUID (FK)
+
+Room reference
+
+assigned_staff_id
+
+UUID (FK)
+
+Housekeeping staff
+
+status
+
+ENUM
+
+Pending/In Progress/Completed/Inspected
+
+priority
+
+ENUM
+
+Low/Medium/High
+
+checklist_status
+
+JSON
+
+Cleaning checklist results
+
+remarks
+
+TEXT
+
+Cleaner notes
+
+before_photo
+
+TEXT
+
+Encrypted image path
+
+after_photo
+
+TEXT
+
+Encrypted image path
+
+completed_at
+
+DATETIME
+
+Completion time
+
+Table: MaintenanceTickets
+Column
+
+Format
+
+Notes
+
+ticket_id
+
+UUID (PK)
+
+Unique ticket
+
+room_id
+
+UUID (FK)
+
+Affected room
+
+reported_by
+
+UUID (FK)
+
+Staff who reported
+
+assigned_to
+
+UUID (FK)
+
+Technician
+
+category
+
+ENUM
+
+Electrical/AC/Plumbing/etc.
+
+priority
+
+ENUM
+
+Low/Medium/High/Critical
+
+issue_description
+
+TEXT
+
+Problem details
+
+status
+
+ENUM
+
+Open/In Progress/Resolved/Closed
+
+repair_cost
+
+DECIMAL
+
+Repair expense
+
+created_at
+
+DATETIME
+
+Created time
+
+resolved_at
+
+DATETIME
+
+Completion time
+
+Column
+
+Format
+
+Notes
+
+item_id
+
+UUID (PK)
+
+Unique item
+
+room_id
+
+UUID (FK)
+
+Found in room
+
+description
+
+TEXT
+
+Item details
+
+found_by
+
+UUID (FK)
+
+Staff
+
+status
+
+ENUM
+
+Stored/Returned/Disposed
+
+photo
+
+TEXT
+
+Image path
+
+Table: LostAndFound
+
+Table: RoomInspection
+Column
+
+Format
+
+Notes
+
+inspection_id
+
+UUID (PK)
+
+Inspection
+
+room_id
+
+UUID (FK)
+
+Room
+
+inspected_by
+
+UUID (FK)
+
+Supervisor
+
+result
+
+ENUM
+
+Pass/Fail
+
+remarks
+
+TEXT
+
+Inspection notes
+
+inspected_at
+
+DATETIME
+
+Timestamp
+
+Relationships
+Rooms → HousekeepingTasks (1:M)
+Rooms → MaintenanceTickets (1:M)
+Rooms → RoomInspection (1:M)
+Staff → HousekeepingTasks (1:M)
+Staff → MaintenanceTickets (1:M)
+
+Status Flow
+Vacant → Dirty → Cleaning → Inspection → Available
+Issue Found → Maintenance → Repaired → Available
+
+Offline Strategy
+All tasks, photos, checklists, and maintenance tickets are stored in the encrypted local database
+and synchronized automatically when internet connectivity returns.
+
+

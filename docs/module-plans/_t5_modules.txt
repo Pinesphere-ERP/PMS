@@ -1,0 +1,1382 @@
+Tab 1
+
+Pinesphere Stay — Module
+Documentation
+Modules covered:
+1.​ Dashboard
+2.​ Property Onboarding
+3.​ Subscription Management
+
+Module 1 — Dashboard
+1.1 Overview
+The Dashboard serves as the Property Owner's landing screen after login. It is designed to
+work fully offline, reading data from the local database and refreshing upon synchronization
+with the cloud.
+
+1.2 KPIs shown on Dashboard
+Field
+
+Description
+
+Today's Arrivals
+
+Number of guests arriving today
+
+Today's Departures
+
+Number of guests leaving today
+
+Occupied Rooms
+
+Currently occupied rooms
+
+Vacant Rooms
+
+Rooms available for booking
+
+Revenue Today
+
+Revenue generated today
+
+Pending Payments
+
+Outstanding payments
+
+Housekeeping Status
+
+Rooms pending/completed housekeeping
+
+Pending Check-outs
+
+Guests yet to check out
+
+Behavior notes
+●​ All KPI values are computed from the local offline database first; when connectivity
+returns, the dashboard reconciles with the cloud copy.
+●​ No KPI requires the internet to render.
+
+Module 2 — Property Onboarding
+2.1 Overview
+Property Onboarding covers how a new property enters the Pinesphere SaaS platform from Super Admin creation through to the Property Owner's day-to-day dashboard view.
+
+2.2 Users & Access
+Role
+Property
+Owner
+
+Access Level
+
+Primary Surface
+
+View only
+
+Property information, amenities, Dashboard, KPIs
+
+Super Admin All access
+
+Onboarding, full management privilege to add/edit
+details
+
+2.3 Super Admin — Property Onboarding flow
+Purpose: Allow Pinesphere's onboarding/sales team to register a new customer property on
+the platform and issue its offline license.
+Onboarding Flow(include the tab 2 but not make every thing mandatory(said by sir))
+Create Property
+↓
+Business Name
+↓
+Owner Name
+↓
+Mobile Number
+↓
+Email
+↓
+GST
+↓
+PAN
+↓
+Address
+↓
+Location
+↓
+Subscription Plan
+↓
+Number of Rooms
+
+↓
+WhatsApp Number
+↓
+Primary Device
+↓
+Generate License
+↓
+Subscription Payment
+↓
+Send Welcome WhatsApp
+
+Note: Upon subscription, the hotel property owner will exclusively see their own specific
+subscription and billing details.
+
+2.4 Field notes
+●​ Fields captured once at onboarding become the source of truth for billing (GST/PAN),
+communication (WhatsApp Number, Mobile), and licensing (Subscription Plan,
+Number of Rooms, Primary Device).
+●​ "Generate License" issues the encrypted offline license token (device-bound, digitally
+signed) described in Module 2.
+●​ "Send Welcome WhatsApp" is the final step — it delivers app access/activation
+details to the owner over WhatsApp, not email.
+
+2.5 Super Admin — Property Management Dashboard
+Purpose: Central place for Super Admin to view and manage every onboarded property.
+The 1.4 will be inside of this dashboard.
+Capabilities
+●​ Add Property — launches the onboarding flow above.
+●​ Edit Property — update any property record post-onboarding (business details,
+plan, rooms, devices, etc.).
+●​ Delete Property – if required.
+Typical property record fields visible here
+●​ Owner, Subscription Plan, Rooms, Devices, Staff, Revenue, Sync Status, Last Login,
+Support History.
+Available actions on a property record
+●​ Edit, Suspend, Deactivate, Delete, Transfer Ownership, Upgrade, Downgrade, Clone,
+Backup, Restore.​
+
+​
+
+Module 3 — Subscription Management
+3.1 Overview
+Governs how a property's subscription is purchased, tracked, renewed, and enforced —
+including the offline license mechanism, payment reminders, and the ability for Super Admin
+to toggle features or disable subscriptions entirely.
+
+3.2 Users & Access
+
+Role
+Property
+Owner
+
+Access
+Level
+View +
+Payment
+
+Super Admin Full control
+
+Capabilities
+View current plan/status, make payments, view invoices
+View, edit, override, disable, toggle, and manage every
+subscription on the platform
+
+3.3 Property Owner — View & Payment Access
+●​
+●​
+●​
+●​
+
+View current subscription plan, validity, and expiry date.
+View payment history and outstanding dues.
+Make payment (via the WhatsApp-delivered payment link/QR — see 2.6).
+Cannot change plan tier, extend validity, or override enforcement — those are Super
+Admin–only actions.
+
+3.4 Super Admin — Full Control
+Paid Details
+●​ View complete payment/billing history per property: amount, date, plan, payment
+method, invoice/receipt.
+●​ View pending renewals and payment status platform-wide (visible on the Super
+Admin dashboard).
+Disable Feature
+●​ Disables the owner's access to the app/platform outright — a hard block, distinct
+from letting the subscription simply lapse.
+
+●​ Used for manual intervention (e.g., fraud, dispute, policy violation) where Super
+Admin needs to cut off access immediately, independent of the subscription's expiry
+status.
+Toggle (Subscription On/Off)
+●​ A per-property switch that turns the owner's subscription on or off.
+●​ This is the control for standard subscription state — separate from the harder
+"Disable Feature" access block above.
+
+3.5 Renewal Trigger Timing
+●​ Pre-expiry reminder: Payment prompts/notifications are sent starting 3 days before
+the subscription's expiry date.
+●​ Grace period after expiry: After expiry, the owner is given 5 bonus days to pay
+before enforcement kicks in.
+●​ After that, the owner would be able to access only after paying.
+Trigger timeline
+Day -3
+Day 0
+Day 0–5
+Day 5+
+
+→ Renewal reminder sent
+→ Subscription expires (app still fully functional)
+→ Grace period (5 bonus days to pay) — reminders continue
+→ Enforcement escalates
+(new bookings/check-in disabled, reports read-only, export still allowed)
+
+3.6 Payment Delivery — WhatsApp QR
+●​ When a renewal is due, Pinesphere sends the payment QR code directly through
+WhatsApp to the registered number.
+●​ Owner scans/opens the QR, completes payment online (UPI/cards/net banking), and
+the cloud is updated immediately.
+●​ Once the device reconnects, the new license token is downloaded and the offline app
+is updated automatically — no manual re-entry needed.
+
+3.7 Relationship to the Offline License Engine
+●​ Every property holds a locally stored, digitally signed license token (License ID,
+Property ID, Expiry Date, Features, Device Count).
+●​ Subscription Management (this module) is the control plane; the license token is the
+offline enforcement mechanism the app checks locally without needing to call the
+server on every login.
+
+COLOUR PALETTES CHOSEN:
+
+●​
+●​
+●​
+●​
+
+#8aa356
+#5f703a
+#2f2e2a
+#777147
+
+the onboard getting detial
+
+Hotel Owner Onboarding Flow (India)
+This onboarding flow is designed for an Indian hotel booking platform, combining
+industry-standard property onboarding (similar to major OTAs) with additional verification
+steps to ensure only legitimate hotels are listed.
+
+1. Owner Registration
+Basic Details
+●​
+●​
+●​
+●​
+●​
+
+Full Name
+Mobile Number (OTP Verification - Mandatory)
+Email Address (OTP Verification - Mandatory)
+Designation (Owner / Manager / Authorized Representative)
+Alternate Contact Number
+
+Identity Verification (Mandatory)
+●​ PAN Number (Mandatory)
+●​ Aadhaar / Government ID (Optional or Consent-based eKYC)
+●​ Selfie Verification (Optional)
+
+2. Business Information
+Business Details
+●​ Business Type
+○​ Sole Proprietorship
+○​ Partnership
+○​ LLP
+○​ Private Limited
+○​ Trust / Society
+●​ Business Name
+●​ Business Registration Number (if applicable)
+
+Tax Information
+●​ GST Number (Conditional)
+
+●​ GST Certificate (If Applicable)
+●​ PAN
+
+3. Property Information
+Basic Property Details
+●​ Property Name
+●​ Property Type
+○​ Hotel
+○​ Resort
+○​ Homestay
+○​ Villa
+○​ Guest House
+○​ Apartment
+●​ Star Category
+●​ Year Established
+●​ Total Floors
+●​ Total Rooms
+●​ Property Description
+
+4. Property Location
+Address Details
+●​
+●​
+●​
+●​
+●​
+●​
+
+Complete Address
+Landmark
+City
+State
+Country
+Pincode
+
+Location Verification (Mandatory)
+●​
+●​
+●​
+●​
+●​
+
+Latitude
+Longitude
+Google Maps Location
+Live Map Pin
+Geo-location Verification
+
+5. Ownership Details
+Ownership Information
+●​ Owned / Leased
+●​ Ownership Type
+
+Ownership Proof (Mandatory)
+Upload any one of:
+●​
+●​
+●​
+●​
+●​
+
+Sale Deed
+Property Ownership Certificate
+Lease Agreement
+Rental Agreement
+Registered Hotel Management Agreement
+
+Additional Information
+●​ Property Registration Number (if applicable)
+
+6. Room Configuration
+For each room category:
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+
+Room Name
+Room Category
+Number of Rooms
+Maximum Occupancy
+Bed Type
+Room Size
+Smoking / Non-Smoking
+Attached Bathroom
+Balcony
+View
+Air Conditioning
+Room Description
+
+7. Room Amenities
+
+Examples:
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+
+WiFi
+Television
+Air Conditioner
+Mini Refrigerator
+Wardrobe
+Hair Dryer
+Safe Locker
+Coffee Maker
+Work Desk
+Telephone
+Towels
+Toiletries
+
+8. Hotel Amenities
+Examples:
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+
+Free WiFi
+Parking
+Restaurant
+Swimming Pool
+Gym
+Spa
+Lift
+Reception
+Power Backup
+CCTV
+Laundry
+Room Service
+Conference Hall
+Banquet Hall
+Airport Pickup
+Doctor on Call
+
+9. Property Photos (Mandatory)
+Upload high-quality images of:
+●​ Hotel Front View
+
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+
+Exterior
+Reception
+Lobby
+Rooms
+Bathrooms
+Restaurant
+Parking
+Swimming Pool
+Conference Hall
+Facilities
+Hotel Sign Board
+
+Photo Verification
+●​ AI Quality Check
+●​ Duplicate Image Detection
+●​ Manual Review (if required)
+
+10. Hotel Policies
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+
+Check-in Time
+Check-out Time
+Cancellation Policy
+Child Policy
+Extra Bed Policy
+Couple Friendly
+Pet Policy
+Smoking Policy
+Alcohol Policy
+Local ID Acceptance
+Visitor Policy
+
+11. Pricing
+For every room type:
+●​
+●​
+●​
+●​
+●​
+
+Base Price
+Weekend Price
+Seasonal Price
+Extra Adult Charges
+Child Charges
+
+●​
+●​
+●​
+●​
+
+Taxes
+Meal Plan
+Breakfast Included
+Refundable / Non-refundable
+
+12. Inventory & Availability
+●​
+●​
+●​
+●​
+●​
+●​
+
+Total Inventory
+Daily Availability
+Block Dates
+Seasonal Availability
+Minimum Stay
+Maximum Stay
+
+13. Bank Details (Mandatory)
+●​
+●​
+●​
+●​
+●​
+●​
+
+Bank Name
+Account Holder Name
+Account Number
+IFSC Code
+Cancelled Cheque
+UPI ID (Optional)
+
+Bank Verification
+●​ Account Holder Name Match
+●​ Penny Drop Verification (Optional)
+
+14. Legal Documents & Compliance
+Mandatory Documents
+Identity
+●​ PAN Card
+
+Business
+●​ Trade License (Mandatory)
+
+Ownership
+●​ Property Ownership Proof (Mandatory)
+●​ Lease Agreement (If Leased)
+
+Financial
+●​ Cancelled Cheque
+●​ Bank Proof
+
+Property Verification
+●​ Hotel Registration Certificate (if available)
+
+Conditional Documents
+Upload based on property type, size, or local government regulations.
+
+Tax Compliance
+●​ GST Registration Certificate
+
+Safety Compliance
+●​ Fire Safety Certificate / Fire NOC
+
+Building Compliance
+●​ Occupancy Certificate (OC)
+
+Lift Compliance
+●​ Lift Safety Certificate (If Lift Exists)
+
+Tourism Registration
+●​ State Tourism Department Registration
+●​ Ministry of Tourism Registration (Optional but Recommended)
+
+15. Verification & Review
+Automatic Verification
+●​
+●​
+●​
+●​
+●​
+●​
+
+Mobile OTP
+Email OTP
+PAN Validation
+GST Validation (If Applicable)
+Bank Verification
+Google Maps Verification
+
+Manual Verification
+Operations Team verifies:
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+
+Property Ownership
+Trade License
+Government Documents
+Uploaded Photos
+Hotel Address
+Google Maps Location
+Website / Social Presence (if available)
+
+Risk Assessment
+The platform calculates a verification score based on:
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+Status:
+●​
+●​
+●​
+
+Identity Verification
+Business Verification
+Ownership Proof
+Trade License
+Government Compliance
+Bank Verification
+Property Photos
+Map Verification
+
+✅ Verified → Property Published
+🟡 Manual Review Required
+❌ Rejected
+
+Registration Workflow
+Owner Registration
+↓
+Mobile OTP & Email OTP Verification
+↓
+Business & PAN Verification
+↓
+Property Information
+↓
+Property Address & Google Map Verification
+↓
+Ownership Details & Ownership Proof
+↓
+Room Configuration
+↓
+Amenities
+↓
+Property Photo Upload & AI Verification
+↓
+Hotel Policies
+↓
+Pricing & Inventory
+↓
+Bank Details & Verification
+↓
+Upload Legal Documents
+│
+├── Mandatory
+│
+• PAN
+│
+• Trade License
+│
+• Ownership/Lease Proof
+│
+• Bank Proof
+│
+└── Conditional
+• GST Certificate
+• Fire Safety Certificate
+• Occupancy Certificate
+• Lift Certificate
+• Tourism Registration
+↓
+Automated Verification
+↓
+Manual Review (if required)
+↓
+Approval
+↓
+
+Property Goes Live
+
+Recommended Module Breakdown
+Ste
+p
+
+Module
+
+1
+
+Owner Registration & OTP Verification
+
+2
+
+Business & Tax Information
+
+3
+
+Property Information
+
+4
+
+Property Address & Map Verification
+
+5
+
+Ownership Verification
+
+6
+
+Room Configuration
+
+7
+
+Amenities
+
+8
+
+Property Photos
+
+9
+
+Hotel Policies
+
+10
+
+Pricing & Inventory
+
+11
+
+Bank Details & Verification
+
+12
+
+Legal Documents & Compliance
+
+13
+
+Verification, Risk Assessment & Approval
+
+schema
+
+-=====================================================================
+-- PINESPHERE STAY — DATABASE SCHEMA
+-- Covers: Dashboard, Property Onboarding (Super Admin + India OTA-style
+-- owner onboarding), Subscription Management, Licensing
+-- Dialect: PostgreSQL (adapt types for MySQL/SQLite as needed)
+-=====================================================================
+-- ---------------------------------------------------------------------- MODULE A: OWNERS & ACCESS
+-- --------------------------------------------------------------------CREATE TABLE owners (
+owner_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+full_name
+VARCHAR(150) NOT NULL,
+designation
+VARCHAR(50),
+-- Owner / Manager / Authorized Rep
+mobile_number
+VARCHAR(15) NOT NULL UNIQUE,
+mobile_verified
+BOOLEAN DEFAULT FALSE,
+alternate_contact VARCHAR(15),
+email
+VARCHAR(150) NOT NULL UNIQUE,
+email_verified
+BOOLEAN DEFAULT FALSE,
+pan_number
+VARCHAR(10),
+aadhaar_number
+VARCHAR(20),
+-- optional / consent-based eKYC
+ekyc_consent
+BOOLEAN DEFAULT FALSE,
+selfie_url
+TEXT,
+password_hash
+TEXT,
+created_at
+TIMESTAMP DEFAULT now(),
+updated_at
+TIMESTAMP DEFAULT now()
+);
+-- ---------------------------------------------------------------------- MODULE B: BUSINESS & TAX INFORMATION
+-- --------------------------------------------------------------------CREATE TABLE businesses (
+business_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+owner_id
+UUID NOT NULL REFERENCES owners(owner_id),
+business_type
+VARCHAR(30), -- Sole Prop / Partnership / LLP / Pvt Ltd / Trust
+business_name
+VARCHAR(200) NOT NULL,
+business_reg_number VARCHAR(50),
+gst_number
+VARCHAR(15),
+gst_certificate_url TEXT,
+pan_number
+VARCHAR(10),
+created_at
+TIMESTAMP DEFAULT now()
+);
+-- ---------------------------------------------------------------------
+
+-- MODULE C: PROPERTY
+-- --------------------------------------------------------------------CREATE TABLE properties (
+property_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+business_id
+UUID NOT NULL REFERENCES businesses(business_id),
+owner_id
+UUID NOT NULL REFERENCES owners(owner_id),
+property_name
+VARCHAR(200) NOT NULL,
+property_type
+VARCHAR(30), -- Hotel / Resort / Homestay / Villa / Guest House /
+Apartment
+star_category
+SMALLINT,
+year_established
+SMALLINT,
+total_floors
+SMALLINT,
+total_rooms
+INT,
+description
+TEXT,
+primary_device_id
+UUID,
+-- FK added after devices table is created (see ALTER
+at bottom)
+whatsapp_number
+VARCHAR(15),
+onboarding_status
+VARCHAR(20) DEFAULT 'draft', -- draft/pending/verified/rejected
+created_by_admin_id UUID,
+-- super admin who onboarded (nullable if
+self-onboarded)
+created_at
+TIMESTAMP DEFAULT now(),
+updated_at
+TIMESTAMP DEFAULT now()
+);
+CREATE TABLE users (
+-- staff / app login accounts
+user_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID REFERENCES properties(property_id),
+name
+VARCHAR(150) NOT NULL,
+role
+VARCHAR(30) NOT NULL,
+-- property_owner / super_admin / staff
+mobile_number
+VARCHAR(15),
+email
+VARCHAR(150),
+access_level
+VARCHAR(20) DEFAULT 'view', -- view_only / full
+is_active
+BOOLEAN DEFAULT TRUE,
+created_at
+TIMESTAMP DEFAULT now()
+);
+CREATE TABLE property_addresses (
+address_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+address_line
+TEXT NOT NULL,
+landmark
+VARCHAR(150),
+city
+VARCHAR(100),
+state
+VARCHAR(100),
+country
+VARCHAR(100) DEFAULT 'India',
+pincode
+VARCHAR(10),
+latitude
+DECIMAL(9,6),
+longitude
+DECIMAL(9,6),
+
+google_maps_url
+TEXT,
+geo_verified
+BOOLEAN DEFAULT FALSE
+);
+CREATE TABLE ownership_details (
+ownership_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+ownership_status
+VARCHAR(10), -- owned / leased
+ownership_type
+VARCHAR(50),
+property_reg_number VARCHAR(50)
+);
+CREATE TABLE ownership_documents (
+document_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+document_type
+VARCHAR(50), -sale_deed/ownership_certificate/lease_agreement/rental_agreement/hotel_mgmt_agreemen
+t
+file_url
+TEXT NOT NULL,
+uploaded_at
+TIMESTAMP DEFAULT now()
+);
+-- ---------------------------------------------------------------------- MODULE D: ROOMS, AMENITIES, PRICING, INVENTORY
+-- --------------------------------------------------------------------CREATE TABLE room_categories (
+room_category_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+room_name
+VARCHAR(100),
+category_name
+VARCHAR(100),
+number_of_rooms
+INT,
+max_occupancy
+SMALLINT,
+bed_type
+VARCHAR(50),
+room_size_sqft
+DECIMAL(6,2),
+smoking_allowed
+BOOLEAN DEFAULT FALSE,
+attached_bathroom
+BOOLEAN DEFAULT TRUE,
+has_balcony
+BOOLEAN DEFAULT FALSE,
+view_type
+VARCHAR(50),
+has_ac
+BOOLEAN DEFAULT FALSE,
+description
+TEXT
+);
+CREATE TABLE rooms (
+-- individual physical room instances
+room_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+room_category_id
+UUID NOT NULL REFERENCES
+room_categories(room_category_id),
+room_number
+VARCHAR(20) NOT NULL,
+
+floor
+SMALLINT,
+housekeeping_status
+VARCHAR(20) DEFAULT 'clean', -- clean/pending/in_progress
+occupancy_status
+VARCHAR(20) DEFAULT 'vacant' -vacant/occupied/maintenance
+);
+CREATE TABLE amenities (
+-- shared lookup for room + hotel
+amenities
+amenity_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+name
+VARCHAR(100) NOT NULL,
+scope
+VARCHAR(10) NOT NULL
+-- room / hotel
+);
+CREATE TABLE room_category_amenities (
+room_category_id
+UUID REFERENCES room_categories(room_category_id),
+amenity_id
+UUID REFERENCES amenities(amenity_id),
+PRIMARY KEY (room_category_id, amenity_id)
+);
+CREATE TABLE property_amenities (
+property_id
+UUID REFERENCES properties(property_id),
+amenity_id
+UUID REFERENCES amenities(amenity_id),
+PRIMARY KEY (property_id, amenity_id)
+);
+CREATE TABLE room_pricing (
+pricing_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+room_category_id
+UUID NOT NULL REFERENCES
+room_categories(room_category_id),
+base_price
+DECIMAL(10,2) NOT NULL,
+weekend_price
+DECIMAL(10,2),
+seasonal_price
+DECIMAL(10,2),
+extra_adult_charge
+DECIMAL(10,2),
+child_charge
+DECIMAL(10,2),
+tax_percent
+DECIMAL(5,2),
+meal_plan
+VARCHAR(30),
+breakfast_included
+BOOLEAN DEFAULT FALSE,
+refundable
+BOOLEAN DEFAULT TRUE,
+effective_from
+DATE DEFAULT CURRENT_DATE
+);
+CREATE TABLE room_inventory (
+inventory_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+room_category_id
+UUID NOT NULL REFERENCES
+room_categories(room_category_id),
+date
+DATE NOT NULL,
+total_inventory
+INT NOT NULL,
+available_count
+INT NOT NULL,
+
+is_blocked
+BOOLEAN DEFAULT FALSE,
+min_stay
+SMALLINT DEFAULT 1,
+max_stay
+SMALLINT,
+UNIQUE (room_category_id, date)
+);
+CREATE TABLE hotel_policies (
+policy_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+check_in_time
+TIME,
+check_out_time
+TIME,
+cancellation_policy
+TEXT,
+child_policy
+TEXT,
+extra_bed_policy
+TEXT,
+couple_friendly
+BOOLEAN DEFAULT TRUE,
+pet_policy
+TEXT,
+smoking_policy
+TEXT,
+alcohol_policy
+TEXT,
+local_id_acceptance
+TEXT,
+visitor_policy
+TEXT
+);
+CREATE TABLE property_photos (
+photo_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+photo_type
+VARCHAR(30), -front_view/exterior/reception/lobby/room/bathroom/etc.
+file_url
+TEXT NOT NULL,
+ai_quality_check_status
+VARCHAR(20) DEFAULT 'pending',
+duplicate_check_status
+VARCHAR(20) DEFAULT 'pending',
+manual_review_status
+VARCHAR(20) DEFAULT 'not_required',
+uploaded_at
+TIMESTAMP DEFAULT now()
+);
+-- ---------------------------------------------------------------------- MODULE E: BANK, LEGAL DOCUMENTS, VERIFICATION, RISK
+-- --------------------------------------------------------------------CREATE TABLE bank_details (
+bank_detail_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+bank_name
+VARCHAR(100),
+account_holder_name
+VARCHAR(150),
+account_number
+VARCHAR(30),
+ifsc_code
+VARCHAR(11),
+cancelled_cheque_url
+TEXT,
+upi_id
+VARCHAR(80),
+account_holder_match_status VARCHAR(20) DEFAULT 'pending',
+
+penny_drop_status
+
+VARCHAR(20) DEFAULT 'not_started'
+
+);
+CREATE TABLE legal_documents (
+legal_document_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+document_type
+VARCHAR(50), -pan_card/trade_license/ownership_proof/gst_certificate/fire_noc/occupancy_certificate/lift_c
+ertificate/tourism_registration/...
+is_mandatory
+BOOLEAN DEFAULT TRUE,
+file_url
+TEXT NOT NULL,
+status
+VARCHAR(20) DEFAULT 'pending',
+uploaded_at
+TIMESTAMP DEFAULT now()
+);
+CREATE TABLE verification_records (
+verification_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+verification_type
+VARCHAR(40), -mobile_otp/email_otp/pan_validation/gst_validation/bank_verification/maps_verification/man
+ual_*
+status
+VARCHAR(20) DEFAULT 'pending',
+verified_by_user_id
+UUID REFERENCES users(user_id),
+verified_at
+TIMESTAMP
+);
+CREATE TABLE risk_assessment_scores (
+score_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+identity_score
+SMALLINT,
+business_score
+SMALLINT,
+ownership_score
+SMALLINT,
+trade_license_score
+SMALLINT,
+compliance_score
+SMALLINT,
+bank_score
+SMALLINT,
+photo_score
+SMALLINT,
+map_score
+SMALLINT,
+total_score
+SMALLINT,
+final_status
+VARCHAR(20), -- verified/manual_review/rejected
+computed_at
+TIMESTAMP DEFAULT now()
+);
+-- ---------------------------------------------------------------------- MODULE F: SUBSCRIPTION, PAYMENTS, LICENSING, DEVICES
+-- --------------------------------------------------------------------CREATE TABLE subscription_plans (
+plan_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+plan_name
+price
+duration_days
+max_devices
+features
+
+VARCHAR(50) NOT NULL,
+DECIMAL(10,2) NOT NULL,
+INT NOT NULL,
+SMALLINT DEFAULT 1,
+JSONB
+
+);
+CREATE TABLE subscriptions (
+subscription_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+plan_id
+UUID NOT NULL REFERENCES subscription_plans(plan_id),
+start_date
+DATE NOT NULL,
+expiry_date
+DATE NOT NULL,
+status
+VARCHAR(20) DEFAULT 'active', -- active/expired/grace/enforced
+toggle_status
+VARCHAR(10) DEFAULT 'on',
+-- on/off (standard control)
+is_disabled
+BOOLEAN DEFAULT FALSE,
+-- hard block (fraud/dispute)
+disabled_reason
+TEXT,
+created_at
+TIMESTAMP DEFAULT now()
+);
+CREATE TABLE subscription_payments (
+payment_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+subscription_id
+UUID NOT NULL REFERENCES subscriptions(subscription_id),
+amount
+DECIMAL(10,2) NOT NULL,
+payment_date
+TIMESTAMP DEFAULT now(),
+payment_method
+VARCHAR(30), -- UPI/card/net_banking
+invoice_number
+VARCHAR(50),
+receipt_url
+TEXT,
+status
+VARCHAR(20) DEFAULT 'success'
+);
+CREATE TABLE devices (
+device_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+device_name
+VARCHAR(100),
+device_type
+VARCHAR(30),
+is_primary
+BOOLEAN DEFAULT FALSE,
+registered_at
+TIMESTAMP DEFAULT now()
+);
+CREATE TABLE license_tokens (
+license_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+device_id
+UUID REFERENCES devices(device_id),
+expiry_date
+DATE NOT NULL,
+device_count
+SMALLINT DEFAULT 1,
+features
+JSONB,
+signature
+TEXT NOT NULL, -- digital signature of the signed token
+
+issued_at
+
+TIMESTAMP DEFAULT now()
+
+);
+-- ---------------------------------------------------------------------- MODULE G: BOOKINGS & DASHBOARD (supports offline-first KPIs)
+-- --------------------------------------------------------------------CREATE TABLE bookings (
+booking_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+room_id
+UUID NOT NULL REFERENCES rooms(room_id),
+guest_name
+VARCHAR(150),
+guest_contact
+VARCHAR(15),
+check_in_date
+DATE NOT NULL,
+check_out_date
+DATE NOT NULL,
+actual_check_in
+TIMESTAMP,
+actual_check_out
+TIMESTAMP,
+booking_status
+VARCHAR(20) DEFAULT 'confirmed', -confirmed/checked_in/checked_out/cancelled
+amount
+DECIMAL(10,2),
+payment_status
+VARCHAR(20) DEFAULT 'pending',
+sync_status
+VARCHAR(10) DEFAULT 'synced', -- synced/pending
+(offline-first)
+created_at
+TIMESTAMP DEFAULT now()
+);
+CREATE TABLE daily_kpi_snapshots (
+-- optional cache table for fast offline dashboard
+reads
+snapshot_id
+UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+property_id
+UUID NOT NULL REFERENCES properties(property_id),
+snapshot_date
+DATE NOT NULL,
+arrivals_count
+INT DEFAULT 0,
+departures_count
+INT DEFAULT 0,
+occupied_rooms
+INT DEFAULT 0,
+vacant_rooms
+INT DEFAULT 0,
+revenue_today
+DECIMAL(12,2) DEFAULT 0,
+pending_payments_amount
+DECIMAL(12,2) DEFAULT 0,
+pending_checkouts
+INT DEFAULT 0,
+housekeeping_pending
+INT DEFAULT 0,
+housekeeping_completed
+INT DEFAULT 0,
+sync_status
+VARCHAR(10) DEFAULT 'synced',
+UNIQUE (property_id, snapshot_date)
+);
+-- Deferred FK (devices table did not exist when properties was created)
+ALTER TABLE properties
+ADD CONSTRAINT fk_properties_primary_device
+FOREIGN KEY (primary_device_id) REFERENCES devices(device_id);
+
+-=====================================================================
+-- INDEXES (common lookups)
+-=====================================================================
+CREATE INDEX idx_properties_business ON properties(business_id);
+CREATE INDEX idx_properties_owner
+ON properties(owner_id);
+CREATE INDEX idx_rooms_category
+ON rooms(room_category_id);
+CREATE INDEX idx_bookings_property ON bookings(property_id);
+CREATE INDEX idx_bookings_dates
+ON bookings(check_in_date, check_out_date);
+CREATE INDEX idx_subscriptions_property ON subscriptions(property_id);
+CREATE INDEX idx_license_property
+ON license_tokens(property_id);
+CREATE INDEX idx_kpi_property_date ON daily_kpi_snapshots(property_id,
+snapshot_date);
+
+

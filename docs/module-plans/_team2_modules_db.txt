@@ -1,0 +1,186 @@
+Pinesphere Stay
+Room Management, Booking Management & Guest
+Management
+Workflow, Pages & Database Structure
+1. Room Management
+Pages
+Page
+
+Purpose
+
+Room Dashboard
+
+KPIs & Quick Actions
+
+Room Types
+
+Manage room categories
+
+Room List
+
+View all rooms
+
+Room Details
+
+General, Photos, Amenities, History
+
+Pricing
+
+Base/Weekend/Seasonal pricing
+
+Maintenance
+
+Cleaning & maintenance
+
+Workflow
+Dashboard → Room Types → Add Room → Room List → Room Details → Pricing → Available →
+Booking → Occupied → Checkout → Cleaning → Available
+
+Database Structure
+Table
+
+Important Fields
+
+room_types
+
+id, property_id, name, max_adults, max_children, base_price
+
+rooms
+
+id, room_number, room_type_id, floor, status, price_override
+
+room_photos
+
+id, room_id, image_url
+
+amenities
+
+id, name, icon
+
+room_amenities
+
+room_id, amenity_id
+
+room_blocks
+
+room_id, reason, start_date, end_date
+
+maintenance
+
+room_id, issue, priority, assigned_staff, status
+
+cleaning_schedule
+
+room_id, assigned_staff, scheduled_date, status
+
+2. Booking Management
+Pages
+Page
+
+Purpose
+
+Booking Dashboard
+
+Daily booking overview
+
+Booking List
+
+Manage bookings
+
+New Booking
+
+Single-page booking wizard
+
+Booking Details
+
+Guest & payment details
+
+Check-in
+
+Verify guest & assign room
+
+Check-out
+
+Billing & invoice
+
+Workflow
+Dashboard → New Booking → Search Dates → Available Rooms → Select/Create Guest →
+Payment → Booking Confirmed → Check-in → Stay → Check-out → Invoice → Housekeeping
+
+Database Structure
+Table
+
+Important Fields
+
+bookings
+
+id, booking_no, guest_id, room_id, check_in, check_out, status, total
+
+booking_guests
+
+booking_id, guest_id
+
+booking_payments
+
+booking_id, amount, payment_mode, status
+
+booking_documents
+
+booking_id, document_type, file_url
+
+booking_activity
+
+booking_id, activity, performed_by, timestamp
+
+3. Guest Management
+Pages
+Page
+
+Purpose
+
+Guest Dashboard
+
+Guest KPIs
+
+Guest List
+
+Search/Add Guest
+
+Guest Profile
+
+Personal, Documents, Bookings, Payments
+
+Guest History
+
+Past stays & feedback
+
+Workflow
+Guest Dashboard → Guest List → Search Guest → Existing? (Open Profile) / New? (Register) →
+Create Booking → Stay Completed → Guest History Updated
+
+Database Structure
+Table
+
+Important Fields
+
+guests
+
+id, first_name, last_name, phone, email, nationality, vip
+
+guest_documents
+
+guest_id, document_type, document_no, verified
+
+guest_preferences
+
+guest_id, preference
+
+guest_history
+
+guest_id, booking_id, stay_date
+
+guest_feedback
+
+guest_id, booking_id, rating, comments
+
+

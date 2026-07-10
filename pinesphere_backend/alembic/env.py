@@ -9,6 +9,7 @@ from alembic import context
 
 from src.core.config import settings
 from src.infra.database import Base
+import src.infra.models
 
 # Import all models here so Alembic can discover them
 from src.domain.auth.models import *

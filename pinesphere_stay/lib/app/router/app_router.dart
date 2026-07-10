@@ -14,6 +14,9 @@ import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart
 import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
 import '../../features/rooms/presentation/screens/occupied_rooms_screen.dart';
 import '../../features/rooms/presentation/screens/vacant_rooms_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeping_screen.dart';
+import '../../features/bookings/presentation/screens/pending_payments_screen.dart';
+import '../../features/reports/presentation/screens/todays_revenue_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -98,6 +101,18 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/vacant-rooms',
                 builder: (context, state) => const VacantRoomsScreen(),
+              ),
+              GoRoute(
+                path: '/housekeeping',
+                builder: (context, state) => const HousekeepingScreen(),
+              ),
+              GoRoute(
+                path: '/pending-payments',
+                builder: (context, state) => const PendingPaymentsScreen(),
+              ),
+              GoRoute(
+                path: '/todays-revenue',
+                builder: (context, state) => const TodaysRevenueScreen(),
               ),
             ],
           ),

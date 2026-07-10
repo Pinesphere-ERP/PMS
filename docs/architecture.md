@@ -64,3 +64,33 @@ The core innovation of Pinesphere Stay is the Sync Engine, designed to handle as
 
 ### Conflict Resolution
 - **Hybrid Logical Clocks (HLC)**: Every mutation is tagged with an HLC timestamp. If two devices modify the same room while offline, the backend uses these HLCs to determine the exact sequence of events, ensuring absolute consistency regardless of physical network delays.
+
+---
+
+## 5. Audit Logs (Module 14)
+
+The audit logging system provides tamper-evident, append-only records of all data mutations across the system.
+
+### Backend
+- **Model**: `AuditLog` (PostgreSQL) — immutable table with hash chain (`entry_hash`, `previous_log_hash`), no SyncMixin (tamper-evidence).
+- **Hash Chain**: `entry_hash = SHA-256(previous_hash || timestamp || user_id || action || old_value || new_value)`. Genesis hash is `"0" * 64`. Per-property chain isolation.
+- **DB-Level Revocation**: `REVOKE UPDATE, DELETE ON audit_logs FROM pinesphere` prevents even superuser modification. A trigger blocks `TRUNCATE`.
+- **Service**: `app/modules/audit/service.py` — `log_entry()`, `log_entry_sync()`, `query_logs()` (paginated/filtered), `verify_chain()`.
+- **API**: `GET /audit/` (query with filters), `GET /audit/verify` (chain verification).
+- **AuditLogger Helper**: `app/modules/audit/logger.py` — `AuditLogger.log()` (async), `AuditLogger.log_sync()` (sync).
+
+### Module Wiring (Phase 4)
+All existing mutation points use `AuditLogger`:
+- **Housekeeping**: create_task, update_task, inspect_task, create_maintenance_ticket, update_maintenance_ticket
+- **Check-in**: perform_checkin, cancel_checkin
+- **Checkout**: perform_checkout
+- **Devices**: register_device, admin_action, sync_checkin
+- **Staff**: create_staff, update_staff, delete_staff
+- **Payments**: create_payment
+- **Bookings**: create_booking, update_booking, cancel_booking
+- **Auth**: login (success + failure), logout
+
+### Mobile (Flutter)
+- **Entity**: `AuditLogEntity` (ObjectBox) — mirrors backend schema with hash chain fields.
+- **Local Service**: `features/audit/data/audit_service.dart` — local hash chain computation, query, verification.
+- **UI**: `features/audit/presentation/screens/audit_logs_screen.dart` — read-only log viewer with chain verification status.

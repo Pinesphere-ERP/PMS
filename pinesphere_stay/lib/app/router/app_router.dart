@@ -24,6 +24,7 @@ import '../../features/checkin/presentation/screens/checkin_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
+import '../../features/audit/presentation/screens/audit_logs_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -86,6 +87,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/property-settings',
         builder: (context, state) => const PropertySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/audit-logs',
+        builder: (context, state) => const AuditLogsScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

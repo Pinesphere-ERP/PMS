@@ -1,3 +1,4 @@
 pinesphere_backend/venv
 *.pyc
 pinesphere_backend/alembic/versions/
+pinesphere_backend/scratch/

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -30,6 +31,28 @@ class SettingsScreen extends StatelessWidget {
                   _buildMenuGroup(context, [
                     _buildMenuItem(context, Icons.dark_mode_outlined, 'Dark Mode', trailing: Switch(value: false, onChanged: (v){}, activeColor: AppColors.primary)),
                     _buildMenuItem(context, Icons.print_outlined, 'Printer Settings', isLast: true),
+                  ]),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle(context, 'Hardware & Device Management'),
+                  _buildMenuGroup(context, [
+                    _buildMenuItem(
+                      context,
+                      Icons.devices_other,
+                      'Hardware Sync & Security Console',
+                      onTap: () => context.push('/device-status'),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(color: AppColors.secondaryContainer, borderRadius: BorderRadius.circular(999)),
+                        child: Text('Active', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSecondaryFixedVariant, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    _buildMenuItem(
+                      context,
+                      Icons.phonelink_setup,
+                      'Register / Bind Hardware Unit',
+                      onTap: () => context.push('/device-registration'),
+                      isLast: true,
+                    ),
                   ]),
                   const SizedBox(height: 24),
                   _buildSectionTitle(context, 'Data Management'),
@@ -155,11 +178,11 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, {bool isLast = false, Widget? trailing}) {
+  Widget _buildMenuItem(BuildContext context, IconData icon, String title, {bool isLast = false, Widget? trailing, VoidCallback? onTap}) {
     return Column(
       children: [
         InkWell(
-          onTap: () {},
+          onTap: onTap ?? () {},
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
             child: Row(

@@ -21,6 +21,17 @@ const mockSubscriptions = [
 
 export default function SubscriptionManagement() {
   const [selectedProp, setSelectedProp] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleOpenDrawer = (prop) => {
+    setSelectedProp(prop);
+    setTimeout(() => setIsDrawerOpen(true), 10);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setTimeout(() => setSelectedProp(null), 300);
+  };
 
   return (
     <div className="space-y-6 animate-slide-up relative">
@@ -74,7 +85,7 @@ export default function SubscriptionManagement() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {mockSubscriptions.map((sub) => (
-                <tr key={sub.id} className="hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => setSelectedProp(sub)}>
+                <tr key={sub.id} className="hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => handleOpenDrawer(sub)}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{sub.property}</div>
                     <div className="text-sm text-gray-500">{sub.owner}</div>
@@ -112,90 +123,95 @@ export default function SubscriptionManagement() {
       </div>
 
       {/* Slide-over Drawer */}
-      {selectedProp && (
-        <>
-          <div className="saas-drawer-overlay" onClick={() => setSelectedProp(null)} />
-          <div className="saas-drawer flex flex-col">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 sticky top-0 z-10">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">{selectedProp.property}</h2>
-                <p className="text-sm text-gray-500">Managed by {selectedProp.owner}</p>
+      <>
+        <div 
+          className={`saas-drawer-overlay ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
+          onClick={handleCloseDrawer} 
+        />
+        <div className={`saas-drawer flex flex-col w-[500px] max-w-full ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          {selectedProp && (
+            <>
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 shrink-0 z-10">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">{selectedProp.property}</h2>
+                  <p className="text-sm text-gray-500">Managed by {selectedProp.owner}</p>
+                </div>
+                <button onClick={handleCloseDrawer} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button onClick={() => setSelectedProp(null)} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            <div className="p-6 space-y-8 flex-1">
-              {/* Subscription Info */}
-              <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Subscription Details</h3>
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">Current Plan</span>
-                    <span className="text-sm font-medium text-gray-900 bg-white px-2 py-1 rounded border border-gray-200">{selectedProp.plan}</span>
+              <div className="p-6 space-y-8 flex-1 overflow-y-auto">
+                {/* Subscription Info */}
+                <section>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Subscription Details</h3>
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">Current Plan</span>
+                      <span className="text-sm font-medium text-gray-900 bg-white px-2 py-1 rounded border border-gray-200">{selectedProp.plan}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">Status</span>
+                      <span className={`status-badge ${selectedProp.status === 'Active' ? 'status-active' : selectedProp.status === 'Expired' ? 'status-error' : 'status-pending'}`}>{selectedProp.status}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">Expiry Date</span>
+                      <span className="text-sm font-medium text-gray-900">{selectedProp.expiry}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">Status</span>
-                    <span className={`status-badge ${selectedProp.status === 'Active' ? 'status-active' : selectedProp.status === 'Expired' ? 'status-error' : 'status-pending'}`}>{selectedProp.status}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">Expiry Date</span>
-                    <span className="text-sm font-medium text-gray-900">{selectedProp.expiry}</span>
-                  </div>
-                </div>
-              </section>
+                </section>
 
-              {/* License Info */}
-              <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">License Information</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm">
-                    <ShieldCheck className="h-4 w-4 text-green-500 mr-2" />
-                    <span className="text-gray-600 flex-1">Signature Status</span>
-                    <span className="font-medium text-gray-900">Valid</span>
+                {/* License Info */}
+                <section>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">License Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm">
+                      <ShieldCheck className="h-4 w-4 text-green-500 mr-2" />
+                      <span className="text-gray-600 flex-1">Signature Status</span>
+                      <span className="font-medium text-gray-900">Valid</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Smartphone className="h-4 w-4 text-pine mr-2" />
+                      <span className="text-gray-600 flex-1">Device Count</span>
+                      <span className="font-medium text-gray-900">{selectedProp.devices} / 50</span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-sm">
-                    <Smartphone className="h-4 w-4 text-pine mr-2" />
-                    <span className="text-gray-600 flex-1">Device Count</span>
-                    <span className="font-medium text-gray-900">{selectedProp.devices} / 50</span>
-                  </div>
-                </div>
-              </section>
+                </section>
 
-              {/* Payment Summary */}
-              <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Payment Summary</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm">
-                    <CreditCard className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-gray-600 flex-1">Last Payment</span>
-                    <span className="font-medium text-gray-900">{selectedProp.lastPayment}</span>
+                {/* Payment Summary */}
+                <section>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Payment Summary</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm">
+                      <CreditCard className="h-4 w-4 text-gray-400 mr-2" />
+                      <span className="text-gray-600 flex-1">Last Payment</span>
+                      <span className="font-medium text-gray-900">{selectedProp.lastPayment}</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+                      <span className="text-gray-600 flex-1">Next Renewal</span>
+                      <span className="font-medium text-gray-900">{selectedProp.expiry}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-sm">
-                    <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-gray-600 flex-1">Next Renewal</span>
-                    <span className="font-medium text-gray-900">{selectedProp.expiry}</span>
-                  </div>
-                </div>
-              </section>
-            </div>
+                </section>
+              </div>
 
-            {/* Quick Actions Footer */}
-            <div className="p-6 bg-gray-50 border-t border-gray-100 grid grid-cols-2 gap-3 sticky bottom-0">
-              <button className="saas-button-primary w-full col-span-2">
-                Renew Subscription
-              </button>
-              <button className="saas-button-secondary w-full">
-                Upgrade Plan
-              </button>
-              <button className="saas-button-secondary w-full !text-red-600 hover:!bg-red-50 hover:!border-red-200">
-                Disable Property
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+              {/* Quick Actions Footer */}
+              <div className="p-6 bg-gray-50 border-t border-gray-100 grid grid-cols-2 gap-3 shrink-0">
+                <button className="saas-button-primary w-full col-span-2">
+                  Renew Subscription
+                </button>
+                <button className="saas-button-secondary w-full">
+                  Upgrade Plan
+                </button>
+                <button className="saas-button-secondary w-full !text-red-600 hover:!bg-red-50 hover:!border-red-200">
+                  Disable Property
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </>
     </div>
   );
 }

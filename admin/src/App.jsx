@@ -11,6 +11,11 @@ import SubscriptionManagement from './pages/SubscriptionManagement/SubscriptionM
 import PaymentManagement from './pages/SubscriptionManagement/PaymentManagement';
 import RenewalManagement from './pages/SubscriptionManagement/RenewalManagement';
 
+// Device Management (New)
+import GlobalDeviceConsole from './pages/DeviceManagement/GlobalDeviceConsole';
+import MyDevicesPanel from './pages/DeviceManagement/MyDevicesPanel';
+import DeviceDiagnosticsPanel from './pages/DeviceManagement/DeviceDiagnosticsPanel';
+
 function App() {
   return (
     <BrowserRouter>
@@ -22,12 +27,16 @@ function App() {
           <Route path="properties" element={<PropertyDashboard />} />
           <Route path="properties/add" element={<AddPropertyWizard />} />
 
-          
           {/* Subscription Management */}
           <Route path="subscriptions/dashboard" element={<SubscriptionDashboard />} />
           <Route path="subscriptions/manage" element={<SubscriptionManagement />} />
           <Route path="subscriptions/payments" element={<PaymentManagement />} />
           <Route path="subscriptions/renewals" element={<RenewalManagement />} />
+
+          {/* Device Management */}
+          <Route path="devices/global" element={<GlobalDeviceConsole />} />
+          <Route path="devices/owner" element={<MyDevicesPanel />} />
+          <Route path="devices/support" element={<DeviceDiagnosticsPanel />} />
         </Route>
       </Routes>
     </BrowserRouter>

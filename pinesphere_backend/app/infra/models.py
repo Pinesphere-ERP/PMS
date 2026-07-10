@@ -7,12 +7,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 
-from src.infra.database import Base, TimestampMixin, SyncMixin
+from app.database.database import Base, TimestampMixin, SyncMixin
 
 # A. Owners & Access
 
 class Owner(Base, TimestampMixin):
     __tablename__ = "owners"
+    __table_args__ = {'extend_existing': True}
     owner_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
     designation: Mapped[Optional[str]] = mapped_column(String(50))
@@ -28,6 +29,7 @@ class Owner(Base, TimestampMixin):
 
 class Business(Base, TimestampMixin):
     __tablename__ = "businesses"
+    __table_args__ = {'extend_existing': True}
     business_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("owners.owner_id"), nullable=False)
     business_type: Mapped[Optional[str]] = mapped_column(String(30))
@@ -41,6 +43,7 @@ class Business(Base, TimestampMixin):
 
 class Property(Base, TimestampMixin):
     __tablename__ = "properties"
+    __table_args__ = {'extend_existing': True}
     property_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("businesses.business_id"), nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("owners.owner_id"), nullable=False)
@@ -69,10 +72,12 @@ class Role(Base, TimestampMixin):
 
     __table_args__ = (
         UniqueConstraint('property_id', 'role_code', name='uq_roles_property_role_code'),
+        {'extend_existing': True}
     )
 
 class Permission(Base):
     __tablename__ = "permissions"
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     permission_code: Mapped[str] = mapped_column(String(60), nullable=False, unique=True)
     module_name: Mapped[str] = mapped_column(String(60), nullable=False)
@@ -86,10 +91,12 @@ class RolePermission(Base):
 
     __table_args__ = (
         UniqueConstraint('role_id', 'permission_id', name='uq_role_permissions'),
+        {'extend_existing': True}
     )
 
 class User(Base, TimestampMixin, SyncMixin):
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
@@ -108,6 +115,7 @@ class User(Base, TimestampMixin, SyncMixin):
 
 class Device(Base, TimestampMixin):
     __tablename__ = "devices"
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     device_uid: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
@@ -118,6 +126,7 @@ class Device(Base, TimestampMixin):
 
 class RoomCategory(Base, TimestampMixin):
     __tablename__ = "room_categories"
+    __table_args__ = {'extend_existing': True}
     room_category_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     room_name: Mapped[Optional[str]] = mapped_column(String(100))
@@ -126,6 +135,7 @@ class RoomCategory(Base, TimestampMixin):
 
 class Room(Base, TimestampMixin):
     __tablename__ = "rooms"
+    __table_args__ = {'extend_existing': True}
     room_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_categories.room_category_id"), nullable=False)
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -134,6 +144,7 @@ class Room(Base, TimestampMixin):
 
 class Guest(Base, TimestampMixin):
     __tablename__ = "guests"
+    __table_args__ = {'extend_existing': True}
     guest_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
     mobile: Mapped[Optional[str]] = mapped_column(String(15))
@@ -141,6 +152,7 @@ class Guest(Base, TimestampMixin):
 
 class Booking(Base, TimestampMixin, SyncMixin):
     __tablename__ = "bookings"
+    __table_args__ = {'extend_existing': True}
     booking_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
@@ -154,6 +166,7 @@ class Booking(Base, TimestampMixin, SyncMixin):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
+    __table_args__ = {'extend_existing': True}
     log_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))

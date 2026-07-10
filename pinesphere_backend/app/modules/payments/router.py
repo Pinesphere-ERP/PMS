@@ -1,8 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 from datetime import date
+import uuid
+from typing import Optional, List
+
+from .schemas import (
+    PaymentCreate, PaymentRead, PaymentListResponse,
+    RazorpayOrderRequest, RazorpayOrderResponse, RazorpayVerifyRequest
+)
+from .service import PaymentService
 
 from app.infra.database import get_db
 from app.infra.models import PaymentTransaction, Invoice, PendingDue, Property, Owner, Subscription
@@ -67,6 +75,7 @@ async def create_razorpay_order(
     request: RazorpayOrderRequest,
     service: PaymentService = Depends(get_payment_service)
 ):
+    pass
 def _fmt(amount) -> str:
     return f"${float(amount):,.2f}"
 

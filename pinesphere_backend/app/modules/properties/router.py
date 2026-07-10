@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy import func, and_
 from datetime import date, timedelta
@@ -34,7 +35,10 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         pan_number=payload.owner_pan,
     )
     db.add(new_owner)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="An owner with this email or mobile number already exists.")
 
     # Create Business
     new_business = Business(
@@ -61,8 +65,7 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         onboarding_status="draft",
     )
     db.add(new_property)
-    await db.commit()
-    await db.refresh(new_property)
+    await db.flush()
 
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 

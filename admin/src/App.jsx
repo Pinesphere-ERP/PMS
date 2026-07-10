@@ -16,6 +16,9 @@ import GlobalDeviceConsole from './pages/DeviceManagement/GlobalDeviceConsole';
 import MyDevicesPanel from './pages/DeviceManagement/MyDevicesPanel';
 import DeviceDiagnosticsPanel from './pages/DeviceManagement/DeviceDiagnosticsPanel';
 
+// System Management
+import SystemSettings from './pages/SystemManagement/SystemSettings';
+
 function App() {
   return (
     <BrowserRouter>
@@ -37,6 +40,9 @@ function App() {
           <Route path="devices/global" element={<GlobalDeviceConsole />} />
           <Route path="devices/owner" element={<MyDevicesPanel />} />
           <Route path="devices/support" element={<DeviceDiagnosticsPanel />} />
+
+          {/* System Management */}
+          <Route path="settings/system" element={<SystemSettings />} />
         </Route>
       </Routes>
     </BrowserRouter>

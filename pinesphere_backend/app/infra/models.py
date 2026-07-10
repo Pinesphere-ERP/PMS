@@ -448,3 +448,4 @@ class CashRegister(Base):
 
 # ── Reports & Analytics (Module 13) ──
 from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, ScheduledReport
+from app.modules.settings.models import SystemConfiguration, PropertySetting

@@ -8,6 +8,7 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/settings/presentation/screens/property_settings_screen.dart';
 import '../../features/bookings/presentation/screens/new_booking_screen.dart';
 import '../../features/bookings/presentation/screens/pending_checkouts_screen.dart';
 import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart';
@@ -79,6 +80,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/device-status',
         builder: (context, state) => const DeviceSyncStatusScreen(),
+      ),
+      GoRoute(
+        path: '/property-settings',
+        builder: (context, state) => const PropertySettingsScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

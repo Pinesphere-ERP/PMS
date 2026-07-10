@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 
@@ -45,8 +46,8 @@ class ReportsDashboardScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.menu, color: AppColors.primary),
-        onPressed: () {},
+        icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+        onPressed: () => context.go('/dashboard'),
       ),
       title: Text(
         'Pinesphere Stay',

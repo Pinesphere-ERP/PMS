@@ -40,7 +40,7 @@ class RouterNotifier extends ChangeNotifier {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
   final notifier = RouterNotifier(ref);
 

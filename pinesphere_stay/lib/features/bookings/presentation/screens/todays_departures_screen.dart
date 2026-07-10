@@ -1,63 +1,128 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/presentation/widgets/bento_card.dart';
 
-class TodaysDeparturesScreen extends StatelessWidget {
+class TodayDeparture {
+  final String bookingId;
+  final String guestName;
+  final String mobileNumber;
+  final String roomNumber;
+  final String cottageType;
+  final String checkInDate;
+  final String checkOutDate;
+  final String checkOutTime;
+  final String guestsCount;
+  final String totalBill;
+  final String amountDue;
+  final String paymentStatus;
+  final String securityDeposit;
+  final String extraCharges;
+  final String invoiceStatus;
+  final String checkoutStatus;
+  final String keyReturned;
+  final String idReturned;
+  final String housekeepingStatus;
+  final String cottageAvailability;
+  final String feedbackSubmitted;
+  final String remarks;
+
+  TodayDeparture({
+    required this.bookingId,
+    required this.guestName,
+    required this.mobileNumber,
+    required this.roomNumber,
+    required this.cottageType,
+    required this.checkInDate,
+    required this.checkOutDate,
+    required this.checkOutTime,
+    required this.guestsCount,
+    required this.totalBill,
+    required this.amountDue,
+    required this.paymentStatus,
+    required this.securityDeposit,
+    required this.extraCharges,
+    required this.invoiceStatus,
+    required this.checkoutStatus,
+    required this.keyReturned,
+    required this.idReturned,
+    required this.housekeepingStatus,
+    required this.cottageAvailability,
+    required this.feedbackSubmitted,
+    required this.remarks,
+  });
+}
+
+class TodaysDeparturesScreen extends StatefulWidget {
   const TodaysDeparturesScreen({super.key});
+
+  @override
+  State<TodaysDeparturesScreen> createState() => _TodaysDeparturesScreenState();
+}
+
+class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
+  final List<TodayDeparture> _departures = [
+    TodayDeparture(
+      bookingId: 'BKG-10101', guestName: 'James Smith', mobileNumber: '+1 555-0991', roomNumber: '302', cottageType: 'Deluxe Suite',
+      checkInDate: 'Oct 20, 2024', checkOutDate: 'Oct 24, 2024', checkOutTime: '11:00 AM', guestsCount: '2',
+      totalBill: '\$480.00', amountDue: '\$0.00', paymentStatus: 'Paid', securityDeposit: 'Refunded', extraCharges: 'None',
+      invoiceStatus: 'Generated', checkoutStatus: 'Checked Out', keyReturned: 'Yes', idReturned: 'Yes',
+      housekeepingStatus: 'Cleaning Started', cottageAvailability: 'Cleaning', feedbackSubmitted: 'Yes', remarks: 'Great stay',
+    ),
+    TodayDeparture(
+      bookingId: 'BKG-10105', guestName: 'Maria Garcia', mobileNumber: '+44 7700 900011', roomNumber: '105', cottageType: 'Twin Room',
+      checkInDate: 'Oct 22, 2024', checkOutDate: 'Oct 24, 2024', checkOutTime: '10:30 AM', guestsCount: '1',
+      totalBill: '\$170.00', amountDue: '\$20.00', paymentStatus: 'Partial', securityDeposit: 'Refund Pending', extraCharges: 'Room Service',
+      invoiceStatus: 'Pending', checkoutStatus: 'Pending', keyReturned: 'No', idReturned: 'No',
+      housekeepingStatus: 'Pending', cottageAvailability: 'Occupied', feedbackSubmitted: 'No', remarks: 'Needs early checkout',
+    ),
+    TodayDeparture(
+      bookingId: 'BKG-10112', guestName: 'David Chen', mobileNumber: '+61 400 123 789', roomNumber: '212', cottageType: 'Standard King',
+      checkInDate: 'Oct 19, 2024', checkOutDate: 'Oct 24, 2024', checkOutTime: '12:00 PM', guestsCount: '3',
+      totalBill: '\$475.00', amountDue: '\$0.00', paymentStatus: 'Paid', securityDeposit: 'Refund Pending', extraCharges: 'Laundry',
+      invoiceStatus: 'Generated', checkoutStatus: 'Pending', keyReturned: 'No', idReturned: 'Yes',
+      housekeepingStatus: 'Pending', cottageAvailability: 'Occupied', feedbackSubmitted: 'No', remarks: '-',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Today\'s Departures'),
+        title: const Text('Today\'s Departures', style: TextStyle(color: AppColors.primary)),
         backgroundColor: AppColors.surface,
-        scrolledUnderElevation: 0,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primary),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
       ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowColor: WidgetStateProperty.all(AppColors.surfaceContainerLowest),
-            columns: const [
-              DataColumn(label: Text('Booking ID', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Guest Name', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Mobile Number', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Cottage/Room Number', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Cottage Type', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Check-in Date', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Check-out Date', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Check-out Time', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Number of Guests', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Total Bill', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Amount Due', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Payment Status', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Security Deposit', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Extra Charges', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Invoice Status', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Checkout Status', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Key Returned', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('ID Returned', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Housekeeping Status', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Cottage Availability', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Feedback Submitted', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Remarks', style: TextStyle(fontWeight: FontWeight.bold))),
-            ],
-            rows: [
-              _buildDummyRow(
-                'BKG-10101', 'James Smith', '+1 555-0991', '302', 'Deluxe Suite', 'Oct 20, 2024', 'Oct 24, 2024', '11:00 AM',
-                '2', '\$480.00', '\$0.00', 'Paid', 'Refunded', 'None', 'Generated', 'Checked Out',
-                'Yes', 'Yes', 'Cleaning Started', 'Cleaning', 'Yes', 'Great stay',
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Expected Departures',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
               ),
-              _buildDummyRow(
-                'BKG-10105', 'Maria Garcia', '+44 7700 900011', '105', 'Twin Room', 'Oct 22, 2024', 'Oct 24, 2024', '10:30 AM',
-                '1', '\$170.00', '\$20.00', 'Partial', 'Refund Pending', 'Room Service', 'Pending', 'Pending',
-                'No', 'No', 'Pending', 'Occupied', 'No', 'Needs early checkout',
-              ),
-              _buildDummyRow(
-                'BKG-10112', 'David Chen', '+61 400 123 789', '212', 'Standard King', 'Oct 19, 2024', 'Oct 24, 2024', '12:00 PM',
-                '3', '\$475.00', '\$0.00', 'Paid', 'Refund Pending', 'Laundry', 'Generated', 'Pending',
-                'No', 'Yes', 'Pending', 'Occupied', 'No', '-',
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _departures.length,
+                  itemBuilder: (context, index) {
+                    final departure = _departures[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: _buildDepartureCard(departure),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -66,17 +131,235 @@ class TodaysDeparturesScreen extends StatelessWidget {
     );
   }
 
-  DataRow _buildDummyRow(
-      String c1, String c2, String c3, String c4, String c5, String c6, String c7, String c8, String c9, String c10,
-      String c11, String c12, String c13, String c14, String c15, String c16, String c17, String c18, String c19, String c20,
-      String c21, String c22) {
-    return DataRow(
-      cells: [
-        DataCell(Text(c1)), DataCell(Text(c2)), DataCell(Text(c3)), DataCell(Text(c4)), DataCell(Text(c5)),
-        DataCell(Text(c6)), DataCell(Text(c7)), DataCell(Text(c8)), DataCell(Text(c9)), DataCell(Text(c10)),
-        DataCell(Text(c11)), DataCell(Text(c12)), DataCell(Text(c13)), DataCell(Text(c14)), DataCell(Text(c15)),
-        DataCell(Text(c16)), DataCell(Text(c17)), DataCell(Text(c18)), DataCell(Text(c19)), DataCell(Text(c20)),
-        DataCell(Text(c21)), DataCell(Text(c22)),
+  Widget _buildDepartureCard(TodayDeparture departure) {
+    return BentoCard(
+      onTap: () => _showDepartureDetails(departure),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: departure.checkoutStatus == 'Checked Out' ? AppColors.surfaceContainerHighest : AppColors.secondaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.flight_takeoff,
+              color: departure.checkoutStatus == 'Checked Out' ? AppColors.onSurfaceVariant : AppColors.onSecondaryContainer,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  departure.guestName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Room: ${departure.roomNumber} | ID: ${departure.bookingId}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    _buildStatusChip(departure.checkoutStatus),
+                    _buildStatusChip(departure.paymentStatus),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                departure.checkOutTime,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Check-out',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDepartureDetails(TodayDeparture departure) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.75,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Departure Details',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        _buildStatusChip(departure.checkoutStatus),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    _buildDetailRow(Icons.person, 'Guest Name', departure.guestName),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.phone, 'Mobile Number', departure.mobileNumber),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.meeting_room, 'Room / Cottage', '${departure.roomNumber} (${departure.cottageType})'),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.tag, 'Booking ID', departure.bookingId),
+                    const Divider(height: 32),
+                    _buildDetailRow(Icons.login, 'Check-in Date', departure.checkInDate),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.logout, 'Check-out Date', departure.checkOutDate),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.access_time, 'Check-out Time', departure.checkOutTime),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.group, 'Number of Guests', departure.guestsCount),
+                    const Divider(height: 32),
+                    _buildDetailRow(Icons.monetization_on, 'Total Bill', departure.totalBill),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.money_off, 'Amount Due', departure.amountDue, isAlert: departure.amountDue != '\$0.00'),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.payment, 'Payment Status', departure.paymentStatus),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.account_balance_wallet, 'Security Deposit', departure.securityDeposit),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.receipt, 'Extra Charges', departure.extraCharges),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.receipt_long, 'Invoice Status', departure.invoiceStatus),
+                    const Divider(height: 32),
+                    _buildDetailRow(Icons.vpn_key, 'Key Returned', departure.keyReturned),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.badge, 'ID Returned', departure.idReturned),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.cleaning_services, 'Housekeeping', departure.housekeepingStatus),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.event_available, 'Cottage Availability', departure.cottageAvailability),
+                    const Divider(height: 32),
+                    _buildDetailRow(Icons.feedback, 'Feedback Submitted', departure.feedbackSubmitted),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.notes, 'Remarks', departure.remarks),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color bgColor;
+    Color textColor;
+
+    switch (status.toLowerCase()) {
+      case 'checked out':
+      case 'paid':
+      case 'refunded':
+      case 'generated':
+        bgColor = AppColors.secondaryContainer;
+        textColor = AppColors.onSecondaryContainer;
+        break;
+      case 'pending':
+      case 'partial':
+      case 'refund pending':
+      case 'cleaning started':
+        bgColor = AppColors.errorContainer;
+        textColor = AppColors.onErrorContainer;
+        break;
+      case 'occupied':
+        bgColor = AppColors.primaryContainer;
+        textColor = AppColors.onPrimaryContainer;
+        break;
+      default:
+        bgColor = AppColors.surfaceVariant;
+        textColor = AppColors.onSurfaceVariant;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value, {bool isAlert = false}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: isAlert ? AppColors.error : AppColors.outline),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: isAlert ? AppColors.error : AppColors.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ],
     );
   }

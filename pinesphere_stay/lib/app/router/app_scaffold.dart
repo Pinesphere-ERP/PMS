@@ -136,31 +136,34 @@ class AppScaffold extends ConsumerWidget {
   Widget _buildNavItem(BuildContext context, {required int index, required IconData icon, required IconData activeIcon, required String label}) {
     final isActive = navigationShell.currentIndex == index;
 
-    return GestureDetector(
-      onTap: () => navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.secondaryContainer : Colors.transparent,
-          borderRadius: BorderRadius.circular(9999),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(isActive ? activeIcon : icon, color: isActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant, size: 24),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: isActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.secondaryContainer : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(isActive ? activeIcon : icon, color: isActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant, size: 24),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 10,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );

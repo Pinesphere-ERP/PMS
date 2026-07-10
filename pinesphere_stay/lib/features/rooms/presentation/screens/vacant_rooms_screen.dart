@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 
@@ -48,9 +49,14 @@ class VacantRoomsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Vacant Rooms'),
+        title: const Text('Vacant Rooms', style: TextStyle(color: AppColors.primary)),
         backgroundColor: AppColors.surface,
-        scrolledUnderElevation: 0,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primary),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),

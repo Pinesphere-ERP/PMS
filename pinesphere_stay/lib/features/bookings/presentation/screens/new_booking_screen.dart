@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -114,9 +115,14 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('New Booking'),
+        title: const Text('New Booking', style: TextStyle(color: AppColors.primary)),
         backgroundColor: AppColors.surface,
-        scrolledUnderElevation: 0,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primary),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/dashboard'),
+        ),
       ),
       body: Form(
         key: _formKey,

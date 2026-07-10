@@ -8,6 +8,7 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/bookings/presentation/screens/new_booking_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -89,7 +90,7 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: '/bookings',
-                builder: (context, state) => const Scaffold(body: Center(child: Text('Bookings'))),
+                builder: (context, state) => const NewBookingScreen(),
               ),
             ],
           ),

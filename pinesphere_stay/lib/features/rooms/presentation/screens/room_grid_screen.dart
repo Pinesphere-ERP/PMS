@@ -5,21 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/pms_provider.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
-import '../../domain/models/room_entity.dart';
-import '../../data/room_service.dart';
-
-final roomGridProvider = FutureProvider<List<RoomEntity>>((ref) async {
-  try {
-    final service = ref.watch(roomServiceProvider);
-    return await service.getRoomGrid('default');
-  } catch (e) {
-    return [];
-  }
-});
-
 
 class RoomGridScreen extends ConsumerStatefulWidget {
   const RoomGridScreen({super.key});
@@ -29,65 +16,326 @@ class RoomGridScreen extends ConsumerStatefulWidget {
 }
 
 class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
-  String _activeFilter = 'All';
+  String _searchQuery = '';
+  String _selectedCity = 'All';
+
+  Future<void> _pickResortImage(StateSetter setDialogState, Map<String, dynamic> data) async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (pickedFile != null) {
+        setDialogState(() {
+          data['image'] = pickedFile.path;
+        });
+      }
+    } catch (e) {
+      // Fail silently
+    }
+  }
+
+  void _showAddResortDialog(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final locationCtrl = TextEditingController();
+    final numRoomsCtrl = TextEditingController(text: '4');
+    final Map<String, dynamic> dialogData = {'image': ''};
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add Resort Property'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Resort Name'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: locationCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Location / City',
+                        hintText: 'e.g. Munnar, Kerala',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: numRoomsCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Number of Rooms to Auto-Generate'),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Resort Cover Photo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => _pickResortImage(setDialogState, dialogData),
+                      child: Container(
+                        width: double.infinity,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.outlineVariant, width: 1.2),
+                        ),
+                        child: dialogData['image'].toString().isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: (kIsWeb || dialogData['image'].toString().startsWith('http') || dialogData['image'].toString().startsWith('blob:'))
+                                    ? Image.network(dialogData['image'].toString(), fit: BoxFit.cover)
+                                    : Image.file(File(dialogData['image'].toString()), fit: BoxFit.cover),
+                              )
+                            : const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_a_photo_outlined, size: 24, color: AppColors.outline),
+                                  SizedBox(height: 4),
+                                  Text('Select from Gallery', style: TextStyle(fontSize: 11, color: AppColors.outline)),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  onPressed: () {
+                    if (nameCtrl.text.isEmpty || locationCtrl.text.isEmpty) return;
+
+                    final imagePath = dialogData['image'].toString().isEmpty
+                        ? 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80'
+                        : dialogData['image'].toString();
+
+                    final newResort = ResortModel(
+                      id: 'resort_${DateTime.now().millisecondsSinceEpoch}',
+                      name: nameCtrl.text,
+                      location: locationCtrl.text,
+                      image: imagePath,
+                    );
+
+                    final numRooms = int.tryParse(numRoomsCtrl.text) ?? 4;
+
+                    ref.read(pmsProvider.notifier).addResortWithRooms(newResort, numRooms);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Created property ${nameCtrl.text} with $numRooms rooms!')),
+                    );
+                  },
+                  child: const Text('Create Property'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final roomsAsync = ref.watch(roomGridProvider);
+    final pmsState = ref.watch(pmsProvider);
+    final resorts = pmsState.resorts;
+    final rooms = pmsState.rooms;
+
+    // Dynamically parse unique cities from resort location
+    final cities = {'All', ...resorts.map((r) {
+      final parts = r.location.split(',');
+      return parts.isNotEmpty ? parts[0].trim() : r.location;
+    })};
+
+    // Filter resorts based on city selection and search query
+    final filteredResorts = resorts.where((resort) {
+      final cityParts = resort.location.split(',');
+      final resortCity = cityParts.isNotEmpty ? cityParts[0].trim() : resort.location;
+      
+      final matchesCity = _selectedCity == 'All' || resortCity.toLowerCase() == _selectedCity.toLowerCase();
+      final matchesSearch = resort.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                            resort.location.toLowerCase().contains(_searchQuery.toLowerCase());
+      
+      return matchesCity && matchesSearch;
+    }).toList();
 
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context),
+          
+          // Search Bar Sliver
           SliverToBoxAdapter(
-            child: _buildFilters(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: TextField(
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search properties or location...',
+                  prefixIcon: const Icon(Icons.search, color: AppColors.outline),
+                  filled: true,
+                  fillColor: AppColors.surfaceContainerHigh,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                ),
+              ),
+            ),
           ),
-          roomsAsync.when(
-            data: (rooms) {
-              if (rooms.isEmpty) {
-                return const SliverToBoxAdapter(
+
+          // City Filter Chips List Sliver
+          SliverToBoxAdapter(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+              child: Row(
+                children: cities.map((city) {
+                  final isSelected = _selectedCity == city;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ChoiceChip(
+                      label: Text(city),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedCity = city;
+                        });
+                      },
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surfaceContainerHigh,
+                      checkmarkColor: Colors.white,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+
+          // Grid of Resorts
+          filteredResorts.isEmpty
+              ? const SliverToBoxAdapter(
                   child: Center(
                     child: Padding(
                       padding: EdgeInsets.all(48.0),
-                      child: Text(
-                        'No rooms found. Add rooms from the admin panel.',
-                        style: TextStyle(color: AppColors.onSurfaceVariant),
-                      ),
+                      child: Text('No property matches your search.', style: TextStyle(color: AppColors.outline)),
                     ),
                   ),
-                );
-              }
-
-              final filtered = _activeFilter == 'All'
-                  ? rooms
-                  : rooms.where((r) => r.status == _activeFilter).toList();
-
-              return SliverPadding(
-                padding: const EdgeInsets.all(16.0),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 0.78,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildRoomCardFromEntity(context, filtered[index]),
-                    childCount: filtered.length,
+                )
+              : SliverPadding(
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 0.85,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final resort = filteredResorts[index];
+                        final resortRooms = rooms.where((r) => r.resortId == resort.id).toList();
+                        final vacantCount = resortRooms.where((r) => r.status == 'Vacant').length;
+                        
+                        return BentoCard(
+                          padding: EdgeInsets.zero,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ResortRoomsDetailScreen(resort: resort),
+                              ),
+                            );
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                  child: (kIsWeb || resort.image.startsWith('http') || resort.image.startsWith('blob:'))
+                                      ? Image.network(
+                                          resort.image,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Container(
+                                            color: AppColors.surfaceContainerHigh,
+                                            child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
+                                          ),
+                                        )
+                                      : Image.file(
+                                          File(resort.image),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Container(
+                                            color: AppColors.surfaceContainerHigh,
+                                            child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      resort.name,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      resort.location,
+                                      style: const TextStyle(color: AppColors.outline, fontSize: 10),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '$vacantCount / ${resortRooms.length} Vacant',
+                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary),
+                                        ),
+                                        const Icon(
+                                          Icons.arrow_forward_rounded,
+                                          size: 14,
+                                          color: AppColors.primary,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      childCount: filteredResorts.length,
+                    ),
                   ),
                 ),
-              );
-            },
-            loading: () => const SliverToBoxAdapter(
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (_, __) => SliverToBoxAdapter(
-              child: _buildFallbackGrid(context),
-            ),
-          ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddResortDialog(context),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        icon: const Icon(Icons.add_home_work),
+        label: const Text('Add Resort'),
       ),
     );
   }
@@ -113,33 +361,6 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                 ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilters(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: ['All', 'Vacant', 'Occupied', 'Cleaning'].map((filter) {
-          final isSelected = _activeFilter == filter;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(filter),
-              selected: isSelected,
-              onSelected: (_) {
-                setState(() {
-                  _activeFilter = filter;
-                });
-              },
-              selectedColor: AppColors.primary,
-              backgroundColor: AppColors.surfaceContainerHigh,
-              checkmarkColor: AppColors.onPrimary,
-            ),
-          );
-        }).toList(),
       ),
     );
   }
@@ -175,6 +396,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
 
   @override
   Widget build(BuildContext context) {
+    ref.read(pmsProvider.notifier).autoVacateExpiredBookings();
     final pmsState = ref.watch(pmsProvider);
     final rooms = pmsState.rooms.where((r) => r.resortId == widget.resort.id).toList();
 
@@ -187,6 +409,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     // Counts
     final vacantCount = rooms.where((r) => r.status == 'Vacant').length;
     final occupiedCount = rooms.where((r) => r.status == 'Occupied').length;
+    final maintenanceCount = rooms.where((r) => r.status == 'Maintenance').length;
     final cleaningCount = rooms.where((r) => r.status == 'Cleaning').length;
 
     return Scaffold(
@@ -243,13 +466,16 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                         Text(widget.resort.location, style: const TextStyle(color: AppColors.outline, fontSize: 13)),
                       ],
                     ),
-                    const Divider(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const Divider(height: 20),
+                    // Responsive wrapping counts layout
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         _buildStatBadge(Icons.check_circle_outline, '$vacantCount Vacant', AppColors.secondaryContainer, AppColors.onSecondaryContainer),
                         _buildStatBadge(Icons.hotel, '$occupiedCount Occupied', AppColors.errorContainer, AppColors.onErrorContainer),
-                        _buildStatBadge(Icons.cleaning_services, '$cleaningCount Cleaning', Colors.orange.withValues(alpha: 0.1), Colors.orange),
+                        _buildStatBadge(Icons.build_outlined, '$maintenanceCount Maintenance', Colors.orange.withValues(alpha: 0.1), Colors.orange),
+                        _buildStatBadge(Icons.cleaning_services_outlined, '$cleaningCount Housekeeping', Colors.teal.withValues(alpha: 0.1), Colors.teal),
                       ],
                     ),
                   ],
@@ -264,7 +490,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
-                children: ['All', 'Vacant', 'Occupied', 'Cleaning'].map((filter) {
+                children: ['All', 'Vacant', 'Occupied', 'Maintenance', 'Cleaning', 'Bookings'].map((filter) {
                   final isSelected = _activeFilter == filter;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
@@ -286,34 +512,37 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
             ),
           ),
 
-          // Rooms grid
-          filteredRooms.isEmpty
-              ? const SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(48.0),
-                      child: Text('No rooms in selected status', style: TextStyle(color: AppColors.outline)),
-                    ),
-                  ),
-                )
-              : SliverPadding(
-                  padding: const EdgeInsets.all(16),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 0.65,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final room = filteredRooms[index];
-                        return _buildRoomCard(context, room);
-                      },
-                      childCount: filteredRooms.length,
-                    ),
-                  ),
+          // Rooms grid / Bookings logs
+          if (_activeFilter == 'Bookings')
+            _buildBookingsLogsList(context, pmsState, rooms)
+          else if (filteredRooms.isEmpty)
+            const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(48.0),
+                  child: Text('No rooms in selected status', style: TextStyle(color: AppColors.outline)),
                 ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.65,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final room = filteredRooms[index];
+                    return _buildRoomCard(context, room);
+                  },
+                  childCount: filteredRooms.length,
+                ),
+              ),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -326,8 +555,25 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     );
   }
 
-  Widget _buildRoomCardFromEntity(BuildContext context, RoomEntity room) {
-    final status = room.status;
+  Widget _buildStatBadge(IconData icon, String text, Color bg, Color iconColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: iconColor),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: iconColor)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoomCard(BuildContext context, RoomModel room) {
     Color edgeColor;
     Color chipBg;
     Color chipText;
@@ -341,10 +587,14 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
       edgeColor = AppColors.primary;
       chipBg = AppColors.secondaryContainer;
       chipText = AppColors.onSecondaryContainer;
-    } else {
+    } else if (room.status == 'Maintenance') {
       edgeColor = Colors.orange;
       chipBg = Colors.orange.withValues(alpha: 0.1);
       chipText = Colors.orange;
+    } else {
+      edgeColor = Colors.teal;
+      chipBg = Colors.teal.withValues(alpha: 0.1);
+      chipText = Colors.teal;
     }
 
     BookingModel? activeBooking;
@@ -365,21 +615,20 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
           checkOutDate: DateTime.now(),
           status: 'Active',
           depositPaid: 0,
+          basePriceSum: 0,
+          weekendSurcharge: 0,
+          seasonSurcharge: 0,
+          holidaySurcharge: 0,
+          extraBedCharge: 0,
+          amenitiesCharge: 0,
+          totalSum: 0,
         ),
       );
     }
 
     return BentoCard(
       padding: const EdgeInsets.all(12),
-      onTap: () {
-        if (room.status == 'Vacant') {
-          _showBookingSheet(context, room);
-        } else if (room.status == 'Occupied' && activeBooking != null) {
-          _showBookingDetailsSheet(context, activeBooking, room);
-        } else if (room.status == 'Cleaning') {
-          _showCleanRoomConfirm(context, room);
-        }
-      },
+      onTap: () => _showRoomActionsSheet(context, room),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -457,6 +706,21 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                             ),
                           ),
                         ),
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: GestureDetector(
+                          onTap: () => _showEditRoomDialog(context, room),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.edit_outlined, color: Colors.white, size: 10),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -466,12 +730,8 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    room.name,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.onBackground,
-                          fontWeight: FontWeight.bold,
-                          height: 1.0,
-                        ),
+                    room.roomNumber,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -480,7 +740,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      room.status.toUpperCase(),
+                      room.status == 'Maintenance' ? 'MAINT' : room.status.toUpperCase(),
                       style: TextStyle(color: chipText, fontWeight: FontWeight.bold, fontSize: 8, letterSpacing: 0.5),
                     ),
                   ),
@@ -489,235 +749,70 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
               const SizedBox(height: 6),
               Text(
                 room.type,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      height: 1.2,
-                    ),
+                style: const TextStyle(color: AppColors.outline, fontSize: 11),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
-                '\$${room.pricePerNight.toStringAsFixed(0)}/night',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
-                    ),
+                '₹${room.price.toStringAsFixed(0)}/night',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 11),
               ),
-              const Spacer(),
-              if (status == 'Vacant')
-                GestureDetector(
-                  onTap: () => context.go('/checkin'),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'BOOK NOW',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.onSecondaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.only(top: 8),
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: AppColors.surfaceContainer)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        status == 'Occupied' ? Icons.person : Icons.cleaning_services_outlined,
-                        size: 14,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          status == 'Occupied' ? 'Guest in room' : 'Being cleaned',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                                fontStyle: status != 'Occupied' ? FontStyle.italic : FontStyle.normal,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFallbackGrid(BuildContext context) {
-    final fallbackRooms = [
-      _FallbackRoom('302', 'Occupied', 'Deluxe Suite', 120),
-      _FallbackRoom('105', 'Vacant', 'Twin Room', 85),
-      _FallbackRoom('212', 'Cleaning', 'Standard King', 95),
-      _FallbackRoom('401', 'Occupied', 'Penthouse', 450),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.78,
-        ),
-        itemCount: fallbackRooms.length,
-        itemBuilder: (context, index) {
-          final room = fallbackRooms[index];
-          return _buildFallbackRoomCard(context, room);
-        },
-      ),
-    );
-  }
-
-  Widget _buildFallbackRoomCard(BuildContext context, _FallbackRoom room) {
-    Color edgeColor;
-    Color chipBg;
-    Color chipText;
-
-    if (room.status == 'Occupied') {
-      edgeColor = AppColors.error;
-      chipBg = AppColors.errorContainer;
-      chipText = AppColors.onErrorContainer;
-    } else if (room.status == 'Vacant') {
-      edgeColor = AppColors.primary;
-      chipBg = AppColors.secondaryContainer;
-      chipText = AppColors.onSecondaryContainer;
-    } else {
-      edgeColor = AppColors.tertiaryContainer;
-      chipBg = AppColors.tertiaryFixed;
-      chipText = AppColors.onTertiaryFixedVariant;
-    }
-
-    return BentoCard(
-      padding: const EdgeInsets.all(16),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: -16,
-            top: 24,
-            child: Container(
-              width: 4,
-              height: 32,
-              decoration: BoxDecoration(
-                color: edgeColor,
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(4),
-                  bottomRight: Radius.circular(4),
-                ),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 4,
-                runSpacing: 8,
+              const SizedBox(height: 6),
+              Row(
                 children: [
-                  Text(
-                    room.number,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.onBackground,
-                          fontWeight: FontWeight.bold,
-                          height: 1.0,
-                        ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: chipBg,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      room.status.toUpperCase(),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: chipText,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                            fontSize: 9,
-                          ),
-                    ),
-                  ),
+                  _buildRuleTag('WE: +₹${room.weekendPrice.toStringAsFixed(0)}'),
+                  const SizedBox(width: 4),
+                  _buildRuleTag('SE: +₹${room.seasonPrice.toStringAsFixed(0)}'),
+                  const SizedBox(width: 4),
+                  _buildRuleTag('ExB: ₹${room.extraBedPrice.toStringAsFixed(0)}'),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                room.type,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      height: 1.2,
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: room.amenities.take(4).map((amenity) {
+                  final name = amenity['name'].toString().toLowerCase();
+                  IconData iconData = Icons.star_border;
+                  if (name.contains('food') || name.contains('buffet') || name.contains('breakfast')) {
+                    iconData = Icons.restaurant;
+                  } else if (name.contains('speaker') || name.contains('audio') || name.contains('sound')) {
+                    iconData = Icons.volume_up;
+                  } else if (name.contains('tv') || name.contains('screen')) {
+                    iconData = Icons.tv;
+                  } else if (name.contains('projector')) {
+                    iconData = Icons.videocam;
+                  } else if (name.contains('wifi') || name.contains('internet')) {
+                    iconData = Icons.wifi;
+                  } else if (name.contains('pool')) {
+                    iconData = Icons.pool;
+                  } else if (name.contains('ac') || name.contains('air conditioning')) {
+                    iconData = Icons.ac_unit;
+                  }
+                  return Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
                     ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '\$${room.price}/night',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
-                    ),
+                    child: Icon(iconData, size: 12, color: AppColors.primary),
+                  );
+                }).toList(),
               ),
               const Spacer(),
               if (room.status == 'Vacant')
-                GestureDetector(
-                  onTap: () => context.go('/checkin'),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'BOOK NOW',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.onSecondaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                )
-              else
                 Container(
-                  padding: const EdgeInsets.only(top: 8),
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: AppColors.surfaceContainer)),
+                  width: double.infinity,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        room.status == 'Occupied' ? Icons.person : Icons.cleaning_services_outlined,
-                        size: 14,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          room.status == 'Occupied' ? 'Guest in room' : 'Being cleaned',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  child: const Text(
+                    'BOOK NOW',
+                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                   ),
                 ),
               if (room.status == 'Occupied' && activeBooking != null)
@@ -732,14 +827,25 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   'Checkout: ${_getMonth(activeBooking.checkOutDate)} ${activeBooking.checkOutDate.day}',
                   style: const TextStyle(color: AppColors.outline, fontSize: 10),
                 ),
+              if (room.status == 'Maintenance')
+                const Row(
+                  children: [
+                    Icon(Icons.build_outlined, size: 12, color: Colors.orange),
+                    SizedBox(width: 4),
+                    Text(
+                      'Under repair...',
+                      style: TextStyle(fontStyle: FontStyle.italic, color: Colors.orange, fontSize: 10),
+                    ),
+                  ],
+                ),
               if (room.status == 'Cleaning')
                 const Row(
                   children: [
-                    Icon(Icons.cleaning_services_outlined, size: 12, color: Colors.orange),
+                    Icon(Icons.cleaning_services_outlined, size: 12, color: Colors.teal),
                     SizedBox(width: 4),
                     Text(
-                      'In progress...',
-                      style: TextStyle(fontStyle: FontStyle.italic, color: Colors.orange, fontSize: 10),
+                      'Housekeeping...',
+                      style: TextStyle(fontStyle: FontStyle.italic, color: Colors.teal, fontSize: 10),
                     ),
                   ],
                 ),
@@ -758,6 +864,15 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     final depositCtrl = TextEditingController(text: '1000');
     String source = 'Walk-in';
 
+    // Pricing Rule Checkboxes state
+    bool isSeason = false;
+    bool isWeekend = false;
+    bool isHoliday = false;
+    int extraBedsCount = 0;
+    
+    // Custom selected amenities names list
+    final List<String> selectedAmenities = [];
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -765,6 +880,22 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            // Stay length is 2 nights by default
+            const nights = 2;
+            final double basePriceSum = room.price * nights;
+            final double weekendSum = isWeekend ? (room.weekendPrice * nights) : 0.0;
+            final double seasonSum = isSeason ? (room.seasonPrice * nights) : 0.0;
+            final double holidaySum = isHoliday ? (room.holidayPrice * nights) : 0.0;
+            final double extraBedSum = room.extraBedPrice * extraBedsCount * nights;
+            
+            // Calculate selected amenities flat sum
+            final double amenitiesSum = room.amenities
+                .where((a) => selectedAmenities.contains(a['name']))
+                .map<double>((a) => (a['price'] as num).toDouble())
+                .fold(0.0, (sum, val) => sum + val);
+
+            final double totalInvoice = basePriceSum + weekendSum + seasonSum + holidaySum + extraBedSum + amenitiesSum;
+
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
               child: Container(
@@ -773,101 +904,267 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Book Room ${room.roomNumber} - ${room.type}',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Guest Name')),
-                    const SizedBox(height: 12),
-                    TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone Number')),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: idProofCtrl.text,
-                            decoration: const InputDecoration(labelText: 'ID Proof'),
-                            items: ['Aadhaar Card', 'Passport', 'Driving License', 'Voter ID'].map((proof) {
-                              return DropdownMenuItem(value: proof, child: Text(proof));
-                            }).toList(),
-                            onChanged: (val) => idProofCtrl.text = val ?? idProofCtrl.text,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Book Room ${room.roomNumber} - ${room.type}',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(controller: idNumCtrl, decoration: const InputDecoration(labelText: 'ID Number')),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: source,
-                            decoration: const InputDecoration(labelText: 'Booking Source'),
-                            items: ['Walk-in', 'Phone', 'WhatsApp', 'Online'].map((src) {
-                              return DropdownMenuItem(value: src, child: Text(src));
-                            }).toList(),
-                            onChanged: (val) => source = val ?? source,
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () => Navigator.pop(context),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(controller: depositCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Advance DepositPaid (\$)')),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: () {
-                          if (nameCtrl.text.isEmpty || phoneCtrl.text.isEmpty) return;
-
-                          final newBooking = BookingModel(
-                            id: 'booking_${DateTime.now().millisecondsSinceEpoch}',
-                            resortId: room.resortId,
-                            roomId: room.id,
-                            roomNumber: room.roomNumber,
-                            guestName: nameCtrl.text,
-                            guestPhone: phoneCtrl.text,
-                            guestIdProof: idProofCtrl.text,
-                            guestIdNumber: idNumCtrl.text,
-                            bookingSource: source,
-                            checkInDate: DateTime.now(),
-                            checkOutDate: DateTime.now().add(const Duration(days: 2)),
-                            status: 'Active',
-                            depositPaid: double.tryParse(depositCtrl.text) ?? 1000.0,
-                          );
-
-                          ref.read(pmsProvider.notifier).createBooking(newBooking);
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Room ${room.roomNumber} Booked Successfully!')),
-                          );
-                        },
-                        child: const Text('Confirm Booking'),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Guest Name', contentPadding: EdgeInsets.symmetric(vertical: 4))),
+                      const SizedBox(height: 8),
+                      TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone Number', contentPadding: EdgeInsets.symmetric(vertical: 4))),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: idProofCtrl.text,
+                              decoration: const InputDecoration(labelText: 'ID Proof', contentPadding: EdgeInsets.symmetric(vertical: 4)),
+                              items: ['Aadhaar Card', 'Passport', 'Driving License', 'Voter ID'].map((proof) {
+                                return DropdownMenuItem(value: proof, child: Text(proof));
+                              }).toList(),
+                              onChanged: (val) => idProofCtrl.text = val ?? idProofCtrl.text,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(controller: idNumCtrl, decoration: const InputDecoration(labelText: 'ID Number', contentPadding: EdgeInsets.symmetric(vertical: 4))),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: source,
+                              decoration: const InputDecoration(labelText: 'Booking Source', contentPadding: EdgeInsets.symmetric(vertical: 4)),
+                              items: ['Walk-in', 'Phone', 'WhatsApp', 'Online'].map((src) {
+                                return DropdownMenuItem(value: src, child: Text(src));
+                              }).toList(),
+                              onChanged: (val) => source = val ?? source,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: depositCtrl, 
+                              keyboardType: TextInputType.number, 
+                              decoration: const InputDecoration(labelText: 'Advance Deposit Paid (₹)', contentPadding: EdgeInsets.symmetric(vertical: 4)),
+                              onChanged: (_) => setSheetState(() {}),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const Divider(height: 24),
+                      const Text('Surcharges & Pricing Rules', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                      const SizedBox(height: 8),
+                      
+                      // Weekend, Season, Holiday Checkboxes
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: Text('Weekend (+₹${room.weekendPrice.toStringAsFixed(0)})', style: const TextStyle(fontSize: 11)),
+                              value: isWeekend,
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              onChanged: (val) => setSheetState(() => isWeekend = val ?? false),
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: Text('Season (+₹${room.seasonPrice.toStringAsFixed(0)})', style: const TextStyle(fontSize: 11)),
+                              value: isSeason,
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              onChanged: (val) => setSheetState(() => isSeason = val ?? false),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: Text('Holiday (+₹${room.holidayPrice.toStringAsFixed(0)})', style: const TextStyle(fontSize: 11)),
+                              value: isHoliday,
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              onChanged: (val) => setSheetState(() => isHoliday = val ?? false),
+                            ),
+                          ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Text('Extra Beds: ', style: TextStyle(fontSize: 11)),
+                                const SizedBox(width: 4),
+                                DropdownButton<int>(
+                                  value: extraBedsCount,
+                                  items: [0, 1, 2, 3].map((cnt) {
+                                    return DropdownMenuItem(
+                                      value: cnt, 
+                                      child: Text('$cnt (+₹${(room.extraBedPrice * cnt).toStringAsFixed(0)})', style: const TextStyle(fontSize: 11))
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) => setSheetState(() => extraBedsCount = val ?? 0),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const Divider(height: 16),
+                      const Text('Add Custom Amenities', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                      const SizedBox(height: 6),
+                      
+                      // Custom amenities checkboxes loop
+                      Column(
+                        children: room.amenities.map((amenity) {
+                          final aName = amenity['name'].toString();
+                          final aPrice = (amenity['price'] as num).toDouble();
+                          final isChecked = selectedAmenities.contains(aName);
+                          return CheckboxListTile(
+                            title: Text('$aName (+₹${aPrice.toStringAsFixed(0)})', style: const TextStyle(fontSize: 11)),
+                            value: isChecked,
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (val) {
+                              setSheetState(() {
+                                if (val == true) {
+                                  selectedAmenities.add(aName);
+                                } else {
+                                  selectedAmenities.remove(aName);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+
+                      const Divider(height: 24),
+                      // Summary Bill Calculator Widget
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('stay billing summary (2 Nights)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.outline)),
+                            const SizedBox(height: 8),
+                            _buildSummaryBillRow('Base Room Rate:', '₹${basePriceSum.toStringAsFixed(0)}'),
+                            if (isWeekend) _buildSummaryBillRow('Weekend Surcharges:', '+₹${weekendSum.toStringAsFixed(0)}'),
+                            if (isSeason) _buildSummaryBillRow('Seasonal Peak Surcharges:', '+₹${seasonSum.toStringAsFixed(0)}'),
+                            if (isHoliday) _buildSummaryBillRow('Holiday Peak Surcharges:', '+₹${holidaySum.toStringAsFixed(0)}'),
+                            if (extraBedsCount > 0) _buildSummaryBillRow('Extra Bed Surcharges ($extraBedsCount):', '+₹${extraBedSum.toStringAsFixed(0)}'),
+                            if (selectedAmenities.isNotEmpty) _buildSummaryBillRow('Amenities Surcharges:', '+₹${amenitiesSum.toStringAsFixed(0)}'),
+                            const Divider(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Total Invoice Amount:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                Text('₹${totalInvoice.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          onPressed: () {
+                            if (nameCtrl.text.isEmpty || phoneCtrl.text.isEmpty) return;
+
+                            final newBooking = BookingModel(
+                              id: 'booking_${DateTime.now().millisecondsSinceEpoch}',
+                              resortId: room.resortId,
+                              roomId: room.id,
+                              roomNumber: room.roomNumber,
+                              guestName: nameCtrl.text,
+                              guestPhone: phoneCtrl.text,
+                              guestIdProof: idProofCtrl.text,
+                              guestIdNumber: idNumCtrl.text,
+                              bookingSource: source,
+                              checkInDate: DateTime.now(),
+                              checkOutDate: DateTime.now().add(const Duration(days: 2)),
+                              status: 'Active',
+                              depositPaid: double.tryParse(depositCtrl.text) ?? 100.0,
+                              basePriceSum: basePriceSum,
+                              weekendSurcharge: weekendSum,
+                              seasonSurcharge: seasonSum,
+                              holidaySurcharge: holidaySum,
+                              extraBedCharge: extraBedSum,
+                              amenitiesCharge: amenitiesSum,
+                              totalSum: totalInvoice,
+                            );
+
+                             ref.read(pmsProvider.notifier).createBooking(newBooking);
+                             Navigator.pop(context); // Close the bottom sheet
+                             if (context.mounted) {
+                               context.go('/bookings'); // Automatically switch to bookings tab to see the booked log!
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(content: Text('Room ${room.roomNumber} Booked Successfully!')),
+                               );
+                             }
+                          },
+                          child: const Text('Confirm Reservation'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildSummaryBillRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.outline)),
+          Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 
@@ -884,12 +1181,16 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            double calcTotal() {
+            double calcIncidentals() {
               final damage = double.tryParse(damageCtrl.text) ?? 0;
               final laundry = double.tryParse(laundryCtrl.text) ?? 0;
               final miniBar = double.tryParse(miniBarCtrl.text) ?? 0;
               final restaurant = double.tryParse(restaurantCtrl.text) ?? 0;
-              return booking.depositPaid + damage + laundry + miniBar + restaurant;
+              return damage + laundry + miniBar + restaurant;
+            }
+
+            double calcFinalPayable() {
+              return booking.totalSum + calcIncidentals() - booking.depositPaid;
             }
 
             return Padding(
@@ -900,105 +1201,135 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Checkout Bill Settlement',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
-                    ),
-                    const SizedBox(height: 8),
-                    Text('Guest: ${booking.guestName} | Room ${booking.roomNumber}', style: const TextStyle(color: AppColors.outline)),
-                    const Divider(height: 24),
-                    const Text('Additional Incidentals', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: restaurantCtrl,
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => setSheetState(() {}),
-                            decoration: const InputDecoration(labelText: 'Restaurant (\$)', border: OutlineInputBorder()),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: laundryCtrl,
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => setSheetState(() {}),
-                            decoration: const InputDecoration(labelText: 'Laundry (\$)', border: OutlineInputBorder()),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: miniBarCtrl,
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => setSheetState(() {}),
-                            decoration: const InputDecoration(labelText: 'Mini Bar (\$)', border: OutlineInputBorder()),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: damageCtrl,
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => setSheetState(() {}),
-                            decoration: const InputDecoration(labelText: 'Damage (\$)', border: OutlineInputBorder()),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Initial Deposit Paid:', style: TextStyle(color: AppColors.outline)),
-                        Text('\$${booking.depositPaid}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Total Final Amount:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        Text('\$${calcTotal().toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: () {
-                          ref.read(pmsProvider.notifier).checkOut(
-                                booking.id,
-                                damage: double.tryParse(damageCtrl.text) ?? 0,
-                                laundry: double.tryParse(laundryCtrl.text) ?? 0,
-                                miniBar: double.tryParse(miniBarCtrl.text) ?? 0,
-                                restaurant: double.tryParse(restaurantCtrl.text) ?? 0,
-                              );
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Checked out ${booking.guestName} successfully. Room is now in CLEANING.')),
-                          );
-                        },
-                        child: const Text('Settle Bill & Complete Checkout'),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Checkout Bill Settlement',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text('Guest: ${booking.guestName} | Room ${booking.roomNumber}', style: const TextStyle(color: AppColors.outline, fontSize: 13)),
+                      const Divider(height: 20),
+                      
+                      // Detailed Booking Invoice Breakdown Card
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('INVOICE ITEMIZED BREAKDOWN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.outline)),
+                            const SizedBox(height: 6),
+                            _buildSummaryBillRow('Base Stay Charges:', '₹${booking.basePriceSum.toStringAsFixed(0)}'),
+                            if (booking.weekendSurcharge > 0) _buildSummaryBillRow('Weekend Surcharges:', '+₹${booking.weekendSurcharge.toStringAsFixed(0)}'),
+                            if (booking.seasonSurcharge > 0) _buildSummaryBillRow('Seasonal Surcharges:', '+₹${booking.seasonSurcharge.toStringAsFixed(0)}'),
+                            if (booking.holidaySurcharge > 0) _buildSummaryBillRow('Holiday Surcharges:', '+₹${booking.holidaySurcharge.toStringAsFixed(0)}'),
+                            if (booking.extraBedCharge > 0) _buildSummaryBillRow('Extra Bed Surcharges:', '+₹${booking.extraBedCharge.toStringAsFixed(0)}'),
+                            if (booking.amenitiesCharge > 0) _buildSummaryBillRow('Amenities Surcharges:', '+₹${booking.amenitiesCharge.toStringAsFixed(0)}'),
+                            const Divider(height: 12),
+                            _buildSummaryBillRow('Total Reservation Price:', '₹${booking.totalSum.toStringAsFixed(0)}'),
+                            _buildSummaryBillRow('Advance Deposit Paid:', '-₹${booking.depositPaid.toStringAsFixed(0)}'),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Add Incidentals at Checkout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: restaurantCtrl,
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => setSheetState(() {}),
+                              decoration: const InputDecoration(labelText: 'Restaurant (₹)', border: OutlineInputBorder(), contentPadding: EdgeInsets.all(8)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: laundryCtrl,
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => setSheetState(() {}),
+                              decoration: const InputDecoration(labelText: 'Laundry (₹)', border: OutlineInputBorder(), contentPadding: EdgeInsets.all(8)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: miniBarCtrl,
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => setSheetState(() {}),
+                              decoration: const InputDecoration(labelText: 'Mini Bar (₹)', border: OutlineInputBorder(), contentPadding: EdgeInsets.all(8)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: damageCtrl,
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => setSheetState(() {}),
+                              decoration: const InputDecoration(labelText: 'Damage (₹)', border: OutlineInputBorder(), contentPadding: EdgeInsets.all(8)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const Divider(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Total Net Incidentals:', style: TextStyle(color: AppColors.outline, fontSize: 13)),
+                          Text('₹${calcIncidentals().toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Net Final Payable:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text('₹${calcFinalPayable().toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          onPressed: () {
+                            ref.read(pmsProvider.notifier).checkOut(
+                                  booking.id,
+                                  damage: double.tryParse(damageCtrl.text) ?? 0,
+                                  laundry: double.tryParse(laundryCtrl.text) ?? 0,
+                                  miniBar: double.tryParse(miniBarCtrl.text) ?? 0,
+                                  restaurant: double.tryParse(restaurantCtrl.text) ?? 0,
+                                );
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Checked out ${booking.guestName} successfully. Room is now in MAINTENANCE.')),
+                            );
+                          },
+                          child: const Text('Settle Bill & Complete Checkout'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1008,55 +1339,32 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     );
   }
 
-  void _showCleanRoomConfirm(BuildContext context, RoomModel room) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Mark Room ${room.roomNumber} Clean?'),
-        content: const Text('Marking the room as clean will transition its status back to VACANT, making it available for new bookings.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-            onPressed: () {
-              ref.read(pmsProvider.notifier).markRoomClean(room.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Room ${room.roomNumber} is now VACANT and ready to book!')),
-              );
-            },
-            child: const Text('Mark Clean'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showAddRoomDialog(BuildContext context) {
     final roomNumCtrl = TextEditingController();
     final typeCtrl = TextEditingController(text: 'Standard Room');
-    final priceCtrl = TextEditingController(text: '100');
+    final priceCtrl = TextEditingController(text: '1000');
+    
+    // Pricing rule controls
+    final seasonCtrl = TextEditingController(text: '300');
+    final weekendCtrl = TextEditingController(text: '150');
+    final holidayCtrl = TextEditingController(text: '400');
+    final extraBedCtrl = TextEditingController(text: '100');
+
+    // Room status default
+    String initialStatus = 'Vacant';
+
+    // Dynamic amenities list inside dialog
+    final List<Map<String, dynamic>> dialogAmenities = [
+      {'name': 'Food / Buffet Included', 'price': 300.0},
+      {'name': 'Portable Bluetooth Speaker', 'price': 150.0},
+      {'name': 'Smart TV Access', 'price': 100.0},
+    ];
+
+    // Selected photo gallery paths
     final List<String> uploadedImages = [];
 
-    Future<void> pickImage(StateSetter setDialogState, List<String> uploadedImages) async {
-      final ImagePicker picker = ImagePicker();
-      try {
-        final XFile? pickedFile = await picker.pickImage(
-          source: ImageSource.gallery,
-          imageQuality: 85,
-        );
-        if (pickedFile != null) {
-          setDialogState(() {
-            uploadedImages.add(pickedFile.path);
-          });
-        }
-      } catch (e) {
-        // Fail silently
-      }
-    }
+    final nameNewAmenityCtrl = TextEditingController();
+    final priceNewAmenityCtrl = TextEditingController();
 
     showDialog(
       context: context,
@@ -1064,7 +1372,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Add Room to ${widget.resort.name}'),
+              title: const Text('Configure and Create Room'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1072,22 +1380,139 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   children: [
                     TextField(
                       controller: roomNumCtrl,
-                      decoration: const InputDecoration(labelText: 'Room Number (e.g. 105)'),
+                      decoration: const InputDecoration(labelText: 'Room Number (e.g. 105)', contentPadding: EdgeInsets.zero),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     TextField(
                       controller: typeCtrl,
-                      decoration: const InputDecoration(labelText: 'Room Type'),
+                      decoration: const InputDecoration(labelText: 'Room Type (e.g. Deluxe Suite)', contentPadding: EdgeInsets.zero),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: initialStatus,
+                      decoration: const InputDecoration(labelText: 'Initial Status', contentPadding: EdgeInsets.zero),
+                      items: ['Vacant', 'Occupied', 'Maintenance', 'Cleaning'].map((status) {
+                        return DropdownMenuItem(value: status, child: Text(status));
+                      }).toList(),
+                      onChanged: (val) => setDialogState(() => initialStatus = val ?? 'Vacant'),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    const Text('Configure Pricing Models (₹)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: priceCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Base Price / Night', contentPadding: EdgeInsets.zero),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: extraBedCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Extra Bed Cost', contentPadding: EdgeInsets.zero),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: weekendCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Weekend Surcharge', contentPadding: EdgeInsets.zero),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: seasonCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Season Surcharge', contentPadding: EdgeInsets.zero),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     TextField(
-                      controller: priceCtrl,
+                      controller: holidayCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Price per Night (\$)'),
+                      decoration: const InputDecoration(labelText: 'Holiday Surcharge', contentPadding: EdgeInsets.zero),
                     ),
+
+                    const SizedBox(height: 20),
+                    const Text('Room Custom Amenities', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                    const SizedBox(height: 6),
+                    
+                    // List current configured amenities
+                    Column(
+                      children: dialogAmenities.map((amenity) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('- ${amenity['name']} (₹${amenity['price']})', style: const TextStyle(fontSize: 11)),
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline, size: 14, color: AppColors.error),
+                              onPressed: () {
+                                setDialogState(() {
+                                  dialogAmenities.remove(amenity);
+                                });
+                              },
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    // Add new custom amenity form inline
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: nameNewAmenityCtrl,
+                            decoration: const InputDecoration(hintText: 'New amenity name...', contentPadding: EdgeInsets.zero),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: priceNewAmenityCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(hintText: 'Cost (₹)', contentPadding: EdgeInsets.zero),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_box, color: AppColors.primary),
+                          onPressed: () {
+                            if (nameNewAmenityCtrl.text.isNotEmpty && priceNewAmenityCtrl.text.isNotEmpty) {
+                              setDialogState(() {
+                                dialogAmenities.add({
+                                  'name': nameNewAmenityCtrl.text,
+                                  'price': double.tryParse(priceNewAmenityCtrl.text) ?? 10.0,
+                                });
+                                nameNewAmenityCtrl.clear();
+                                priceNewAmenityCtrl.clear();
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 20),
                     Text(
-                      'Room Images (${uploadedImages.length}/5)',
+                      'Room Photo Gallery (${uploadedImages.length}/5)',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline),
                     ),
                     const SizedBox(height: 8),
@@ -1187,8 +1612,13 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                       id: 'room_${DateTime.now().millisecondsSinceEpoch}',
                       roomNumber: roomNumCtrl.text,
                       type: typeCtrl.text,
-                      price: double.tryParse(priceCtrl.text) ?? 100,
-                      status: 'Vacant',
+                      price: double.tryParse(priceCtrl.text) ?? 100.0,
+                      seasonPrice: double.tryParse(seasonCtrl.text) ?? 30.0,
+                      weekendPrice: double.tryParse(weekendCtrl.text) ?? 15.0,
+                      holidayPrice: double.tryParse(holidayCtrl.text) ?? 40.0,
+                      extraBedPrice: double.tryParse(extraBedCtrl.text) ?? 10.0,
+                      amenities: List.from(dialogAmenities),
+                      status: initialStatus,
                       resortId: widget.resort.id,
                       images: finalImages,
                     );
@@ -1196,7 +1626,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                     ref.read(pmsProvider.notifier).addRoom(newRoom);
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Added Room ${roomNumCtrl.text} to ${widget.resort.name} successfully with ${finalImages.length} images!')),
+                      SnackBar(content: Text('Added Room ${roomNumCtrl.text} to ${widget.resort.name} successfully with configured rates!')),
                     );
                   },
                   child: const Text('Add Room'),
@@ -1209,17 +1639,673 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     );
   }
 
+  void _showRoomActionsSheet(BuildContext context, RoomModel room) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final pmsState = ref.watch(pmsProvider);
+            final liveRoom = pmsState.rooms.firstWhere((r) => r.id == room.id, orElse: () => room);
+            
+            BookingModel? activeBooking;
+            if (liveRoom.status == 'Occupied') {
+              activeBooking = pmsState.bookings.firstWhere(
+                (b) => b.roomId == liveRoom.id && b.status == 'Active',
+                orElse: () => BookingModel(
+                  id: '',
+                  resortId: '',
+                  roomId: '',
+                  roomNumber: '',
+                  guestName: 'Unknown Guest',
+                  guestPhone: '',
+                  guestIdProof: '',
+                  guestIdNumber: '',
+                  bookingSource: 'Walk-in',
+                  checkInDate: DateTime.now(),
+                  checkOutDate: DateTime.now(),
+                  status: 'Active',
+                  depositPaid: 0,
+                  basePriceSum: 0,
+                  weekendSurcharge: 0,
+                  seasonSurcharge: 0,
+                  holidaySurcharge: 0,
+                  extraBedCharge: 0,
+                  amenitiesCharge: 0,
+                  totalSum: 0,
+                ),
+              );
+            }
+
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Room ${liveRoom.roomNumber} Actions',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  Text('Type: ${liveRoom.type} | Price: ₹${liveRoom.price.toStringAsFixed(0)}/night', style: const TextStyle(color: AppColors.outline)),
+                  const Divider(height: 24),
+                  const Text('Change Status Manually:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
+                  const SizedBox(height: 10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: ['Vacant', 'Occupied', 'Maintenance', 'Cleaning'].map((status) {
+                        final isSelected = liveRoom.status == status;
+                        Color btnColor = AppColors.primary;
+                        if (status == 'Occupied') btnColor = AppColors.error;
+                        if (status == 'Maintenance') btnColor = Colors.orange;
+                        if (status == 'Cleaning') btnColor = Colors.teal;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: ChoiceChip(
+                            label: Text(
+                              status,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : btnColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: btnColor,
+                            backgroundColor: AppColors.surfaceContainerHigh,
+                            checkmarkColor: Colors.white,
+                            showCheckmark: false,
+                            onSelected: (val) async {
+                              if (val) {
+                                if (status == 'Occupied') {
+                                  // Ask for occupancy end date
+                                  final DateTime? pickedDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: DateTime.now().add(const Duration(days: 1)),
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime.now().add(const Duration(days: 90)),
+                                    helpText: 'Select Occupancy End Date',
+                                  );
+                                  if (pickedDate != null) {
+                                    final nights = pickedDate.difference(DateTime.now()).inDays.clamp(1, 90);
+                                    final newManualBooking = BookingModel(
+                                      id: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+                                      resortId: liveRoom.resortId,
+                                      roomId: liveRoom.id,
+                                      roomNumber: liveRoom.roomNumber,
+                                      guestName: 'Manual Occupancy Override',
+                                      guestPhone: 'N/A',
+                                      guestIdProof: 'N/A',
+                                      guestIdNumber: 'N/A',
+                                      bookingSource: 'Manual',
+                                      checkInDate: DateTime.now(),
+                                      checkOutDate: pickedDate,
+                                      status: 'Active',
+                                      depositPaid: 0.0,
+                                      basePriceSum: liveRoom.price * nights,
+                                      weekendSurcharge: 0.0,
+                                      seasonSurcharge: 0.0,
+                                      holidaySurcharge: 0.0,
+                                      extraBedCharge: 0.0,
+                                      amenitiesCharge: 0.0,
+                                      totalSum: liveRoom.price * nights,
+                                    );
+                                    ref.read(pmsProvider.notifier).createBooking(newManualBooking);
+                                    if (context.mounted) {
+                                      Navigator.pop(context); // Close actions sheet
+                                      context.go('/bookings');
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Room ${liveRoom.roomNumber} set to Occupied manually until ${_getMonth(pickedDate)} ${pickedDate.day}!')),
+                                      );
+                                    }
+                                  }
+                                } else {
+                                  ref.read(pmsProvider.notifier).updateRoomStatus(liveRoom.id, status);
+                                }
+                              }
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const Divider(height: 32),
+                  if (liveRoom.status == 'Vacant')
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.book_online),
+                        label: const Text('Book Room (Check-in Guest)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showBookingSheet(context, liveRoom);
+                        },
+                      ),
+                    ),
+                  if (liveRoom.status == 'Occupied')
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Checkout Guest & Settle Bill'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showBookingDetailsSheet(context, activeBooking!, liveRoom);
+                        },
+                      ),
+                    ),
+                  if (liveRoom.status == 'Maintenance')
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.build_circle),
+                        label: const Text('Complete Maintenance (Set Vacant)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: () {
+                          ref.read(pmsProvider.notifier).updateRoomStatus(liveRoom.id, 'Vacant');
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Room ${liveRoom.roomNumber} is now VACANT and ready to book!')),
+                          );
+                        },
+                      ),
+                    ),
+                  if (liveRoom.status == 'Cleaning')
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.cleaning_services),
+                        label: const Text('Complete Cleaning (Set Vacant)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: () {
+                          ref.read(pmsProvider.notifier).updateRoomStatus(liveRoom.id, 'Vacant');
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Room ${liveRoom.roomNumber} has been cleaned and is now VACANT!')),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditRoomDialog(BuildContext context, RoomModel room) {
+    final roomNumCtrl = TextEditingController(text: room.roomNumber);
+    final typeCtrl = TextEditingController(text: room.type);
+    final priceCtrl = TextEditingController(text: room.price.toStringAsFixed(0));
+    
+    final seasonCtrl = TextEditingController(text: room.seasonPrice.toStringAsFixed(0));
+    final weekendCtrl = TextEditingController(text: room.weekendPrice.toStringAsFixed(0));
+    final holidayCtrl = TextEditingController(text: room.holidayPrice.toStringAsFixed(0));
+    final extraBedCtrl = TextEditingController(text: room.extraBedPrice.toStringAsFixed(0));
+
+    String currentStatus = room.status;
+    final List<Map<String, dynamic>> dialogAmenities = List.from(room.amenities);
+    final List<String> uploadedImages = List.from(room.images);
+
+    final nameNewAmenityCtrl = TextEditingController();
+    final priceNewAmenityCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Edit Room ${room.roomNumber} Details'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: roomNumCtrl,
+                      decoration: const InputDecoration(labelText: 'Room Number', contentPadding: EdgeInsets.zero),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: typeCtrl,
+                      decoration: const InputDecoration(labelText: 'Room Type', contentPadding: EdgeInsets.zero),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: currentStatus,
+                      decoration: const InputDecoration(labelText: 'Room Status', contentPadding: EdgeInsets.zero),
+                      items: ['Vacant', 'Occupied', 'Maintenance', 'Cleaning'].map((status) {
+                        return DropdownMenuItem(value: status, child: Text(status));
+                      }).toList(),
+                      onChanged: (val) => setDialogState(() => currentStatus = val ?? currentStatus),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    const Text('Configure Pricing Models (₹)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: priceCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Base Price / Night', contentPadding: EdgeInsets.zero),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: extraBedCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Extra Bed Cost', contentPadding: EdgeInsets.zero),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: weekendCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Weekend Surcharge', contentPadding: EdgeInsets.zero),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: seasonCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Season Surcharge', contentPadding: EdgeInsets.zero),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: holidayCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Holiday Surcharge', contentPadding: EdgeInsets.zero),
+                    ),
+
+                    const SizedBox(height: 20),
+                    const Text('Room Custom Amenities', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                    const SizedBox(height: 6),
+                    
+                    Column(
+                      children: dialogAmenities.map((amenity) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('- ${amenity['name']} (₹${amenity['price']})', style: const TextStyle(fontSize: 11)),
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline, size: 14, color: AppColors.error),
+                              onPressed: () {
+                                setDialogState(() {
+                                  dialogAmenities.remove(amenity);
+                                });
+                              },
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: nameNewAmenityCtrl,
+                            decoration: const InputDecoration(hintText: 'New amenity name...', contentPadding: EdgeInsets.zero),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: priceNewAmenityCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(hintText: 'Cost (₹)', contentPadding: EdgeInsets.zero),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_box, color: AppColors.primary),
+                          onPressed: () {
+                            if (nameNewAmenityCtrl.text.isNotEmpty && priceNewAmenityCtrl.text.isNotEmpty) {
+                              setDialogState(() {
+                                dialogAmenities.add({
+                                  'name': nameNewAmenityCtrl.text,
+                                  'price': double.tryParse(priceNewAmenityCtrl.text) ?? 10.0,
+                                });
+                                nameNewAmenityCtrl.clear();
+                                priceNewAmenityCtrl.clear();
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+                    Text(
+                      'Room Photo Gallery (${uploadedImages.length}/5)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline),
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(5, (index) {
+                          final hasImage = index < uploadedImages.length;
+                          final isNextSlot = index == uploadedImages.length;
+
+                          if (hasImage) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: SizedBox(
+                                      width: 60,
+                                      height: 60,
+                                      child: (kIsWeb || uploadedImages[index].startsWith('http') || uploadedImages[index].startsWith('blob:'))
+                                          ? Image.network(uploadedImages[index], fit: BoxFit.cover)
+                                          : Image.file(File(uploadedImages[index]), fit: BoxFit.cover),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setDialogState(() {
+                                          uploadedImages.removeAt(index);
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close, size: 10, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else if (isNextSlot) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: GestureDetector(
+                                onTap: () => pickImage(setDialogState, uploadedImages),
+                                child: Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceContainerHigh,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppColors.outlineVariant, width: 1.2),
+                                  ),
+                                  child: const Icon(Icons.add_a_photo_outlined, size: 18, color: AppColors.outline),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceContainerLow.withOpacity(0.4),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.image_outlined, size: 18, color: Colors.grey),
+                              ),
+                            );
+                          }
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  onPressed: () {
+                    if (roomNumCtrl.text.isEmpty) return;
+
+                    final finalImages = uploadedImages.isEmpty
+                        ? ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80']
+                        : uploadedImages;
+
+                    final updatedRoom = room.copyWith(
+                      status: currentStatus,
+                      images: finalImages,
+                      price: double.tryParse(priceCtrl.text) ?? room.price,
+                      seasonPrice: double.tryParse(seasonCtrl.text) ?? room.seasonPrice,
+                      weekendPrice: double.tryParse(weekendCtrl.text) ?? room.weekendPrice,
+                      holidayPrice: double.tryParse(holidayCtrl.text) ?? room.holidayPrice,
+                      extraBedPrice: double.tryParse(extraBedCtrl.text) ?? room.extraBedPrice,
+                      amenities: List.from(dialogAmenities),
+                    );
+
+                    ref.read(pmsProvider.notifier).updateRoomDetails(room.id, updatedRoom);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Updated Room ${roomNumCtrl.text} details successfully!')),
+                    );
+                  },
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildRuleTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: AppColors.outline),
+      ),
+    );
+  }
+
+  Widget _buildBookingsLogsList(BuildContext context, PmsState pmsState, List<RoomModel> rooms) {
+    final resortBookings = pmsState.bookings
+        .where((b) => b.resortId == widget.resort.id)
+        .toList()
+        .reversed
+        .toList();
+
+    if (resortBookings.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(48.0),
+            child: Text('No bookings logged yet.', style: TextStyle(color: AppColors.outline)),
+          ),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.all(16),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final booking = resortBookings[index];
+            final room = rooms.firstWhere(
+              (r) => r.id == booking.roomId,
+              orElse: () => RoomModel(
+                id: '',
+                roomNumber: booking.roomNumber,
+                type: 'Unknown Type',
+                price: 0,
+                seasonPrice: 0,
+                weekendPrice: 0,
+                holidayPrice: 0,
+                extraBedPrice: 0,
+                amenities: [],
+                status: '',
+                resortId: '',
+                images: [],
+              ),
+            );
+
+            final isActive = booking.status == 'Active';
+            final isManual = booking.guestName == 'Manual Occupancy Override';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: BentoCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Room ${booking.roomNumber}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(room.type, style: const TextStyle(fontSize: 12, color: AppColors.outline)),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? (isManual ? Colors.orange.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1))
+                                : Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            isActive ? (isManual ? 'MANUAL' : 'ACTIVE') : 'COMPLETED',
+                            style: TextStyle(
+                              color: isActive ? (isManual ? Colors.orange : Colors.green) : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    Text(
+                      isManual ? 'Manual Occupancy' : 'Guest: ${booking.guestName}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    if (!isManual) const SizedBox(height: 2),
+                    if (!isManual) Text('Phone: ${booking.guestPhone} | ID: ${booking.guestIdProof} (${booking.guestIdNumber})', style: const TextStyle(fontSize: 11, color: AppColors.outline)),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Check-in: ${_getMonth(booking.checkInDate)} ${booking.checkInDate.day}',
+                              style: const TextStyle(fontSize: 11, color: AppColors.outline),
+                            ),
+                            Text(
+                              'Check-out: ${_getMonth(booking.checkOutDate)} ${booking.checkOutDate.day}',
+                              style: const TextStyle(fontSize: 11, color: AppColors.outline),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '₹${booking.totalSum.toStringAsFixed(0)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          childCount: resortBookings.length,
+        ),
+      ),
+    );
+  }
+
   String _getMonth(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[date.month - 1];
   }
-}
-
-class _FallbackRoom {
-  final String number;
-  final String status;
-  final String type;
-  final int price;
-
-  _FallbackRoom(this.number, this.status, this.type, this.price);
 }

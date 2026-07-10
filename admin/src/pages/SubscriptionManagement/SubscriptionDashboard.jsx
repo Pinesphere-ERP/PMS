@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { 
   Building2, 
   AlertCircle, 
@@ -6,7 +7,8 @@ import {
   Ban, 
   CreditCard,
   DollarSign,
-  CalendarDays
+  CalendarDays,
+  Loader2
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -22,65 +24,130 @@ import {
   LineChart,
   Line
 } from 'recharts';
+import { subscriptionService } from '../../services/subscriptionService';
 
-const kpiStats = [
-  { name: 'Total Active Subscriptions', value: '842', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-  { name: 'Expiring in Next 3 Days', value: '18', icon: AlertCircle, color: 'text-orange-500', bg: 'bg-orange-50' },
-  { name: 'Grace Period Properties', value: '5', icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  { name: 'Expired Subscriptions', value: '12', icon: Ban, color: 'text-red-500', bg: 'bg-red-50' },
-  { name: 'Monthly Revenue', value: '$42,500', icon: DollarSign, color: 'text-pine-DEFAULT', bg: 'bg-pine-50' },
-  { name: 'Pending Renewals', value: '24', icon: CalendarDays, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-];
-
-const pieData = [
-  { name: 'Pro Plan', value: 400, color: '#8aa356' },
-  { name: 'Basic Plan', value: 300, color: '#5f703a' },
-  { name: 'Enterprise', value: 142, color: '#2f2e2a' },
-];
-
-const barData = [
-  { name: 'Jan', revenue: 38000 },
-  { name: 'Feb', revenue: 39500 },
-  { name: 'Mar', revenue: 41000 },
-  { name: 'Apr', revenue: 42500 },
-];
-
-const recentActivities = [
-  { id: 1, action: 'Subscription Renewed', subject: 'Grand Plaza Hotel', time: '2 mins ago', amount: '$499.00', status: 'Success' },
-  { id: 2, action: 'Payment Received', subject: 'Sea View Resort', time: '1 hour ago', amount: '$199.00', status: 'Success' },
-  { id: 3, action: 'Property Disabled', subject: 'City Lights Hostel', time: '3 hours ago', amount: '-', status: 'Expired' },
-  { id: 4, action: 'Upcoming Expiration', subject: 'Mountain Inn', time: '5 hours ago', amount: '-', status: 'Warning' },
+const fallbackKpiStats = [
+  { name: 'Total Active Subscriptions', value: '0', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+  { name: 'Expiring in Next 3 Days', value: '0', icon: AlertCircle, color: 'text-orange-500', bg: 'bg-orange-50' },
+  { name: 'Grace Period Properties', value: '0', icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  { name: 'Expired Subscriptions', value: '0', icon: Ban, color: 'text-red-500', bg: 'bg-red-50' },
+  { name: 'Monthly Revenue', value: '$0', icon: DollarSign, color: 'text-pine-DEFAULT', bg: 'bg-pine-50' },
+  { name: 'Pending Renewals', value: '0', icon: CalendarDays, color: 'text-indigo-500', bg: 'bg-indigo-50' },
 ];
 
 export default function SubscriptionDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [data, setData] = useState({
+    kpis: fallbackKpiStats,
+    pieData: [],
+    barData: [],
+    recentActivities: []
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const result = await subscriptionService.getDashboardData();
+        setData({
+          kpis: result.kpis?.length ? result.kpis : fallbackKpiStats,
+          pieData: result.pieData || [],
+          barData: result.barData || [],
+          recentActivities: result.recentActivities || []
+        });
+      } catch (err) {
+        setError(err.message || 'Failed to fetch dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-200px)]">
+        <Loader2 className="w-8 h-8 text-pine animate-spin" />
+        <span className="ml-3 text-gray-500">Loading Subscription Dashboard...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
+        <AlertCircle className="h-10 w-10 text-red-500 mb-4" />
+        <p className="text-gray-900 font-medium">Failed to load dashboard data</p>
+        <p className="text-gray-500 text-sm mt-2">{error}</p>
+      </div>
+    );
+  }
+
+  const { kpis, pieData, barData, recentActivities } = data;
+
   return (
     <div className="space-y-6 animate-slide-up">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Subscription Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Overview of subscription health across all onboarded properties.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Subscription Overview</h1>
+          <p className="text-sm text-gray-500 mt-1">High-level metrics and revenue tracking.</p>
+        </div>
+        <div className="flex space-x-2">
+          <button className="saas-button-secondary">Download Report</button>
+          <button className="saas-button-primary">Generate Invoices</button>
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {kpiStats.map((stat, i) => (
-          <div key={stat.name} className="saas-card p-5 flex items-start space-x-4">
-            <div className={`p-2.5 rounded-lg ${stat.bg}`}>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {kpis.map((stat, i) => {
+          const Icon = typeof stat.icon === 'string' ? CheckCircle2 : (stat.icon || CheckCircle2);
+          return (
+            <div key={i} className="saas-card p-4 flex flex-col justify-center">
+              <div className="flex items-center space-x-3">
+                <div className={`p-2 rounded-lg ${stat.bg || 'bg-gray-50'}`}>
+                  <Icon className={`h-4 w-4 ${stat.color || 'text-gray-500'}`} />
+                </div>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{stat.name}</p>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 mt-3">{stat.value}</p>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">{stat.name}</p>
-              <h3 className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</h3>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Status Distribution */}
-        <div className="saas-card p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Plan Distribution</h3>
-          <div className="h-64">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Revenue Chart */}
+        <div className="lg:col-span-2 saas-card p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Revenue Trends</h2>
+            <select className="saas-input py-1 text-sm bg-gray-50 border-gray-200">
+              <option>Last 6 Months</option>
+              <option>This Year</option>
+            </select>
+          </div>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} tickFormatter={(value) => `$${value/1000}k`} />
+                <Tooltip 
+                  cursor={{ fill: '#f9fafb' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                />
+                <Bar dataKey="revenue" fill="#4a5d23" radius={[4, 4, 0, 0]} maxBarSize={50} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Plan Distribution */}
+        <div className="saas-card p-6 flex flex-col">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">Plan Distribution</h2>
+          <div className="flex-1 flex justify-center items-center relative min-h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -89,71 +156,66 @@ export default function SubscriptionDashboard() {
                   cy="50%"
                   innerRadius={60}
                   outerRadius={80}
-                  paddingAngle={5}
+                  paddingAngle={2}
                   dataKey="value"
+                  stroke="none"
                 >
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
               </PieChart>
             </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-bold text-gray-900">{pieData.reduce((a, b) => a + b.value, 0)}</span>
+              <span className="text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">Total</span>
+            </div>
           </div>
-          <div className="flex justify-center space-x-4 mt-2">
+          <div className="mt-6 space-y-3">
             {pieData.map(item => (
-              <div key={item.name} className="flex items-center text-xs text-gray-500">
-                <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></span>
-                {item.name}
+              <div key={item.name} className="flex justify-between items-center text-sm">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
+                  <span className="text-gray-600 font-medium">{item.name}</span>
+                </div>
+                <span className="text-gray-900 font-bold">{item.value} <span className="text-gray-400 font-normal text-xs ml-1 relative -top-px">({Math.round((item.value / pieData.reduce((a, b) => a + b.value, 0)) * 100)}%)</span></span>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Monthly Revenue */}
-        <div className="saas-card p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Monthly Revenue</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dx={-10} tickFormatter={(val) => `$${val/1000}k`} />
-                <Tooltip cursor={{ fill: '#F9FAFB' }} />
-                <Bar dataKey="revenue" fill="#8aa356" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
 
-      {/* Recent Activities */}
+      {/* Recent Activity */}
       <div className="saas-card overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="text-sm font-semibold text-gray-900">Recent Activities</h3>
-          <button className="text-sm text-pine font-medium hover:text-pine-dark transition-colors">View All</button>
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Financial Activities</h2>
+          <button className="text-sm font-medium text-pine hover:text-pine-dark transition-colors">View All</button>
         </div>
-        <ul className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100">
           {recentActivities.map((activity) => (
-            <li key={activity.id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+            <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group">
+              <div className="flex items-center">
+                <div className="h-10 w-10 rounded-full bg-pine/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <CreditCard className="h-4 w-4 text-pine" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-semibold text-gray-900">{activity.action}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{activity.subject} • {activity.time}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{activity.amount}</p>
-                  <span className={`inline-block mt-1 status-badge ${
-                    activity.status === 'Success' ? 'status-active' :
-                    activity.status === 'Warning' ? 'status-pending' : 'status-error'
-                  }`}>
-                    {activity.status}
-                  </span>
-                </div>
               </div>
-            </li>
+              <div className="text-right">
+                <p className="text-sm font-bold text-gray-900">{activity.amount}</p>
+                <p className="text-xs text-green-600 font-medium mt-0.5 flex items-center justify-end"><CheckCircle2 className="w-3 h-3 mr-1"/> {activity.status}</p>
+              </div>
+            </div>
           ))}
-        </ul>
+          {recentActivities.length === 0 && (
+            <div className="p-8 text-center text-gray-500">No recent activities found.</div>
+          )}
+        </div>
       </div>
     </div>
   );

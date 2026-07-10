@@ -1,81 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
+import '../../data/kpi_aggregation_service.dart';
+import '../../domain/models/kpi_snapshot_entity.dart';
 
-class RevenueEntry {
-  final String roomNo;
-  final String guestName;
-  final double totalAmount;
-  final String paymentMethod;
-  final String paymentStatus;
-  final DateTime paymentTime;
-
-  RevenueEntry({
-    required this.roomNo,
-    required this.guestName,
-    required this.totalAmount,
-    required this.paymentMethod,
-    required this.paymentStatus,
-    required this.paymentTime,
-  });
-}
-
-class TodaysRevenueScreen extends StatefulWidget {
+class TodaysRevenueScreen extends ConsumerWidget {
   const TodaysRevenueScreen({super.key});
 
   @override
-  State<TodaysRevenueScreen> createState() => _TodaysRevenueScreenState();
-}
-
-class _TodaysRevenueScreenState extends State<TodaysRevenueScreen> {
-  final List<RevenueEntry> _entries = [
-    RevenueEntry(
-      roomNo: '101',
-      guestName: 'John Doe',
-      totalAmount: 500.0,
-      paymentMethod: 'Credit Card',
-      paymentStatus: 'Completed',
-      paymentTime: DateTime.now().subtract(const Duration(hours: 1)),
-    ),
-    RevenueEntry(
-      roomNo: 'Cottage 3',
-      guestName: 'Jane Smith',
-      totalAmount: 1200.0,
-      paymentMethod: 'Bank Transfer',
-      paymentStatus: 'Completed',
-      paymentTime: DateTime.now().subtract(const Duration(hours: 3)),
-    ),
-    RevenueEntry(
-      roomNo: '205',
-      guestName: 'Robert Johnson',
-      totalAmount: 850.0,
-      paymentMethod: 'Cash',
-      paymentStatus: 'Completed',
-      paymentTime: DateTime.now().subtract(const Duration(hours: 5, minutes: 30)),
-    ),
-    RevenueEntry(
-      roomNo: '104',
-      guestName: 'Alice Williams',
-      totalAmount: 1700.0,
-      paymentMethod: 'Credit Card',
-      paymentStatus: 'Completed',
-      paymentTime: DateTime.now().subtract(const Duration(minutes: 45)),
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(symbol: '\$');
-    final totalRevenue = _entries.fold<double>(0, (sum, item) => sum + item.totalAmount);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final propertyId = authState.maybeWhen(
+      authenticated: (user) => user.id,
+      orElse: () => '',
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        title: const Text('Today\'s Revenue', style: TextStyle(color: AppColors.primary)),
+        title: const Text('Today\'s Revenue',
+            style: TextStyle(color: AppColors.primary)),
         iconTheme: const IconThemeData(color: AppColors.primary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -83,40 +33,168 @@ class _TodaysRevenueScreenState extends State<TodaysRevenueScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: propertyId.isEmpty
+            ? const Center(child: Text('Please log in to view revenue.'))
+            : _RevenueBody(propertyId: propertyId),
+      ),
+    );
+  }
+}
+
+class _RevenueBody extends ConsumerWidget {
+  final String propertyId;
+
+  const _RevenueBody({required this.propertyId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final kpiAsync = ref.watch(todaysKpiStreamProvider(propertyId: propertyId));
+    final currencyFormatter = NumberFormat.currency(symbol: '\$');
+
+    return kpiAsync.when(
+      data: (kpi) {
+        final totalRevenue = kpi != null
+            ? kpi.revenueRoomRent + kpi.revenueAddons
+            : 0.0;
+
+        return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSummaryCard(totalRevenue, currencyFormatter),
+              _SummaryCard(
+                totalRevenue: totalRevenue,
+                formatter: currencyFormatter,
+              ),
               const SizedBox(height: 24),
+              // GST section — owner/accountant only
+              if (kpi != null && kpi.gstCollected > 0) ...[
+                _GstSummaryCard(gstAmount: kpi.gstCollected, formatter: currencyFormatter),
+                const SizedBox(height: 16),
+              ],
               Text(
-                'Recent Transactions',
+                'Today\'s KPI Breakdown',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
+                      color: AppColors.onSurfaceVariant,
+                    ),
               ),
               const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _entries.length,
-                  itemBuilder: (context, index) {
-                    final entry = _entries[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: _buildRevenueCard(entry, currencyFormatter),
-                    );
-                  },
+              if (kpi != null)
+                Expanded(
+                  child: ListView(
+                    children: [
+                      _kpiRow(Icons.hotel, 'Room Rent Revenue',
+                          _formatCurrency(kpi.revenueRoomRent, currencyFormatter)),
+                      const SizedBox(height: 12),
+                      _kpiRow(Icons.local_cafe, 'Addon Revenue',
+                          _formatCurrency(kpi.revenueAddons, currencyFormatter)),
+                      const SizedBox(height: 12),
+                      _kpiRow(Icons.receipt, 'Expenses',
+                          _formatCurrency(kpi.expensesAmount, currencyFormatter)),
+                      const SizedBox(height: 12),
+                      _kpiRow(Icons.pending_actions, 'Outstanding',
+                          _formatCurrency(kpi.outstandingPayments, currencyFormatter)),
+                      const SizedBox(height: 12),
+                      _kpiRow(Icons.bed, 'Occupied Rooms',
+                          '${kpi.occupiedRooms}'),
+                      const SizedBox(height: 12),
+                      _kpiRow(Icons.bed_outlined, 'Vacant Rooms',
+                          '${kpi.vacantRooms}'),
+                    ],
+                  ),
+                )
+              else
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.receipt_long,
+                            size: 48, color: AppColors.outline),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No transactions yet today',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: AppColors.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'KPI data updates automatically as payments are recorded.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: AppColors.outline),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
-        ),
-      ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, _) => Center(child: Text('Error: $err')),
     );
   }
 
-  Widget _buildSummaryCard(double totalRevenue, NumberFormat formatter) {
+  String _formatCurrency(double amount, NumberFormat formatter) {
+    return formatter.format(amount);
+  }
+
+  Widget _kpiRow(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: AppColors.secondaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppColors.onSecondaryContainer, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: AppColors.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  final double totalRevenue;
+  final NumberFormat formatter;
+
+  const _SummaryCard({required this.totalRevenue, required this.formatter});
+
+  @override
+  Widget build(BuildContext context) {
     return BentoCard(
       padding: const EdgeInsets.all(24),
       child: Row(
@@ -127,7 +205,8 @@ class _TodaysRevenueScreenState extends State<TodaysRevenueScreen> {
               color: AppColors.primaryContainer,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.account_balance, color: AppColors.onPrimaryContainer, size: 32),
+            child: const Icon(Icons.account_balance,
+                color: AppColors.onPrimaryContainer, size: 32),
           ),
           const SizedBox(width: 24),
           Column(
@@ -136,16 +215,16 @@ class _TodaysRevenueScreenState extends State<TodaysRevenueScreen> {
               Text(
                 'Total Revenue',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
+                      color: AppColors.onSurfaceVariant,
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 formatter.format(totalRevenue),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ],
           ),
@@ -153,169 +232,50 @@ class _TodaysRevenueScreenState extends State<TodaysRevenueScreen> {
       ),
     );
   }
+}
 
-  Widget _buildRevenueCard(RevenueEntry entry, NumberFormat formatter) {
+class _GstSummaryCard extends StatelessWidget {
+  final double gstAmount;
+  final NumberFormat formatter;
+
+  const _GstSummaryCard({required this.gstAmount, required this.formatter});
+
+  @override
+  Widget build(BuildContext context) {
     return BentoCard(
-      onTap: () => _showRevenueDetails(entry, formatter),
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.secondaryContainer,
-              shape: BoxShape.circle,
+            decoration: BoxDecoration(
+              color: AppColors.tertiaryContainer,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.attach_money, color: AppColors.onSecondaryContainer),
+            child: const Icon(Icons.receipt_long,
+                color: AppColors.onTertiaryContainer, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('GST Collected Today',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        )),
                 Text(
-                  entry.guestName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.onSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Room: ${entry.roomNo} | ${DateFormat('h:mm a').format(entry.paymentTime)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
+                  formatter.format(gstAmount),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                formatter.format(entry.totalAmount),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              _buildStatusChip(entry.paymentStatus),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  void _showRevenueDetails(RevenueEntry entry, NumberFormat formatter) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Transaction Details',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  _buildStatusChip(entry.paymentStatus),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildDetailRow(Icons.person, 'Guest Name', entry.guestName),
-              const SizedBox(height: 16),
-              _buildDetailRow(Icons.meeting_room, 'Room / Cottage', entry.roomNo),
-              const SizedBox(height: 16),
-              _buildDetailRow(Icons.access_time, 'Payment Time', DateFormat('MMM d, y h:mm a').format(entry.paymentTime)),
-              const SizedBox(height: 16),
-              _buildDetailRow(Icons.credit_card, 'Payment Method', entry.paymentMethod),
-              const Divider(height: 32),
-              _buildDetailRow(Icons.monetization_on, 'Total Amount', formatter.format(entry.totalAmount), highlight: true),
-              const SizedBox(height: 24),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStatusChip(String status) {
-    Color bgColor;
-    Color textColor;
-
-    switch (status.toLowerCase()) {
-      case 'completed':
-      case 'success':
-        bgColor = AppColors.secondaryContainer;
-        textColor = AppColors.onSecondaryContainer;
-        break;
-      case 'failed':
-        bgColor = AppColors.errorContainer;
-        textColor = AppColors.onErrorContainer;
-        break;
-      case 'pending':
-        bgColor = AppColors.tertiaryContainer;
-        textColor = AppColors.onTertiaryContainer;
-        break;
-      default:
-        bgColor = AppColors.surfaceVariant;
-        textColor = AppColors.onSurfaceVariant;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value, {bool highlight = false}) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: highlight ? AppColors.primary : AppColors.outline),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: highlight ? AppColors.primary : AppColors.onSurface,
-            fontWeight: highlight ? FontWeight.bold : FontWeight.w600,
-            fontSize: highlight ? 18 : null,
-          ),
-        ),
-      ],
     );
   }
 }

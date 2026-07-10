@@ -445,3 +445,6 @@ class CashRegister(Base):
     closing_balance: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
     shift_date: Mapped[date] = mapped_column(Date, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default='open') # open, closed
+
+# ── Reports & Analytics (Module 13) ──
+from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, ScheduledReport

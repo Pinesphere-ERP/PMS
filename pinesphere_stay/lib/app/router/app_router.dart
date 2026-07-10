@@ -19,6 +19,8 @@ import '../../features/bookings/presentation/screens/pending_payments_screen.dar
 import '../../features/reports/presentation/screens/todays_revenue_screen.dart';
 import '../../features/device_management/presentation/screens/device_registration_screen.dart';
 import '../../features/device_management/presentation/screens/device_sync_status_screen.dart';
+import '../../features/checkin/presentation/screens/checkin_screen.dart';
+import '../../features/checkout/presentation/screens/checkout_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -31,7 +33,7 @@ final GlobalKey<NavigatorState> _settingsNavigatorKey = GlobalKey<NavigatorState
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
-  
+
   RouterNotifier(this._ref) {
     _ref.listen<AuthState>(
       authProvider,
@@ -94,6 +96,14 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/dashboard',
                 builder: (context, state) => const DashboardScreen(),
+              ),
+              GoRoute(
+                path: '/checkin',
+                builder: (context, state) => const CheckInScreen(),
+              ),
+              GoRoute(
+                path: '/checkout',
+                builder: (context, state) => const CheckOutScreen(),
               ),
               GoRoute(
                 path: '/todays-arrivals',

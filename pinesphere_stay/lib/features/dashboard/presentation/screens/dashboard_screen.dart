@@ -116,13 +116,27 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(child: _buildActionButton(context, Icons.add_circle_outline, 'New Booking', '/bookings')),
-        const SizedBox(width: 12),
-        Expanded(child: _buildActionButton(context, Icons.grid_view, 'Room Grid', '/rooms')),
-        const SizedBox(width: 12),
-        Expanded(child: _buildActionButton(context, Icons.analytics_outlined, 'Reports', '/reports')),
+        Row(
+          children: [
+            Expanded(child: _buildActionButton(context, Icons.login, 'Check-In', '/checkin')),
+            const SizedBox(width: 12),
+            Expanded(child: _buildActionButton(context, Icons.logout, 'Check-Out', '/checkout')),
+            const SizedBox(width: 12),
+            Expanded(child: _buildActionButton(context, Icons.cleaning_services, 'Housekeeping', '/housekeeping')),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildActionButton(context, Icons.add_circle_outline, 'New Booking', '/bookings')),
+            const SizedBox(width: 12),
+            Expanded(child: _buildActionButton(context, Icons.grid_view, 'Room Grid', '/rooms')),
+            const SizedBox(width: 12),
+            Expanded(child: _buildActionButton(context, Icons.analytics_outlined, 'Reports', '/reports')),
+          ],
+        ),
       ],
     );
   }

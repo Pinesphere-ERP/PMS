@@ -5,6 +5,10 @@ from app.modules.properties import router as property
 from app.modules.subscriptions import router as subscription
 from app.modules.devices import router as devices
 from app.modules.payments.router import router as payments
+from app.modules.bookings import router as bookings
+from app.modules.checkin import router as checkin
+from app.modules.checkout import router as checkout
+from app.modules.housekeeping import router as housekeeping
 
 api_router = APIRouter()
 api_router.include_router(auth, prefix="/auth", tags=["Authentication"])
@@ -13,3 +17,7 @@ api_router.include_router(property, prefix="/properties", tags=["Property Manage
 api_router.include_router(subscription, prefix="/subscriptions", tags=["Subscription Management"])
 api_router.include_router(devices, prefix="/devices", tags=["Device Management"])
 api_router.include_router(payments, prefix="/payments", tags=["Payments"])
+api_router.include_router(bookings, prefix="/bookings", tags=["Booking Management"])
+api_router.include_router(checkin, prefix="/checkin", tags=["Check-In Management"])
+api_router.include_router(checkout, prefix="/checkout", tags=["Check-Out Management"])
+api_router.include_router(housekeeping, prefix="/housekeeping", tags=["Housekeeping & Maintenance"])

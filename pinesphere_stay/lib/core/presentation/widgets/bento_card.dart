@@ -6,6 +6,7 @@ class BentoCard extends StatefulWidget {
   final VoidCallback? onTap;
   final Color? backgroundColor;
   final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
   final Clip clipBehavior;
 
   const BentoCard({
@@ -14,6 +15,7 @@ class BentoCard extends StatefulWidget {
     this.onTap,
     this.backgroundColor,
     this.padding,
+    this.margin,
     this.clipBehavior = Clip.none,
   });
 
@@ -99,11 +101,15 @@ class _BentoCardState extends State<BentoCard> with SingleTickerProviderStateMix
       );
     }
 
+    final margined = widget.margin != null
+        ? Padding(padding: widget.margin!, child: content)
+        : content;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      child: content,
+      child: margined,
     );
   }
 }

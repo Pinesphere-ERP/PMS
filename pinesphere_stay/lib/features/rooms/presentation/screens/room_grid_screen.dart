@@ -5,8 +5,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/pms_provider.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../domain/models/room_entity.dart';
+import '../../data/room_service.dart';
+
+final roomGridProvider = FutureProvider<List<RoomEntity>>((ref) async {
+  try {
+    final service = ref.watch(roomServiceProvider);
+    return await service.getRoomGrid('default');
+  } catch (e) {
+    return [];
+  }
+});
+
 
 class RoomGridScreen extends ConsumerStatefulWidget {
   const RoomGridScreen({super.key});
@@ -16,101 +29,64 @@ class RoomGridScreen extends ConsumerStatefulWidget {
 }
 
 class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
+  String _activeFilter = 'All';
+
   @override
   Widget build(BuildContext context) {
-    final pmsState = ref.watch(pmsProvider);
-    final resorts = pmsState.resorts;
-    final rooms = pmsState.rooms;
+    final roomsAsync = ref.watch(roomGridProvider);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context),
-          SliverPadding(
-            padding: const EdgeInsets.all(16.0),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 0.85,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final resort = resorts[index];
-                  final resortRooms = rooms.where((r) => r.resortId == resort.id).toList();
-                  
-                  return BentoCard(
-                    padding: EdgeInsets.zero,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ResortRoomsDetailScreen(resort: resort),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                            child: Image.network(
-                              resort.image,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: AppColors.surfaceContainerHigh,
-                                child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                resort.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                resort.location,
-                                style: const TextStyle(color: AppColors.outline, fontSize: 10),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${resortRooms.length} Rooms',
-                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary),
-                                  ),
-                                  const Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 14,
-                                    color: AppColors.primary,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+          SliverToBoxAdapter(
+            child: _buildFilters(context),
+          ),
+          roomsAsync.when(
+            data: (rooms) {
+              if (rooms.isEmpty) {
+                return const SliverToBoxAdapter(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(48.0),
+                      child: Text(
+                        'No rooms found. Add rooms from the admin panel.',
+                        style: TextStyle(color: AppColors.onSurfaceVariant),
+                      ),
                     ),
-                  );
-                },
-                childCount: resorts.length,
-              ),
+                  ),
+                );
+              }
+
+              final filtered = _activeFilter == 'All'
+                  ? rooms
+                  : rooms.where((r) => r.status == _activeFilter).toList();
+
+              return SliverPadding(
+                padding: const EdgeInsets.all(16.0),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.78,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildRoomCardFromEntity(context, filtered[index]),
+                    childCount: filtered.length,
+                  ),
+                ),
+              );
+            },
+            loading: () => const SliverToBoxAdapter(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (_, __) => SliverToBoxAdapter(
+              child: _buildFallbackGrid(context),
             ),
           ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
       ),
     );
@@ -137,6 +113,33 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                 ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilters(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: ['All', 'Vacant', 'Occupied', 'Cleaning'].map((filter) {
+          final isSelected = _activeFilter == filter;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ChoiceChip(
+              label: Text(filter),
+              selected: isSelected,
+              onSelected: (_) {
+                setState(() {
+                  _activeFilter = filter;
+                });
+              },
+              selectedColor: AppColors.primary,
+              backgroundColor: AppColors.surfaceContainerHigh,
+              checkmarkColor: AppColors.onPrimary,
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -323,24 +326,8 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     );
   }
 
-  Widget _buildStatBadge(IconData icon, String text, Color bg, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: iconColor),
-          const SizedBox(width: 4),
-          Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: iconColor)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoomCard(BuildContext context, RoomModel room) {
+  Widget _buildRoomCardFromEntity(BuildContext context, RoomEntity room) {
+    final status = room.status;
     Color edgeColor;
     Color chipBg;
     Color chipText;
@@ -479,8 +466,12 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    room.roomNumber,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    room.name,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppColors.onBackground,
+                          fontWeight: FontWeight.bold,
+                          height: 1.0,
+                        ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -498,28 +489,235 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
               const SizedBox(height: 6),
               Text(
                 room.type,
-                style: const TextStyle(color: AppColors.outline, fontSize: 11),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      height: 1.2,
+                    ),
               ),
               const SizedBox(height: 2),
               Text(
-                '\$${room.price.toStringAsFixed(0)}/night',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 11),
+                '\$${room.pricePerNight.toStringAsFixed(0)}/night',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.primary,
+                    ),
+              ),
+              const Spacer(),
+              if (status == 'Vacant')
+                GestureDetector(
+                  onTap: () => context.go('/checkin'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'BOOK NOW',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.onSecondaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.only(top: 8),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.surfaceContainer)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        status == 'Occupied' ? Icons.person : Icons.cleaning_services_outlined,
+                        size: 14,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          status == 'Occupied' ? 'Guest in room' : 'Being cleaned',
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                                fontStyle: status != 'Occupied' ? FontStyle.italic : FontStyle.normal,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFallbackGrid(BuildContext context) {
+    final fallbackRooms = [
+      _FallbackRoom('302', 'Occupied', 'Deluxe Suite', 120),
+      _FallbackRoom('105', 'Vacant', 'Twin Room', 85),
+      _FallbackRoom('212', 'Cleaning', 'Standard King', 95),
+      _FallbackRoom('401', 'Occupied', 'Penthouse', 450),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 0.78,
+        ),
+        itemCount: fallbackRooms.length,
+        itemBuilder: (context, index) {
+          final room = fallbackRooms[index];
+          return _buildFallbackRoomCard(context, room);
+        },
+      ),
+    );
+  }
+
+  Widget _buildFallbackRoomCard(BuildContext context, _FallbackRoom room) {
+    Color edgeColor;
+    Color chipBg;
+    Color chipText;
+
+    if (room.status == 'Occupied') {
+      edgeColor = AppColors.error;
+      chipBg = AppColors.errorContainer;
+      chipText = AppColors.onErrorContainer;
+    } else if (room.status == 'Vacant') {
+      edgeColor = AppColors.primary;
+      chipBg = AppColors.secondaryContainer;
+      chipText = AppColors.onSecondaryContainer;
+    } else {
+      edgeColor = AppColors.tertiaryContainer;
+      chipBg = AppColors.tertiaryFixed;
+      chipText = AppColors.onTertiaryFixedVariant;
+    }
+
+    return BentoCard(
+      padding: const EdgeInsets.all(16),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -16,
+            top: 24,
+            child: Container(
+              width: 4,
+              height: 32,
+              decoration: BoxDecoration(
+                color: edgeColor,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(4),
+                  bottomRight: Radius.circular(4),
+                ),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 4,
+                runSpacing: 8,
+                children: [
+                  Text(
+                    room.number,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppColors.onBackground,
+                          fontWeight: FontWeight.bold,
+                          height: 1.0,
+                        ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: chipBg,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      room.status.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: chipText,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            fontSize: 9,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                room.type,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      height: 1.2,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '\$${room.price}/night',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.primary,
+                    ),
               ),
               const Spacer(),
               if (room.status == 'Vacant')
-                Container(
-                  width: double.infinity,
-                  height: 28,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(8),
+                GestureDetector(
+                  onTap: () => context.go('/checkin'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'BOOK NOW',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.onSecondaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
                   ),
-                  child: const Text(
-                    'BOOK NOW',
-                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.only(top: 8),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.surfaceContainer)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        room.status == 'Occupied' ? Icons.person : Icons.cleaning_services_outlined,
+                        size: 14,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          room.status == 'Occupied' ? 'Guest in room' : 'Being cleaned',
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               if (room.status == 'Occupied' && activeBooking != null)
@@ -1015,4 +1213,13 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[date.month - 1];
   }
+}
+
+class _FallbackRoom {
+  final String number;
+  final String status;
+  final String type;
+  final int price;
+
+  _FallbackRoom(this.number, this.status, this.type, this.price);
 }

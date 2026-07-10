@@ -1,0 +1,189 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:objectbox/objectbox.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/database/objectbox.dart';
+import '../../../core/network/dio_client.dart';
+import '../../../core/utils/logger.dart';
+import '../../../objectbox.g.dart';
+import '../../rooms/domain/models/room_entity.dart';
+import '../../sync/data/sync_service.dart';
+import '../domain/models/checkin_entity.dart';
+
+part 'checkin_service.g.dart';
+
+@Riverpod(keepAlive: true)
+CheckInService checkInService(Ref ref) {
+  return CheckInService(
+    dio: ref.watch(dioClientProvider),
+  );
+}
+
+class CheckInService {
+  final Dio _dio;
+  late final Store _store;
+  late final Box<CheckInEntity> _checkinBox;
+  late final Box<RoomEntity> _roomBox;
+  late final SyncService _syncService;
+
+  CheckInService({required Dio dio}) : _dio = dio;
+
+  void initialize(Store store, SyncService syncService) {
+    _store = store;
+    _checkinBox = _store.box<CheckInEntity>();
+    _roomBox = _store.box<RoomEntity>();
+    _syncService = syncService;
+  }
+
+  Future<Map<String, dynamic>> performCheckIn(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/checkin/', data: data);
+      final body = response.data as Map<String, dynamic>;
+      final entity = CheckInEntity(
+        uuid: body['id']?.toString() ?? data['uuid'] ?? '',
+        bookingId: body['booking_id']?.toString() ?? data['booking_id'] ?? '',
+        roomId: body['room_id']?.toString() ?? data['room_id'] ?? '',
+        guestId: body['guest_id']?.toString() ?? data['guest_id'] ?? '',
+        propertyId: body['property_id']?.toString() ?? data['property_id'] ?? '',
+        staffId: body['staff_id']?.toString() ?? data['staff_id'] ?? '',
+        guestName: body['guest_name']?.toString() ?? data['guest_name'] ?? '',
+        roomNumber: body['room_number']?.toString() ?? data['room_number'] ?? '',
+        roomType: body['room_type']?.toString() ?? data['room_type'] ?? '',
+        deposit: double.tryParse(body['deposit']?.toString() ?? '') ?? data['deposit'] ?? 0,
+        advancePaid: double.tryParse(body['advance_paid']?.toString() ?? '') ?? data['advance_paid'] ?? 0,
+        idVerified: body['id_verified'] ?? data['id_verified'] ?? false,
+        idVerificationNotes: body['id_verification_notes']?.toString() ?? data['id_verification_notes'] ?? '',
+        checkedInAt: body['checked_in_at']?.toString() ?? data['checked_in_at'] ?? '',
+        status: body['status']?.toString() ?? 'active',
+        offlineId: body['offline_id']?.toString() ?? data['offline_id'] ?? '',
+        specialRequests: body['special_requests']?.toString() ?? data['special_requests'] ?? '',
+        vehicleNumber: body['vehicle_number']?.toString() ?? data['vehicle_number'] ?? '',
+        parkingRequired: body['parking_required'] ?? data['parking_required'] ?? false,
+        lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+      );
+      _checkinBox.put(entity);
+      _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
+      return body;
+    } on DioException catch (e) {
+      AppLogger.w('performCheckIn network failed, storing locally and queuing sync', e);
+      final localUuid = data['uuid'] ?? 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final entity = CheckInEntity(
+        uuid: localUuid.toString(),
+        bookingId: data['booking_id'] ?? '',
+        roomId: data['room_id'] ?? '',
+        guestId: data['guest_id'] ?? '',
+        propertyId: data['property_id'] ?? '',
+        staffId: data['staff_id'] ?? '',
+        guestName: data['guest_name'] ?? '',
+        roomNumber: data['room_number'] ?? '',
+        roomType: data['room_type'] ?? '',
+        deposit: (data['deposit'] ?? 0).toDouble(),
+        advancePaid: (data['advance_paid'] ?? 0).toDouble(),
+        idVerified: data['id_verified'] ?? false,
+        idVerificationNotes: data['id_verification_notes'] ?? '',
+        checkedInAt: data['checked_in_at'] ?? DateTime.now().toUtc().toIso8601String(),
+        status: 'active',
+        offlineId: data['offline_id'] ?? '',
+        specialRequests: data['special_requests'] ?? '',
+        vehicleNumber: data['vehicle_number'] ?? '',
+        parkingRequired: data['parking_required'] ?? false,
+        lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
+      );
+      final localId = _checkinBox.put(entity);
+      _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
+      _syncService.enqueueMutation(
+        entityType: 'CheckIn',
+        entityId: localId,
+        operation: 'CREATE',
+        payload: data,
+      );
+      return data;
+    } catch (e) {
+      AppLogger.e('performCheckIn unexpected error', e);
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> performWalkIn(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/checkin/walkin', data: data);
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      AppLogger.w('performWalkIn network failed', e);
+      rethrow;
+    } catch (e) {
+      AppLogger.e('performWalkIn unexpected error', e);
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getTodaysCheckIns(String propertyId) async {
+    try {
+      final response = await _dio.get('/checkin/today', queryParameters: {'property_id': propertyId});
+      return response.data as List<dynamic>;
+    } on DioException catch (e) {
+      AppLogger.w('getTodaysCheckIns network failed, falling back to ObjectBox', e);
+      return _checkinBox.query(CheckInEntity_.propertyId.equals(propertyId)).build().find();
+    } catch (e) {
+      AppLogger.e('getTodaysCheckIns unexpected error', e);
+      return _checkinBox.query(CheckInEntity_.propertyId.equals(propertyId)).build().find();
+    }
+  }
+
+  Future<List<dynamic>> getActiveCheckIns(String propertyId) async {
+    try {
+      final response = await _dio.get('/checkin/active', queryParameters: {'property_id': propertyId});
+      return response.data as List<dynamic>;
+    } on DioException catch (e) {
+      AppLogger.w('getActiveCheckIns network failed, falling back to ObjectBox', e);
+      return _checkinBox.query(
+        CheckInEntity_.propertyId.equals(propertyId) & CheckInEntity_.status.equals('active'),
+      ).build().find();
+    } catch (e) {
+      AppLogger.e('getActiveCheckIns unexpected error', e);
+      return _checkinBox.query(
+        CheckInEntity_.propertyId.equals(propertyId) & CheckInEntity_.status.equals('active'),
+      ).build().find();
+    }
+  }
+
+  Future<Map<String, dynamic>> getCheckInDetail(String checkinId) async {
+    try {
+      final response = await _dio.get('/checkin/$checkinId');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      AppLogger.e('getCheckInDetail network failed', e);
+      rethrow;
+    } catch (e) {
+      AppLogger.e('getCheckInDetail unexpected error', e);
+      rethrow;
+    }
+  }
+
+  Future<void> cancelCheckIn(String checkinId) async {
+    try {
+      await _dio.post('/checkin/$checkinId/cancel');
+    } on DioException catch (e) {
+      AppLogger.w('cancelCheckIn network failed, queuing sync', e);
+      _syncService.enqueueMutation(
+        entityType: 'CheckIn',
+        entityId: 0,
+        operation: 'UPDATE',
+        payload: {'id': checkinId, 'status': 'cancelled'},
+      );
+    } catch (e) {
+      AppLogger.e('cancelCheckIn unexpected error', e);
+      rethrow;
+    }
+  }
+
+  void _updateRoomStatus(String roomId, String occupancyStatus, String housekeepingStatus) {
+    final query = _roomBox.query(RoomEntity_.uuid.equals(roomId)).build();
+    final rooms = query.find();
+    query.close();
+    if (rooms.isNotEmpty) {
+      final room = rooms.first;
+      _roomBox.put(room);
+    }
+  }
+}

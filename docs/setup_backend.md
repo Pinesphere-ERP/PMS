@@ -53,10 +53,10 @@ Ensure the database URL points to your local Docker instance:
 `DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/pinesphere`
 
 ## 5. Running the Server
-Run the FastAPI development server using Uvicorn from the `pinesphere_backend` root directory (do not `cd` into `src`):
+Run the FastAPI development server using Uvicorn from the `pinesphere_backend` root directory (do not `cd` into `app`):
 
 ```bash
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 The API will be available at `http://localhost:8000`. 

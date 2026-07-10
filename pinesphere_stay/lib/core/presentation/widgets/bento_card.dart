@@ -6,6 +6,7 @@ class BentoCard extends StatefulWidget {
   final VoidCallback? onTap;
   final Color? backgroundColor;
   final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
   final Clip clipBehavior;
 
   const BentoCard({
@@ -14,6 +15,7 @@ class BentoCard extends StatefulWidget {
     this.onTap,
     this.backgroundColor,
     this.padding,
+    this.margin,
     this.clipBehavior = Clip.none,
   });
 
@@ -22,15 +24,21 @@ class BentoCard extends StatefulWidget {
 }
 
 class _BentoCardState extends State<BentoCard> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 100),
-  );
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
 
-  late final Animation<double> _scaleAnimation = Tween<double>(
-    begin: 1.0,
-    end: 0.98,
-  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
 
   @override
   void dispose() {
@@ -93,11 +101,15 @@ class _BentoCardState extends State<BentoCard> with SingleTickerProviderStateMix
       );
     }
 
+    final margined = widget.margin != null
+        ? Padding(padding: widget.margin!, child: content)
+        : content;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      child: content,
+      child: margined,
     );
   }
 }

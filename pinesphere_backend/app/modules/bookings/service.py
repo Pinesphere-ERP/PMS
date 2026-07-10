@@ -1,0 +1,313 @@
+import uuid
+from datetime import date, datetime
+from typing import List, Optional, Tuple
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, and_, or_, desc
+from fastapi import HTTPException, status
+
+from app.infra.models import Booking, Guest, Room, Property
+from app.modules.bookings.schemas import (
+    GuestCreateRequest, GuestResponse,
+    BookingCreateRequest, BookingUpdateRequest, BookingResponse,
+    BookingListResponse, CheckInRequest, CheckInResponse,
+)
+
+
+async def create_guest(db: AsyncSession, req: GuestCreateRequest) -> GuestResponse:
+    if req.mobile:
+        dup_stmt = select(Guest).where(
+            Guest.mobile == req.mobile,
+            Guest.property_id == req.property_id,
+            Guest.is_deleted == False
+        )
+        dup_res = await db.execute(dup_stmt)
+        if dup_res.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="Guest with this mobile number already exists in this property")
+
+    prop_stmt = select(Property).where(Property.property_id == req.property_id)
+    prop_res = await db.execute(prop_stmt)
+    if not prop_res.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    guest = Guest(
+        property_id=req.property_id,
+        full_name=req.full_name,
+        mobile=req.mobile,
+        email=req.email,
+        address=req.address,
+        city=req.city,
+        state=req.state,
+        country=req.country,
+        nationality=req.nationality,
+        dob=req.dob,
+        gender=req.gender,
+        id_type=req.id_type,
+        id_number=req.id_number,
+        id_front_url=req.id_front_url,
+        id_back_url=req.id_back_url,
+        passport_number=req.passport_number,
+        visa_number=req.visa_number,
+        emergency_contact_name=req.emergency_contact_name,
+        emergency_contact_phone=req.emergency_contact_phone,
+    )
+    db.add(guest)
+    await db.flush()
+    await db.refresh(guest)
+    return GuestResponse.model_validate(guest)
+
+
+async def get_guests(
+    db: AsyncSession,
+    property_id: Optional[uuid.UUID] = None,
+    search: Optional[str] = None,
+) -> List[GuestResponse]:
+    stmt = select(Guest).where(Guest.is_deleted == False)
+    if property_id:
+        stmt = stmt.where(Guest.property_id == property_id)
+    if search:
+        pattern = f"%{search}%"
+        stmt = stmt.where(
+            or_(
+                Guest.full_name.ilike(pattern),
+                Guest.mobile.ilike(pattern),
+                Guest.email.ilike(pattern),
+            )
+        )
+    stmt = stmt.order_by(desc(Guest.created_at))
+    res = await db.execute(stmt)
+    guests = res.scalars().all()
+    return [GuestResponse.model_validate(g) for g in guests]
+
+
+async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> BookingResponse:
+    prop_stmt = select(Property).where(Property.property_id == req.property_id)
+    prop_res = await db.execute(prop_stmt)
+    if not prop_res.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    room_stmt = select(Room).where(Room.room_id == req.room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    guest_stmt = select(Guest).where(Guest.guest_id == req.guest_id)
+    guest_res = await db.execute(guest_stmt)
+    guest = guest_res.scalar_one_or_none()
+    if not guest:
+        raise HTTPException(status_code=404, detail="Guest not found")
+
+    if req.check_in_date >= req.check_out_date:
+        raise HTTPException(status_code=400, detail="Check-out date must be after check-in date")
+
+    overlap_stmt = select(Booking).where(
+        Booking.room_id == req.room_id,
+        Booking.booking_status.in_(["confirmed", "checked_in"]),
+        Booking.is_deleted == False,
+        and_(
+            Booking.check_in_date < req.check_out_date,
+            Booking.check_out_date > req.check_in_date,
+        ),
+    )
+    overlap_res = await db.execute(overlap_stmt)
+    if overlap_res.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Room is not available for the selected dates")
+
+    nights = (req.check_out_date - req.check_in_date).days
+    room_rent = req.room_rent or (float(room.price_per_night) if room.price_per_night else 0)
+    total_rent = room_rent * nights if room_rent else 0
+    tax_amount = req.taxes if req.taxes is not None else total_rent * 0.12
+    deposit = req.deposit or 0
+    discount = req.discount or 0
+    total_payable = total_rent + tax_amount + deposit - discount
+    if total_payable < 0:
+        total_payable = 0
+    advance_paid = req.advance_paid or 0
+    pending_amount = total_payable - advance_paid
+    if pending_amount < 0:
+        pending_amount = 0
+
+    booking = Booking(
+        property_id=req.property_id,
+        room_id=req.room_id,
+        guest_id=req.guest_id,
+        booking_type=req.booking_type or "online",
+        booking_source=req.booking_source,
+        check_in_date=req.check_in_date,
+        check_out_date=req.check_out_date,
+        adults=req.adults,
+        children=req.children,
+        infants=req.infants,
+        room_rent=room_rent,
+        deposit=deposit,
+        discount=discount,
+        taxes=tax_amount,
+        total_payable=total_payable,
+        advance_paid=advance_paid,
+        pending_amount=pending_amount,
+        extra_bed=req.extra_bed,
+        guest_preferences=req.guest_preferences,
+        notes=req.notes,
+        vehicle_number=req.vehicle_number,
+        booking_status="confirmed",
+        payment_status="partially_paid" if advance_paid > 0 else "pending",
+    )
+    db.add(booking)
+    await db.flush()
+    await db.refresh(booking)
+
+    return await enrich_booking_response(db, booking)
+
+
+async def get_bookings(
+    db: AsyncSession,
+    property_id: Optional[uuid.UUID] = None,
+    status_filter: Optional[str] = None,
+    date_filter: Optional[date] = None,
+) -> BookingListResponse:
+    stmt = select(Booking).where(Booking.is_deleted == False)
+    if property_id:
+        stmt = stmt.where(Booking.property_id == property_id)
+    if status_filter:
+        stmt = stmt.where(Booking.booking_status == status_filter)
+    if date_filter:
+        stmt = stmt.where(
+            and_(
+                Booking.check_in_date <= date_filter,
+                Booking.check_out_date > date_filter,
+            )
+        )
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    cnt_res = await db.execute(count_stmt)
+    total = cnt_res.scalar() or 0
+
+    stmt = stmt.order_by(desc(Booking.created_at))
+    res = await db.execute(stmt)
+    bookings = res.scalars().all()
+
+    items = []
+    for b in bookings:
+        items.append(await enrich_booking_response(db, b))
+
+    return BookingListResponse(total=total, items=items)
+
+
+async def get_booking_detail(db: AsyncSession, booking_id: uuid.UUID) -> BookingResponse:
+    stmt = select(Booking).where(
+        Booking.booking_id == booking_id,
+        Booking.is_deleted == False,
+    )
+    res = await db.execute(stmt)
+    booking = res.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return await enrich_booking_response(db, booking)
+
+
+async def update_booking(db: AsyncSession, booking_id: uuid.UUID, req: BookingUpdateRequest) -> BookingResponse:
+    stmt = select(Booking).where(
+        Booking.booking_id == booking_id,
+        Booking.is_deleted == False,
+    )
+    res = await db.execute(stmt)
+    booking = res.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if booking.booking_status == "cancelled":
+        raise HTTPException(status_code=400, detail="Cannot update a cancelled booking")
+
+    update_data = req.model_dump(exclude_unset=True)
+
+    if "room_id" in update_data and update_data["room_id"] != booking.room_id:
+        room_stmt = select(Room).where(Room.room_id == update_data["room_id"])
+        room_res = await db.execute(room_stmt)
+        if not room_res.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="New room not found")
+        overlap_stmt = select(Booking).where(
+            Booking.room_id == update_data["room_id"],
+            Booking.booking_status.in_(["confirmed", "checked_in"]),
+            Booking.is_deleted == False,
+            Booking.booking_id != booking_id,
+            and_(
+                Booking.check_in_date < booking.check_out_date,
+                Booking.check_out_date > booking.check_in_date,
+            ),
+        )
+        overlap_res = await db.execute(overlap_stmt)
+        if overlap_res.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="New room is not available for the booking dates")
+
+    for field, value in update_data.items():
+        setattr(booking, field, value)
+
+    check_in = booking.check_in_date
+    check_out = booking.check_out_date
+    if check_in >= check_out:
+        raise HTTPException(status_code=400, detail="Check-out date must be after check-in date")
+
+    if booking.room_rent is not None:
+        nights = (check_out - check_in).days
+        total_rent = booking.room_rent * nights
+        tax_amount = booking.taxes if booking.taxes is not None else total_rent * 0.12
+        deposit = booking.deposit or 0
+        discount = booking.discount or 0
+        booking.total_payable = total_rent + tax_amount + deposit - discount
+        if booking.total_payable < 0:
+            booking.total_payable = 0
+        booking.pending_amount = booking.total_payable - (booking.advance_paid or 0)
+        if booking.pending_amount < 0:
+            booking.pending_amount = 0
+
+    await db.flush()
+    await db.refresh(booking)
+    return await enrich_booking_response(db, booking)
+
+
+async def cancel_booking(db: AsyncSession, booking_id: uuid.UUID) -> BookingResponse:
+    stmt = select(Booking).where(
+        Booking.booking_id == booking_id,
+        Booking.is_deleted == False,
+    )
+    res = await db.execute(stmt)
+    booking = res.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if booking.booking_status == "cancelled":
+        raise HTTPException(status_code=400, detail="Booking is already cancelled")
+
+    if booking.booking_status == "checked_out":
+        raise HTTPException(status_code=400, detail="Cannot cancel a checked-out booking")
+
+    booking.booking_status = "cancelled"
+    await db.flush()
+    await db.refresh(booking)
+    return await enrich_booking_response(db, booking)
+
+
+async def enrich_booking_response(db: AsyncSession, booking: Booking) -> BookingResponse:
+    guest_name = None
+    guest_mobile = None
+    room_number = None
+
+    if booking.guest_id:
+        g_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
+        g_res = await db.execute(g_stmt)
+        g = g_res.scalar_one_or_none()
+        if g:
+            guest_name = g.full_name
+            guest_mobile = g.mobile
+
+    if booking.room_id:
+        r_stmt = select(Room).where(Room.room_id == booking.room_id)
+        r_res = await db.execute(r_stmt)
+        r = r_res.scalar_one_or_none()
+        if r:
+            room_number = r.room_number
+
+    resp = BookingResponse.model_validate(booking)
+    resp.guest_name = guest_name
+    resp.guest_mobile = guest_mobile
+    resp.room_number = room_number
+    return resp

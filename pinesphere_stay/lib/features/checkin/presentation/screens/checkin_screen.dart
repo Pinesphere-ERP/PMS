@@ -1,0 +1,960 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../providers/checkin_provider.dart';
+
+class CheckInScreen extends ConsumerStatefulWidget {
+  const CheckInScreen({super.key});
+
+  @override
+  ConsumerState<CheckInScreen> createState() => _CheckInScreenState();
+}
+
+class _CheckInScreenState extends ConsumerState<CheckInScreen> {
+  bool _isWalkInMode = false;
+
+  final _searchController = TextEditingController();
+  Map<String, dynamic>? _selectedBooking;
+
+  bool _idVerified = false;
+  final _idVerificationNotesController = TextEditingController();
+  final _depositController = TextEditingController();
+  final _advancePaidController = TextEditingController();
+  final _specialRequestsController = TextEditingController();
+  final _vehicleNumberController = TextEditingController();
+  bool _parkingRequired = false;
+
+  final _walkInFormKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _mobileController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _countryController = TextEditingController();
+  final _nationalityController = TextEditingController();
+  final _dobController = TextEditingController();
+  String? _gender;
+  String? _idType;
+  final _idNumberController = TextEditingController();
+
+  DateTime? _walkInCheckInDate;
+  DateTime? _walkInCheckOutDate;
+  int _walkInAdults = 1;
+  int _walkInChildren = 0;
+  int _walkInInfants = 0;
+  String? _selectedRoomId;
+  String? _selectedRoomName;
+
+  final _roomRentController = TextEditingController();
+  final _walkInDepositController = TextEditingController();
+  final _walkInAdvancePaidController = TextEditingController();
+  final _walkInSpecialRequestsController = TextEditingController();
+  final _walkInVehicleNumberController = TextEditingController();
+  bool _walkInParkingRequired = false;
+
+  final DateFormat _dateFormat = DateFormat('MMM dd, yyyy');
+
+  int get _walkInNights {
+    if (_walkInCheckInDate != null && _walkInCheckOutDate != null) {
+      final diff = _walkInCheckOutDate!.difference(_walkInCheckInDate!).inDays;
+      return diff > 0 ? diff : 0;
+    }
+    return 0;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _idVerificationNotesController.dispose();
+    _depositController.dispose();
+    _advancePaidController.dispose();
+    _specialRequestsController.dispose();
+    _vehicleNumberController.dispose();
+    _fullNameController.dispose();
+    _mobileController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _countryController.dispose();
+    _nationalityController.dispose();
+    _dobController.dispose();
+    _idNumberController.dispose();
+    _roomRentController.dispose();
+    _walkInDepositController.dispose();
+    _walkInAdvancePaidController.dispose();
+    _walkInSpecialRequestsController.dispose();
+    _walkInVehicleNumberController.dispose();
+    super.dispose();
+  }
+
+  String get _propertyId => '1234';
+
+  void _onSearchChanged(String query) {
+    if (query.length >= 2) {
+      ref.read(checkInProvider.notifier).searchBookings(_propertyId, search: query);
+    }
+  }
+
+  void _selectBooking(Map<String, dynamic> booking) {
+    setState(() {
+      _selectedBooking = booking;
+      _depositController.text = (booking['deposit'] ?? 0).toString();
+      _advancePaidController.text = (booking['advance_paid'] ?? 0).toString();
+    });
+  }
+
+  Future<void> _completeCheckIn() async {
+    if (_selectedBooking == null) return;
+    final data = <String, dynamic>{
+      'booking_id': _selectedBooking!['id']?.toString() ?? '',
+      'room_id': _selectedBooking!['room_id']?.toString() ?? '',
+      'guest_id': _selectedBooking!['guest_id']?.toString() ?? '',
+      'property_id': _propertyId,
+      'guest_name': _selectedBooking!['guest_name']?.toString() ?? '',
+      'room_number': _selectedBooking!['room_number']?.toString() ?? '',
+      'room_type': _selectedBooking!['room_type']?.toString() ?? '',
+      'deposit': double.tryParse(_depositController.text) ?? 0,
+      'advance_paid': double.tryParse(_advancePaidController.text) ?? 0,
+      'id_verified': _idVerified,
+      'id_verification_notes': _idVerificationNotesController.text,
+      'special_requests': _specialRequestsController.text,
+      'vehicle_number': _vehicleNumberController.text,
+      'parking_required': _parkingRequired,
+    };
+    await ref.read(checkInProvider.notifier).performCheckIn(data: data);
+  }
+
+  Future<void> _saveOffline() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Saving check-in data locally for offline sync...')),
+    );
+    await _completeCheckIn();
+  }
+
+  Future<void> _completeWalkIn() async {
+    if (!_walkInFormKey.currentState!.validate()) return;
+    final data = <String, dynamic>{
+      'property_id': _propertyId,
+      'full_name': _fullNameController.text,
+      'mobile': _mobileController.text,
+      'email': _emailController.text,
+      'address': _addressController.text,
+      'city': _cityController.text,
+      'state': _stateController.text,
+      'country': _countryController.text,
+      'nationality': _nationalityController.text,
+      'dob': _dobController.text,
+      'gender': _gender ?? '',
+      'id_type': _idType ?? '',
+      'id_number': _idNumberController.text,
+      'check_in_date': _walkInCheckInDate?.toIso8601String() ?? '',
+      'check_out_date': _walkInCheckOutDate?.toIso8601String() ?? '',
+      'adults': _walkInAdults,
+      'children': _walkInChildren,
+      'infants': _walkInInfants,
+      'room_id': _selectedRoomId ?? '',
+      'room_name': _selectedRoomName ?? '',
+      'room_rent': double.tryParse(_roomRentController.text) ?? 0,
+      'deposit': double.tryParse(_walkInDepositController.text) ?? 0,
+      'advance_paid': double.tryParse(_walkInAdvancePaidController.text) ?? 0,
+      'special_requests': _walkInSpecialRequestsController.text,
+      'vehicle_number': _walkInVehicleNumberController.text,
+      'parking_required': _walkInParkingRequired,
+    };
+    await ref.read(checkInProvider.notifier).performWalkIn(data: data);
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.error),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.primary),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label,
+      {bool isRequired = false,
+      TextInputType keyboardType = TextInputType.text,
+      int maxLines = 1,
+      TextEditingController? controller,
+      bool readOnly = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        readOnly: readOnly,
+        decoration: InputDecoration(
+          labelText: isRequired ? '$label *' : label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: AppColors.surface,
+        ),
+        validator: isRequired
+            ? (value) {
+                if (value == null || value.isEmpty) return 'This field is required';
+                return null;
+              }
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildDropdownField(String label, List<String> items, String? value,
+      ValueChanged<String?> onChanged,
+      {bool isRequired = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: isRequired ? '$label *' : label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: AppColors.surface,
+        ),
+        items: items
+            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .toList(),
+        onChanged: onChanged,
+        validator: isRequired
+            ? (val) {
+                if (val == null || val.isEmpty) return 'Please select an option';
+                return null;
+              }
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildDatePickerField(String label, DateTime? date, ValueChanged<DateTime> onPicked,
+      {bool isRequired = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: InkWell(
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: date ?? DateTime.now(),
+            firstDate: DateTime.now(),
+            lastDate: DateTime(2100),
+          );
+          if (picked != null) onPicked(picked);
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: isRequired ? '$label *' : label,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: AppColors.surface,
+          ),
+          child: Text(
+            date == null ? 'Select Date' : _dateFormat.format(date),
+            style: TextStyle(color: date == null ? AppColors.outline : AppColors.onSurface),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<CheckInState>(checkInProvider, (prev, state) {
+      state.maybeWhen(
+        error: (msg) => _showError(msg),
+        success: (msg, _) => _showSuccess(msg),
+        orElse: () {},
+      );
+    });
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Check-In'),
+        backgroundColor: AppColors.surface,
+        scrolledUnderElevation: 0,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          _buildModeToggle(),
+          const SizedBox(height: 16),
+          if (_isWalkInMode) _buildWalkInMode() else _buildBookingCheckInMode(),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeToggle() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Mode'),
+          Row(
+            children: [
+              Expanded(
+                child: _buildToggleButton('Booking\nCheck-In', !_isWalkInMode, () {
+                  setState(() => _isWalkInMode = false);
+                }),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildToggleButton('Walk-In', _isWalkInMode, () {
+                  setState(() {
+                    _isWalkInMode = true;
+                  });
+                  ref.read(checkInProvider.notifier).searchAvailableRooms(_propertyId);
+                }),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleButton(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? AppColors.primary : AppColors.outlineVariant),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // BOOKING CHECK-IN MODE
+  // ============================================================
+
+  Widget _buildBookingCheckInMode() {
+    final state = ref.watch(checkInProvider);
+    final isLoading = state.maybeWhen(loading: () => true, orElse: () => false);
+
+    return Column(
+      children: [
+        _buildSearchSection(isLoading),
+        if (_selectedBooking != null) ...[
+          const SizedBox(height: 16),
+          _buildGuestVerification(),
+          const SizedBox(height: 16),
+          _buildRoomAssignment(),
+          const SizedBox(height: 16),
+          _buildPaymentDeposit(),
+          const SizedBox(height: 16),
+          _buildAdditionalDetails(),
+          const SizedBox(height: 16),
+          _buildCheckInActions(isLoading),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSearchSection(bool isLoading) {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Step 1: Search & Select Booking'),
+          TextField(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            decoration: InputDecoration(
+              hintText: 'Search by guest name, booking ID, or mobile...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: AppColors.surface,
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _selectedBooking = null);
+                        ref.read(checkInProvider.notifier).searchBookings(_propertyId);
+                      },
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (isLoading)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ))
+          else
+            _buildBookingResults(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingResults() {
+    final state = ref.watch(checkInProvider);
+    return state.maybeWhen(
+      loadedBookings: (bookings) {
+        if (bookings.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'No bookings found',
+                style: TextStyle(color: AppColors.onSurfaceVariant),
+              ),
+            ),
+          );
+        }
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: bookings.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final booking = bookings[index];
+            final isSelected = _selectedBooking?['id']?.toString() == booking['id']?.toString();
+            return _buildBookingCard(booking, isSelected);
+          },
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildBookingCard(Map<String, dynamic> booking, bool isSelected) {
+    final bookingId = booking['id']?.toString() ?? 'N/A';
+    final guestName = booking['guest_name']?.toString() ?? 'Unknown';
+    final roomNumber = booking['room_number']?.toString() ?? 'N/A';
+    final checkInDate = booking['check_in_date']?.toString() ?? '';
+    final status = booking['booking_status']?.toString() ?? '';
+
+    String formattedDate = checkInDate;
+    try {
+      if (checkInDate.isNotEmpty) {
+        final dt = DateTime.parse(checkInDate);
+        formattedDate = _dateFormat.format(dt);
+      }
+    } catch (_) {}
+
+    return GestureDetector(
+      onTap: () => _selectBooking(booking),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryFixed.withOpacity(0.15) : AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    guestName,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Booking: $bookingId', style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 13)),
+                  Text('Room: $roomNumber', style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 13)),
+                  Text('Check-in: $formattedDate', style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 13)),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: _statusColor(status).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                status.toUpperCase(),
+                style: TextStyle(
+                  color: _statusColor(status),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(Icons.check_circle, color: AppColors.primary),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+        return AppColors.primary;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return AppColors.error;
+      case 'completed':
+        return AppColors.secondary;
+      default:
+        return AppColors.onSurfaceVariant;
+    }
+  }
+
+  Widget _buildGuestVerification() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Step 2: Guest Verification'),
+          if (_selectedBooking != null) ...[
+            _buildReadOnlyField('Guest Name', _selectedBooking!['guest_name']?.toString() ?? 'N/A'),
+            _buildReadOnlyField('Guest ID', _selectedBooking!['guest_id']?.toString() ?? 'N/A'),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              title: const Text('ID Verified'),
+              subtitle: const Text('Mark if guest ID has been verified'),
+              value: _idVerified,
+              activeColor: AppColors.primary,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (v) => setState(() => _idVerified = v),
+            ),
+            if (_idVerified)
+              _buildTextField('Verification Notes', controller: _idVerificationNotesController, maxLines: 2),
+            const SizedBox(height: 8),
+            _buildReadOnlyField('Emergency Contact', _selectedBooking!['emergency_contact_name']?.toString() ?? 'N/A'),
+            _buildReadOnlyField('Emergency Phone', _selectedBooking!['emergency_contact_phone']?.toString() ?? 'N/A'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoomAssignment() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Step 3: Room Assignment'),
+          if (_selectedBooking != null) ...[
+            _buildReadOnlyField('Room Number', _selectedBooking!['room_number']?.toString() ?? 'N/A'),
+            _buildReadOnlyField('Room Type', _selectedBooking!['room_type']?.toString() ?? 'N/A'),
+            _buildReadOnlyField('Floor', _selectedBooking!['floor']?.toString() ?? 'N/A'),
+            _buildReadOnlyField('Capacity', '${_selectedBooking!['adults'] ?? 0} Adults, ${_selectedBooking!['children'] ?? 0} Children'),
+            _buildReadOnlyField('Price per Night', '\$${_selectedBooking!['room_rent']?.toString() ?? '0'}'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentDeposit() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Step 4: Payment & Deposit'),
+          if (_selectedBooking != null) ...[
+            _buildReadOnlyField('Total Payable', '\$${_selectedBooking!['total_payable']?.toString() ?? '0'}'),
+            const SizedBox(height: 12),
+            _buildTextField('Deposit Amount',
+                controller: _depositController, keyboardType: TextInputType.number),
+            _buildTextField('Advance Paid',
+                controller: _advancePaidController, keyboardType: TextInputType.number),
+            _buildReadOnlyField('Pending Amount',
+                '\$${_selectedBooking!['pending_amount']?.toString() ?? '0'}'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdditionalDetails() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Step 5: Additional Details'),
+          _buildTextField('Special Requests',
+              controller: _specialRequestsController, maxLines: 3),
+          _buildTextField('Vehicle Number',
+              controller: _vehicleNumberController),
+          CheckboxListTile(
+            title: const Text('Parking Required'),
+            value: _parkingRequired,
+            activeColor: AppColors.primary,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+            controlAffinity: ListTileControlAffinity.leading,
+            onChanged: (v) => setState(() => _parkingRequired = v ?? false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckInActions(bool isLoading) {
+    return BentoCard(
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: isLoading ? null : _completeCheckIn,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Complete Check-In',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: isLoading ? null : _saveOffline,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Save Offline',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: AppColors.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // WALK-IN MODE
+  // ============================================================
+
+  Widget _buildWalkInMode() {
+    final state = ref.watch(checkInProvider);
+    final isLoading = state.maybeWhen(loading: () => true, orElse: () => false);
+
+    return Form(
+      key: _walkInFormKey,
+      child: Column(
+        children: [
+          _buildWalkInGuestInfo(),
+          const SizedBox(height: 16),
+          _buildWalkInIdentity(),
+          const SizedBox(height: 16),
+          _buildWalkInStayDetails(),
+          const SizedBox(height: 16),
+          _buildWalkInRoomSelection(),
+          const SizedBox(height: 16),
+          _buildWalkInPayment(),
+          const SizedBox(height: 16),
+          _buildWalkInAdditional(),
+          const SizedBox(height: 16),
+          _buildWalkInAction(isLoading),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalkInGuestInfo() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('1. Guest Information'),
+          _buildTextField('Full Name', isRequired: true, controller: _fullNameController),
+          _buildTextField('Mobile Number', isRequired: true, controller: _mobileController, keyboardType: TextInputType.phone),
+          _buildTextField('Email Address', controller: _emailController, keyboardType: TextInputType.emailAddress),
+          _buildTextField('Address', controller: _addressController, maxLines: 2),
+          Row(
+            children: [
+              Expanded(child: _buildTextField('City', controller: _cityController)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildTextField('State', controller: _stateController)),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(child: _buildTextField('Country', controller: _countryController)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildTextField('Nationality', controller: _nationalityController)),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(child: _buildTextField('Date of Birth', controller: _dobController)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildDropdownField(
+                  'Gender',
+                  ['Male', 'Female', 'Other'],
+                  _gender,
+                  (v) => setState(() => _gender = v),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalkInIdentity() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('2. Identity'),
+          _buildDropdownField(
+            'ID Type',
+            ['Passport', 'Driver License', 'National ID', 'Aadhaar', 'Voter ID'],
+            _idType,
+            (v) => setState(() => _idType = v),
+            isRequired: true,
+          ),
+          _buildTextField('ID Number', isRequired: true, controller: _idNumberController),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalkInStayDetails() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('3. Stay Details'),
+          _buildDatePickerField(
+            'Check-in Date',
+            _walkInCheckInDate,
+            (d) => setState(() => _walkInCheckInDate = d),
+            isRequired: true,
+          ),
+          _buildDatePickerField(
+            'Check-out Date',
+            _walkInCheckOutDate,
+            (d) => setState(() => _walkInCheckOutDate = d),
+            isRequired: true,
+          ),
+          if (_walkInNights > 0)
+            InputDecorator(
+              decoration: InputDecoration(
+                labelText: 'Number of Nights',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: AppColors.surfaceContainerLowest,
+              ),
+              child: Text('$_walkInNights', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          const SizedBox(height: 12),
+          _buildDropdownField(
+            'Adults',
+            ['1', '2', '3', '4', '5+'],
+            '$_walkInAdults',
+            (v) => setState(() => _walkInAdults = int.parse(v!.replaceAll('+', ''))),
+            isRequired: true,
+          ),
+          _buildDropdownField(
+            'Children',
+            ['0', '1', '2', '3', '4+'],
+            '$_walkInChildren',
+            (v) => setState(() => _walkInChildren = int.parse(v!.replaceAll('+', ''))),
+          ),
+          _buildDropdownField(
+            'Infants',
+            ['0', '1', '2'],
+            '$_walkInInfants',
+            (v) => setState(() => _walkInInfants = int.parse(v!)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalkInRoomSelection() {
+    final state = ref.watch(checkInProvider);
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('4. Room Selection'),
+          state.maybeWhen(
+            loadedRooms: (rooms) {
+              if (rooms.isEmpty) {
+                return Text('No vacant rooms available',
+                    style: TextStyle(color: AppColors.onSurfaceVariant));
+              }
+              return Column(
+                children: rooms.map((room) {
+                  return RadioListTile<String>(
+                    title: Text('${room['name']} (${room['type']})'),
+                    subtitle: Text('\$${room['price_per_night']}/night - ${room['status']}'),
+                    value: room['id'] as String,
+                    groupValue: _selectedRoomId,
+                    activeColor: AppColors.primary,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (v) {
+                      setState(() {
+                        _selectedRoomId = v;
+                        _selectedRoomName = room['name'] as String?;
+                        _roomRentController.text = (room['price_per_night'] as num).toString();
+                      });
+                    },
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            orElse: () => ElevatedButton.icon(
+              onPressed: () => ref.read(checkInProvider.notifier).searchAvailableRooms(_propertyId),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Load Available Rooms'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalkInPayment() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('5. Payment'),
+          _buildTextField('Room Rent', controller: _roomRentController, keyboardType: TextInputType.number),
+          _buildTextField('Deposit', controller: _walkInDepositController, keyboardType: TextInputType.number),
+          _buildTextField('Advance Paid', controller: _walkInAdvancePaidController, keyboardType: TextInputType.number),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalkInAdditional() {
+    return BentoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('6. Additional'),
+          _buildTextField('Special Requests', controller: _walkInSpecialRequestsController, maxLines: 3),
+          _buildTextField('Vehicle Number', controller: _walkInVehicleNumberController),
+          CheckboxListTile(
+            title: const Text('Parking Required'),
+            value: _walkInParkingRequired,
+            activeColor: AppColors.primary,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+            controlAffinity: ListTileControlAffinity.leading,
+            onChanged: (v) => setState(() => _walkInParkingRequired = v ?? false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalkInAction(bool isLoading) {
+    return BentoCard(
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: isLoading ? null : _completeWalkIn,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.onPrimary,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Complete Walk-In Check-In',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ),
+      ),
+    );
+  }
+}

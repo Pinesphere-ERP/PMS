@@ -150,10 +150,756 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "4:7272771803470509138",
+      "lastPropertyId": "29:7209211345954300653",
+      "name": "BookingEntity",
+      "properties": [
+        {
+          "id": "1:1964425696495680512",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5709183654357626342",
+          "name": "uuid",
+          "indexId": "4:6069971717026285113",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:4635084013882751728",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "4:6285299778259776249",
+          "name": "roomId",
+          "type": 9
+        },
+        {
+          "id": "5:1800925312345981020",
+          "name": "guestId",
+          "type": 9
+        },
+        {
+          "id": "6:3673066251192276543",
+          "name": "guestName",
+          "type": 9
+        },
+        {
+          "id": "7:175183860037484319",
+          "name": "roomNumber",
+          "type": 9
+        },
+        {
+          "id": "8:1250662387457215452",
+          "name": "roomType",
+          "type": 9
+        },
+        {
+          "id": "9:2727247594882970879",
+          "name": "bookingType",
+          "type": 9
+        },
+        {
+          "id": "10:3166145964368944459",
+          "name": "bookingSource",
+          "type": 9
+        },
+        {
+          "id": "11:8840735934367599186",
+          "name": "checkInDate",
+          "type": 9
+        },
+        {
+          "id": "12:6391172659525148228",
+          "name": "checkOutDate",
+          "type": 9
+        },
+        {
+          "id": "13:424632069786978545",
+          "name": "adults",
+          "type": 6
+        },
+        {
+          "id": "14:8968403289604983035",
+          "name": "children",
+          "type": 6
+        },
+        {
+          "id": "15:8953541647302926775",
+          "name": "infants",
+          "type": 6
+        },
+        {
+          "id": "16:4127866244314011189",
+          "name": "roomRent",
+          "type": 8
+        },
+        {
+          "id": "17:489724997108197853",
+          "name": "deposit",
+          "type": 8
+        },
+        {
+          "id": "18:4578259395806567642",
+          "name": "discount",
+          "type": 8
+        },
+        {
+          "id": "19:899051137812839052",
+          "name": "taxes",
+          "type": 8
+        },
+        {
+          "id": "20:6414379261902809328",
+          "name": "totalPayable",
+          "type": 8
+        },
+        {
+          "id": "21:3189300065310950276",
+          "name": "advancePaid",
+          "type": 8
+        },
+        {
+          "id": "22:4717551302029632242",
+          "name": "pendingAmount",
+          "type": 8
+        },
+        {
+          "id": "23:4552479831530669246",
+          "name": "extraBed",
+          "type": 1
+        },
+        {
+          "id": "24:572824767672588021",
+          "name": "guestPreferences",
+          "type": 9
+        },
+        {
+          "id": "25:3346528115101877227",
+          "name": "notes",
+          "type": 9
+        },
+        {
+          "id": "26:14793653545853448",
+          "name": "vehicleNumber",
+          "type": 9
+        },
+        {
+          "id": "27:7798786911792599293",
+          "name": "bookingStatus",
+          "type": 9
+        },
+        {
+          "id": "28:4138837844532309628",
+          "name": "paymentStatus",
+          "type": 9
+        },
+        {
+          "id": "29:7209211345954300653",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:9116270962010936576",
+      "lastPropertyId": "21:857186559884056424",
+      "name": "CheckInEntity",
+      "properties": [
+        {
+          "id": "1:4030638748817709680",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6116638146741754445",
+          "name": "uuid",
+          "indexId": "5:3966284010315348352",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:9106982565022847584",
+          "name": "bookingId",
+          "type": 9
+        },
+        {
+          "id": "4:8714613200428576916",
+          "name": "roomId",
+          "type": 9
+        },
+        {
+          "id": "5:3030514704640920313",
+          "name": "guestId",
+          "type": 9
+        },
+        {
+          "id": "6:709151243422125003",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "7:5595516243359738736",
+          "name": "staffId",
+          "type": 9
+        },
+        {
+          "id": "8:4405279050132754237",
+          "name": "guestName",
+          "type": 9
+        },
+        {
+          "id": "9:5951406960442351234",
+          "name": "roomNumber",
+          "type": 9
+        },
+        {
+          "id": "10:6918092355378171100",
+          "name": "roomType",
+          "type": 9
+        },
+        {
+          "id": "11:8463875583386779459",
+          "name": "deposit",
+          "type": 8
+        },
+        {
+          "id": "12:3437880814595502928",
+          "name": "advancePaid",
+          "type": 8
+        },
+        {
+          "id": "13:369962146901506810",
+          "name": "idVerified",
+          "type": 1
+        },
+        {
+          "id": "14:5767502343938894580",
+          "name": "idVerificationNotes",
+          "type": 9
+        },
+        {
+          "id": "15:6643947963026716085",
+          "name": "checkedInAt",
+          "type": 9
+        },
+        {
+          "id": "16:2224942512147196196",
+          "name": "status",
+          "type": 9
+        },
+        {
+          "id": "17:7973225856130383318",
+          "name": "offlineId",
+          "type": 9
+        },
+        {
+          "id": "18:162249812883981387",
+          "name": "specialRequests",
+          "type": 9
+        },
+        {
+          "id": "19:3062522771352286370",
+          "name": "vehicleNumber",
+          "type": 9
+        },
+        {
+          "id": "20:6920093671100819989",
+          "name": "parkingRequired",
+          "type": 1
+        },
+        {
+          "id": "21:857186559884056424",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "6:4721896387680530629",
+      "lastPropertyId": "29:5455752589395045279",
+      "name": "CheckOutEntity",
+      "properties": [
+        {
+          "id": "1:821814114632271567",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8993149375255841804",
+          "name": "uuid",
+          "indexId": "6:415416704133773545",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:9145089609291019465",
+          "name": "checkinId",
+          "type": 9
+        },
+        {
+          "id": "4:3464637653240630411",
+          "name": "bookingId",
+          "type": 9
+        },
+        {
+          "id": "5:1037757753091032402",
+          "name": "roomId",
+          "type": 9
+        },
+        {
+          "id": "6:6563797460142308272",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "7:394598637064982894",
+          "name": "staffId",
+          "type": 9
+        },
+        {
+          "id": "8:84406964240852641",
+          "name": "guestName",
+          "type": 9
+        },
+        {
+          "id": "9:3716793957036643750",
+          "name": "roomNumber",
+          "type": 9
+        },
+        {
+          "id": "10:206851749288982927",
+          "name": "checkoutTime",
+          "type": 9
+        },
+        {
+          "id": "11:6119085913406945704",
+          "name": "roomCharges",
+          "type": 8
+        },
+        {
+          "id": "12:8918751244369970525",
+          "name": "restaurantCharges",
+          "type": 8
+        },
+        {
+          "id": "13:7142938957914221360",
+          "name": "laundryCharges",
+          "type": 8
+        },
+        {
+          "id": "14:6664769532184056828",
+          "name": "minibarCharges",
+          "type": 8
+        },
+        {
+          "id": "15:3352385559915576072",
+          "name": "damageCharges",
+          "type": 8
+        },
+        {
+          "id": "16:3450378523747992068",
+          "name": "miscellaneousCharges",
+          "type": 8
+        },
+        {
+          "id": "17:5772419191035653555",
+          "name": "discount",
+          "type": 8
+        },
+        {
+          "id": "18:1818049395713413209",
+          "name": "gst",
+          "type": 8
+        },
+        {
+          "id": "19:5674718841719477128",
+          "name": "totalAmount",
+          "type": 8
+        },
+        {
+          "id": "20:3503217427035009422",
+          "name": "advancePaid",
+          "type": 8
+        },
+        {
+          "id": "21:4419893879515143736",
+          "name": "remainingBalance",
+          "type": 8
+        },
+        {
+          "id": "22:6782936108003784129",
+          "name": "refundAmount",
+          "type": 8
+        },
+        {
+          "id": "23:571992604650123517",
+          "name": "paymentStatus",
+          "type": 9
+        },
+        {
+          "id": "24:1889829621858398725",
+          "name": "keyReturned",
+          "type": 1
+        },
+        {
+          "id": "25:4193389293933211029",
+          "name": "idReturned",
+          "type": 1
+        },
+        {
+          "id": "26:3826016543455448709",
+          "name": "feedbackSubmitted",
+          "type": 1
+        },
+        {
+          "id": "27:3379787164648969038",
+          "name": "remarks",
+          "type": 9
+        },
+        {
+          "id": "28:2207189718021522721",
+          "name": "checkoutStatus",
+          "type": 9
+        },
+        {
+          "id": "29:5455752589395045279",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "7:7386545158075122923",
+      "lastPropertyId": "19:3289245218108789140",
+      "name": "GuestEntity",
+      "properties": [
+        {
+          "id": "1:4873778457445232782",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3981355568554438143",
+          "name": "uuid",
+          "indexId": "7:8717267891915517183",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:7694846770627891940",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "4:4821921299368862925",
+          "name": "fullName",
+          "type": 9
+        },
+        {
+          "id": "5:6465185247636070567",
+          "name": "mobile",
+          "type": 9
+        },
+        {
+          "id": "6:6584598581904333623",
+          "name": "email",
+          "type": 9
+        },
+        {
+          "id": "7:502165759244620244",
+          "name": "address",
+          "type": 9
+        },
+        {
+          "id": "8:6357615021777068623",
+          "name": "city",
+          "type": 9
+        },
+        {
+          "id": "9:63864019628194994",
+          "name": "state",
+          "type": 9
+        },
+        {
+          "id": "10:1999886631413359378",
+          "name": "country",
+          "type": 9
+        },
+        {
+          "id": "11:1675630766098120443",
+          "name": "nationality",
+          "type": 9
+        },
+        {
+          "id": "12:5202565201672335266",
+          "name": "dob",
+          "type": 9
+        },
+        {
+          "id": "13:5658649277836578733",
+          "name": "gender",
+          "type": 9
+        },
+        {
+          "id": "14:3450697432224052536",
+          "name": "idType",
+          "type": 9
+        },
+        {
+          "id": "15:8525580348938919986",
+          "name": "idNumber",
+          "type": 9
+        },
+        {
+          "id": "16:6027401092813263161",
+          "name": "verificationStatus",
+          "type": 9
+        },
+        {
+          "id": "17:6118125427100030147",
+          "name": "emergencyContactName",
+          "type": 9
+        },
+        {
+          "id": "18:4868274686111464842",
+          "name": "emergencyContactPhone",
+          "type": 9
+        },
+        {
+          "id": "19:3289245218108789140",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "8:9052834034193944952",
+      "lastPropertyId": "20:9189866666548118028",
+      "name": "HousekeepingTaskEntity",
+      "properties": [
+        {
+          "id": "1:3924654259597543875",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7920040168969645959",
+          "name": "uuid",
+          "indexId": "8:7228580202425024315",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:4055922657619633272",
+          "name": "roomId",
+          "type": 9
+        },
+        {
+          "id": "4:9061668436597090408",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "5:3003804309858054515",
+          "name": "roomNumber",
+          "type": 9
+        },
+        {
+          "id": "6:2257723975713171145",
+          "name": "assignedStaffId",
+          "type": 9
+        },
+        {
+          "id": "7:4652343715726197251",
+          "name": "assignedStaffName",
+          "type": 9
+        },
+        {
+          "id": "8:5564015485490068201",
+          "name": "status",
+          "type": 9
+        },
+        {
+          "id": "9:7049970963295767140",
+          "name": "priority",
+          "type": 9
+        },
+        {
+          "id": "10:4423022969017055379",
+          "name": "checklistStatus",
+          "type": 9
+        },
+        {
+          "id": "11:3594725486904985142",
+          "name": "remarks",
+          "type": 9
+        },
+        {
+          "id": "12:7446039955504340223",
+          "name": "beforePhoto",
+          "type": 9
+        },
+        {
+          "id": "13:7721686577733673273",
+          "name": "afterPhoto",
+          "type": 9
+        },
+        {
+          "id": "14:896446154056981399",
+          "name": "completedAt",
+          "type": 9
+        },
+        {
+          "id": "15:1240437956420951985",
+          "name": "inspectedBy",
+          "type": 9
+        },
+        {
+          "id": "16:4416669400155959958",
+          "name": "inspectionResult",
+          "type": 9
+        },
+        {
+          "id": "17:2404128422462525260",
+          "name": "inspectionRemarks",
+          "type": 9
+        },
+        {
+          "id": "18:8879184014428611153",
+          "name": "inspectedAt",
+          "type": 9
+        },
+        {
+          "id": "19:7694698377869217299",
+          "name": "createdAt",
+          "type": 9
+        },
+        {
+          "id": "20:9189866666548118028",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "9:5282025660670065698",
+      "lastPropertyId": "18:5965255992052732818",
+      "name": "MaintenanceTicketEntity",
+      "properties": [
+        {
+          "id": "1:2351390052398970981",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4500632521925836954",
+          "name": "uuid",
+          "indexId": "9:1691103865544267302",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:3713679712910030017",
+          "name": "roomId",
+          "type": 9
+        },
+        {
+          "id": "4:474614638912254949",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "5:1133211866144669359",
+          "name": "roomNumber",
+          "type": 9
+        },
+        {
+          "id": "6:2966523817830802260",
+          "name": "reportedBy",
+          "type": 9
+        },
+        {
+          "id": "7:5212059172473583144",
+          "name": "reportedByName",
+          "type": 9
+        },
+        {
+          "id": "8:4138986559835756465",
+          "name": "assignedTo",
+          "type": 9
+        },
+        {
+          "id": "9:5387086326564415732",
+          "name": "assignedToName",
+          "type": 9
+        },
+        {
+          "id": "10:7312298899223769833",
+          "name": "category",
+          "type": 9
+        },
+        {
+          "id": "11:7170028609267368540",
+          "name": "priority",
+          "type": 9
+        },
+        {
+          "id": "12:7610703222665140570",
+          "name": "issueDescription",
+          "type": 9
+        },
+        {
+          "id": "13:4787239727252890830",
+          "name": "status",
+          "type": 9
+        },
+        {
+          "id": "14:925887798825655943",
+          "name": "repairCost",
+          "type": 8
+        },
+        {
+          "id": "15:2242716673438816973",
+          "name": "createdAt",
+          "type": 9
+        },
+        {
+          "id": "16:1755511239321051700",
+          "name": "resolvedAt",
+          "type": 9
+        },
+        {
+          "id": "17:7796420515536046598",
+          "name": "photoUrl",
+          "type": 9
+        },
+        {
+          "id": "18:5965255992052732818",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "3:1555509189638963268",
-  "lastIndexId": "3:5571832571850040683",
+  "lastEntityId": "9:5282025660670065698",
+  "lastIndexId": "9:1691103865544267302",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

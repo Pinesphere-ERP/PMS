@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = "minioadminpassword"
     MINIO_SECURE: bool = False
 
+    # Razorpay
+    RAZORPAY_KEY_ID: str = "rzp_test_TBltKnepLoWSBB"
+    RAZORPAY_KEY_SECRET: str = "I3qR6re7q37euzRxXEeh7P0S"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 settings = Settings()

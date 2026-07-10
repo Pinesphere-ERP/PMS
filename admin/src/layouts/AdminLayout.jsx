@@ -27,6 +27,12 @@ const subscriptionNavigation = [
   { name: 'Renewals', to: '/subscriptions/renewals', icon: History },
 ];
 
+const deviceNavigation = [
+  { name: 'Global Console (Admin)', to: '/devices/global', icon: Smartphone },
+  { name: 'My Devices (Owner)', to: '/devices/owner', icon: Key },
+  { name: 'Diagnostics (Support)', to: '/devices/support', icon: ClipboardCheck },
+];
+
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
@@ -72,8 +78,32 @@ export default function AdminLayout() {
           <p className="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
             Subscription Module
           </p>
-          <nav className="space-y-1">
+          <nav className="space-y-1 mb-6">
             {subscriptionNavigation.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
+                    isActive
+                      ? 'bg-pine-50 text-pine-DEFAULT'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`
+                }
+              >
+                <item.icon className={`mr-3 h-4 w-4 flex-shrink-0 ${
+                  location.pathname === item.to ? 'text-pine-DEFAULT' : 'text-gray-400'
+                }`} />
+                {item.name}
+              </NavLink>
+            ))}
+          </nav>
+
+          <p className="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Device Management
+          </p>
+          <nav className="space-y-1">
+            {deviceNavigation.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.to}

@@ -14,6 +14,8 @@ import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart
 import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
 import '../../features/rooms/presentation/screens/occupied_rooms_screen.dart';
 import '../../features/rooms/presentation/screens/vacant_rooms_screen.dart';
+import '../../features/device_management/presentation/screens/device_registration_screen.dart';
+import '../../features/device_management/presentation/screens/device_sync_status_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -66,6 +68,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const PinLoginScreen(),
+      ),
+      GoRoute(
+        path: '/device-registration',
+        builder: (context, state) => const DeviceRegistrationScreen(),
+      ),
+      GoRoute(
+        path: '/device-status',
+        builder: (context, state) => const DeviceSyncStatusScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

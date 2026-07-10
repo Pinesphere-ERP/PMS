@@ -37,6 +37,18 @@ const mockProperties = [
 export default function PropertyDashboard() {
   const navigate = useNavigate();
   const [selectedProp, setSelectedProp] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleOpenDrawer = (prop) => {
+    setSelectedProp(prop);
+    // slight delay to ensure it renders before transitioning
+    setTimeout(() => setIsDrawerOpen(true), 10);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setTimeout(() => setSelectedProp(null), 300); // 300ms matches transition duration
+  };
 
   return (
     <div className="space-y-6 animate-slide-up relative">
@@ -117,7 +129,7 @@ export default function PropertyDashboard() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {mockProperties.map((prop) => (
-                <tr key={prop.id} className="hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => setSelectedProp(prop)}>
+                <tr key={prop.id} className="hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => handleOpenDrawer(prop)}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{prop.name}</div>
                     <div className="text-xs text-gray-500">{prop.owner} • {prop.mobile}</div>
@@ -166,21 +178,25 @@ export default function PropertyDashboard() {
       </div>
 
       {/* Detail Slide-over Drawer */}
-      {selectedProp && (
-        <>
-          <div className="saas-drawer-overlay" onClick={() => setSelectedProp(null)} />
-          <div className="saas-drawer flex flex-col w-[500px] max-w-full">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">{selectedProp.name}</h2>
-                <p className="text-sm text-gray-500 mt-0.5">{selectedProp.type} • {selectedProp.city}</p>
+      <>
+        <div 
+          className={`saas-drawer-overlay ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
+          onClick={handleCloseDrawer} 
+        />
+        <div className={`saas-drawer flex flex-col w-[500px] max-w-full ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          {selectedProp && (
+            <>
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 shadow-sm z-10">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">{selectedProp.name}</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">{selectedProp.type} • {selectedProp.city}</p>
+                </div>
+                <button onClick={handleCloseDrawer} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button onClick={() => setSelectedProp(null)} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            <div className="p-6 space-y-8 flex-1 overflow-y-auto">
+              <div className="p-6 space-y-8 flex-1 overflow-y-auto">
               {/* Overview */}
               <section>
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Overview</h3>
@@ -275,7 +291,7 @@ export default function PropertyDashboard() {
             </div>
 
             {/* Sticky Actions */}
-            <div className="p-6 bg-white border-t border-gray-100 grid grid-cols-2 gap-3 sticky bottom-0">
+            <div className="p-6 bg-white border-t border-gray-100 grid grid-cols-2 gap-3 shrink-0">
               <button className="saas-button-primary col-span-2">
                 Continue Onboarding
               </button>
@@ -286,9 +302,10 @@ export default function PropertyDashboard() {
                 Suspend
               </button>
             </div>
-          </div>
-        </>
-      )}
+            </>
+          )}
+        </div>
+      </>
     </div>
   );
 }

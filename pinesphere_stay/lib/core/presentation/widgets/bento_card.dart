@@ -50,38 +50,54 @@ class _BentoCardState extends State<BentoCard> with SingleTickerProviderStateMix
     if (widget.onTap != null) _controller.reverse();
   }
 
+  bool _isHovered = false;
+
   @override
   Widget build(BuildContext context) {
-    final card = Container(
-      padding: widget.padding ?? const EdgeInsets.all(20),
-      clipBehavior: widget.clipBehavior,
-      decoration: BoxDecoration(
-        color: widget.backgroundColor ?? AppColors.surfaceContainerLowest, // white
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.outlineVariant, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2E7D32).withOpacity(0.04),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
+    Widget content = AnimatedScale(
+      scale: _isHovered ? 1.02 : 1.0,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: widget.padding ?? const EdgeInsets.all(20),
+        clipBehavior: widget.clipBehavior,
+        decoration: BoxDecoration(
+          color: widget.backgroundColor ?? AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.outlineVariant, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2E7D32).withOpacity(_isHovered ? 0.08 : 0.04),
+              offset: Offset(0, _isHovered ? 8 : 4),
+              blurRadius: _isHovered ? 16 : 12,
+            ),
+          ],
+        ),
+        child: widget.child,
       ),
-      child: widget.child,
     );
 
-    if (widget.onTap == null) return card;
+    if (widget.onTap != null) {
+      content = GestureDetector(
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: content,
+        ),
+      );
+    }
 
-    return GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      onTap: widget.onTap,
-      behavior: HitTestBehavior.opaque,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: card,
-      ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: content,
     );
   }
 }

@@ -32,40 +32,50 @@ class AppScaffold extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(
-                  context,
-                  index: 0,
-                  icon: Icons.dashboard_outlined,
-                  activeIcon: Icons.dashboard_rounded,
-                  label: 'Dashboard',
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 0,
+                    icon: Icons.dashboard_outlined,
+                    activeIcon: Icons.dashboard_rounded,
+                    label: 'Dashboard',
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  index: 1,
-                  icon: Icons.bed_outlined,
-                  activeIcon: Icons.bed_rounded,
-                  label: 'Rooms',
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 1,
+                    icon: Icons.bed_outlined,
+                    activeIcon: Icons.bed_rounded,
+                    label: 'Rooms',
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  index: 2,
-                  icon: Icons.calendar_month_outlined,
-                  activeIcon: Icons.calendar_month_rounded,
-                  label: 'Bookings',
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 2,
+                    icon: Icons.calendar_month_outlined,
+                    activeIcon: Icons.calendar_month_rounded,
+                    label: 'Bookings',
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  index: 3,
-                  icon: Icons.analytics_outlined,
-                  activeIcon: Icons.analytics_rounded,
-                  label: 'Reports',
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 3,
+                    icon: Icons.analytics_outlined,
+                    activeIcon: Icons.analytics_rounded,
+                    label: 'Reports',
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  index: 4,
-                  icon: Icons.settings_outlined,
-                  activeIcon: Icons.settings_rounded,
-                  label: 'Settings',
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 4,
+                    icon: Icons.settings_outlined,
+                    activeIcon: Icons.settings_rounded,
+                    label: 'Settings',
+                  ),
                 ),
               ],
             ),
@@ -94,7 +104,7 @@ class AppScaffold extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
           color: isActive ? AppColors.secondaryContainer : Colors.transparent,
           borderRadius: BorderRadius.circular(9999),
@@ -114,6 +124,8 @@ class AppScaffold extends StatelessWidget {
                     color: isActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

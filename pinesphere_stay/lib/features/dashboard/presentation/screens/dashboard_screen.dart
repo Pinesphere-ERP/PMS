@@ -22,13 +22,9 @@ class DashboardScreen extends StatelessWidget {
                 children: [
                   _buildGreeting(context),
                   const SizedBox(height: 24),
-                  _buildRevenueCard(context),
-                  const SizedBox(height: 24),
                   _buildQuickActions(context),
                   const SizedBox(height: 24),
-                  _buildRoomStats(context),
-                  const SizedBox(height: 24),
-                  _buildOperationsStats(context),
+                  _buildKPIsGrid(context),
                   const SizedBox(height: 24),
                   _buildRecentActivity(context),
                   const SizedBox(height: 32), // bottom padding for nav
@@ -50,11 +46,15 @@ class DashboardScreen extends StatelessWidget {
         children: [
           const Icon(Icons.signal_wifi_off, color: AppColors.primary),
           const SizedBox(width: 12),
-          Text(
-            'Pinesphere Forest Resort',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.primary,
-                ),
+          Expanded(
+            child: Text(
+              'Pinesphere Forest Resort',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.primary,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -102,57 +102,6 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRevenueCard(BuildContext context) {
-    return BentoCard(
-      backgroundColor: AppColors.primaryContainer,
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned(
-            right: -20,
-            bottom: -30,
-            child: Icon(
-              Icons.payments,
-              size: 140,
-              color: AppColors.onPrimaryContainer.withOpacity(0.1),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'REVENUE TODAY',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.onPrimaryContainer.withOpacity(0.9),
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '\$4,250',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      color: AppColors.onPrimaryContainer,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.trending_up, color: AppColors.onPrimaryContainer, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    '+12% from yesterday',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.onPrimaryContainer,
-                        ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildQuickActions(BuildContext context) {
     return Row(
       children: [
@@ -187,121 +136,70 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRoomStats(BuildContext context) {
+  Widget _buildKPIsGrid(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4.0, bottom: 12.0),
           child: Text(
-            'Room Status',
+            'Overview',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppColors.onSurface,
                 ),
           ),
         ),
-        SizedBox(
-          height: 120,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            children: [
-              _buildStatCard(context, AppColors.primary, 'Occupied', '12', '60% Capacity'),
-              const SizedBox(width: 16),
-              _buildStatCard(context, AppColors.outline, 'Vacant', '8', 'Available Now'),
-              const SizedBox(width: 16),
-              _buildStatCard(context, AppColors.error, 'Cleaning', '4', 'Due soon'),
-            ],
-          ),
+        GridView.count(
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 1.0,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildKPICard(context, 'Todays arrival', '4', AppColors.primary, Icons.luggage),
+            _buildKPICard(context, 'Todays departures', '6', AppColors.onSurface, Icons.flight_takeoff),
+            _buildKPICard(context, 'Occupied Rooms', '12', AppColors.primary, Icons.hotel),
+            _buildKPICard(context, 'Vacant Rooms', '8', AppColors.outline, Icons.vpn_key),
+            _buildKPICard(context, 'Pending Checkouts', '3', AppColors.secondary, Icons.hourglass_bottom),
+            _buildKPICard(context, 'House Keeping', '4', AppColors.error, Icons.cleaning_services),
+            _buildKPICard(context, 'Pending payments', '2', AppColors.error, Icons.receipt_long),
+            _buildKPICard(context, 'Revenue today', '\$4,250', AppColors.primaryContainer, Icons.monetization_on),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(BuildContext context, Color dotColor, String label, String value, String subtitle) {
-    return SizedBox(
-      width: 160,
-      child: BentoCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: AppColors.onSurface,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOperationsStats(BuildContext context) {
+  Widget _buildKPICard(BuildContext context, String title, String value, Color color, IconData icon) {
     return BentoCard(
+      onTap: () {}, // empty tap handler to make card interactive
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Today\'s Operations',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.onSurface,
-                ),
-          ),
-          const SizedBox(height: 16),
-          Row(
+          Icon(icon, color: color, size: 28),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _buildOpStat(context, '4', 'Check-ins', AppColors.primary)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildOpStat(context, '6', 'Check-outs', AppColors.onSurface)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildOpStat(context, '2', 'Pending Pay', AppColors.error)),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: AppColors.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOpStat(BuildContext context, String count, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            count,
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: color),
-          ),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

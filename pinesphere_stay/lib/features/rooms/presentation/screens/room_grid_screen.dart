@@ -118,7 +118,7 @@ class _RoomGridScreenState extends State<RoomGridScreen> {
         crossAxisCount: 2,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
-        childAspectRatio: 0.85,
+        childAspectRatio: 0.78,
       ),
       delegate: SliverChildListDelegate([
         _buildRoomCard(
@@ -215,9 +215,11 @@ class _RoomGridScreenState extends State<RoomGridScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 4,
+                runSpacing: 8,
                 children: [
                   Text(
                     roomNumber,

@@ -1,0 +1,2327 @@
+PINESPHERE STAY
+
+Staff Management Module
+Logic, Workflow, Implementation Plan & Database Blueprint
+
+Source Document
+
+PineStay — Business Requirement Document (BRD)
+
+Module in Scope
+
+Staff Management (V1)
+
+Platform
+
+Mobile-first, Offline-First Property Management System
+Flutter (Android first) · FastAPI · PostgreSQL (Cloud) · SQLite / ObjectBox
+
+Tech Stack
+
+(Local)
+
+Document Type
+
+Module Blueprint — Logic, DB Design, Workflow & Dashboards
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Table of Contents
+1.
+
+Module Overview & Objectives
+
+2.
+
+Staff Roles Defined in the BRD
+
+3.
+
+Core Logic Design
+
+4.
+
+Workflows
+
+5.
+
+Implementation Plan (Phase-wise)
+
+6.
+
+Database Design — Entities & Relationships
+
+7.
+
+Database Tables — Full Schema
+
+8.
+
+Database Relationships & Constraints Summary
+
+9.
+
+Dashboards — Count, Use Cases & Fields
+
+10.
+
+Security & Compliance Considerations
+
+11.
+
+Scalability & Flexibility Notes
+
+12.
+
+Appendix — Role Permission Matrix (BRD Reference)
+
+Confidential — Internal Use Only
+
+Page 2
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+1. Module Overview & Objectives
+The Staff Management module governs every employee working at a property on the Pinesphere Stay platform
+— from the property Owner down to Housekeeping and Security staff. It sits inside the Property Owner App
+(Flutter, offline-first) and is one of the modules that must continue to function fully without internet, because
+staff attendance, task assignment and role enforcement happen throughout the day on the ground, regardless
+of connectivity.
+Per the BRD, this module is directly responsible for: Attendance, Leave, Salary, Roles, Performance and
+Task Assignment (Page 10 — Staff Management), and it feeds the Role-Based Permission engine referenced
+in the Security section and the User Hierarchy diagram (Owner → Manager / Reception / Accountant →
+Housekeeping / Maintenance / Restaurant → Guest).
+The module has four responsibilities:
+• Identity & Role Management — create staff profiles, assign one of the BRD-defined roles (Owner,
+Manager, Reception, Cashier, Housekeeping, Maintenance, Restaurant, Security, Auditor, Accountant) and
+bind granular module-level permissions to each role.
+• Day-to-day Operations — attendance capture, leave application/approval, task assignment (e.g. a
+housekeeping task tied to a room, or a maintenance complaint), and performance review.
+• Payroll Support — monthly salary computation, payment status tracking and salary history, feeding the
+Accountant role and the Expense/Accounting module.
+• Governance — every create/update/delete/login action by staff is written to an immutable audit log, and
+every staff device is bound and controllable from the Device Management module and Super Admin's Remote
+Device Control.
+Design Principle: Staff Management must obey the same offline-first contract as the rest of the app — every read
+and write happens against the local SQLite/ObjectBox store first, and is queued for the Synchronization Engine to
+push/pull once internet is detected.
+
+Confidential — Internal Use Only
+
+Page 3
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+2. Staff Roles Defined in the BRD
+The BRD explicitly names the following operational roles under a property (Page 26 — Staff Management,
+Page 18 — User Hierarchy, Pages 27–29 — Owner/Staff Login permissions):
+Role
+
+Scope (as per BRD)
+
+Owner
+
+Single primary owner per property. Full control: create staff, change prices, manage subscription,
+manage devices, view all reports, approve refunds, manage settings.
+
+Manager
+
+Operational authority delegated by Owner; broad access across bookings, rooms, staff and reports (per
+Role Matrix, Page 32-33).
+
+Reception
+
+Create booking, check-in, check-out, collect payments, view rooms. Cannot delete data, change
+subscription, manage users or export data.
+
+Cashier
+
+Payment collection focused role (referenced alongside Reception/Accountant in staff role list).
+
+Housekeeping
+
+Cleaning, laundry, room status updates, lost & found.
+
+Maintenance
+
+Complaint tracking for furniture, electrical, plumbing, AC, TV, fan.
+
+Restaurant
+
+Order taking, kitchen status, billing, stock/inventory deduction (Addon module).
+
+Security
+
+Named as a staff role in the BRD; scoped for premise/guest safety oversight.
+
+Auditor
+
+Named as a staff role in the BRD; read-focused, aligned to Audit Log visibility.
+
+Accountant
+
+Payments, expenses, GST, reports, invoices.
+
+Design decision: roles are modeled as data (a roles table), not hard-coded enums. The ten roles above are
+seeded as system roles at property creation time, but the Owner can still create custom roles later — this
+keeps the module flexible for the Enterprise/Custom subscription plans mentioned on Pages 15–16.
+
+Confidential — Internal Use Only
+
+Page 4
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+3. Core Logic Design
+3.1 Role & Permission Enforcement Logic
+Every module screen and API endpoint checks a permission tuple (role_id, module_name, action) before
+allowing an action. This permission set is downloaded and cached locally on first login so checks work fully
+offline. The Owner login is hard-restricted: only one staff row per property may have is_primary_owner =
+true.
+
+3.2 Attendance Logic
+Staff punch in/out using Biometric, PIN or Manager-marked entry (Manual). A staff member can have only one
+attendance record per calendar date (enforced by a unique constraint on staff_id + date). If no check-in exists
+by end of business day and the day is not on approved leave, a background job (running locally, then
+reconciled on sync) marks the day Absent. Half-day is derived when check-in and check-out span less than a
+configurable minimum working duration.
+
+3.3 Leave Management Logic
+A leave request moves through Pending → Approved/Rejected, approvable only by a role holding
+can_approve on the Staff module (typically Owner/Manager). Leave balance is computed on demand:
+allocated days (from leave_types.max_days_per_year) minus the sum of approved leave days for the current
+year. Approved leave dates automatically create corresponding attendance rows with status On-Leave so the
+Attendance Dashboard never shows a false Absent.
+
+3.4 Salary Logic
+Net salary is computed as: Basic + Allowances + Overtime − Deductions − Advance Adjusted. One salary
+record is allowed per staff, per month, per year (unique constraint). Salary generation is restricted to
+Owner/Accountant. Payment status transitions Pending → Partially Paid → Paid, and every status change is
+captured in the audit log because it is a financial action.
+
+3.5 Task Assignment Logic
+Tasks can originate from another module (e.g. a Housekeeping task auto-created at guest check-out, or a
+Maintenance complaint logged against a room) or be created manually by a Manager. Each task stores an
+optional related_module and related_record_id so it can deep-link back to the originating
+room/booking/complaint. Overdue tasks (due_date passed, status still Pending/In-Progress) are automatically
+flagged for the Owner/Manager dashboard.
+
+3.6 Performance Logic
+Performance is captured as periodic reviews (rating 0–5) tied to a review window, plus two derived,
+system-calculated signals that feed the AI daily summary mentioned in the BRD (Page 15): attendance
+consistency (% present) and task completion rate (% completed on time). These derived metrics are computed
+at read-time from staff_attendance and staff_tasks — they are not stored redundantly.
+
+3.7 Staff–Device Binding Logic
+A staff member logs in from a registered device. A session row is created on login and closed on logout; the
+currently active session determines whether the Super Admin's Remote Device Control (Page 25–26) can
+force-logout that staff member instantly on next connectivity. This directly reuses the Device Management
+module rather than duplicating device data.
+
+Confidential — Internal Use Only
+
+Page 5
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+3.8 Offline Sync & Conflict Resolution Logic
+Every staff-related row carries version, updated_at and sync_status. On reconnect, the Sync Engine
+(Page 4 of the BRD) pushes local changes and pulls cloud changes. Non-critical fields (e.g. remarks, photo)
+use last-write-wins by updated_at. Financially or operationally sensitive fields — salary amounts, role
+changes, permission changes, leave approval status — are flagged conflict instead of auto-merged, and
+surfaced to the Owner for manual resolution, in line with the BRD's explicit 'Conflict Resolution' step in the sync
+flow (Page 3–4).
+
+3.9 Audit Logging Logic
+Every create, update, delete, login, approval and rejection on a staff-related entity writes one immutable row to
+staff_audit_log, storing old_value/new_value as JSON snapshots. The BRD is explicit: "Nothing can be deleted
+from the audit log" (Page 31) — so this table has no delete permission at the application layer, and destructive
+SQL operations are blocked at the database-role level too.
+
+Confidential — Internal Use Only
+
+Page 6
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+4. Workflows
+4.1 Staff Onboarding Workflow
+Owner/Manager opens 'Add Staff'
+
+↓
+Enter Name, Mobile, Role, Date of Joining, Documents
+
+↓
+Assign Role → System auto-loads Role Permission set
+
+↓
+Register Primary Device (optional at onboarding)
+
+↓
+Set PIN / Enroll Biometric
+
+↓
+Save Locally (Offline Database)
+
+↓
+Sync to Cloud when Internet Available
+
+↓
+Staff appears in Super Admin's cross-property staff count
+
+4.2 Daily Attendance Workflow
+
+Confidential — Internal Use Only
+
+Page 7
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Staff opens App / Punch screen
+
+↓
+Authenticate via Biometric or PIN
+
+↓
+Capture Check-In Time + Location (optional)
+
+↓
+Store in Local staff_attendance table
+
+↓
+At Check-Out, capture Check-Out Time
+
+↓
+Compute Status: Present / Half-Day
+
+↓
+End of Day Job flags no-punch staff as Absent (if not on
+approved leave)
+
+↓
+Sync attendance rows on reconnect
+
+4.3 Leave Application & Approval Workflow
+Staff applies for Leave (type, from-date, to-date, reason)
+
+↓
+Request stored locally as 'Pending'
+
+↓
+Manager/Owner reviews on their device
+
+↓
+Approve → Attendance auto-marked 'On-Leave' for the range
+
+↓
+Reject → Reason captured, Staff notified
+
+↓
+Sync updates both devices once online
+
+4.4 Task Assignment Workflow
+
+Confidential — Internal Use Only
+
+Page 8
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Task originates: Manual (Manager) or Auto (e.g. Checkout →
+Housekeeping task)
+
+↓
+System creates staff_tasks row with priority & due date
+
+↓
+Assigned staff notified on next app open / push notification
+
+↓
+Staff updates status: In-Progress → Completed
+
+↓
+Completion photo / notes captured (e.g. cleaning checklist)
+
+↓
+Overdue tasks flagged on Owner/Manager Dashboard
+
+↓
+Task history feeds Performance module
+
+4.5 Monthly Salary Workflow
+Accountant/Owner opens Salary module for a month
+
+↓
+System pulls Attendance + Leave to suggest payable days
+
+↓
+Enter Allowances, Deductions, Overtime, Advance Adjustment
+
+↓
+System computes Net Salary
+
+↓
+Mark Payment Mode & Status (Paid / Pending)
+
+↓
+Generate Salary Slip (PDF, local + cloud)
+
+↓
+Action recorded in Audit Log
+
+4.6 Offline → Online Sync Workflow (Staff Data)
+
+Confidential — Internal Use Only
+
+Page 9
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Internet Detected by Background Sync Service
+
+↓
+Push local staff changes (create/update queue)
+
+↓
+Pull cloud changes from other devices of same property
+
+↓
+Compare version + updated_at per row
+
+↓
+Auto-merge non-critical fields
+
+↓
+Flag critical fields (salary, role, permissions) as Conflict for
+Owner review
+
+↓
+Mark rows sync_status = 'synced'
+
+↓
+Continue working offline
+
+4.7 Staff Deactivation / Offboarding Workflow
+Owner selects staff → 'Deactivate'
+
+↓
+System sets employment_status = Inactive, date_of_leaving
+
+↓
+Active staff_sessions closed
+
+↓
+On next reconnect: Remote Device Control revokes device login
+
+↓
+Local database access for that staff disabled
+
+↓
+Historical attendance/salary/task data retained (soft delete only)
+
+↓
+Action recorded in Audit Log
+
+Confidential — Internal Use Only
+
+Page 10
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+5. Implementation Plan (Phase-wise, no timelines)
+Phases are ordered by dependency, not by date — build top to bottom.
+Phase
+
+Focus
+
+Deliverables
+
+Phase 1
+
+Foundation
+
+roles, role_permissions tables · seed the 10 BRD system roles · basic staff CRUD
+(offline-first) · Owner single-primary constraint.
+
+Phase 2
+
+Authentication &
+Device Binding
+
+PIN/Biometric login for staff · staff_sessions table · integration hook with Device
+Management module.
+
+Phase 3
+
+Attendance
+
+Punch in/out, manual marking by Manager, auto-absent job, attendance calendar view.
+
+Phase 4
+
+Leave Management
+
+leave_types seed data, apply/approve/reject flow, leave balance calculation, auto-sync with
+attendance.
+
+Phase 5
+
+Task Assignment
+
+Manual + auto-generated tasks, linkage to Housekeeping/Maintenance/Restaurant
+modules, overdue flagging.
+
+Phase 6
+
+Salary & Payroll
+
+Salary computation engine, payment status tracking, salary slip generation.
+
+Phase 7
+
+Performance
+
+Manual review entries + derived metrics (attendance %, task completion %).
+
+Phase 8
+
+Documents &
+Verification
+
+Upload ID proofs, verification flag, secure object storage sync.
+
+Phase 9
+
+Audit Logging
+
+Immutable logging hooked into every write operation across the above phases.
+
+Phase 10
+
+Dashboards &
+Reports
+
+Owner/Manager dashboard, Staff Directory, Attendance dashboard, Self-service
+dashboard, Super Admin analytics.
+
+Phase 11
+
+Sync Hardening
+
+Conflict resolution UI for critical fields, retry logic, data compression, encrypted sync (aligns
+with BRD Sync Engine, Page 4).
+
+Each phase should be built local-first (SQLite/ObjectBox + Flutter UI) before wiring the corresponding FastAPI
+endpoint and sync payload — this keeps the module usable offline even mid-development.
+
+Confidential — Internal Use Only
+
+Page 11
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+6. Database Design — Entities & Relationships
+The Staff Management module introduces 12 entities. All tables exist both in the local offline store
+(SQLite/ObjectBox, per device) and the cloud store (PostgreSQL), with the same logical schema — this
+symmetry is what makes the Sync Engine's incremental push/pull straightforward.
+Entity
+
+Purpose
+
+staff
+
+Master record for every employee of a property (incl. the Owner).
+
+roles
+
+Defines a role (system-seeded or custom) scoped to a property.
+
+role_permissions
+
+Module-level CRUD/approve/export permission grants per role.
+
+staff_attendance
+
+One row per staff per calendar date.
+
+leave_types
+
+Lookup of leave categories (Casual, Sick, Paid, Unpaid, Emergency).
+
+staff_leave
+
+Leave applications and their approval lifecycle.
+
+staff_salary
+
+Monthly payroll record per staff.
+
+staff_performance
+
+Periodic performance review entries.
+
+staff_tasks
+
+Task assignment & tracking, optionally linked to another module's record.
+
+staff_documents
+
+ID proofs and HR documents with verification status.
+
+staff_sessions
+
+Login/logout session history, tied to a registered device.
+
+staff_audit_log
+
+Immutable log of every sensitive staff-related action.
+
+Entity Relationship Summary (textual ER)
+properties (external) 1—* staff | staff *—1 roles | roles 1—* role_permissions | staff 1—* staff_attendance |
+staff 1—* staff_leave *—1 leave_types | staff 1—* staff_salary | staff 1—* staff_performance | staff 1—*
+staff_tasks (as assignee) | staff 1—* staff_documents | staff 1—* staff_sessions *—1 devices (external) |
+staff 1—* staff_audit_log
+
+Confidential — Internal Use Only
+
+Page 12
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+7. Database Tables — Full Schema
+Column key: PK = Primary Key, FK = Foreign Key, UQ = Unique, NN = Not Null. All primary keys are
+client-generatable UUIDs (v4) to remain conflict-safe under offline-first, multi-device writes.
+
+7.1 staff
+Master employee record.
+Column
+
+Type
+
+Key
+
+Notes
+
+staff_id
+
+UUID
+
+PK
+
+Client-generated identifier.
+
+property_id
+
+UUID
+
+FK, NN
+
+→ properties.property_id (external module).
+
+employee_code
+
+TEXT
+
+UQ*
+
+Unique per property; auto-generated or manual.
+
+full_name
+
+TEXT
+
+NN
+
+mobile_number
+
+TEXT
+
+UQ*, NN
+
+email
+
+TEXT
+
+gender
+
+TEXT
+
+date_of_birth
+
+DATE
+
+photo_url
+
+TEXT
+
+role_id
+
+UUID
+
+FK, NN
+
+date_of_joining
+
+DATE
+
+NN
+
+date_of_leaving
+
+DATE
+
+employment_status
+
+TEXT
+
+address
+
+TEXT
+
+emergency_contact
+_name
+
+TEXT
+
+emergency_contact
+_number
+
+TEXT
+
+biometric_id
+
+TEXT
+
+Local biometric template reference.
+
+pin_hash
+
+TEXT
+
+Hashed PIN fallback login.
+
+is_primary_owner
+
+BOOLEAN
+
+UQ*
+
+Only one TRUE row per property_id.
+
+created_by /
+updated_by
+
+UUID
+
+FK
+
+Self-reference → staff.staff_id.
+
+created_at /
+updated_at
+
+DATETIME
+
+NN
+
+version
+
+INTEGER
+
+NN
+
+Optimistic concurrency counter, default 1.
+
+sync_status
+
+TEXT
+
+NN
+
+synced / pending / conflict.
+
+last_synced_at
+
+DATETIME
+
+is_deleted
+
+BOOLEAN
+
+NN
+
+Soft delete flag, default false.
+
+Unique per property; used for WhatsApp notifications.
+Optional.
+
+Object storage reference.
+→ roles.role_id.
+
+Null while active.
+NN
+
+Active / Inactive / Suspended / Terminated.
+
+7.2 roles
+
+Confidential — Internal Use Only
+
+Page 13
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Role catalogue, system-seeded or property-custom.
+Column
+
+Type
+
+Key
+
+Notes
+
+role_id
+
+UUID
+
+PK
+
+property_id
+
+UUID
+
+FK
+
+Null for global system roles.
+
+role_name
+
+TEXT
+
+NN
+
+e.g. Owner, Manager, Reception, Housekeeping.
+
+is_system_role
+
+BOOLEAN
+
+NN
+
+True for the 10 BRD-defined roles.
+
+description
+
+TEXT
+
+created_at /
+updated_at
+
+DATETIME
+
+NN
+
+7.3 role_permissions
+Module-level permission grants per role.
+Column
+
+Type
+
+Key
+
+Notes
+
+permission_id
+
+UUID
+
+PK
+
+role_id
+
+UUID
+
+FK, NN
+
+→ roles.role_id.
+
+module_name
+
+TEXT
+
+NN
+
+Bookings / Check-in / Payments / Expenses / Reports / Room Pricing /
+Discount / Users / Inventory / Restaurant / Settings, etc.
+
+can_view
+
+BOOLEAN
+
+NN
+
+Default false.
+
+can_create
+
+BOOLEAN
+
+NN
+
+Default false.
+
+can_edit
+
+BOOLEAN
+
+NN
+
+Default false.
+
+can_delete
+
+BOOLEAN
+
+NN
+
+Default false.
+
+can_export
+
+BOOLEAN
+
+NN
+
+Default false.
+
+can_approve
+
+BOOLEAN
+
+NN
+
+Refunds, leave approvals, etc.
+
+UQ (role_id,
+module_name)
+
+—
+
+UQ
+
+One permission row per role per module.
+
+7.4 staff_attendance
+One attendance record per staff, per day.
+Column
+
+Type
+
+Key
+
+attendance_id
+
+UUID
+
+PK
+
+staff_id
+
+UUID
+
+FK, NN
+
+→ staff.staff_id.
+
+property_id
+
+UUID
+
+FK, NN
+
+Denormalized for fast offline queries.
+
+attendance_date
+
+DATE
+
+NN
+
+check_in_time
+
+DATETIME
+
+check_out_time
+
+DATETIME
+
+status
+
+TEXT
+
+check_in_method
+
+TEXT
+
+Confidential — Internal Use Only
+
+NN
+
+Notes
+
+Present / Absent / Half-Day / On-Leave / Holiday.
+Biometric / PIN / Manual / Face.
+
+Page 14
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Column
+
+Type
+
+Key
+
+Notes
+
+check_in_lat / lng
+
+REAL
+
+marked_by
+
+UUID
+
+remarks
+
+TEXT
+
+created_at /
+updated_at
+
+DATETIME
+
+NN
+
+sync_status
+
+TEXT
+
+NN
+
+UQ (staff_id,
+attendance_date)
+
+—
+
+UQ
+
+Prevents duplicate daily entries.
+
+Notes
+
+Optional geo-stamp.
+FK
+
+→ staff.staff_id, for manual entries.
+
+7.5 leave_types
+Lookup of leave categories.
+Column
+
+Type
+
+Key
+
+leave_type_id
+
+UUID
+
+PK
+
+property_id
+
+UUID
+
+FK
+
+Null = global default type.
+
+name
+
+TEXT
+
+NN
+
+Casual / Sick / Paid / Unpaid / Emergency.
+
+max_days_per_yea
+r
+
+INTEGER
+
+is_paid
+
+BOOLEAN
+
+NN
+
+7.6 staff_leave
+Leave applications and approvals.
+Column
+
+Type
+
+Key
+
+Notes
+
+leave_id
+
+UUID
+
+PK
+
+staff_id
+
+UUID
+
+FK, NN
+
+→ staff.staff_id.
+
+leave_type_id
+
+UUID
+
+FK, NN
+
+→ leave_types.leave_type_id.
+
+from_date / to_date
+
+DATE
+
+NN
+
+CHECK (from_date <= to_date).
+
+total_days
+
+INTEGER
+
+NN
+
+Derived from date range.
+
+reason
+
+TEXT
+
+status
+
+TEXT
+
+NN
+
+Pending / Approved / Rejected / Cancelled.
+
+applied_on
+
+DATETIME
+
+NN
+
+approved_by
+
+UUID
+
+FK
+
+approved_on
+
+DATETIME
+
+rejection_reason
+
+TEXT
+
+sync_status
+
+TEXT
+
+→ staff.staff_id.
+
+NN
+
+7.7 staff_salary
+
+Confidential — Internal Use Only
+
+Page 15
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Monthly payroll record.
+Column
+
+Type
+
+Key
+
+Notes
+
+salary_id
+
+UUID
+
+PK
+
+staff_id
+
+UUID
+
+FK, NN
+
+→ staff.staff_id.
+
+salary_month
+
+INTEGER
+
+NN
+
+1–12.
+
+salary_year
+
+INTEGER
+
+NN
+
+basic_salary
+
+REAL
+
+NN
+
+allowances
+
+REAL
+
+NN
+
+Default 0.
+
+overtime_amount
+
+REAL
+
+NN
+
+Default 0.
+
+deductions
+
+REAL
+
+NN
+
+Default 0.
+
+advance_deducted
+
+REAL
+
+NN
+
+Default 0.
+
+net_salary
+
+REAL
+
+NN
+
+Computed field.
+
+payment_status
+
+TEXT
+
+NN
+
+Pending / Partially Paid / Paid.
+
+payment_date
+
+DATETIME
+
+payment_mode
+
+TEXT
+
+generated_by
+
+UUID
+
+remarks
+
+TEXT
+
+UQ (staff_id,
+salary_month,
+salary_year)
+
+—
+
+Cash / Bank Transfer / UPI / Cheque.
+FK
+
+→ staff.staff_id.
+
+UQ
+
+One payroll row per staff per month.
+
+Notes
+
+7.8 staff_performance
+Periodic performance reviews.
+Column
+
+Type
+
+Key
+
+performance_id
+
+UUID
+
+PK
+
+staff_id
+
+UUID
+
+FK, NN
+
+review_period_start
+/ end
+
+DATE
+
+NN
+
+rating
+
+REAL
+
+NN
+
+attendance_score
+
+REAL
+
+Derived, cached at review time.
+
+task_completion_sc
+ore
+
+REAL
+
+Derived, cached at review time.
+
+remarks
+
+TEXT
+
+reviewed_by
+
+UUID
+
+FK, NN
+
+review_date
+
+DATETIME
+
+NN
+
+→ staff.staff_id.
+
+CHECK (rating BETWEEN 0 AND 5).
+
+→ staff.staff_id.
+
+7.9 staff_tasks
+Task assignment & tracking.
+
+Confidential — Internal Use Only
+
+Page 16
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Column
+
+Type
+
+Key
+
+Notes
+
+task_id
+
+UUID
+
+PK
+
+staff_id
+
+UUID
+
+FK, NN
+
+Assignee → staff.staff_id.
+
+assigned_by
+
+UUID
+
+FK, NN
+
+→ staff.staff_id.
+
+property_id
+
+UUID
+
+FK, NN
+
+task_title
+
+TEXT
+
+NN
+
+task_description
+
+TEXT
+
+related_module
+
+TEXT
+
+Housekeeping / Maintenance / Restaurant / Front-Desk / General.
+
+related_record_id
+
+UUID
+
+e.g. room_id, complaint_id — polymorphic link.
+
+priority
+
+TEXT
+
+NN
+
+Low / Medium / High / Urgent.
+
+status
+
+TEXT
+
+NN
+
+Pending / In-Progress / Completed / Cancelled.
+
+due_date
+
+DATETIME
+
+completed_at
+
+DATETIME
+
+completion_notes
+
+TEXT
+
+completion_photo_u
+rl
+
+TEXT
+
+Notes
+
+7.10 staff_documents
+HR documents & ID proofs.
+Column
+
+Type
+
+Key
+
+document_id
+
+UUID
+
+PK
+
+staff_id
+
+UUID
+
+FK, NN
+
+→ staff.staff_id.
+
+document_type
+
+TEXT
+
+NN
+
+Aadhaar / PAN / Passport / Driving License / Police Verification / Offer Letter
+/ Other.
+
+document_number
+
+TEXT
+
+file_url
+
+TEXT
+
+is_verified
+
+BOOLEAN
+
+NN
+
+Default false.
+
+verified_by
+
+UUID
+
+FK
+
+→ staff.staff_id.
+
+verified_on
+
+DATETIME
+
+Object storage reference.
+
+7.11 staff_sessions
+Login/logout session & device binding.
+Column
+
+Type
+
+Key
+
+session_id
+
+UUID
+
+PK
+
+staff_id
+
+UUID
+
+FK, NN
+
+→ staff.staff_id.
+
+device_id
+
+UUID
+
+FK, NN
+
+→ devices.device_id (external Device Management module).
+
+login_time
+
+DATETIME
+
+NN
+
+Confidential — Internal Use Only
+
+Notes
+
+Page 17
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Column
+
+Type
+
+logout_time
+
+DATETIME
+
+login_method
+
+TEXT
+
+is_active
+
+BOOLEAN
+
+ip_address
+
+TEXT
+
+Key
+
+Notes
+
+Biometric / PIN / Password.
+NN
+
+Default true; forced false on Remote Device Control revoke.
+Captured when online.
+
+7.12 staff_audit_log
+Immutable action log (no application-level delete).
+Column
+
+Type
+
+Key
+
+log_id
+
+UUID
+
+PK
+
+staff_id
+
+UUID
+
+FK
+
+property_id
+
+UUID
+
+FK, NN
+
+action
+
+TEXT
+
+NN
+
+Created / Updated / Deleted / Login / Logout / Approved / Rejected.
+
+module_name
+
+TEXT
+
+NN
+
+e.g. Staff, Attendance, Leave, Salary.
+
+target_entity
+
+TEXT
+
+NN
+
+Affected table name.
+
+target_record_id
+
+UUID
+
+NN
+
+old_value /
+new_value
+
+TEXT
+
+performed_at
+
+DATETIME
+
+NN
+
+is_immutable
+
+BOOLEAN
+
+NN
+
+Confidential — Internal Use Only
+
+Notes
+
+Actor performing the action; null for system jobs.
+
+JSON snapshots.
+
+Always true; enforced by DB-role revoke on DELETE.
+
+Page 18
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+8. Database Relationships & Constraints Summary
+From
+
+References
+
+Cardinality
+
+Rule
+
+staff.property_id
+
+properties.property_id
+
+Many-to-One
+
+ON DELETE RESTRICT (external module).
+
+staff.role_id
+
+roles.role_id
+
+Many-to-One
+
+ON DELETE RESTRICT — a role in use
+cannot be deleted.
+
+staff.created_by /
+updated_by
+
+staff.staff_id
+
+Self-referencing
+
+Nullable, ON DELETE SET NULL.
+
+role_permissions.role_id
+
+roles.role_id
+
+Many-to-One
+
+ON DELETE CASCADE.
+
+staff_attendance.staff_id
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE CASCADE (soft-delete
+preferred).
+
+staff_attendance.marked_by
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE SET NULL.
+
+staff_leave.staff_id
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE CASCADE.
+
+staff_leave.leave_type_id
+
+leave_types.leave_type_id
+
+Many-to-One
+
+ON DELETE RESTRICT.
+
+staff_leave.approved_by
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE SET NULL.
+
+staff_salary.staff_id
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE RESTRICT (financial record
+retained).
+
+staff_salary.generated_by
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE SET NULL.
+
+staff_performance.staff_id
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE CASCADE.
+
+staff_performance.reviewed_
+by
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE SET NULL.
+
+staff_tasks.staff_id
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE SET NULL (task remains,
+unassigned).
+
+staff_tasks.assigned_by
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE SET NULL.
+
+staff_documents.staff_id
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE CASCADE.
+
+staff_sessions.staff_id
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE CASCADE.
+
+staff_sessions.device_id
+
+devices.device_id
+
+Many-to-One
+
+ON DELETE RESTRICT (external module).
+
+staff_audit_log.staff_id
+
+staff.staff_id
+
+Many-to-One
+
+ON DELETE SET NULL — log row is never
+removed.
+
+Key Constraints
+• Exactly one staff row per property may have is_primary_owner = true (partial unique index).
+• employee_code and mobile_number are unique per property_id, not globally — the same phone
+number can belong to staff at two different properties in a multi-tenant SaaS.
+• staff_attendance enforces one row per staff per date.
+• staff_salary enforces one row per staff per (month, year).
+• staff_leave enforces from_date ≤ to_date via a CHECK constraint.
+• staff_audit_log has no DELETE grant at the database-role level — matching the BRD's 'Nothing can be
+deleted from the audit log' rule.
+• All tables carry sync_status, version and timestamps to support the Incremental Sync + Conflict
+Resolution features from the Synchronization Engine (BRD Page 4).
+
+Confidential — Internal Use Only
+
+Page 19
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+9. Dashboards — Count, Use Cases & Fields
+The Staff Management module requires 5 distinct dashboards, mapped to the different actors in the BRD's
+User Hierarchy (Page 18) and Role Matrix (Page 32–33): Owner/Manager, Reception-level staff directory
+users, day-to-day attendance operators, staff themselves (self-service), and Pinesphere's Super Admin for
+cross-property oversight.
+
+9.1 Owner / Manager — Staff Overview Dashboard
+Primary Users: Owner, Manager
+Use Case: Give the property owner or manager a single-glance operational view of the entire workforce, matching the style of
+the Owner Dashboard already defined in the BRD (Page 7).
+
+Fields / Widgets:
+Field / Widget
+
+Description
+
+Total Staff Count
+
+Active headcount for the property.
+
+Active / Inactive Staff
+
+Split count by employment_status.
+
+Present Today / Absent Today
+
+Derived from staff_attendance for current date.
+
+On Leave Today
+
+Count of staff with status On-Leave today.
+
+Pending Leave Requests
+
+Count of staff_leave rows with status Pending, tap-through to approve/reject.
+
+Pending / Overdue Tasks
+
+Count of staff_tasks not completed; overdue highlighted in red.
+
+Today's Attendance %
+
+Present ÷ Total Active Staff.
+
+Upcoming Salary Due
+
+Count of staff with no Paid salary row for the current month.
+
+Performance Alerts
+
+Staff with latest rating below a configurable threshold.
+
+Role-wise Staff Distribution
+
+Chart — staff count grouped by role.
+
+Recently Added Staff
+
+Last 5 onboarded staff with joining date.
+
+Quick Actions
+
+Add Staff, Approve Leave, Assign Task, Generate Salary.
+
+9.2 Staff Directory Dashboard
+Primary Users: Owner, Manager, Accountant (view-only where applicable)
+Use Case: Browse, search and manage the full staff list — the operational hub for HR actions, feeding the Owner's 'Create
+Staff' / 'Manage Users' capability from Page 27.
+
+Fields / Widgets:
+Field / Widget
+
+Description
+
+Photo, Name, Employee Code
+
+Identity summary per row.
+
+Role Badge
+
+Color-coded role tag.
+
+Mobile Number
+
+Tap to call / WhatsApp.
+
+Employment Status
+
+Active / Inactive / Suspended chip.
+
+Date of Joining
+
+Confidential — Internal Use Only
+
+Page 20
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Field / Widget
+
+Description
+
+Last Attendance
+
+Most recent check-in date/time.
+
+Filters
+
+By Role, Status, Date of Joining range.
+
+Search Bar
+
+By name, employee code, mobile number.
+
+Row Actions
+
+View Profile, Edit, Deactivate, Reset PIN, View Documents.
+
+9.3 Attendance Dashboard
+Primary Users: Owner, Manager, Reception (for manual marking)
+Use Case: Track daily and monthly attendance across all staff, and let an authorized user record a manual punch for staff who
+could not use biometric/PIN.
+
+Fields / Widgets:
+Field / Widget
+
+Description
+
+Date Selector
+
+Single date or month-range view.
+
+Attendance List
+
+Staff name, check-in time, check-out time, status, method icon.
+
+Daily Counters
+
+Present / Absent / Half-Day / On-Leave totals.
+
+Monthly Calendar View
+
+Per-staff calendar heat-map of attendance status.
+
+Late Arrivals Count
+
+Staff checked in after configured shift start time.
+
+Manual Mark Action
+
+Mark Present/Absent/Half-Day for a staff member with remarks.
+
+Export
+
+Export attendance sheet for a date range (Owner/Accountant only).
+
+9.4 Staff Self-Service Dashboard
+Primary Users: Any logged-in staff member (mobile)
+Use Case: Each staff member's personal home screen after login — works fully offline, syncs later.
+
+Fields / Widgets:
+Field / Widget
+
+Description
+
+Punch In / Punch Out Button
+
+Primary action, large tap target.
+
+This Month's Attendance
+
+Present / Absent / Leave day counts.
+
+Leave Balance
+
+Remaining days per leave type; Apply for Leave action.
+
+My Tasks
+
+Pending, In-Progress, Completed task list with due dates.
+
+My Salary History
+
+Past salary slips with payment status.
+
+My Performance Rating
+
+Latest rating + trend, if visible to the role.
+
+My Profile & Documents
+
+View/update personal details and uploaded documents.
+
+9.5 Super Admin — Staff Analytics Dashboard (Cross-Property)
+
+Confidential — Internal Use Only
+
+Page 21
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+Primary Users: Pinesphere Super Admin, Support Team
+Use Case: Gives Pinesphere operational visibility into staff usage across every customer property, extending the Super Admin
+Dashboard already defined in the BRD (Page 18–19) with staff-specific analytics.
+
+Fields / Widgets:
+Field / Widget
+
+Description
+
+Total Staff Across All Properties
+
+Global headcount.
+
+Staff Growth Trend
+
+New staff onboarded over time, chart.
+
+Role Distribution (Global)
+
+Aggregate staff count by role across all properties.
+
+Average Staff per Property
+
+By subscription plan tier (Starter / Basic / Standard / Professional / Enterprise).
+
+Properties with Sync Issues
+
+Properties whose staff data has pending/conflict sync_status.
+
+Device–Staff Mapping Anomalies
+
+Staff sessions active on unregistered/unapproved devices.
+
+Top Properties by Staff Count
+
+Ranked list, links to Property Management screen.
+
+Confidential — Internal Use Only
+
+Page 22
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+10. Security & Compliance Considerations
+• Local database encryption for the SQLite/ObjectBox store, per BRD Page 15.
+• Biometric login with PIN fallback for staff punch-in and app access.
+• Role-based permissions enforced both client-side (UX gating) and server-side (API authorization) — never
+trust the client alone.
+• Device registration — a staff member can only log in from a device approved under that property (Device
+Management module).
+• Remote deactivation — Super Admin or Owner can revoke a staff member's session; local data is erased
+from that device on next reconnect if the staff is terminated.
+• Audit trail immutability — enforced at the database role level (REVOKE DELETE on staff_audit_log).
+• Encrypted sync for all staff payloads travelling between device and cloud.
+• PII minimization — Aadhaar/Passport numbers stored in staff_documents only, not duplicated into the staff
+master row.
+
+Confidential — Internal Use Only
+
+Page 23
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+11. Scalability & Flexibility Notes
+• Data-driven roles — roles and permissions live in tables, not code, so a new role (e.g. 'Night Auditor') can
+be added per property without an app release.
+• Multi-tenant safe uniqueness — all uniqueness constraints (mobile number, employee code) are scoped
+by property_id, so the same schema serves Starter homestays and Enterprise multi-property chains alike.
+• Polymorphic task linkage — staff_tasks.related_module / related_record_id lets the task engine attach to
+any future module (e.g. Inventory restock task) without schema changes.
+• Plan-aware limits — Maximum Staff Users per subscription plan (BRD Page 23) can be enforced by a
+simple count check against the staff table at creation time, without new tables.
+• Derived, not duplicated, metrics — performance scores are computed from attendance/task tables at read
+time, keeping the schema lean and avoiding stale cached numbers.
+• Sync-ready by design — every table already carries the version/sync_status/timestamps needed for
+incremental sync, so this module plugs into the existing Synchronization Engine without special-casing.
+• Backend framework — FastAPI's Pydantic models map 1:1 to these tables, keeping request/response
+validation and the offline payload contract in sync as the schema evolves.
+
+Confidential — Internal Use Only
+
+Page 24
+
+PINESPHERE STAY
+
+Staff Management Module — Technical Blueprint
+
+12. Appendix — Role Permission Matrix (BRD Reference)
+Reproduced and extended from the BRD's Recommended Role Matrix (Pages 32–33), focused on modules
+relevant to Staff Management. 'View' = read-only, 'Full' = all actions, '—' = no access.
+Module
+
+Super Admin
+
+Owner
+
+Manager
+
+Reception
+
+Accountant
+
+Staff (Self)
+
+Staff / User
+Management
+
+Full
+
+Full
+
+Limited
+
+—
+
+—
+
+—
+
+Attendance
+
+Full
+
+Full
+
+Own
+
+Own
+
+Own
+
+Own
+
+Leave Approval
+
+Full
+
+Full
+
+—
+
+Apply
+
+Apply
+
+Apply
+
+Task Assignment
+
+Full
+
+Full
+
+Assign/Own
+
+Own
+
+Own
+
+Own
+
+Salary / Payroll
+
+Full
+
+Full
+
+—
+
+—
+
+Full
+(Accountant)
+
+Own
+
+Performance
+Review
+
+Full
+
+Full
+
+Limited
+
+—
+
+—
+
+Own
+
+Audit Logs
+
+Full
+
+Property Only
+
+Limited
+
+Own Actions
+
+Own Actions
+
+—
+
+This blueprint is derived entirely from PineStay — BRD.pdf and is scoped to the Staff Management module for V1.
+All entity, workflow and dashboard decisions map back to explicit BRD sections cited throughout this document
+(Pages 7, 10, 15, 18, 26–29, 31–33).
+
+Confidential — Internal Use Only
+
+Page 25
+
+

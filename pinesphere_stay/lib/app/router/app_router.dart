@@ -51,7 +51,10 @@ GoRouter appRouter(Ref ref) {
 
       if (authState == const AuthState.initial()) return null;
 
-      final isAuth = authState == const AuthState.authenticated();
+      final isAuth = authState.maybeWhen(
+        authenticated: (_) => true,
+        orElse: () => false,
+      );
       final isGoingToLogin = state.matchedLocation == '/login';
 
       if (!isAuth && !isGoingToLogin) {

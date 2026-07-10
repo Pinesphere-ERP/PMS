@@ -68,7 +68,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authProvider, (previous, next) {
       next.maybeWhen(
-        authenticated: () {
+        authenticated: (user) {
           if (mounted) {
             context.go('/dashboard');
           }

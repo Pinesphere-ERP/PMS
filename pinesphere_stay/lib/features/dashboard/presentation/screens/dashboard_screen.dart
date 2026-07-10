@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final userName = authState.maybeWhen(
+      authenticated: (user) => user.name,
+      orElse: () => 'Guest',
+    );
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -20,7 +27,7 @@ class DashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildGreeting(context),
+                  _buildGreeting(context, userName),
                   const SizedBox(height: 24),
                   _buildQuickActions(context),
                   const SizedBox(height: 24),
@@ -42,6 +49,12 @@ class DashboardScreen extends StatelessWidget {
       pinned: true,
       backgroundColor: AppColors.surface,
       elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.menu, color: AppColors.primary),
+        onPressed: () {
+          Scaffold.of(context).openDrawer();
+        },
+      ),
       title: Row(
         children: [
           const Icon(Icons.signal_wifi_off, color: AppColors.primary),
@@ -78,7 +91,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGreeting(BuildContext context) {
+  Widget _buildGreeting(BuildContext context, String userName) {
     final now = DateTime.now();
     final dateString = DateFormat('EEEE, MMMM d').format(now);
 
@@ -86,7 +99,7 @@ class DashboardScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Good morning, Kavinila!',
+          'Good morning, $userName!',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: AppColors.onBackground,
               ),

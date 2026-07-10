@@ -6,6 +6,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/utils/device_info.dart';
+import '../../../../core/permissions/user_role.dart';
+import 'dart:convert';
+import '../../domain/models/user_model.dart';
 import '../models/login_request_dto.dart';
 
 part 'auth_repository_impl.g.dart';
@@ -23,12 +26,25 @@ class AuthRepository {
 
   AuthRepository(this._dio, this._secureStorage);
 
-  Future<Either<Failure, void>> login(String email, String password) async {
+  Future<Either<Failure, UserModel>> login(String email, String password) async {
     try {
       if (password == '1234') {
-        // Prototype bypass
+        // Prototype bypass: Generate a mock user based on email (or default to owner)
+        final role = UserRole.values.firstWhere(
+          (e) => email.toLowerCase().contains(e.name.toLowerCase()),
+          orElse: () => UserRole.owner, // Default to owner if no role in email
+        );
+        
+        final mockUser = UserModel(
+          id: 'mock-123',
+          name: 'Test ${role.displayName}',
+          email: email,
+          role: role,
+        );
+
         await _secureStorage.write(key: 'access_token', value: 'mock_token');
-        return const Right(null);
+        await _secureStorage.write(key: 'cached_user', value: jsonEncode(mockUser.toJson()));
+        return Right(mockUser);
       }
 
       final deviceInfo = DeviceInfoService(_secureStorage);
@@ -49,7 +65,12 @@ class AuthRepository {
       await _secureStorage.write(key: 'access_token', value: tokenResponse.accessToken);
       await _secureStorage.write(key: 'refresh_token', value: tokenResponse.refreshToken);
 
-      return const Right(null);
+      // Assuming backend returns user info in the token response or a /me endpoint
+      // For now, defaulting to Owner if real network request succeeds but doesn't return user
+      final user = UserModel(id: '1', name: 'Real User', email: email, role: UserRole.owner);
+      await _secureStorage.write(key: 'cached_user', value: jsonEncode(user.toJson()));
+
+      return Right(user);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401 || e.response?.statusCode == 400) {
         return Left(Failure.auth(e.response?.data['detail'] ?? 'Invalid credentials'));
@@ -64,10 +85,21 @@ class AuthRepository {
     await _secureStorage.delete(key: 'access_token');
     await _secureStorage.delete(key: 'refresh_token');
     await _secureStorage.delete(key: 'tenant_id');
+    await _secureStorage.delete(key: 'cached_user');
   }
 
-  Future<bool> isAuthenticated() async {
+  Future<UserModel?> getCachedUser() async {
     final token = await _secureStorage.read(key: 'access_token');
-    return token != null;
+    if (token == null) return null;
+
+    final userJsonStr = await _secureStorage.read(key: 'cached_user');
+    if (userJsonStr == null) return null;
+
+    try {
+      final json = jsonDecode(userJsonStr);
+      return UserModel.fromJson(json);
+    } catch (e) {
+      return null;
+    }
   }
 }

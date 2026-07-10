@@ -9,6 +9,7 @@ from app.modules.bookings import router as bookings
 from app.modules.checkin import router as checkin
 from app.modules.checkout import router as checkout
 from app.modules.housekeeping import router as housekeeping
+from app.modules.reports import router as reports
 
 api_router = APIRouter()
 api_router.include_router(auth, prefix="/auth", tags=["Authentication"])
@@ -21,3 +22,4 @@ api_router.include_router(bookings, prefix="/bookings", tags=["Booking Managemen
 api_router.include_router(checkin, prefix="/checkin", tags=["Check-In Management"])
 api_router.include_router(checkout, prefix="/checkout", tags=["Check-Out Management"])
 api_router.include_router(housekeeping, prefix="/housekeeping", tags=["Housekeeping & Maintenance"])
+api_router.include_router(reports, prefix="/reports", tags=["Reports & Analytics"])

@@ -251,19 +251,6 @@ class CheckOut(Base, TimestampMixin, SyncMixin):
     remarks: Mapped[Optional[str]] = mapped_column(Text)
     checkout_status: Mapped[str] = mapped_column(String(20), default='pending')
 
-class Invoice(Base, TimestampMixin):
-    __tablename__ = "invoices"
-    __table_args__ = {'extend_existing': True}
-    invoice_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
-    guest_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("guests.guest_id"), nullable=False)
-    invoice_number: Mapped[str] = mapped_column(String(30), nullable=False)
-    grand_total: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
-    total_paid: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
-    balance_due: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
-    status: Mapped[str] = mapped_column(String(20), default='draft')
-    generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 class InvoiceItem(Base, TimestampMixin):
     __tablename__ = "invoice_items"
@@ -276,25 +263,6 @@ class InvoiceItem(Base, TimestampMixin):
     unit_price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     total_price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
 
-class Payment(Base, TimestampMixin, SyncMixin):
-    __tablename__ = "payments"
-    __table_args__ = {'extend_existing': True}
-    payment_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("invoices.invoice_id"))
-    booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
-    guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id"))
-    transaction_id: Mapped[Optional[str]] = mapped_column(String(60))
-    reference_number: Mapped[Optional[str]] = mapped_column(String(60))
-    payment_method: Mapped[str] = mapped_column(String(20), nullable=False)
-    payment_source: Mapped[Optional[str]] = mapped_column(String(30))
-    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    upi_id: Mapped[Optional[str]] = mapped_column(String(60))
-    bank_name: Mapped[Optional[str]] = mapped_column(String(80))
-    card_last_4: Mapped[Optional[str]] = mapped_column(String(4))
-    collected_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
-    status: Mapped[str] = mapped_column(String(20), default='pending')
-    remarks: Mapped[Optional[str]] = mapped_column(Text)
 
 class RoomAssignment(Base, TimestampMixin):
     __tablename__ = "room_assignments"
@@ -382,7 +350,6 @@ class Invoice(Base, TimestampMixin):
 
 class Payment(Base, TimestampMixin, SyncMixin):
     __tablename__ = "payments"
-    __table_args__ = {'extend_existing': True}
     payment_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("invoices.invoice_id"))
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))

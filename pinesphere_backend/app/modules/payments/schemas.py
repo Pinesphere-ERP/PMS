@@ -91,3 +91,5 @@ class RazorpayVerifyRequest(BaseModel):
     booking_id: Optional[uuid.UUID] = None
     amount: Decimal = Field(gt=0)
     remarks: Optional[str] = None
+    payment_mode: str = 'online'
+    split_payments: Optional[List[SplitPaymentCreate]] = None

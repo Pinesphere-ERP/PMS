@@ -180,3 +180,78 @@ class AuditLog(Base):
     previous_log_hash: Mapped[Optional[str]] = mapped_column(String(64))
     entry_hash: Mapped[Optional[str]] = mapped_column(String(64))
 
+# C. Payments & Billing
+
+class Invoice(Base, TimestampMixin):
+    __tablename__ = "invoices"
+    __table_args__ = {'extend_existing': True}
+    invoice_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id"), nullable=False)
+    invoice_number: Mapped[Optional[str]] = mapped_column(String(50))
+    grand_total: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+
+class Payment(Base, TimestampMixin, SyncMixin):
+    __tablename__ = "payments"
+    __table_args__ = {'extend_existing': True}
+    payment_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("invoices.invoice_id"))
+    booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))
+    transaction_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    reference_number: Mapped[Optional[str]] = mapped_column(String(100))
+    payment_mode: Mapped[str] = mapped_column(String(20), nullable=False) # cash, upi, credit_card, debit_card, net_banking, wallet, split
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    upi_id: Mapped[Optional[str]] = mapped_column(String(100))
+    bank_name: Mapped[Optional[str]] = mapped_column(String(100))
+    card_last4: Mapped[Optional[str]] = mapped_column(String(4))
+    collected_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    remarks: Mapped[Optional[str]] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default='pending') # pending, partially_paid, fully_paid, refunded, cancelled
+    synced: Mapped[bool] = mapped_column(default=False)
+
+class PaymentTransaction(Base, TimestampMixin):
+    __tablename__ = "payment_transactions"
+    __table_args__ = {'extend_existing': True}
+    txn_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    payment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("payments.payment_id"), nullable=False)
+    event: Mapped[str] = mapped_column(String(20), nullable=False) # created, captured, failed, refunded
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    meta_data: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+class SplitPayment(Base):
+    __tablename__ = "split_payments"
+    __table_args__ = {'extend_existing': True}
+    split_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    payment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("payments.payment_id"), nullable=False)
+    mode: Mapped[str] = mapped_column(String(20), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+
+class Refund(Base):
+    __tablename__ = "refunds"
+    __table_args__ = {'extend_existing': True}
+    refund_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    payment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("payments.payment_id"), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    reason: Mapped[Optional[str]] = mapped_column(Text)
+    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    status: Mapped[str] = mapped_column(String(20), default='requested') # requested, approved, rejected, completed
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+class Receipt(Base):
+    __tablename__ = "receipts"
+    __table_args__ = {'extend_existing': True}
+    receipt_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    payment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("payments.payment_id"), nullable=False)
+    receipt_number: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    pdf_path: Mapped[Optional[str]] = mapped_column(Text)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+class CashRegister(Base):
+    __tablename__ = "cash_registers"
+    __table_args__ = {'extend_existing': True}
+    register_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    staff_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    opening_balance: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    closing_balance: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    shift_date: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default='open') # open, closed

@@ -4,7 +4,7 @@ import 'app_colors.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
-    final baseTextTheme = GoogleFonts.manropeTextTheme();
+    final baseTextTheme = GoogleFonts.latoTextTheme();
 
     return ThemeData(
       useMaterial3: true,
@@ -35,14 +35,14 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.background,
       textTheme: baseTextTheme.copyWith(
-        displayLarge: GoogleFonts.manrope(fontSize: 48, fontWeight: FontWeight.w700, letterSpacing: -0.02 * 48),
-        headlineLarge: GoogleFonts.manrope(fontSize: 32, fontWeight: FontWeight.w600, letterSpacing: -0.01 * 32),
-        titleLarge: GoogleFonts.manrope(fontSize: 24, fontWeight: FontWeight.w600), // Map to headline-lg-mobile
-        titleMedium: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w600),
-        bodyLarge: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w400),
-        bodyMedium: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w400),
-        labelLarge: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500),
-        labelMedium: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0.05 * 12),
+        displayLarge: GoogleFonts.lato(fontSize: 48, fontWeight: FontWeight.w700, letterSpacing: -0.02 * 48),
+        headlineLarge: GoogleFonts.lato(fontSize: 32, fontWeight: FontWeight.w600, letterSpacing: -0.01 * 32),
+        titleLarge: GoogleFonts.lato(fontSize: 24, fontWeight: FontWeight.w600), // Map to headline-lg-mobile
+        titleMedium: GoogleFonts.lato(fontSize: 18, fontWeight: FontWeight.w600),
+        bodyLarge: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w400),
+        bodyMedium: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w400),
+        labelLarge: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w500),
+        labelMedium: GoogleFonts.lato(fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0.05 * 12),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surface,
@@ -51,7 +51,7 @@ class AppTheme {
         centerTitle: false,
         iconTheme: IconThemeData(color: AppColors.onSurface),
         titleTextStyle: TextStyle(
-          fontFamily: 'Manrope',
+          fontFamily: 'Lato',
           color: AppColors.onSurface,
           fontSize: 20,
           fontWeight: FontWeight.w600,

@@ -48,7 +48,7 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Pinesphere Forest Resort',
+              'PineStay',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: AppColors.primary,
                   ),
@@ -86,7 +86,7 @@ class DashboardScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Good morning, Sarah',
+          'Good morning, Kavinila!',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: AppColors.onBackground,
               ),
@@ -157,11 +157,11 @@ class DashboardScreen extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildKPICard(context, 'Todays arrival', '4', AppColors.primary, Icons.luggage),
-            _buildKPICard(context, 'Todays departures', '6', AppColors.onSurface, Icons.flight_takeoff),
-            _buildKPICard(context, 'Occupied Rooms', '12', AppColors.primary, Icons.hotel),
-            _buildKPICard(context, 'Vacant Rooms', '8', AppColors.outline, Icons.vpn_key),
-            _buildKPICard(context, 'Pending Checkouts', '3', AppColors.secondary, Icons.hourglass_bottom),
+            _buildKPICard(context, 'Todays arrival', '4', AppColors.primary, Icons.luggage, onTap: () => context.go('/todays-arrivals')),
+            _buildKPICard(context, 'Todays departures', '6', AppColors.onSurface, Icons.flight_takeoff, onTap: () => context.go('/todays-departures')),
+            _buildKPICard(context, 'Occupied Rooms', '12', AppColors.primary, Icons.hotel, onTap: () => context.go('/occupied-rooms')),
+            _buildKPICard(context, 'Vacant Rooms', '8', AppColors.outline, Icons.vpn_key, onTap: () => context.go('/vacant-rooms')),
+            _buildKPICard(context, 'Pending Checkouts', '3', AppColors.secondary, Icons.hourglass_bottom, onTap: () => context.go('/pending-checkouts')),
             _buildKPICard(context, 'House Keeping', '4', AppColors.error, Icons.cleaning_services),
             _buildKPICard(context, 'Pending payments', '2', AppColors.error, Icons.receipt_long),
             _buildKPICard(context, 'Revenue today', '\$4,250', AppColors.primaryContainer, Icons.monetization_on),
@@ -171,9 +171,9 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildKPICard(BuildContext context, String title, String value, Color color, IconData icon) {
+  Widget _buildKPICard(BuildContext context, String title, String value, Color color, IconData icon, {VoidCallback? onTap}) {
     return BentoCard(
-      onTap: () {}, // empty tap handler to make card interactive
+      onTap: onTap ?? () {}, // empty tap handler to make card interactive
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

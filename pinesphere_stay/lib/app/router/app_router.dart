@@ -9,6 +9,11 @@ import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/bookings/presentation/screens/new_booking_screen.dart';
+import '../../features/bookings/presentation/screens/pending_checkouts_screen.dart';
+import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart';
+import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
+import '../../features/rooms/presentation/screens/occupied_rooms_screen.dart';
+import '../../features/rooms/presentation/screens/vacant_rooms_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -73,6 +78,26 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/dashboard',
                 builder: (context, state) => const DashboardScreen(),
+              ),
+              GoRoute(
+                path: '/todays-arrivals',
+                builder: (context, state) => const TodaysArrivalsScreen(),
+              ),
+              GoRoute(
+                path: '/pending-checkouts',
+                builder: (context, state) => const PendingCheckoutsScreen(),
+              ),
+              GoRoute(
+                path: '/todays-departures',
+                builder: (context, state) => const TodaysDeparturesScreen(),
+              ),
+              GoRoute(
+                path: '/occupied-rooms',
+                builder: (context, state) => const OccupiedRoomsScreen(),
+              ),
+              GoRoute(
+                path: '/vacant-rooms',
+                builder: (context, state) => const VacantRoomsScreen(),
               ),
             ],
           ),

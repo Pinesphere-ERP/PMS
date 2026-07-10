@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Smartphone,
   Search,
@@ -13,348 +13,281 @@ import {
   XCircle,
   Clock,
   Send,
-  HelpCircle
+  HelpCircle,
+  Loader2
 } from 'lucide-react';
-
-const mockDiagnosticDevices = [
-  { 
-    id: 'diag_1', 
-    name: 'Reception Front Desk Pad', 
-    model: 'Samsung Galaxy Tab S9', 
-    uid: 'a89c-44e1-bb20-99f1', 
-    property: 'Grand Plaza Hotel', 
-    mobile: '+1 234 567 8901', 
-    osVersion: 'Android 14', 
-    appVersion: 'v1.0.4', 
-    syncStatus: 'HEALTHY', 
-    lastSync: '2 mins ago', 
-    battery: 94,
-    syncAttempts: [
-      { time: '10:14 AM', status: 'SUCCESS', records: '14 pushed / 2 pulled', error: null },
-      { time: '10:00 AM', status: 'SUCCESS', records: '0 pushed / 0 pulled', error: null },
-      { time: '09:45 AM', status: 'SUCCESS', records: '5 pushed / 1 pulled', error: null }
-    ]
-  },
-  { 
-    id: 'diag_2', 
-    name: 'POS Bar Pad #1', 
-    model: 'Lenovo Tab M10 Plus', 
-    uid: 'c55e-99f0-aa12-33d5', 
-    property: 'City Lights Hostel', 
-    mobile: '+1 555 123 4567', 
-    osVersion: 'Android 12', 
-    appVersion: 'v1.0.2', 
-    syncStatus: 'SYNC_ERROR', 
-    lastSync: '48 hours ago', 
-    battery: 24,
-    syncAttempts: [
-      { time: 'July 8, 11:20 PM', status: 'FAILED', records: '0 pushed / 0 pulled', error: 'HTTP 408 Request Timeout: Network connection dropped during delta upload' },
-      { time: 'July 8, 11:05 PM', status: 'FAILED', records: '0 pushed / 0 pulled', error: 'DatabaseLockException: SQLite file temporarily busy during housekeeping sweep' },
-      { time: 'July 8, 10:50 PM', status: 'SUCCESS', records: '18 pushed / 4 pulled', error: null }
-    ]
-  },
-  { 
-    id: 'diag_3', 
-    name: 'Housekeeping Mobile #2', 
-    model: 'Samsung M35 5G', 
-    uid: 'b72d-11c3-ff88-22a4', 
-    property: 'Sea View Resort', 
-    mobile: '+1 987 654 3210', 
-    osVersion: 'Android 13', 
-    appVersion: 'v1.0.3', 
-    syncStatus: 'HEALTHY', 
-    lastSync: '10 mins ago', 
-    battery: 78,
-    syncAttempts: [
-      { time: '10:02 AM', status: 'SUCCESS', records: '6 pushed / 12 pulled', error: null }
-    ]
-  }
-];
+import { deviceService } from '../../services/deviceService';
 
 export default function DeviceDiagnosticsPanel() {
+  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [activeTab, setActiveTab] = useState('sync');
   const [searchTerm, setSearchTerm] = useState('');
-  const [devices] = useState(mockDiagnosticDevices);
-  const [selectedDiag, setSelectedDiag] = useState(mockDiagnosticDevices[1]); // Default to the error one
-  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    { sender: 'System', text: 'Automated diagnostic channel initialized for device c55e-99f0-aa12-33d5.', time: '10:15 AM' },
-    { sender: 'Support Engineer', text: 'Hi Mike, I see your POS Bar Pad had a network drop two days ago. Could you verify if the tablet is still connected to the bar WiFi network?', time: '10:16 AM' }
-  ]);
-  const [newMessage, setNewMessage] = useState('');
 
-  const filtered = devices.filter(d => 
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.property.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.uid.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.mobile.includes(searchTerm)
-  );
+  // API State
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [devices, setDevices] = useState([]);
 
-  const handleSendChat = (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-    setChatMessages([...chatMessages, { sender: 'Support Engineer', text: newMessage, time: 'Just now' }]);
-    setNewMessage('');
+  useEffect(() => {
+    const fetchDiagnostics = async () => {
+      setLoading(true);
+      try {
+        const data = await deviceService.getDiagnostics();
+        setDevices(Array.isArray(data) ? data : (data.data || []));
+        if (data && data.length > 0) {
+          setSelectedDevice(Array.isArray(data) ? data[0] : data.data[0]);
+        }
+        setError(null);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch diagnostic data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDiagnostics();
+  }, []);
+
+  const handleSupportMessage = () => {
+    alert(`Sending support message to device: ${selectedDevice.name}`);
   };
 
+  const handleRemoteWipe = () => {
+    if (window.confirm(`Are you absolutely sure you want to REMOTE WIPE device ${selectedDevice.name}? This will delete all local app data.`)) {
+      alert('Remote wipe command queued.');
+    }
+  };
+
+  const filteredDevices = devices.filter(dev => 
+    (dev.name && dev.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (dev.uid && dev.uid.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (dev.property && dev.property.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
-    <div className="space-y-6 animate-fade-in relative pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div className="space-y-6 animate-slide-up h-[calc(100vh-120px)] flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center shrink-0">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight flex items-center gap-2">
-            <Activity className="h-6 w-6 text-pine-DEFAULT" />
-            Device Diagnostics Console (Support Role)
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Troubleshoot offline sync failures, inspect network transmission errors, and trigger non-destructive diagnostics.
-          </p>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Device Diagnostics</h1>
+          <p className="text-sm text-gray-500 mt-1">Deep-dive into sync logs, errors, and remote troubleshooting.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-            <Shield className="h-3.5 w-3.5 mr-1" />
-            Support Role Access Matrix
-          </span>
-        </div>
-      </div>
-
-      {/* Role Enforcement Notice Banner */}
-      <div className="bg-slate-900 text-slate-100 p-4 rounded-xl border border-slate-800 flex items-center justify-between gap-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <HelpCircle className="h-5 w-5 text-amber-400 flex-shrink-0" />
-          <p className="text-xs sm:text-sm">
-            <strong className="text-amber-400 font-semibold">Security Matrix Enforcement:</strong> As a Support Engineer, you can inspect telemetry, re-issue tokens (`Reset License`), and trigger forced syncs. Actions modifying ownership (`Approve`, `Reject`, `Revoke License`, `Subscription Changes`) are strictly disabled per compliance rules.
-          </p>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-        <div className="relative w-full max-w-lg">
-          <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by Device UID, Property Name, or Customer Mobile Number (+1 555...)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pine-DEFAULT"
-          />
-        </div>
-        <span className="text-xs text-gray-400 hidden md:block">Showing {filtered.length} hardware units</span>
-      </div>
-
-      {/* Diagnostic Workspace Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Device Selector List */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden lg:col-span-1 flex flex-col h-[600px]">
-          <div className="p-4 border-b border-gray-200 bg-gray-50 font-bold text-xs uppercase tracking-wider text-gray-600">
-            Hardware Units Directory
+        <div className="flex space-x-3 mt-4 sm:mt-0">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search by name, UID..." 
+              className="saas-input pl-9 w-full bg-white shadow-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <div className="divide-y divide-gray-200 overflow-y-auto flex-1">
-            {filtered.map((device) => (
-              <div
-                key={device.id}
-                onClick={() => setSelectedDiag(device)}
-                className={`p-4 cursor-pointer transition-colors ${
-                  selectedDiag?.id === device.id ? 'bg-pine-50/80 border-l-4 border-l-pine-DEFAULT' : 'hover:bg-gray-50'
+        </div>
+      </div>
+
+      <div className="flex flex-1 gap-6 overflow-hidden min-h-[400px]">
+        {/* Left List Pane */}
+        <div className="w-1/3 bg-white border border-gray-200 shadow-sm rounded-xl flex flex-col overflow-hidden shrink-0 relative">
+          <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+            <h2 className="text-sm font-semibold text-gray-700">Diagnostic Queue</h2>
+            <button className="text-gray-400 hover:text-pine transition-colors p-1"><RefreshCw className="h-4 w-4" /></button>
+          </div>
+          
+          {loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 mt-14">
+               <Loader2 className="h-6 w-6 text-pine animate-spin mb-2" />
+               <p className="text-gray-500 text-xs">Loading devices...</p>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 mt-14">
+               <AlertCircle className="h-6 w-6 text-red-500 mb-2" />
+               <p className="text-gray-800 text-xs font-medium px-4 text-center">Failed to load diagnostics</p>
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {!loading && !error && filteredDevices.length === 0 && (
+              <div className="p-4 text-center text-xs text-gray-500">No devices match your search.</div>
+            )}
+            {filteredDevices.map(dev => (
+              <button 
+                key={dev.id || Math.random()}
+                onClick={() => setSelectedDevice(dev)}
+                className={`w-full text-left p-3 rounded-lg transition-colors border ${
+                  selectedDevice?.id === dev.id 
+                    ? 'bg-pine-50 border-pine-100 ring-1 ring-pine/20' 
+                    : 'bg-white border-transparent hover:bg-gray-50'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-900">{device.name}</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                    device.syncStatus === 'HEALTHY' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {device.syncStatus}
-                  </span>
+                <div className="flex justify-between items-start">
+                  <div className="truncate pr-2">
+                    <p className={`text-sm font-medium truncate ${selectedDevice?.id === dev.id ? 'text-pine-dark' : 'text-gray-900'}`}>{dev.name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{dev.property}</p>
+                  </div>
+                  {dev.syncStatus === 'SYNC_ERROR' ? (
+                    <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                  ) : dev.syncStatus === 'OFFLINE' ? (
+                    <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                  )}
                 </div>
-                <p className="text-xs text-gray-600 mt-1 font-medium">{device.property}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">UID: {device.uid} • Mobile: {device.mobile}</p>
-              </div>
+                <div className="flex items-center mt-2 text-[10px] text-gray-400 font-mono">
+                  <span>{dev.uid}</span>
+                </div>
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Right Column: Detailed Telemetry & Diagnostic Actions */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden lg:col-span-2 flex flex-col h-[600px]">
-          {selectedDiag ? (
-            <div className="flex-1 overflow-y-auto flex flex-col justify-between p-6">
-              <div className="space-y-6">
-                {/* Device Info & Status Banner */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-gray-200 gap-4">
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <Smartphone className="h-5 w-5 text-pine-DEFAULT" />
-                      {selectedDiag.name}
-                    </h2>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Property: <strong className="text-gray-700">{selectedDiag.property}</strong> • Contact: {selectedDiag.mobile}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => alert(`Forced sync ping transmitted to ${selectedDiag.uid}. Expect telemetry update in 30 seconds.`)}
-                      className="px-3 py-1.5 bg-pine-DEFAULT text-white rounded-lg text-xs font-semibold hover:bg-pine-600 shadow-sm flex items-center gap-1.5"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" /> Force Sync Ping
-                    </button>
-                    <button
-                      onClick={() => alert(`Re-issuing offline verification token for ${selectedDiag.uid}...`)}
-                      className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold hover:bg-blue-100 flex items-center gap-1.5"
-                    >
-                      Reset License Token
-                    </button>
-                    <button
-                      onClick={() => setChatDrawerOpen(true)}
-                      className="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-semibold hover:bg-gray-800 flex items-center gap-1.5 shadow-sm"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" /> Customer Chat
-                    </button>
-                  </div>
-                </div>
-
-                {/* Hardware Spec Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-[10px] uppercase font-bold text-gray-400">Hardware Model</span>
-                    <p className="text-xs font-bold text-gray-800 mt-1">{selectedDiag.model}</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-[10px] uppercase font-bold text-gray-400">OS / App Build</span>
-                    <p className="text-xs font-bold text-gray-800 mt-1">{selectedDiag.osVersion} / {selectedDiag.appVersion}</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-[10px] uppercase font-bold text-gray-400">Battery & Health</span>
-                    <p className="text-xs font-bold text-gray-800 mt-1">{selectedDiag.battery}% Charged</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-[10px] uppercase font-bold text-gray-400">Last Telemetry</span>
-                    <p className="text-xs font-bold text-gray-800 mt-1">{selectedDiag.lastSync}</p>
-                  </div>
-                </div>
-
-                {/* Sync Attempts & exact Error Log Inspector */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                      <History className="h-4 w-4 text-gray-400" />
-                      Recent Sync Attempts Log (Last 10 cycles)
-                    </h3>
-                    <button
-                      onClick={() => alert('Diagnostic JSON bundle generated and downloaded.')}
-                      className="text-xs text-pine-DEFAULT font-semibold hover:underline flex items-center gap-1"
-                    >
-                      <FileText className="h-3.5 w-3.5" /> Download Telemetry Bundle
-                    </button>
-                  </div>
-
-                  <div className="space-y-2">
-                    {selectedDiag.syncAttempts.map((attempt, idx) => (
-                      <div key={idx} className={`p-3 rounded-xl border ${
-                        attempt.status === 'SUCCESS' ? 'bg-green-50/50 border-green-200' : 'bg-red-50/80 border-red-200'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {attempt.status === 'SUCCESS' ? (
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <XCircle className="h-4 w-4 text-red-600" />
-                            )}
-                            <span className="text-xs font-bold text-gray-900">{attempt.status}</span>
-                            <span className="text-xs text-gray-500 font-mono">({attempt.records})</span>
-                          </div>
-                          <span className="text-xs text-gray-400">{attempt.time}</span>
-                        </div>
-                        {attempt.error && (
-                          <div className="mt-2 p-2.5 bg-white rounded-lg border border-red-200 text-xs text-red-700 font-mono flex items-start gap-2">
-                            <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-                            <div className="break-all">{attempt.error}</div>
-                          </div>
-                        )}
+        {/* Right Detail Pane */}
+        <div className="flex-1 bg-white border border-gray-200 shadow-sm rounded-xl flex flex-col overflow-hidden">
+          {selectedDevice ? (
+            <>
+              {/* Header */}
+              <div className="p-6 border-b border-gray-100 bg-gray-50/30 shrink-0">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center">
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
+                      selectedDevice.syncStatus === 'SYNC_ERROR' ? 'bg-red-50 text-red-600' :
+                      selectedDevice.syncStatus === 'OFFLINE' ? 'bg-amber-50 text-amber-600' :
+                      'bg-green-50 text-green-600'
+                    }`}>
+                      <Smartphone className="h-6 w-6" />
+                    </div>
+                    <div className="ml-4">
+                      <h2 className="text-xl font-bold text-gray-900">{selectedDevice.name}</h2>
+                      <div className="flex items-center text-sm text-gray-500 mt-1">
+                        <span>{selectedDevice.model}</span>
+                        <span className="mx-2">•</span>
+                        <span className="font-mono text-xs">{selectedDevice.uid}</span>
                       </div>
-                    ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="saas-button-secondary py-1.5 px-3 text-xs"><RefreshCw className="h-3 w-3 mr-1.5"/> Force Sync</button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-4 mt-6">
+                  <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                    <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Battery</p>
+                    <p className="text-lg font-bold text-gray-900 mt-1">{selectedDevice.battery}%</p>
+                  </div>
+                  <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                    <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">App Version</p>
+                    <p className="text-lg font-bold text-gray-900 mt-1">{selectedDevice.appVersion}</p>
+                  </div>
+                  <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                    <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Last Sync</p>
+                    <p className="text-sm font-bold text-gray-900 mt-1 line-clamp-1">{selectedDevice.lastSync}</p>
+                  </div>
+                  <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                    <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Status</p>
+                    <p className={`text-sm font-bold mt-1 line-clamp-1 ${
+                      selectedDevice.syncStatus === 'SYNC_ERROR' ? 'text-red-600' :
+                      selectedDevice.syncStatus === 'OFFLINE' ? 'text-amber-600' :
+                      'text-green-600'
+                    }`}>{selectedDevice.syncStatus}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Disabled Actions Bar (Role Enforcement Visual Proof) */}
-              <div className="pt-4 border-t border-gray-200 flex items-center justify-between bg-gray-50/50 p-3 rounded-xl mt-4">
-                <span className="text-xs font-semibold text-gray-500">
-                  Restricted Administrative Controls (Disabled per Role Access Matrix):
-                </span>
-                <div className="flex items-center space-x-2">
-                  <button disabled className="px-2.5 py-1 bg-gray-200 text-gray-400 rounded text-xs font-medium cursor-not-allowed">
-                    Approve / Reject
-                  </button>
-                  <button disabled className="px-2.5 py-1 bg-gray-200 text-gray-400 rounded text-xs font-medium cursor-not-allowed">
-                    Revoke License
-                  </button>
-                </div>
+              {/* Tabs */}
+              <div className="px-6 pt-4 border-b border-gray-100 flex gap-6 shrink-0">
+                <button 
+                  onClick={() => setActiveTab('sync')}
+                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'sync' ? 'border-pine text-pine' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  <div className="flex items-center"><Activity className="h-4 w-4 mr-2"/> Sync History</div>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('actions')}
+                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'actions' ? 'border-pine text-pine' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  <div className="flex items-center"><Shield className="h-4 w-4 mr-2"/> Remote Actions</div>
+                </button>
               </div>
-            </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
+                {activeTab === 'sync' && (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-900">Recent Sync Attempts</h3>
+                    
+                    <div className="relative border-l border-gray-200 ml-3 space-y-6 pb-4">
+                      {selectedDevice.syncAttempts && selectedDevice.syncAttempts.length > 0 ? selectedDevice.syncAttempts.map((attempt, idx) => (
+                        <div key={idx} className="relative pl-6">
+                          <div className={`absolute -left-1.5 top-1.5 h-3 w-3 rounded-full border-2 border-white ${
+                            attempt.status === 'SUCCESS' ? 'bg-green-500' : 'bg-red-500'
+                          }`}></div>
+                          
+                          <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center">
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${
+                                  attempt.status === 'SUCCESS' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                }`}>{attempt.status}</span>
+                                <span className="text-xs text-gray-500 ml-3 flex items-center"><Clock className="h-3 w-3 mr-1"/> {attempt.time}</span>
+                              </div>
+                              <span className="text-xs font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded">{attempt.records}</span>
+                            </div>
+                            
+                            {attempt.error && (
+                              <div className="mt-3 bg-red-50 border border-red-100 rounded-lg p-3 flex items-start">
+                                <XCircle className="h-4 w-4 text-red-500 mt-0.5 mr-2 shrink-0" />
+                                <p className="text-xs text-red-700 font-mono break-all">{attempt.error}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )) : (
+                        <p className="text-xs text-gray-500 pl-4">No sync attempts recorded.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'actions' && (
+                  <div className="space-y-6">
+                    <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+                      <h3 className="text-sm font-semibold text-gray-900 flex items-center mb-4">
+                        <MessageSquare className="h-4 w-4 mr-2 text-pine" /> Send Support Message
+                      </h3>
+                      <p className="text-xs text-gray-500 mb-3">Send a push notification directly to this device's screen. Useful for instructing staff to restart the app or connect to WiFi.</p>
+                      <textarea 
+                        className="saas-input w-full text-sm min-h-[80px] mb-3" 
+                        placeholder="Type your message here..."
+                      ></textarea>
+                      <button onClick={handleSupportMessage} className="saas-button-primary w-full justify-center"><Send className="h-4 w-4 mr-2"/> Send to Device</button>
+                    </div>
+
+                    <div className="bg-white border border-red-100 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                      <h3 className="text-sm font-semibold text-red-700 flex items-center mb-2">
+                        <AlertCircle className="h-4 w-4 mr-2" /> Danger Zone: Remote Wipe
+                      </h3>
+                      <p className="text-xs text-gray-600 mb-4">
+                        This action will immediately command the device to delete all local app data, unsynced offline records, and unregister itself. This action cannot be undone.
+                      </p>
+                      <button onClick={handleRemoteWipe} className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-semibold py-2 px-4 rounded-lg w-full transition-colors text-sm">
+                        Initiate Remote Wipe
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-              Select a hardware unit from the left directory to inspect diagnostic telemetry.
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
+              <HelpCircle className="h-16 w-16 mb-4 text-gray-200" />
+              <p className="text-lg font-medium text-gray-600">No device selected</p>
+              <p className="text-sm text-gray-400 mt-2 text-center max-w-sm">Select a device from the diagnostic queue on the left to view detailed logs and perform remote troubleshooting.</p>
             </div>
           )}
         </div>
       </div>
-
-      {/* Simulated Customer Support Chat Drawer */}
-      {chatDrawerOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-xs flex justify-end animate-fade-in">
-          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between border-l border-gray-200">
-            {/* Header */}
-            <div className="p-5 bg-gray-900 text-white flex items-center justify-between">
-              <div>
-                <span className="text-[10px] uppercase tracking-wider font-bold text-pine-400">Direct Customer Diagnostics Channel</span>
-                <h3 className="text-base font-bold flex items-center gap-2 mt-0.5">
-                  <MessageSquare className="h-4 w-4 text-pine-400" />
-                  Chat: {selectedDiag?.property}
-                </h3>
-              </div>
-              <button 
-                onClick={() => setChatDrawerOpen(false)}
-                className="p-1.5 text-gray-400 hover:text-white rounded-full transition-colors"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Messages Feed */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-              {chatMessages.map((msg, idx) => (
-                <div key={idx} className={`p-3 rounded-xl max-w-[85%] ${
-                  msg.sender === 'Support Engineer' 
-                    ? 'bg-pine-DEFAULT text-white ml-auto rounded-tr-none' 
-                    : 'bg-white text-gray-800 border border-gray-200 mr-auto rounded-tl-none'
-                }`}>
-                  <div className="flex items-center justify-between text-[10px] opacity-75 mb-1 gap-4">
-                    <span className="font-bold">{msg.sender}</span>
-                    <span>{msg.time}</span>
-                  </div>
-                  <p className="text-xs leading-relaxed">{msg.text}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Input Form */}
-            <form onSubmit={handleSendChat} className="p-4 bg-white border-t border-gray-200 flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Type diagnostic instruction or query to property owner..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pine-DEFAULT"
-              />
-              <button
-                type="submit"
-                className="p-2 bg-pine-DEFAULT text-white rounded-lg hover:bg-pine-600 transition-colors shadow-sm"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

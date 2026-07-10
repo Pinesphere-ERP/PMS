@@ -75,6 +75,7 @@ def _fmt(amount) -> str:
 async def get_transactions(db: AsyncSession = Depends(get_db)):
     q = (
         select(PaymentTransaction, Property, Owner, Subscription)
+        .select_from(PaymentTransaction)
         .join(Property, PaymentTransaction.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
@@ -112,6 +113,7 @@ async def get_transactions(db: AsyncSession = Depends(get_db)):
 async def get_pending_dues(db: AsyncSession = Depends(get_db)):
     q = (
         select(PendingDue, Property, Owner)
+        .select_from(PendingDue)
         .join(Property, PendingDue.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .order_by(PendingDue.days_overdue.desc())
@@ -140,6 +142,7 @@ async def get_pending_dues(db: AsyncSession = Depends(get_db)):
 async def get_invoices(db: AsyncSession = Depends(get_db)):
     q = (
         select(Invoice, Property, Owner)
+        .select_from(Invoice)
         .join(Property, Invoice.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .order_by(Invoice.date.desc())
@@ -194,12 +197,12 @@ async def get_payment_kpis(db: AsyncSession = Depends(get_db)):
     failed = int(failed_q.scalar() or 0)
 
     # Total invoices
-    inv_count_q = await db.execute(select(func.count(Invoice.id)))
+    inv_count_q = await db.execute(select(func.count(Invoice.invoice_id)))
     inv_count = int(inv_count_q.scalar() or 0)
 
     # Collection rate
     paid_q = await db.execute(
-        select(func.count(Invoice.id)).where(Invoice.status == "Paid")
+        select(func.count(Invoice.invoice_id)).where(Invoice.status == "Paid")
     )
     paid_count = int(paid_q.scalar() or 0)
     rate = round((paid_count / max(inv_count, 1)) * 100)
@@ -263,6 +266,7 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)):
     # Outstanding dues
     outstanding_q = await db.execute(
         select(PendingDue, Property)
+        .select_from(PendingDue)
         .join(Property, PendingDue.property_id == Property.property_id)
         .order_by(PendingDue.days_overdue.desc())
         .limit(5)

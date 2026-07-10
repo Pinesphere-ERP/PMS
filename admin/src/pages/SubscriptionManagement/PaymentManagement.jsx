@@ -3,7 +3,7 @@ import {
   Search, Filter, Download, ExternalLink, DollarSign, ArrowUpRight, 
   Clock, AlertTriangle, FileText, CheckCircle2, TrendingUp, RefreshCw, 
   Send, X, CreditCard, ShieldCheck, PieChart as PieChartIcon, BarChart2,
-  MoreVertical, Eye, Loader2
+  MoreVertical, Eye, Loader2, AlertCircle
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 

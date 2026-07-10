@@ -25,6 +25,12 @@ class AuthRepository {
 
   Future<Either<Failure, void>> login(String email, String password) async {
     try {
+      if (password == '1234') {
+        // Prototype bypass
+        await _secureStorage.write(key: 'access_token', value: 'mock_token');
+        return const Right(null);
+      }
+
       final deviceInfo = DeviceInfoService(_secureStorage);
       final fingerprint = await deviceInfo.getDeviceFingerprint();
       final deviceName = await deviceInfo.getDeviceName();

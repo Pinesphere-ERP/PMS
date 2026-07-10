@@ -54,14 +54,8 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
   }
 
   void _handleLogin() {
-    // Simulate validation
     if (_pin == '1234') {
-      ref.read(authProvider.notifier).login('admin@pinesphere.com', _pin).then((_) {
-        if (mounted) {
-          // Force navigate to dashboard
-          GoRouter.of(context).go('/dashboard');
-        }
-      });
+      ref.read(authProvider.notifier).login('admin@pinesphere.com', _pin);
     } else {
       _shakeController.forward(from: 0).then((_) {
         setState(() => _pin = '');
@@ -72,23 +66,41 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      next.maybeWhen(
+        authenticated: () {
+          if (mounted) {
+            context.go('/dashboard');
+          }
+        },
+        error: (message) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          _shakeController.forward(from: 0).then((_) {
+            setState(() => _pin = '');
+          });
+        },
+        orElse: () {},
+      );
+    });
+
     return Scaffold(
       body: Stack(
         children: [
           const AmbientForestGlow(),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 48.0),
-              child: Column(
-                children: [
-                  _buildHeader(context),
-                  const Spacer(),
-                  _buildPinDisplay(),
-                  const SizedBox(height: 48),
-                  _buildKeypad(context),
-                  const Spacer(),
-                  _buildFooter(context),
-                ],
+            child: SingleChildScrollView(
+              child: Container(
+                height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildHeader(context),
+                    _buildPinDisplay(),
+                    _buildKeypad(context),
+                    _buildFooter(context),
+                  ],
+                ),
               ),
             ),
           ),

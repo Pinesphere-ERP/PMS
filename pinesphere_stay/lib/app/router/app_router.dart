@@ -18,15 +18,29 @@ final GlobalKey<NavigatorState> _bookingsNavigatorKey = GlobalKey<NavigatorState
 final GlobalKey<NavigatorState> _reportsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'reports');
 final GlobalKey<NavigatorState> _settingsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'settings');
 
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+  
+  RouterNotifier(this._ref) {
+    _ref.listen<AuthState>(
+      authProvider,
+      (_, __) => notifyListeners(),
+    );
+  }
+}
+
 @riverpod
 GoRouter appRouter(Ref ref) {
-  final authState = ref.watch(authProvider);
+  final notifier = RouterNotifier(ref);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/dashboard',
     debugLogDiagnostics: true,
+    refreshListenable: notifier,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
+
       if (authState == const AuthState.initial()) return null;
 
       final isAuth = authState == const AuthState.authenticated();

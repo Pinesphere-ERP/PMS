@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
 
@@ -155,18 +156,20 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildQuickActions(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: _buildActionButton(context, Icons.add_circle_outline, 'New Booking')),
+        Expanded(child: _buildActionButton(context, Icons.add_circle_outline, 'New Booking', '/bookings')),
         const SizedBox(width: 12),
-        Expanded(child: _buildActionButton(context, Icons.grid_view, 'Room Grid')),
+        Expanded(child: _buildActionButton(context, Icons.grid_view, 'Room Grid', '/rooms')),
         const SizedBox(width: 12),
-        Expanded(child: _buildActionButton(context, Icons.analytics_outlined, 'Reports')),
+        Expanded(child: _buildActionButton(context, Icons.analytics_outlined, 'Reports', '/reports')),
       ],
     );
   }
 
-  Widget _buildActionButton(BuildContext context, IconData icon, String label) {
+  Widget _buildActionButton(BuildContext context, IconData icon, String label, String route) {
     return BentoCard(
-      onTap: () {},
+      onTap: () {
+        context.go(route);
+      },
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
@@ -322,7 +325,9 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                context.go('/reports');
+              },
               child: Text(
                 'View All',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.primary),

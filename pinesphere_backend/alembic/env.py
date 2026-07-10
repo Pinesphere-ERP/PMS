@@ -10,6 +10,11 @@ from alembic import context
 from src.core.config import settings
 from src.infra.database import Base
 
+# Import all models here so Alembic can discover them
+from src.domain.auth.models import *
+from src.domain.property.models import *
+from src.domain.subscription.models import *
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

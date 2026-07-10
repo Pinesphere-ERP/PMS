@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://pinesphere:pinesphere_password@localhost:5432/pinesphere"
+    DATABASE_URL: str = "postgresql+asyncpg://pinesphere:pinesphere_password@localhost:5444/pinesphere"
     
     # Security
     SECRET_KEY: str = "supersecretkey-change-in-production"

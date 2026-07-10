@@ -5,7 +5,7 @@ from datetime import datetime
 
 # Add root to sys.path and alias src as app
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import src as app
+import app as app
 sys.modules["app"] = app
 
 from app.main import app as fastapi_app

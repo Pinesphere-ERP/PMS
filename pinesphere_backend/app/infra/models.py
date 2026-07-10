@@ -7,7 +7,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 
-from app.database.database import Base, TimestampMixin, SyncMixin
+from app.infra.database import Base, TimestampMixin, SyncMixin
 
 # A. Owners & Access
 

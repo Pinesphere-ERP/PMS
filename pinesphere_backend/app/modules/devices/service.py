@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
 from fastapi import HTTPException, status
 
-from app.database.models import Device, AuditLog, User, Property
+from app.infra.models import Device, AuditLog, User, Property
 from app.modules.subscriptions.models import Subscription, SubscriptionPlan, License
 from app.modules.devices.schemas import (
     DeviceRegisterRequest, DeviceActivateRequest, DeviceActivateResponse,

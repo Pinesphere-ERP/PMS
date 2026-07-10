@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.database import get_db
+from app.infra.database import get_db
 from app.modules.devices.schemas import (
     DeviceRegisterRequest, DeviceActivateRequest, DeviceActivateResponse,
     DeviceActionRequest, DeviceTransferRequest, DeviceSyncCheckinRequest,

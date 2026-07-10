@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_, or_, desc
 from fastapi import HTTPException, status
 
 from app.infra.models import Booking, Guest, Room, Property
+from app.modules.audit.logger import AuditLogger
 from app.modules.bookings.schemas import (
     GuestCreateRequest, GuestResponse,
     BookingCreateRequest, BookingUpdateRequest, BookingResponse,
@@ -156,6 +157,23 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
     await db.flush()
     await db.refresh(booking)
 
+    await AuditLogger.log(
+        db,
+        module_name="bookings",
+        action_type="create_booking",
+        target_entity="booking",
+        target_record_id=booking.booking_id,
+        property_id=req.property_id,
+        new_value={
+            "booking_id": str(booking.booking_id),
+            "room_id": str(req.room_id),
+            "guest_id": str(req.guest_id),
+            "check_in_date": str(req.check_in_date),
+            "check_out_date": str(req.check_out_date),
+            "total_payable": float(total_payable),
+        },
+    )
+
     return await enrich_booking_response(db, booking)
 
 
@@ -261,6 +279,17 @@ async def update_booking(db: AsyncSession, booking_id: uuid.UUID, req: BookingUp
 
     await db.flush()
     await db.refresh(booking)
+
+    await AuditLogger.log(
+        db,
+        module_name="bookings",
+        action_type="update_booking",
+        target_entity="booking",
+        target_record_id=booking.booking_id,
+        property_id=booking.property_id,
+        new_value={"updated_fields": list(update_data.keys())},
+    )
+
     return await enrich_booking_response(db, booking)
 
 
@@ -283,6 +312,18 @@ async def cancel_booking(db: AsyncSession, booking_id: uuid.UUID) -> BookingResp
     booking.booking_status = "cancelled"
     await db.flush()
     await db.refresh(booking)
+
+    await AuditLogger.log(
+        db,
+        module_name="bookings",
+        action_type="cancel_booking",
+        target_entity="booking",
+        target_record_id=booking.booking_id,
+        property_id=booking.property_id,
+        old_value={"booking_status": "confirmed"},
+        new_value={"booking_status": "cancelled"},
+    )
+
     return await enrich_booking_response(db, booking)
 
 

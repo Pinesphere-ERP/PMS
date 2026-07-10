@@ -7,8 +7,9 @@ from fastapi import HTTPException
 
 from app.infra.models import (
     CheckOut, CheckIn, Booking, Room, Guest,
-    Invoice, InvoiceItem, AuditLog, User,
+    Invoice, InvoiceItem, User,
 )
+from app.modules.audit.logger import AuditLogger
 from app.modules.checkout.schemas import (
     CheckOutRequest, CheckOutResponse,
     PendingCheckoutItem, CheckoutBillingDetail,
@@ -187,15 +188,15 @@ async def perform_checkout(
         if usr:
             staff_user_name = usr.name
 
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=checkin.property_id,
         user_id=current_user_id,
-        timestamp=now,
         module_name="checkout",
         action_type="check_out",
         target_entity="check_out",
         target_record_id=checkout.checkout_id,
-        new_value_snapshot={
+        new_value={
             "checkin_id": str(checkin.checkin_id),
             "booking_id": str(booking.booking_id),
             "room_number": room.room_number,
@@ -209,7 +210,6 @@ async def perform_checkout(
             "staff": staff_user_name,
         },
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(checkout)
 

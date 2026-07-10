@@ -9,8 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.models import (
     CheckIn, Booking, Room, Guest, Invoice, InvoiceItem,
-    AuditLog, RoomAssignment, Property
+    RoomAssignment, Property
 )
+from app.modules.audit.logger import AuditLogger
 from app.modules.checkin.schemas import (
     CheckInRequest, CheckInResponse, CheckInSearchResult,
     WalkInCheckInRequest, InvoiceResponse, InvoiceItemResponse,
@@ -175,15 +176,15 @@ async def perform_checkin(
     )
     db.add(room_assignment)
 
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=booking.property_id,
         user_id=current_user_id,
-        timestamp=now,
         module_name="checkin",
         action_type="check_in",
         target_entity="check_in",
         target_record_id=checkin.checkin_id,
-        new_value_snapshot={
+        new_value={
             "booking_id": str(booking.booking_id),
             "room_number": room.room_number,
             "guest_id": str(booking.guest_id),
@@ -193,7 +194,6 @@ async def perform_checkin(
             "offline_id": checkin.offline_id,
         },
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(checkin)
     return await _enrich_checkin_response(db, checkin)
@@ -459,18 +459,17 @@ async def cancel_checkin(db: AsyncSession, checkin_id: uuid.UUID) -> CheckInResp
     if invoice:
         invoice.status = "cancelled"
 
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=checkin.property_id,
         user_id=checkin.staff_id,
-        timestamp=now,
         module_name="checkin",
         action_type="cancel_check_in",
         target_entity="check_in",
         target_record_id=checkin.checkin_id,
-        old_value_snapshot={"status": "active"},
-        new_value_snapshot={"status": "cancelled"},
+        old_value={"status": "active"},
+        new_value={"status": "cancelled"},
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(checkin)
     return await _enrich_checkin_response(db, checkin)

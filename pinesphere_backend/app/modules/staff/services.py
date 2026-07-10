@@ -4,7 +4,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.infra.models import User, Role, Property, AuditLog
+from app.infra.models import User, Role, Property
+from app.modules.audit.logger import AuditLogger
 from app.modules.staff import models, schemas
 
 class StaffService:
@@ -54,7 +55,7 @@ class StaffService:
         self.db.refresh(new_staff)
         
         # Audit log
-        self._log_audit(current_user_id, staff_in.property_id, "Created", "User", new_staff.id)
+        AuditLogger.log_sync(self.db, module_name="StaffManagement", action_type="Created", target_entity="User", target_record_id=new_staff.id, user_id=current_user_id, property_id=staff_in.property_id)
         
         return new_staff
 
@@ -95,7 +96,7 @@ class StaffService:
         self.db.commit()
         self.db.refresh(new_attendance)
         
-        self._log_audit(marker_id or staff_id, attendance_in.property_id, "Created", "StaffAttendance", new_attendance.attendance_id)
+        AuditLogger.log_sync(self.db, module_name="StaffManagement", action_type="Created", target_entity="StaffAttendance", target_record_id=new_attendance.attendance_id, user_id=marker_id or staff_id, property_id=attendance_in.property_id)
         return new_attendance
 
     def apply_leave(self, leave_in: schemas.StaffLeaveCreate, staff_id: uuid.UUID) -> models.StaffLeave:
@@ -135,7 +136,7 @@ class StaffService:
 
         # Audit
         staff_record = self.db.query(User).filter(User.id == leave.staff_id).first()
-        self._log_audit(approver_id, staff_record.property_id, status, "StaffLeave", leave.leave_id)
+        AuditLogger.log_sync(self.db, module_name="StaffManagement", action_type=status, target_entity="StaffLeave", target_record_id=leave.leave_id, user_id=approver_id, property_id=staff_record.property_id)
         
         return leave
 
@@ -187,17 +188,3 @@ class StaffService:
         self.db.commit()
         self.db.refresh(new_task)
         return new_task
-
-    # Audit Logging
-    def _log_audit(self, user_id: uuid.UUID, property_id: uuid.UUID, action_type: str, target_entity: str, target_record_id: uuid.UUID):
-        audit = AuditLog(
-            user_id=user_id,
-            property_id=property_id,
-            module_name="StaffManagement",
-            action_type=action_type,
-            target_entity=target_entity,
-            target_record_id=target_record_id,
-            timestamp=datetime.utcnow()
-        )
-        self.db.add(audit)
-        self.db.commit()

@@ -7,8 +7,9 @@ from fastapi import HTTPException, status
 
 from app.infra.models import (
     HousekeepingTask, MaintenanceTicket, LostAndFound,
-    Room, User, AuditLog
+    Room, User
 )
+from app.modules.audit.logger import AuditLogger
 from app.modules.housekeeping.schemas import (
     HousekeepingTaskCreate, HousekeepingTaskUpdate, HousekeepingTaskInspect,
     MaintenanceTicketCreate, MaintenanceTicketUpdate,
@@ -43,22 +44,21 @@ async def create_task(
     if room.housekeeping_status != "dirty":
         room.housekeeping_status = "dirty"
 
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=room.property_id,
         user_id=current_user_id,
-        timestamp=datetime.utcnow(),
         module_name="housekeeping",
         action_type="create_task",
         target_entity="housekeeping_task",
         target_record_id=task.task_id,
-        new_value_snapshot={
+        new_value={
             "room_id": str(req.room_id),
             "assigned_staff_id": str(req.assigned_staff_id) if req.assigned_staff_id else None,
             "priority": req.priority,
             "remarks": req.remarks,
         },
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(task)
     return task
@@ -90,18 +90,17 @@ async def update_task(
             task.completed_at = datetime.utcnow()
             room.housekeeping_status = "clean"
 
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=task.property_id,
         user_id=current_user_id,
-        timestamp=datetime.utcnow(),
         module_name="housekeeping",
         action_type="update_task",
         target_entity="housekeeping_task",
         target_record_id=task.task_id,
-        old_value_snapshot={"status": old_status},
-        new_value_snapshot={"status": task.status, **update_data},
+        old_value={"status": old_status},
+        new_value={"status": task.status, **update_data},
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(task)
     return task
@@ -132,22 +131,21 @@ async def inspect_task(
     else:
         task.status = "pending"
 
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=task.property_id,
         user_id=current_user_id,
-        timestamp=datetime.utcnow(),
         module_name="housekeeping",
         action_type="inspect_task",
         target_entity="housekeeping_task",
         target_record_id=task.task_id,
-        new_value_snapshot={
+        new_value={
             "inspection_result": req.inspection_result,
             "inspection_remarks": req.inspection_remarks,
             "inspected_by": str(req.inspected_by),
             "new_status": task.status,
         },
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(task)
     return task
@@ -254,15 +252,15 @@ async def create_maintenance_ticket(
     if room.housekeeping_status != "maintenance":
         room.housekeeping_status = "maintenance"
 
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=room.property_id,
         user_id=current_user_id,
-        timestamp=datetime.utcnow(),
         module_name="housekeeping",
         action_type="create_maintenance_ticket",
         target_entity="maintenance_ticket",
         target_record_id=ticket.ticket_id,
-        new_value_snapshot={
+        new_value={
             "room_id": str(req.room_id),
             "category": req.category,
             "priority": req.priority,
@@ -270,7 +268,6 @@ async def create_maintenance_ticket(
             "assigned_to": str(req.assigned_to) if req.assigned_to else None,
         },
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(ticket)
     return ticket
@@ -302,18 +299,17 @@ async def update_maintenance_ticket(
             if room.housekeeping_status == "maintenance":
                 room.housekeeping_status = "clean"
 
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=ticket.property_id,
         user_id=current_user_id,
-        timestamp=datetime.utcnow(),
         module_name="housekeeping",
         action_type="update_maintenance_ticket",
         target_entity="maintenance_ticket",
         target_record_id=ticket.ticket_id,
-        old_value_snapshot={"status": old_status, "assigned_to": str(old_assigned) if old_assigned else None},
-        new_value_snapshot={"status": ticket.status, "assigned_to": str(ticket.assigned_to) if ticket.assigned_to else None, **update_data},
+        old_value={"status": old_status, "assigned_to": str(old_assigned) if old_assigned else None},
+        new_value={"status": ticket.status, "assigned_to": str(ticket.assigned_to) if ticket.assigned_to else None, **update_data},
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(ticket)
     return ticket

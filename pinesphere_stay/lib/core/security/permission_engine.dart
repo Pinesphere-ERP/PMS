@@ -105,7 +105,7 @@ class PermissionEngine {
       PermissionModule.checkIn: PermissionAction.none,
       PermissionModule.payments: PermissionAction.financial,
       PermissionModule.reports: PermissionAction.financial,
-      PermissionModule.auditLogs: PermissionAction.none,
+      PermissionModule.auditLogs: PermissionAction.limited,
     },
     UserRole.guest: {
       PermissionModule.propertyOnboarding: PermissionAction.none,
@@ -117,7 +117,7 @@ class PermissionEngine {
       PermissionModule.checkIn: PermissionAction.ownActions,
       PermissionModule.payments: PermissionAction.ownActions,
       PermissionModule.reports: PermissionAction.none,
-      PermissionModule.auditLogs: PermissionAction.none,
+      PermissionModule.auditLogs: PermissionAction.limited,
     },
   };
 

@@ -7,49 +7,49 @@ part of 'payment.dart';
 // **************************************************************************
 
 _Payment _$PaymentFromJson(Map<String, dynamic> json) => _Payment(
-  paymentId: json['paymentId'] as String,
-  invoiceId: json['invoiceId'] as String?,
-  bookingId: json['bookingId'] as String?,
-  transactionId: json['transactionId'] as String,
-  referenceNumber: json['referenceNumber'] as String?,
-  paymentMode: json['paymentMode'] as String,
-  amount: (json['amount'] as num).toDouble(),
-  upiId: json['upiId'] as String?,
-  bankName: json['bankName'] as String?,
-  cardLast4: json['cardLast4'] as String?,
-  collectedBy: json['collectedBy'] as String?,
+  paymentId: json['payment_id'] as String,
+  invoiceId: json['invoice_id'] as String?,
+  bookingId: json['booking_id'] as String?,
+  transactionId: json['transaction_id'] as String,
+  referenceNumber: json['reference_number'] as String?,
+  paymentMode: json['payment_mode'] as String,
+  amount: _parseDouble(json['amount']),
+  upiId: json['upi_id'] as String?,
+  bankName: json['bank_name'] as String?,
+  cardLast4: json['card_last4'] as String?,
+  collectedBy: json['collected_by'] as String?,
   remarks: json['remarks'] as String?,
   status: json['status'] as String,
   synced: json['synced'] as bool? ?? false,
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: json['updatedAt'] == null
+  createdAt: DateTime.parse(json['created_at'] as String),
+  updatedAt: json['updated_at'] == null
       ? null
-      : DateTime.parse(json['updatedAt'] as String),
+      : DateTime.parse(json['updated_at'] as String),
 );
 
 Map<String, dynamic> _$PaymentToJson(_Payment instance) => <String, dynamic>{
-  'paymentId': instance.paymentId,
-  'invoiceId': instance.invoiceId,
-  'bookingId': instance.bookingId,
-  'transactionId': instance.transactionId,
-  'referenceNumber': instance.referenceNumber,
-  'paymentMode': instance.paymentMode,
+  'payment_id': instance.paymentId,
+  'invoice_id': instance.invoiceId,
+  'booking_id': instance.bookingId,
+  'transaction_id': instance.transactionId,
+  'reference_number': instance.referenceNumber,
+  'payment_mode': instance.paymentMode,
   'amount': instance.amount,
-  'upiId': instance.upiId,
-  'bankName': instance.bankName,
-  'cardLast4': instance.cardLast4,
-  'collectedBy': instance.collectedBy,
+  'upi_id': instance.upiId,
+  'bank_name': instance.bankName,
+  'card_last4': instance.cardLast4,
+  'collected_by': instance.collectedBy,
   'remarks': instance.remarks,
   'status': instance.status,
   'synced': instance.synced,
-  'createdAt': instance.createdAt.toIso8601String(),
-  'updatedAt': instance.updatedAt?.toIso8601String(),
+  'created_at': instance.createdAt.toIso8601String(),
+  'updated_at': instance.updatedAt?.toIso8601String(),
 };
 
 _SplitPayment _$SplitPaymentFromJson(Map<String, dynamic> json) =>
     _SplitPayment(
       mode: json['mode'] as String,
-      amount: (json['amount'] as num).toDouble(),
+      amount: _parseDouble(json['amount']),
     );
 
 Map<String, dynamic> _$SplitPaymentToJson(_SplitPayment instance) =>
@@ -58,15 +58,15 @@ Map<String, dynamic> _$SplitPaymentToJson(_SplitPayment instance) =>
 _PaymentCreateRequest _$PaymentCreateRequestFromJson(
   Map<String, dynamic> json,
 ) => _PaymentCreateRequest(
-  invoiceId: json['invoiceId'] as String?,
-  bookingId: json['bookingId'] as String?,
-  paymentMode: json['paymentMode'] as String,
-  amount: (json['amount'] as num).toDouble(),
-  upiId: json['upiId'] as String?,
-  bankName: json['bankName'] as String?,
-  cardLast4: json['cardLast4'] as String?,
+  invoiceId: json['invoice_id'] as String?,
+  bookingId: json['booking_id'] as String?,
+  paymentMode: json['payment_mode'] as String,
+  amount: _parseDouble(json['amount']),
+  upiId: json['upi_id'] as String?,
+  bankName: json['bank_name'] as String?,
+  cardLast4: json['card_last4'] as String?,
   remarks: json['remarks'] as String?,
-  splitPayments: (json['splitPayments'] as List<dynamic>?)
+  splitPayments: (json['split_payments'] as List<dynamic>?)
       ?.map((e) => SplitPayment.fromJson(e as Map<String, dynamic>))
       .toList(),
 );
@@ -74,13 +74,13 @@ _PaymentCreateRequest _$PaymentCreateRequestFromJson(
 Map<String, dynamic> _$PaymentCreateRequestToJson(
   _PaymentCreateRequest instance,
 ) => <String, dynamic>{
-  'invoiceId': instance.invoiceId,
-  'bookingId': instance.bookingId,
-  'paymentMode': instance.paymentMode,
+  'invoice_id': instance.invoiceId,
+  'booking_id': instance.bookingId,
+  'payment_mode': instance.paymentMode,
   'amount': instance.amount,
-  'upiId': instance.upiId,
-  'bankName': instance.bankName,
-  'cardLast4': instance.cardLast4,
+  'upi_id': instance.upiId,
+  'bank_name': instance.bankName,
+  'card_last4': instance.cardLast4,
   'remarks': instance.remarks,
-  'splitPayments': instance.splitPayments,
+  'split_payments': instance.splitPayments,
 };

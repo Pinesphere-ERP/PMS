@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../data/payment_repository.dart';
@@ -7,7 +8,7 @@ import '../domain/models/payment.dart';
 part 'payment_history_screen.g.dart';
 
 @riverpod
-Future<List<Payment>> paymentsList(PaymentsListRef ref) {
+Future<List<Payment>> paymentsList(Ref ref) {
   return ref.watch(paymentRepositoryProvider).getPayments();
 }
 
@@ -53,6 +54,11 @@ class PaymentHistoryScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/payment-collection'),
+        icon: const Icon(Icons.add),
+        label: const Text('Collect Payment'),
       ),
     );
   }

@@ -16,8 +16,8 @@ def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
 
 # Dummy dependency for user_id (since we don't have full auth wired in this snippet)
 # Replace with actual auth dependency later
-def get_current_user_id() -> uuid.UUID:
-    return uuid.uuid4() # Mock user ID
+def get_current_user_id() -> Optional[uuid.UUID]:
+    return None # Mock user ID
 
 @router.post("/", response_model=PaymentRead, status_code=201)
 async def create_payment(
@@ -92,10 +92,14 @@ async def verify_razorpay_payment(
             invoice_id=request.invoice_id,
             booking_id=request.booking_id,
             remarks=request.remarks,
-            user_id=user_id
+            user_id=user_id,
+            payment_mode=request.payment_mode,
+            split_payments=request.split_payments
         )
         return payment
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        import traceback
+        error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        raise HTTPException(status_code=500, detail=error_detail)

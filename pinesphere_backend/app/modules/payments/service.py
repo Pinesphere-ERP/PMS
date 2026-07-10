@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 
 from app.infra.models import Payment, PaymentTransaction, SplitPayment, Invoice
-from .schemas import PaymentCreate
+from .schemas import PaymentCreate, SplitPaymentCreate
 
 class PaymentService:
     def __init__(self, db: AsyncSession):
@@ -64,7 +64,7 @@ class PaymentService:
                 )
                 self.db.add(sp)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(new_payment)
         return new_payment
 
@@ -110,7 +110,9 @@ class PaymentService:
         invoice_id: Optional[uuid.UUID],
         booking_id: Optional[uuid.UUID],
         remarks: Optional[str],
-        user_id: uuid.UUID
+        user_id: uuid.UUID,
+        payment_mode: str = 'online',
+        split_payments: Optional[List[SplitPaymentCreate]] = None
     ) -> Payment:
         client = self.get_razorpay_client()
         
@@ -128,9 +130,10 @@ class PaymentService:
         payment_data = PaymentCreate(
             invoice_id=invoice_id,
             booking_id=booking_id,
-            payment_mode='online',
+            payment_mode=payment_mode,
             amount=amount,
-            remarks=remarks
+            remarks=remarks,
+            split_payments=split_payments
         )
 
         # Call existing logic but override transaction ID
@@ -139,7 +142,7 @@ class PaymentService:
         
         # We can also fetch the payment from Razorpay to get card/bank details, 
         # but for Phase 1 we will just mark it as online.
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(payment)
         
         return payment

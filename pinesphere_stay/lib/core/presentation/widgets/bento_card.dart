@@ -22,15 +22,21 @@ class BentoCard extends StatefulWidget {
 }
 
 class _BentoCardState extends State<BentoCard> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 100),
-  );
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
 
-  late final Animation<double> _scaleAnimation = Tween<double>(
-    begin: 1.0,
-    end: 0.98,
-  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
 
   @override
   void dispose() {

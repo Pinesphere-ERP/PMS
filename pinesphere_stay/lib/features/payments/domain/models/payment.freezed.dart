@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Payment {
 
- String get paymentId; String? get invoiceId; String? get bookingId; String get transactionId; String? get referenceNumber; String get paymentMode; double get amount; String? get upiId; String? get bankName; String? get cardLast4; String? get collectedBy; String? get remarks; String get status; bool get synced; DateTime get createdAt; DateTime? get updatedAt;
+@JsonKey(name: 'payment_id') String get paymentId;@JsonKey(name: 'invoice_id') String? get invoiceId;@JsonKey(name: 'booking_id') String? get bookingId;@JsonKey(name: 'transaction_id') String get transactionId;@JsonKey(name: 'reference_number') String? get referenceNumber;@JsonKey(name: 'payment_mode') String get paymentMode;@JsonKey(name: 'amount', fromJson: _parseDouble) double get amount;@JsonKey(name: 'upi_id') String? get upiId;@JsonKey(name: 'bank_name') String? get bankName;@JsonKey(name: 'card_last4') String? get cardLast4;@JsonKey(name: 'collected_by') String? get collectedBy;@JsonKey(name: 'remarks') String? get remarks;@JsonKey(name: 'status') String get status;@JsonKey(name: 'synced') bool get synced;@JsonKey(name: 'created_at') DateTime get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
 /// Create a copy of Payment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $PaymentCopyWith<$Res>  {
   factory $PaymentCopyWith(Payment value, $Res Function(Payment) _then) = _$PaymentCopyWithImpl;
 @useResult
 $Res call({
- String paymentId, String? invoiceId, String? bookingId, String transactionId, String? referenceNumber, String paymentMode, double amount, String? upiId, String? bankName, String? cardLast4, String? collectedBy, String? remarks, String status, bool synced, DateTime createdAt, DateTime? updatedAt
+@JsonKey(name: 'payment_id') String paymentId,@JsonKey(name: 'invoice_id') String? invoiceId,@JsonKey(name: 'booking_id') String? bookingId,@JsonKey(name: 'transaction_id') String transactionId,@JsonKey(name: 'reference_number') String? referenceNumber,@JsonKey(name: 'payment_mode') String paymentMode,@JsonKey(name: 'amount', fromJson: _parseDouble) double amount,@JsonKey(name: 'upi_id') String? upiId,@JsonKey(name: 'bank_name') String? bankName,@JsonKey(name: 'card_last4') String? cardLast4,@JsonKey(name: 'collected_by') String? collectedBy,@JsonKey(name: 'remarks') String? remarks,@JsonKey(name: 'status') String status,@JsonKey(name: 'synced') bool synced,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -168,7 +168,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String paymentId,  String? invoiceId,  String? bookingId,  String transactionId,  String? referenceNumber,  String paymentMode,  double amount,  String? upiId,  String? bankName,  String? cardLast4,  String? collectedBy,  String? remarks,  String status,  bool synced,  DateTime createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'payment_id')  String paymentId, @JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'booking_id')  String? bookingId, @JsonKey(name: 'transaction_id')  String transactionId, @JsonKey(name: 'reference_number')  String? referenceNumber, @JsonKey(name: 'payment_mode')  String paymentMode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount, @JsonKey(name: 'upi_id')  String? upiId, @JsonKey(name: 'bank_name')  String? bankName, @JsonKey(name: 'card_last4')  String? cardLast4, @JsonKey(name: 'collected_by')  String? collectedBy, @JsonKey(name: 'remarks')  String? remarks, @JsonKey(name: 'status')  String status, @JsonKey(name: 'synced')  bool synced, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Payment() when $default != null:
 return $default(_that.paymentId,_that.invoiceId,_that.bookingId,_that.transactionId,_that.referenceNumber,_that.paymentMode,_that.amount,_that.upiId,_that.bankName,_that.cardLast4,_that.collectedBy,_that.remarks,_that.status,_that.synced,_that.createdAt,_that.updatedAt);case _:
@@ -189,7 +189,7 @@ return $default(_that.paymentId,_that.invoiceId,_that.bookingId,_that.transactio
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String paymentId,  String? invoiceId,  String? bookingId,  String transactionId,  String? referenceNumber,  String paymentMode,  double amount,  String? upiId,  String? bankName,  String? cardLast4,  String? collectedBy,  String? remarks,  String status,  bool synced,  DateTime createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'payment_id')  String paymentId, @JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'booking_id')  String? bookingId, @JsonKey(name: 'transaction_id')  String transactionId, @JsonKey(name: 'reference_number')  String? referenceNumber, @JsonKey(name: 'payment_mode')  String paymentMode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount, @JsonKey(name: 'upi_id')  String? upiId, @JsonKey(name: 'bank_name')  String? bankName, @JsonKey(name: 'card_last4')  String? cardLast4, @JsonKey(name: 'collected_by')  String? collectedBy, @JsonKey(name: 'remarks')  String? remarks, @JsonKey(name: 'status')  String status, @JsonKey(name: 'synced')  bool synced, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Payment():
 return $default(_that.paymentId,_that.invoiceId,_that.bookingId,_that.transactionId,_that.referenceNumber,_that.paymentMode,_that.amount,_that.upiId,_that.bankName,_that.cardLast4,_that.collectedBy,_that.remarks,_that.status,_that.synced,_that.createdAt,_that.updatedAt);case _:
@@ -209,7 +209,7 @@ return $default(_that.paymentId,_that.invoiceId,_that.bookingId,_that.transactio
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String paymentId,  String? invoiceId,  String? bookingId,  String transactionId,  String? referenceNumber,  String paymentMode,  double amount,  String? upiId,  String? bankName,  String? cardLast4,  String? collectedBy,  String? remarks,  String status,  bool synced,  DateTime createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'payment_id')  String paymentId, @JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'booking_id')  String? bookingId, @JsonKey(name: 'transaction_id')  String transactionId, @JsonKey(name: 'reference_number')  String? referenceNumber, @JsonKey(name: 'payment_mode')  String paymentMode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount, @JsonKey(name: 'upi_id')  String? upiId, @JsonKey(name: 'bank_name')  String? bankName, @JsonKey(name: 'card_last4')  String? cardLast4, @JsonKey(name: 'collected_by')  String? collectedBy, @JsonKey(name: 'remarks')  String? remarks, @JsonKey(name: 'status')  String status, @JsonKey(name: 'synced')  bool synced, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Payment() when $default != null:
 return $default(_that.paymentId,_that.invoiceId,_that.bookingId,_that.transactionId,_that.referenceNumber,_that.paymentMode,_that.amount,_that.upiId,_that.bankName,_that.cardLast4,_that.collectedBy,_that.remarks,_that.status,_that.synced,_that.createdAt,_that.updatedAt);case _:
@@ -224,25 +224,25 @@ return $default(_that.paymentId,_that.invoiceId,_that.bookingId,_that.transactio
 @JsonSerializable()
 
 class _Payment implements Payment {
-  const _Payment({required this.paymentId, this.invoiceId, this.bookingId, required this.transactionId, this.referenceNumber, required this.paymentMode, required this.amount, this.upiId, this.bankName, this.cardLast4, this.collectedBy, this.remarks, required this.status, this.synced = false, required this.createdAt, this.updatedAt});
+  const _Payment({@JsonKey(name: 'payment_id') required this.paymentId, @JsonKey(name: 'invoice_id') this.invoiceId, @JsonKey(name: 'booking_id') this.bookingId, @JsonKey(name: 'transaction_id') required this.transactionId, @JsonKey(name: 'reference_number') this.referenceNumber, @JsonKey(name: 'payment_mode') required this.paymentMode, @JsonKey(name: 'amount', fromJson: _parseDouble) required this.amount, @JsonKey(name: 'upi_id') this.upiId, @JsonKey(name: 'bank_name') this.bankName, @JsonKey(name: 'card_last4') this.cardLast4, @JsonKey(name: 'collected_by') this.collectedBy, @JsonKey(name: 'remarks') this.remarks, @JsonKey(name: 'status') required this.status, @JsonKey(name: 'synced') this.synced = false, @JsonKey(name: 'created_at') required this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt});
   factory _Payment.fromJson(Map<String, dynamic> json) => _$PaymentFromJson(json);
 
-@override final  String paymentId;
-@override final  String? invoiceId;
-@override final  String? bookingId;
-@override final  String transactionId;
-@override final  String? referenceNumber;
-@override final  String paymentMode;
-@override final  double amount;
-@override final  String? upiId;
-@override final  String? bankName;
-@override final  String? cardLast4;
-@override final  String? collectedBy;
-@override final  String? remarks;
-@override final  String status;
-@override@JsonKey() final  bool synced;
-@override final  DateTime createdAt;
-@override final  DateTime? updatedAt;
+@override@JsonKey(name: 'payment_id') final  String paymentId;
+@override@JsonKey(name: 'invoice_id') final  String? invoiceId;
+@override@JsonKey(name: 'booking_id') final  String? bookingId;
+@override@JsonKey(name: 'transaction_id') final  String transactionId;
+@override@JsonKey(name: 'reference_number') final  String? referenceNumber;
+@override@JsonKey(name: 'payment_mode') final  String paymentMode;
+@override@JsonKey(name: 'amount', fromJson: _parseDouble) final  double amount;
+@override@JsonKey(name: 'upi_id') final  String? upiId;
+@override@JsonKey(name: 'bank_name') final  String? bankName;
+@override@JsonKey(name: 'card_last4') final  String? cardLast4;
+@override@JsonKey(name: 'collected_by') final  String? collectedBy;
+@override@JsonKey(name: 'remarks') final  String? remarks;
+@override@JsonKey(name: 'status') final  String status;
+@override@JsonKey(name: 'synced') final  bool synced;
+@override@JsonKey(name: 'created_at') final  DateTime createdAt;
+@override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
 
 /// Create a copy of Payment
 /// with the given fields replaced by the non-null parameter values.
@@ -277,7 +277,7 @@ abstract mixin class _$PaymentCopyWith<$Res> implements $PaymentCopyWith<$Res> {
   factory _$PaymentCopyWith(_Payment value, $Res Function(_Payment) _then) = __$PaymentCopyWithImpl;
 @override @useResult
 $Res call({
- String paymentId, String? invoiceId, String? bookingId, String transactionId, String? referenceNumber, String paymentMode, double amount, String? upiId, String? bankName, String? cardLast4, String? collectedBy, String? remarks, String status, bool synced, DateTime createdAt, DateTime? updatedAt
+@JsonKey(name: 'payment_id') String paymentId,@JsonKey(name: 'invoice_id') String? invoiceId,@JsonKey(name: 'booking_id') String? bookingId,@JsonKey(name: 'transaction_id') String transactionId,@JsonKey(name: 'reference_number') String? referenceNumber,@JsonKey(name: 'payment_mode') String paymentMode,@JsonKey(name: 'amount', fromJson: _parseDouble) double amount,@JsonKey(name: 'upi_id') String? upiId,@JsonKey(name: 'bank_name') String? bankName,@JsonKey(name: 'card_last4') String? cardLast4,@JsonKey(name: 'collected_by') String? collectedBy,@JsonKey(name: 'remarks') String? remarks,@JsonKey(name: 'status') String status,@JsonKey(name: 'synced') bool synced,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -323,7 +323,7 @@ as DateTime?,
 /// @nodoc
 mixin _$SplitPayment {
 
- String get mode; double get amount;
+@JsonKey(name: 'mode') String get mode;@JsonKey(name: 'amount', fromJson: _parseDouble) double get amount;
 /// Create a copy of SplitPayment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -356,7 +356,7 @@ abstract mixin class $SplitPaymentCopyWith<$Res>  {
   factory $SplitPaymentCopyWith(SplitPayment value, $Res Function(SplitPayment) _then) = _$SplitPaymentCopyWithImpl;
 @useResult
 $Res call({
- String mode, double amount
+@JsonKey(name: 'mode') String mode,@JsonKey(name: 'amount', fromJson: _parseDouble) double amount
 });
 
 
@@ -462,7 +462,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String mode,  double amount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'mode')  String mode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SplitPayment() when $default != null:
 return $default(_that.mode,_that.amount);case _:
@@ -483,7 +483,7 @@ return $default(_that.mode,_that.amount);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String mode,  double amount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'mode')  String mode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount)  $default,) {final _that = this;
 switch (_that) {
 case _SplitPayment():
 return $default(_that.mode,_that.amount);case _:
@@ -503,7 +503,7 @@ return $default(_that.mode,_that.amount);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String mode,  double amount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'mode')  String mode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount)?  $default,) {final _that = this;
 switch (_that) {
 case _SplitPayment() when $default != null:
 return $default(_that.mode,_that.amount);case _:
@@ -518,11 +518,11 @@ return $default(_that.mode,_that.amount);case _:
 @JsonSerializable()
 
 class _SplitPayment implements SplitPayment {
-  const _SplitPayment({required this.mode, required this.amount});
+  const _SplitPayment({@JsonKey(name: 'mode') required this.mode, @JsonKey(name: 'amount', fromJson: _parseDouble) required this.amount});
   factory _SplitPayment.fromJson(Map<String, dynamic> json) => _$SplitPaymentFromJson(json);
 
-@override final  String mode;
-@override final  double amount;
+@override@JsonKey(name: 'mode') final  String mode;
+@override@JsonKey(name: 'amount', fromJson: _parseDouble) final  double amount;
 
 /// Create a copy of SplitPayment
 /// with the given fields replaced by the non-null parameter values.
@@ -557,7 +557,7 @@ abstract mixin class _$SplitPaymentCopyWith<$Res> implements $SplitPaymentCopyWi
   factory _$SplitPaymentCopyWith(_SplitPayment value, $Res Function(_SplitPayment) _then) = __$SplitPaymentCopyWithImpl;
 @override @useResult
 $Res call({
- String mode, double amount
+@JsonKey(name: 'mode') String mode,@JsonKey(name: 'amount', fromJson: _parseDouble) double amount
 });
 
 
@@ -589,7 +589,7 @@ as double,
 /// @nodoc
 mixin _$PaymentCreateRequest {
 
- String? get invoiceId; String? get bookingId; String get paymentMode; double get amount; String? get upiId; String? get bankName; String? get cardLast4; String? get remarks; List<SplitPayment>? get splitPayments;
+@JsonKey(name: 'invoice_id') String? get invoiceId;@JsonKey(name: 'booking_id') String? get bookingId;@JsonKey(name: 'payment_mode') String get paymentMode;@JsonKey(name: 'amount', fromJson: _parseDouble) double get amount;@JsonKey(name: 'upi_id') String? get upiId;@JsonKey(name: 'bank_name') String? get bankName;@JsonKey(name: 'card_last4') String? get cardLast4;@JsonKey(name: 'remarks') String? get remarks;@JsonKey(name: 'split_payments') List<SplitPayment>? get splitPayments;
 /// Create a copy of PaymentCreateRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -622,7 +622,7 @@ abstract mixin class $PaymentCreateRequestCopyWith<$Res>  {
   factory $PaymentCreateRequestCopyWith(PaymentCreateRequest value, $Res Function(PaymentCreateRequest) _then) = _$PaymentCreateRequestCopyWithImpl;
 @useResult
 $Res call({
- String? invoiceId, String? bookingId, String paymentMode, double amount, String? upiId, String? bankName, String? cardLast4, String? remarks, List<SplitPayment>? splitPayments
+@JsonKey(name: 'invoice_id') String? invoiceId,@JsonKey(name: 'booking_id') String? bookingId,@JsonKey(name: 'payment_mode') String paymentMode,@JsonKey(name: 'amount', fromJson: _parseDouble) double amount,@JsonKey(name: 'upi_id') String? upiId,@JsonKey(name: 'bank_name') String? bankName,@JsonKey(name: 'card_last4') String? cardLast4,@JsonKey(name: 'remarks') String? remarks,@JsonKey(name: 'split_payments') List<SplitPayment>? splitPayments
 });
 
 
@@ -735,7 +735,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? invoiceId,  String? bookingId,  String paymentMode,  double amount,  String? upiId,  String? bankName,  String? cardLast4,  String? remarks,  List<SplitPayment>? splitPayments)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'booking_id')  String? bookingId, @JsonKey(name: 'payment_mode')  String paymentMode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount, @JsonKey(name: 'upi_id')  String? upiId, @JsonKey(name: 'bank_name')  String? bankName, @JsonKey(name: 'card_last4')  String? cardLast4, @JsonKey(name: 'remarks')  String? remarks, @JsonKey(name: 'split_payments')  List<SplitPayment>? splitPayments)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PaymentCreateRequest() when $default != null:
 return $default(_that.invoiceId,_that.bookingId,_that.paymentMode,_that.amount,_that.upiId,_that.bankName,_that.cardLast4,_that.remarks,_that.splitPayments);case _:
@@ -756,7 +756,7 @@ return $default(_that.invoiceId,_that.bookingId,_that.paymentMode,_that.amount,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? invoiceId,  String? bookingId,  String paymentMode,  double amount,  String? upiId,  String? bankName,  String? cardLast4,  String? remarks,  List<SplitPayment>? splitPayments)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'booking_id')  String? bookingId, @JsonKey(name: 'payment_mode')  String paymentMode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount, @JsonKey(name: 'upi_id')  String? upiId, @JsonKey(name: 'bank_name')  String? bankName, @JsonKey(name: 'card_last4')  String? cardLast4, @JsonKey(name: 'remarks')  String? remarks, @JsonKey(name: 'split_payments')  List<SplitPayment>? splitPayments)  $default,) {final _that = this;
 switch (_that) {
 case _PaymentCreateRequest():
 return $default(_that.invoiceId,_that.bookingId,_that.paymentMode,_that.amount,_that.upiId,_that.bankName,_that.cardLast4,_that.remarks,_that.splitPayments);case _:
@@ -776,7 +776,7 @@ return $default(_that.invoiceId,_that.bookingId,_that.paymentMode,_that.amount,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? invoiceId,  String? bookingId,  String paymentMode,  double amount,  String? upiId,  String? bankName,  String? cardLast4,  String? remarks,  List<SplitPayment>? splitPayments)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'booking_id')  String? bookingId, @JsonKey(name: 'payment_mode')  String paymentMode, @JsonKey(name: 'amount', fromJson: _parseDouble)  double amount, @JsonKey(name: 'upi_id')  String? upiId, @JsonKey(name: 'bank_name')  String? bankName, @JsonKey(name: 'card_last4')  String? cardLast4, @JsonKey(name: 'remarks')  String? remarks, @JsonKey(name: 'split_payments')  List<SplitPayment>? splitPayments)?  $default,) {final _that = this;
 switch (_that) {
 case _PaymentCreateRequest() when $default != null:
 return $default(_that.invoiceId,_that.bookingId,_that.paymentMode,_that.amount,_that.upiId,_that.bankName,_that.cardLast4,_that.remarks,_that.splitPayments);case _:
@@ -791,19 +791,19 @@ return $default(_that.invoiceId,_that.bookingId,_that.paymentMode,_that.amount,_
 @JsonSerializable()
 
 class _PaymentCreateRequest implements PaymentCreateRequest {
-  const _PaymentCreateRequest({this.invoiceId, this.bookingId, required this.paymentMode, required this.amount, this.upiId, this.bankName, this.cardLast4, this.remarks, final  List<SplitPayment>? splitPayments}): _splitPayments = splitPayments;
+  const _PaymentCreateRequest({@JsonKey(name: 'invoice_id') this.invoiceId, @JsonKey(name: 'booking_id') this.bookingId, @JsonKey(name: 'payment_mode') required this.paymentMode, @JsonKey(name: 'amount', fromJson: _parseDouble) required this.amount, @JsonKey(name: 'upi_id') this.upiId, @JsonKey(name: 'bank_name') this.bankName, @JsonKey(name: 'card_last4') this.cardLast4, @JsonKey(name: 'remarks') this.remarks, @JsonKey(name: 'split_payments') final  List<SplitPayment>? splitPayments}): _splitPayments = splitPayments;
   factory _PaymentCreateRequest.fromJson(Map<String, dynamic> json) => _$PaymentCreateRequestFromJson(json);
 
-@override final  String? invoiceId;
-@override final  String? bookingId;
-@override final  String paymentMode;
-@override final  double amount;
-@override final  String? upiId;
-@override final  String? bankName;
-@override final  String? cardLast4;
-@override final  String? remarks;
+@override@JsonKey(name: 'invoice_id') final  String? invoiceId;
+@override@JsonKey(name: 'booking_id') final  String? bookingId;
+@override@JsonKey(name: 'payment_mode') final  String paymentMode;
+@override@JsonKey(name: 'amount', fromJson: _parseDouble) final  double amount;
+@override@JsonKey(name: 'upi_id') final  String? upiId;
+@override@JsonKey(name: 'bank_name') final  String? bankName;
+@override@JsonKey(name: 'card_last4') final  String? cardLast4;
+@override@JsonKey(name: 'remarks') final  String? remarks;
  final  List<SplitPayment>? _splitPayments;
-@override List<SplitPayment>? get splitPayments {
+@override@JsonKey(name: 'split_payments') List<SplitPayment>? get splitPayments {
   final value = _splitPayments;
   if (value == null) return null;
   if (_splitPayments is EqualUnmodifiableListView) return _splitPayments;
@@ -845,7 +845,7 @@ abstract mixin class _$PaymentCreateRequestCopyWith<$Res> implements $PaymentCre
   factory _$PaymentCreateRequestCopyWith(_PaymentCreateRequest value, $Res Function(_PaymentCreateRequest) _then) = __$PaymentCreateRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String? invoiceId, String? bookingId, String paymentMode, double amount, String? upiId, String? bankName, String? cardLast4, String? remarks, List<SplitPayment>? splitPayments
+@JsonKey(name: 'invoice_id') String? invoiceId,@JsonKey(name: 'booking_id') String? bookingId,@JsonKey(name: 'payment_mode') String paymentMode,@JsonKey(name: 'amount', fromJson: _parseDouble) double amount,@JsonKey(name: 'upi_id') String? upiId,@JsonKey(name: 'bank_name') String? bankName,@JsonKey(name: 'card_last4') String? cardLast4,@JsonKey(name: 'remarks') String? remarks,@JsonKey(name: 'split_payments') List<SplitPayment>? splitPayments
 });
 
 

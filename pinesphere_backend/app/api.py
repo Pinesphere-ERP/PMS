@@ -11,6 +11,7 @@ from app.modules.checkout import router as checkout
 from app.modules.housekeeping import router as housekeeping
 from app.modules.reports.router import router as reports
 from app.modules.settings.router import router as settings
+from app.modules.seed.router import router as seed
 
 api_router = APIRouter()
 api_router.include_router(auth, prefix="/auth", tags=["Authentication"])
@@ -25,3 +26,4 @@ api_router.include_router(checkout, prefix="/checkout", tags=["Check-Out Managem
 api_router.include_router(housekeeping, prefix="/housekeeping", tags=["Housekeeping & Maintenance"])
 api_router.include_router(reports, prefix="/reports", tags=["Reports & Analytics"])
 api_router.include_router(settings, prefix="/settings", tags=["Settings & Configuration"])
+api_router.include_router(seed, prefix="/seed", tags=["Dev: Seed Data"])

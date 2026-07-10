@@ -1,14 +1,81 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 from datetime import date
+import uuid
+from typing import Optional, List
+
+from .schemas import (
+    PaymentCreate, PaymentRead, PaymentListResponse,
+    RazorpayOrderRequest, RazorpayOrderResponse, RazorpayVerifyRequest
+)
+from .service import PaymentService
 
 from app.infra.database import get_db
 from app.infra.models import PaymentTransaction, Invoice, PendingDue, Property, Owner, Subscription
 
 router = APIRouter()
 
+# Dependency for service
+def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
+    return PaymentService(db)
+
+# Dummy dependency for user_id (since we don't have full auth wired in this snippet)
+# Replace with actual auth dependency later
+def get_current_user_id() -> Optional[uuid.UUID]:
+    return None # Mock user ID
+
+@router.post("/", response_model=PaymentRead, status_code=201)
+async def create_payment(
+    payment_data: PaymentCreate,
+    service: PaymentService = Depends(get_payment_service),
+    user_id: uuid.UUID = Depends(get_current_user_id)
+):
+    try:
+        payment = await service.create_payment(payment_data, user_id)
+        return payment
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/", response_model=PaymentListResponse)
+async def list_payments(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    service: PaymentService = Depends(get_payment_service)
+):
+    skip = (page - 1) * size
+    payments, total = await service.list_payments(skip=skip, limit=size)
+    return {
+        "items": payments,
+        "total": total,
+        "page": page,
+        "size": size
+    }
+
+@router.get("/{payment_id}", response_model=PaymentRead)
+async def get_payment(
+    payment_id: uuid.UUID,
+    service: PaymentService = Depends(get_payment_service)
+):
+    payment = await service.get_payment(payment_id)
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    return payment
+
+@router.get("/razorpay/config")
+async def get_razorpay_config():
+    from app.core.config import settings
+    return {"key_id": settings.RAZORPAY_KEY_ID}
+
+from .schemas import RazorpayOrderRequest, RazorpayOrderResponse, RazorpayVerifyRequest
+
+@router.post("/razorpay/order", response_model=RazorpayOrderResponse)
+async def create_razorpay_order(
+    request: RazorpayOrderRequest,
+    service: PaymentService = Depends(get_payment_service)
+):
+    pass
 def _fmt(amount) -> str:
     return f"${float(amount):,.2f}"
 
@@ -17,6 +84,7 @@ def _fmt(amount) -> str:
 async def get_transactions(db: AsyncSession = Depends(get_db)):
     q = (
         select(PaymentTransaction, Property, Owner, Subscription)
+        .select_from(PaymentTransaction)
         .join(Property, PaymentTransaction.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
@@ -54,6 +122,7 @@ async def get_transactions(db: AsyncSession = Depends(get_db)):
 async def get_pending_dues(db: AsyncSession = Depends(get_db)):
     q = (
         select(PendingDue, Property, Owner)
+        .select_from(PendingDue)
         .join(Property, PendingDue.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .order_by(PendingDue.days_overdue.desc())
@@ -82,6 +151,7 @@ async def get_pending_dues(db: AsyncSession = Depends(get_db)):
 async def get_invoices(db: AsyncSession = Depends(get_db)):
     q = (
         select(Invoice, Property, Owner)
+        .select_from(Invoice)
         .join(Property, Invoice.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .order_by(Invoice.date.desc())
@@ -136,12 +206,12 @@ async def get_payment_kpis(db: AsyncSession = Depends(get_db)):
     failed = int(failed_q.scalar() or 0)
 
     # Total invoices
-    inv_count_q = await db.execute(select(func.count(Invoice.id)))
+    inv_count_q = await db.execute(select(func.count(Invoice.invoice_id)))
     inv_count = int(inv_count_q.scalar() or 0)
 
     # Collection rate
     paid_q = await db.execute(
-        select(func.count(Invoice.id)).where(Invoice.status == "Paid")
+        select(func.count(Invoice.invoice_id)).where(Invoice.status == "Paid")
     )
     paid_count = int(paid_q.scalar() or 0)
     rate = round((paid_count / max(inv_count, 1)) * 100)
@@ -205,6 +275,7 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)):
     # Outstanding dues
     outstanding_q = await db.execute(
         select(PendingDue, Property)
+        .select_from(PendingDue)
         .join(Property, PendingDue.property_id == Property.property_id)
         .order_by(PendingDue.days_overdue.desc())
         .limit(5)
@@ -247,6 +318,25 @@ async def mark_due_as_paid(due_id: str, db: AsyncSession = Depends(get_db)):
 async def send_reminder(due_id: str, db: AsyncSession = Depends(get_db)):
     import uuid
     try:
+        payment = await service.verify_and_record_payment(
+            razorpay_order_id=request.razorpay_order_id,
+            razorpay_payment_id=request.razorpay_payment_id,
+            razorpay_signature=request.razorpay_signature,
+            amount=request.amount,
+            invoice_id=request.invoice_id,
+            booking_id=request.booking_id,
+            remarks=request.remarks,
+            user_id=user_id,
+            payment_mode=request.payment_mode,
+            split_payments=request.split_payments
+        )
+        return payment
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        raise HTTPException(status_code=500, detail=error_detail)
         uid = uuid.UUID(due_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid due ID")

@@ -1,13 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/models/payment.dart';
+import '../../../core/network/dio_client.dart';
 
 part 'payment_repository.g.dart';
-
-@riverpod
-Dio dio(DioRef ref) {
-  return Dio(BaseOptions(baseUrl: 'http://localhost:8000/api/v1'));
-}
 
 class PaymentRepository {
   final Dio _dio;
@@ -74,7 +70,7 @@ class PaymentRepository {
 }
 
 @riverpod
-PaymentRepository paymentRepository(PaymentRepositoryRef ref) {
-  final dio = ref.watch(dioProvider);
+PaymentRepository paymentRepository(Ref ref) {
+  final dio = ref.watch(dioClientProvider);
   return PaymentRepository(dio);
 }

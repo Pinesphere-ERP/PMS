@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { propertyService } from '../../services/propertyService';
 import { 
   ChevronRight, ChevronLeft, Check, UploadCloud, Building2, 
   FileText, MapPin, Camera, Banknote, ShieldCheck, 
@@ -29,6 +30,16 @@ export default function AddPropertyWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Form State
+  const [formData, setFormData] = useState({
+    owner_name: '', owner_designation: '', owner_mobile: '', owner_email: '', owner_pan: '',
+    business_type: '', business_name: '', business_reg_number: '', business_gst: '', business_pan: '',
+    property_name: '', property_type: '', star_category: '', year_established: '', total_floors: '', total_rooms: '', description: '',
+    address: '', city: '', state: '', country: '', pincode: ''
+  });
+
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
   // Dynamic Room Categories State
   const [rooms, setRooms] = useState([
     { id: '1', name: 'Deluxe Room', category: 'Deluxe', totalRooms: 10, occupancy: 2, bedType: 'Double', size: '200 sq ft', smoking: false, bathroom: true, balcony: false, view: 'City', ac: true, description: '' }
@@ -47,12 +58,51 @@ export default function AddPropertyWizard() {
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 15));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!formData.owner_name) {
+      alert("Please provide the Owner's Full Name (Step 1).");
+      return;
+    }
+    if (!formData.owner_mobile) {
+      alert("Please provide the Owner's Mobile Number (Step 1).");
+      return;
+    }
+    if (!formData.owner_email) {
+      alert("Please provide the Owner's Email (Step 1).");
+      return;
+    }
+    if (!formData.business_name) {
+      alert("Please provide the Business Name (Step 2).");
+      return;
+    }
+    if (!formData.property_name) {
+      alert("Please provide the Property Name (Step 3).");
+      return;
+    }
+
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Clean empty fields and parse numbers
+      const payload = {};
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== '') {
+          payload[key] = formData[key];
+        }
+      });
+      
+      if (payload.star_category) payload.star_category = parseInt(payload.star_category, 10);
+      if (payload.year_established) payload.year_established = parseInt(payload.year_established, 10);
+      if (payload.total_floors) payload.total_floors = parseInt(payload.total_floors, 10);
+      if (payload.total_rooms) payload.total_rooms = parseInt(payload.total_rooms, 10);
+      
+      await propertyService.createProperty(payload);
+      alert('Property created successfully!');
       navigate('/properties');
-    }, 1500);
+    } catch (err) {
+      alert('Failed to create property: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -94,15 +144,14 @@ export default function AddPropertyWizard() {
           <div className="space-y-6 animate-slide-in-right">
             <div><h2 className="text-lg font-semibold text-gray-900">Owner Registration</h2><p className="text-sm text-gray-500">Primary contact details for the owner.</p></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Full Name (Optional)</label><input type="text" className="saas-input" placeholder="John Doe" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label><input type="text" name="owner_name" value={formData.owner_name} onChange={handleChange} className="saas-input" placeholder="John Doe" /></div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Designation (Optional)</label>
-                <select className="saas-input bg-white"><option>None</option><option>Owner</option><option>Manager</option><option>Authorized Representative</option></select>
+                <select name="owner_designation" value={formData.owner_designation} onChange={handleChange} className="saas-input bg-white"><option value="">None</option><option value="Owner">Owner</option><option value="Manager">Manager</option><option value="Authorized Representative">Authorized Representative</option></select>
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number (Optional)</label><div className="flex space-x-2"><input type="tel" className="saas-input flex-1" placeholder="+91" /><button className="saas-button-secondary">Send OTP</button></div></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Email Address (Optional)</label><div className="flex space-x-2"><input type="email" className="saas-input flex-1" placeholder="john@example.com" /><button className="saas-button-secondary">Send OTP</button></div></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Alternate Contact (Optional)</label><input type="tel" className="saas-input" placeholder="+91" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">PAN Number (Optional)</label><input type="text" className="saas-input uppercase" placeholder="ABCDE1234F" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number (Optional)</label><div className="flex space-x-2"><input type="tel" name="owner_mobile" value={formData.owner_mobile} onChange={handleChange} className="saas-input flex-1" placeholder="+91" /><button className="saas-button-secondary">Send OTP</button></div></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Email Address (Optional)</label><div className="flex space-x-2"><input type="email" name="owner_email" value={formData.owner_email} onChange={handleChange} className="saas-input flex-1" placeholder="john@example.com" /><button className="saas-button-secondary">Send OTP</button></div></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">PAN Number (Optional)</label><input type="text" name="owner_pan" value={formData.owner_pan} onChange={handleChange} className="saas-input uppercase" placeholder="ABCDE1234F" /></div>
             </div>
             <div className="border-t border-gray-100 pt-4 mt-4">
               <h3 className="text-sm font-medium text-gray-700 mb-3">Optional Identity Verification</h3>
@@ -129,12 +178,12 @@ export default function AddPropertyWizard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Business Type (Optional)</label>
-                <select className="saas-input bg-white"><option>None</option><option>Proprietorship</option><option>Private Limited</option><option>Partnership</option><option>LLP</option></select>
+                <select name="business_type" value={formData.business_type} onChange={handleChange} className="saas-input bg-white"><option value="">None</option><option value="Proprietorship">Proprietorship</option><option value="Private Limited">Private Limited</option><option value="Partnership">Partnership</option><option value="LLP">LLP</option></select>
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Business Name (Optional)</label><input type="text" className="saas-input" placeholder="Grand Hotels Pvt Ltd" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Registration Number (Optional)</label><input type="text" className="saas-input" placeholder="CIN/LLPIN" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">GST Number (Optional)</label><input type="text" className="saas-input uppercase" placeholder="29ABCDE1234F1Z5" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">PAN (Optional)</label><input type="text" className="saas-input uppercase" placeholder="ABCDE1234F" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label><input type="text" name="business_name" value={formData.business_name} onChange={handleChange} className="saas-input" placeholder="Grand Hotels Pvt Ltd" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Registration Number (Optional)</label><input type="text" name="business_reg_number" value={formData.business_reg_number} onChange={handleChange} className="saas-input" placeholder="CIN/LLPIN" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">GST Number (Optional)</label><input type="text" name="business_gst" value={formData.business_gst} onChange={handleChange} className="saas-input uppercase" placeholder="29ABCDE1234F1Z5" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">PAN (Optional)</label><input type="text" name="business_pan" value={formData.business_pan} onChange={handleChange} className="saas-input uppercase" placeholder="ABCDE1234F" /></div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">GST Certificate (Optional)</label>
                 <button className="saas-button-secondary w-full justify-start"><UploadCloud className="h-4 w-4 mr-2 text-gray-400"/> Upload PDF/JPG</button>
@@ -148,19 +197,19 @@ export default function AddPropertyWizard() {
           <div className="space-y-6 animate-slide-in-right">
             <div><h2 className="text-lg font-semibold text-gray-900">Property Information</h2><p className="text-sm text-gray-500">Basic details of the property.</p></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Property Name (Optional)</label><input type="text" className="saas-input" placeholder="Grand Plaza Hotel" /></div>
+              <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label><input type="text" name="property_name" value={formData.property_name} onChange={handleChange} className="saas-input" placeholder="Grand Plaza Hotel" /></div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Property Type (Optional)</label>
-                <select className="saas-input bg-white"><option>None</option><option>Hotel</option><option>Resort</option><option>Hostel</option><option>Homestay</option></select>
+                <select name="property_type" value={formData.property_type} onChange={handleChange} className="saas-input bg-white"><option value="">None</option><option value="Hotel">Hotel</option><option value="Resort">Resort</option><option value="Hostel">Hostel</option><option value="Homestay">Homestay</option></select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Star Category (Optional)</label>
-                <select className="saas-input bg-white"><option>None / Unrated</option><option>3 Star</option><option>4 Star</option><option>5 Star</option></select>
+                <select name="star_category" value={formData.star_category} onChange={handleChange} className="saas-input bg-white"><option value="">None / Unrated</option><option value="3">3 Star</option><option value="4">4 Star</option><option value="5">5 Star</option></select>
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Year Established (Optional)</label><input type="number" className="saas-input" placeholder="2010" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Total Floors (Optional)</label><input type="number" className="saas-input" placeholder="5" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Total Rooms (Optional)</label><input type="number" className="saas-input" placeholder="50" /></div>
-              <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label><textarea className="saas-input" rows="3" placeholder="Describe the property..."></textarea></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Year Established (Optional)</label><input type="number" name="year_established" value={formData.year_established} onChange={handleChange} className="saas-input" placeholder="2010" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Total Floors (Optional)</label><input type="number" name="total_floors" value={formData.total_floors} onChange={handleChange} className="saas-input" placeholder="5" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Total Rooms (Optional)</label><input type="number" name="total_rooms" value={formData.total_rooms} onChange={handleChange} className="saas-input" placeholder="50" /></div>
+              <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label><textarea name="description" value={formData.description} onChange={handleChange} className="saas-input" rows="3" placeholder="Describe the property..."></textarea></div>
             </div>
           </div>
         )}
@@ -170,12 +219,12 @@ export default function AddPropertyWizard() {
           <div className="space-y-6 animate-slide-in-right">
             <div><h2 className="text-lg font-semibold text-gray-900">Property Location</h2><p className="text-sm text-gray-500">Address and Geo-location verification.</p></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Complete Address (Optional)</label><textarea className="saas-input" rows="2" placeholder="123 Luxury Avenue"></textarea></div>
+              <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Complete Address (Optional)</label><textarea name="address" value={formData.address} onChange={handleChange} className="saas-input" rows="2" placeholder="123 Luxury Avenue"></textarea></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Landmark (Optional)</label><input type="text" className="saas-input" placeholder="Near Central Park" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">City (Optional)</label><input type="text" className="saas-input" placeholder="New York" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">State (Optional)</label><input type="text" className="saas-input" placeholder="NY" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Country (Optional)</label><input type="text" className="saas-input" placeholder="USA" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Pincode (Optional)</label><input type="text" className="saas-input" placeholder="10001" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">City (Optional)</label><input type="text" name="city" value={formData.city} onChange={handleChange} className="saas-input" placeholder="New York" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">State (Optional)</label><input type="text" name="state" value={formData.state} onChange={handleChange} className="saas-input" placeholder="NY" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Country (Optional)</label><input type="text" name="country" value={formData.country} onChange={handleChange} className="saas-input" placeholder="USA" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Pincode (Optional)</label><input type="text" name="pincode" value={formData.pincode} onChange={handleChange} className="saas-input" placeholder="10001" /></div>
             </div>
             <div className="border-t border-gray-100 pt-4 mt-4">
               <h3 className="text-sm font-medium text-gray-700 mb-3">Google Maps & Geo-location</h3>
@@ -503,7 +552,7 @@ export default function AddPropertyWizard() {
             </button>
           ) : (
             <button onClick={handleSubmit} disabled={isSubmitting} className="saas-button-primary bg-pine">
-              {isSubmitting ? 'Submitting...' : 'Submit (Incomplete)'}
+              {isSubmitting ? 'Submitting...' : 'Submit Property'}
             </button>
           )}
         </div>

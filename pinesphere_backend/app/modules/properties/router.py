@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy import func, and_
 from datetime import date, timedelta
@@ -7,6 +8,7 @@ from typing import List
 
 from app.infra.database import get_db
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog
+from app.modules.properties.schemas import PropertyCreateInput
 
 router = APIRouter()
 
@@ -23,11 +25,57 @@ def _verification_status(onboarding_status: str) -> str:
     return "Verified" if onboarding_status == "completed" else "Pending"
 
 
-@router.get("/")
+@router.post("")
+async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depends(get_db)):
+    # Create Owner
+    new_owner = Owner(
+        full_name=payload.owner_name,
+        mobile_number=payload.owner_mobile,
+        email=payload.owner_email,
+        pan_number=payload.owner_pan,
+    )
+    db.add(new_owner)
+    try:
+        await db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="An owner with this email or mobile number already exists.")
+
+    # Create Business
+    new_business = Business(
+        owner_id=new_owner.owner_id,
+        business_name=payload.business_name,
+        business_reg_number=payload.business_reg_number,
+        gst_number=payload.business_gst,
+        pan_number=payload.business_pan,
+    )
+    db.add(new_business)
+    await db.flush()
+
+    # Create Property
+    new_property = Property(
+        business_id=new_business.business_id,
+        owner_id=new_owner.owner_id,
+        property_name=payload.property_name,
+        property_type=payload.property_type,
+        star_category=payload.star_category,
+        year_established=payload.year_established,
+        total_floors=payload.total_floors,
+        total_rooms=payload.total_rooms,
+        description=payload.description,
+        onboarding_status="draft",
+    )
+    db.add(new_property)
+    await db.flush()
+
+    return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
+
+
+@router.get("")
 async def get_properties(db: AsyncSession = Depends(get_db)):
     """List all properties joined with owner, business and latest subscription."""
     q = (
         select(Property, Owner, Business, Subscription)
+        .select_from(Property)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .join(Business, Property.business_id == Business.business_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
@@ -197,6 +245,7 @@ async def get_property_detail(property_id: str, db: AsyncSession = Depends(get_d
 
     q = (
         select(Property, Owner, Business, Subscription)
+        .select_from(Property)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .join(Business, Property.business_id == Business.business_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)

@@ -151,4 +151,18 @@ class AppScaffold extends ConsumerWidget {
           children: [
             Icon(isActive ? activeIcon : icon, color: isActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant, size: 24),
             const SizedBox(height: 2),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: isActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -359,7 +359,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
                   icon: const Icon(Icons.lock, size: 16, color: Colors.purple),
                   label: const Text('Simulate Lockout', style: TextStyle(fontSize: 12, color: Colors.purple)),
                   style: OutlinedButton.styleFrom(
-                    side: const SideBorder(color: Colors.purple),
+                    side: const BorderSide(color: Colors.purple),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -372,7 +372,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
                   icon: const Icon(Icons.delete_forever, size: 16, color: Colors.red),
                   label: const Text('Simulate Revoke', style: TextStyle(fontSize: 12, color: Colors.red)),
                   style: OutlinedButton.styleFrom(
-                    side: const SideBorder(color: Colors.red),
+                    side: const BorderSide(color: Colors.red),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -500,7 +500,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
             icon: const Icon(Icons.developer_mode, color: Colors.white),
             label: const Text('Developer Override: Unlock Simulation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
-              side: const SideBorder(color: Colors.white54),
+              side: const BorderSide(color: Colors.white54),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),

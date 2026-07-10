@@ -213,7 +213,7 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
                               label: const Text('Check Approval Status'),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: const SideBorder(color: AppColors.primary),
+                                side: const BorderSide(color: AppColors.primary),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),

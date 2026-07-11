@@ -1135,6 +1135,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                              ref.read(pmsProvider.notifier).createBooking(newBooking);
                              Navigator.pop(context); // Close the bottom sheet
                              if (context.mounted) {
+                               Navigator.pop(context); // Pop ResortRoomsDetailScreen to go back
                                context.go('/bookings'); // Automatically switch to bookings tab to see the booked log!
                                ScaffoldMessenger.of(context).showSnackBar(
                                  SnackBar(content: Text('Room ${room.roomNumber} Booked Successfully!')),
@@ -1770,6 +1771,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                                     ref.read(pmsProvider.notifier).createBooking(newManualBooking);
                                     if (context.mounted) {
                                       Navigator.pop(context); // Close actions sheet
+                                      Navigator.pop(context); // Pop ResortRoomsDetailScreen to go back
                                       context.go('/bookings');
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Room ${liveRoom.roomNumber} set to Occupied manually until ${_getMonth(pickedDate)} ${pickedDate.day}!')),

@@ -106,6 +106,52 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
     import uuid as _uuid
     resort_uuid = _uuid.UUID(payload.resort_id)
     
+    # 0. Check if property/resort exists. If not, auto-create a mock property
+    prop_q = select(Property).where(Property.property_id == resort_uuid)
+    prop_result = await db.execute(prop_q)
+    prop = prop_result.scalar_one_or_none()
+    
+    if not prop:
+        # Check or create Owner
+        owner_q = select(Owner).limit(1)
+        owner_result = await db.execute(owner_q)
+        owner = owner_result.scalar_one_or_none()
+        if not owner:
+            owner = Owner(
+                owner_id=_uuid.UUID("11111111-1111-1111-1111-111111111111"),
+                full_name="Mock Owner",
+                mobile_number="9999999999",
+                email="mock@owner.com"
+            )
+            db.add(owner)
+            await db.flush()
+            
+        # Check or create Business
+        biz_q = select(Business).limit(1)
+        biz_result = await db.execute(biz_q)
+        biz = biz_result.scalar_one_or_none()
+        if not biz:
+            biz = Business(
+                business_id=_uuid.UUID("22222222-2222-2222-2222-222222222222"),
+                owner_id=owner.owner_id,
+                business_name="Mock Business"
+            )
+            db.add(biz)
+            await db.flush()
+            
+        # Create Property
+        prop = Property(
+            property_id=resort_uuid,
+            business_id=biz.business_id,
+            owner_id=owner.owner_id,
+            property_name="PineSphere Resort",
+            property_type="Resort",
+            onboarding_status="completed",
+            total_rooms=10
+        )
+        db.add(prop)
+        await db.flush()
+
     # 1. Check if category with this name and resort exists
     cat_q = select(RoomCategory).where(
         and_(

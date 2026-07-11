@@ -6,7 +6,7 @@ from sqlalchemy import select, and_, desc, func
 from fastapi import HTTPException
 
 from app.infra.models import (
-    CheckOut, CheckIn, Booking, Room, Guest,
+    CheckOut, CheckIn, Booking, Room, RoomCategory, Guest,
     Invoice, InvoiceItem, User,
 )
 from app.modules.audit.logger import AuditLogger
@@ -250,7 +250,12 @@ async def get_pending_checkouts(
 
         guest_name = guest.full_name if guest else "Unknown Guest"
         room_number = room.room_number if room else "N/A"
-        room_type = room.room_type if room else None
+        room_type = None
+        if room:
+            rc_stmt2 = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+            rc_res2 = await db.execute(rc_stmt2)
+            rc2 = rc_res2.scalar_one_or_none()
+            room_type = rc2.room_name if rc2 else None
 
         checkin_dt = ci.checked_in_at.date() if ci.checked_in_at else today
         days_since = (today - checkin_dt).days
@@ -318,6 +323,12 @@ async def get_checkout_billing(
     rm_res = await db.execute(rm_stmt)
     room = rm_res.scalar_one_or_none()
 
+    rc = None
+    if room:
+        rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+        rc_res = await db.execute(rc_stmt)
+        rc = rc_res.scalar_one_or_none()
+
     gt_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
     gt_res = await db.execute(gt_stmt)
     guest = gt_res.scalar_one_or_none()
@@ -346,7 +357,7 @@ async def get_checkout_billing(
         booking_id=booking.booking_id,
         guest_name=guest.full_name if guest else "Unknown Guest",
         room_number=room.room_number if room else "N/A",
-        room_type=room.room_type if room else None,
+        room_type=rc.room_name if rc else None,
         check_in_date=booking.check_in_date,
         check_out_date=booking.check_out_date,
         checked_in_at=checkin.checked_in_at,

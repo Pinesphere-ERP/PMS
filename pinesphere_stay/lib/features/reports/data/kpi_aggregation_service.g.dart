@@ -107,7 +107,7 @@ final class KpiServiceProvider
   }
 }
 
-String _$kpiServiceHash() => r'56ec52be0db2b08a92804d2b0f1e3b535e429f19';
+String _$kpiServiceHash() => r'f9c6bf1807a6e9c861fb69825e8eaae61b9a8cab';
 
 /// Stream provider: emits today's KPI snapshot (or null) reactively.
 /// Bind to ObjectBox so the UI re-renders on every local mutation.
@@ -174,7 +174,7 @@ final class TodaysKpiStreamProvider
   }
 }
 
-String _$todaysKpiStreamHash() => r'ef78b805d2d9be5c6d0662b36d2b26b1a2f4cc64';
+String _$todaysKpiStreamHash() => r'b718767a94bac429bad6537c4dfab14b007307a2';
 
 /// Stream provider: emits today's KPI snapshot (or null) reactively.
 /// Bind to ObjectBox so the UI re-renders on every local mutation.

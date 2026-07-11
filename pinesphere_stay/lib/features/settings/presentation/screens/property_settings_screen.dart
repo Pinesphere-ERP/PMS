@@ -44,9 +44,9 @@ class _PropertySettingsScreenState extends ConsumerState<PropertySettingsScreen>
         ),
         centerTitle: false,
       ),
-      body: state is _Loading
+      body: state is Loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : state is _Error
+          : state is ErrorState
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -65,7 +65,7 @@ class _PropertySettingsScreenState extends ConsumerState<PropertySettingsScreen>
   }
 
   Widget _buildSettingsList(BuildContext context, SettingsState state) {
-    final settings = state is _Loaded ? state.propertySettings : <Map<String, dynamic>>[];
+    final settings = state is Loaded ? state.propertySettings : <Map<String, dynamic>>[];
 
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final s in settings) {

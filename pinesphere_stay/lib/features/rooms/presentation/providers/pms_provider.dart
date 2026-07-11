@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+import '../../../../core/network/dio_client.dart';
 
 class ResortModel {
   final String id;
@@ -198,8 +201,94 @@ class PmsState {
 class PmsNotifier extends Notifier<PmsState> {
   @override
   PmsState build() {
+    // Load data from backend
+    Future.microtask(() {
+      loadRooms();
+      loadBookings();
+    });
     return _initialState();
   }
+
+  Future<void> loadRooms() async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.get('/properties/rooms');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        final loadedRooms = data.map((json) => RoomModel(
+          id: json['id'],
+          roomNumber: json['room_number'],
+          type: json['type'],
+          price: (json['price'] as num).toDouble(),
+          seasonPrice: 40.0,
+          weekendPrice: 20.0,
+          holidayPrice: 60.0,
+          extraBedPrice: 15.0,
+          amenities: const [
+            {'name': 'Food / Buffet Included', 'price': 30.0},
+            {'name': 'Portable Bluetooth Speaker', 'price': 15.0},
+            {'name': 'Smart TV Access', 'price': 10.0},
+            {'name': 'Projector Setup', 'price': 25.0},
+          ],
+          status: json['status'],
+          resortId: json['resort_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : 'resort-2',
+          images: List<String>.from(json['images'] ?? []),
+        )).toList();
+        
+        state = state.copyWith(rooms: loadedRooms);
+      }
+    } catch (e) {
+      print('Failed to load rooms: $e');
+    }
+  }
+
+  Future<void> loadBookings() async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.get('/bookings');
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data['items'] ?? [];
+        final loadedBookings = items.map((json) {
+          String statusVal = 'Upcoming';
+          if (json['booking_status'] == 'checked_in') {
+            statusVal = 'Active';
+          } else if (json['booking_status'] == 'checked_out') {
+            statusVal = 'Completed';
+          } else if (json['booking_status'] == 'cancelled') {
+            statusVal = 'Completed';
+          }
+          
+          return BookingModel(
+            id: json['booking_id'],
+            resortId: json['property_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : 'resort-2',
+            roomId: json['room_id'],
+            roomNumber: json['room_number'] ?? '',
+            guestName: json['guest_name'] ?? 'Guest',
+            guestPhone: json['guest_mobile'] ?? '',
+            guestIdProof: 'Aadhaar Card',
+            guestIdNumber: '',
+            bookingSource: json['booking_source'] ?? 'Walk-in',
+            checkInDate: DateTime.parse(json['check_in_date']),
+            checkOutDate: DateTime.parse(json['check_out_date']),
+            status: statusVal,
+            depositPaid: (json['deposit'] as num?)?.toDouble() ?? 0.0,
+            basePriceSum: (json['room_rent'] as num?)?.toDouble() ?? 100.0,
+            weekendSurcharge: 0.0,
+            seasonSurcharge: 0.0,
+            holidaySurcharge: 0.0,
+            extraBedCharge: 0.0,
+            amenitiesCharge: (json['taxes'] as num?)?.toDouble() ?? 0.0,
+            totalSum: (json['total_payable'] as num?)?.toDouble() ?? 100.0,
+          );
+        }).toList();
+        
+        state = state.copyWith(bookings: loadedBookings);
+      }
+    } catch (e) {
+      print('Failed to load bookings: $e');
+    }
+  }
+
 
   static PmsState _initialState() {
     final resorts = [
@@ -216,228 +305,91 @@ class PmsNotifier extends Notifier<PmsState> {
         location: 'Varkala, Kerala',
       ),
     ];
-
-    final defaultAmenities = [
-      {'name': 'Food / Buffet Included', 'price': 30.0},
-      {'name': 'Portable Bluetooth Speaker', 'price': 15.0},
-      {'name': 'Smart TV Access', 'price': 10.0},
-      {'name': 'Projector Setup', 'price': 25.0},
-    ];
-
-    final rooms = [
-      // Resort 1
-      RoomModel(
-        id: 'room-101',
-        roomNumber: '101',
-        type: 'Deluxe Suite',
-        price: 120.0,
-        seasonPrice: 40.0,
-        weekendPrice: 20.0,
-        holidayPrice: 50.0,
-        extraBedPrice: 15.0,
-        amenities: defaultAmenities,
-        status: 'Occupied',
-        resortId: 'resort-1',
-        currentBookingId: 'b1',
-        images: [
-          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=500&q=80',
-          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80',
-        ],
-      ),
-      RoomModel(
-        id: 'room-102',
-        roomNumber: '102',
-        type: 'Twin Room',
-        price: 85.0,
-        seasonPrice: 30.0,
-        weekendPrice: 15.0,
-        holidayPrice: 40.0,
-        extraBedPrice: 10.0,
-        amenities: defaultAmenities,
-        status: 'Vacant',
-        resortId: 'resort-1',
-        images: [
-          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80',
-        ],
-      ),
-      RoomModel(
-        id: 'room-103',
-        roomNumber: '103',
-        type: 'Standard King',
-        price: 95.0,
-        seasonPrice: 30.0,
-        weekendPrice: 15.0,
-        holidayPrice: 40.0,
-        extraBedPrice: 12.0,
-        amenities: defaultAmenities,
-        status: 'Maintenance',
-        resortId: 'resort-1',
-        images: [
-          'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=500&q=80',
-        ],
-      ),
-      RoomModel(
-        id: 'room-104',
-        roomNumber: '104',
-        type: 'Executive Villa',
-        price: 250.0,
-        seasonPrice: 80.0,
-        weekendPrice: 50.0,
-        holidayPrice: 100.0,
-        extraBedPrice: 30.0,
-        amenities: defaultAmenities,
-        status: 'Vacant',
-        resortId: 'resort-1',
-        images: [
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=500&q=80',
-        ],
-      ),
-      // Resort 2
-      RoomModel(
-        id: 'room-201',
-        roomNumber: '201',
-        type: 'Ocean View Suite',
-        price: 180.0,
-        seasonPrice: 50.0,
-        weekendPrice: 30.0,
-        holidayPrice: 70.0,
-        extraBedPrice: 20.0,
-        amenities: defaultAmenities,
-        status: 'Occupied',
-        resortId: 'resort-2',
-        currentBookingId: 'b2',
-        images: [
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=500&q=80',
-        ],
-      ),
-      RoomModel(
-        id: 'room-202',
-        roomNumber: '202',
-        type: 'Deluxe Cottage',
-        price: 140.0,
-        seasonPrice: 40.0,
-        weekendPrice: 20.0,
-        holidayPrice: 60.0,
-        extraBedPrice: 15.0,
-        amenities: defaultAmenities,
-        status: 'Vacant',
-        resortId: 'resort-2',
-        images: [
-          'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=500&q=80',
-        ],
-      ),
-    ];
-
-    final bookings = [
-      BookingModel(
-        id: 'b1',
-        resortId: 'resort-1',
-        roomId: 'room-101',
-        roomNumber: '101',
-        guestName: 'John Doe',
-        guestPhone: '+91 98765 43210',
-        guestIdProof: 'Aadhaar Card',
-        guestIdNumber: '1234 5678 9012',
-        bookingSource: 'Walk-in',
-        checkInDate: DateTime.now().subtract(const Duration(days: 2)),
-        checkOutDate: DateTime.now().add(const Duration(days: 3)),
-        status: 'Active',
-        depositPaid: 100.0,
-        basePriceSum: 240.0,
-        weekendSurcharge: 40.0,
-        seasonSurcharge: 0.0,
-        holidaySurcharge: 0.0,
-        extraBedCharge: 30.0,
-        amenitiesCharge: 40.0,
-        totalSum: 350.0,
-      ),
-      BookingModel(
-        id: 'b2',
-        resortId: 'resort-2',
-        roomId: 'room-201',
-        roomNumber: '201',
-        guestName: 'Alice Smith',
-        guestPhone: '+91 99999 88888',
-        guestIdProof: 'Passport',
-        guestIdNumber: 'L8765432',
-        bookingSource: 'WhatsApp',
-        checkInDate: DateTime.now().subtract(const Duration(days: 1)),
-        checkOutDate: DateTime.now().add(const Duration(days: 4)),
-        status: 'Active',
-        depositPaid: 200.0,
-        basePriceSum: 720.0,
-        weekendSurcharge: 60.0,
-        seasonSurcharge: 50.0,
-        holidaySurcharge: 0.0,
-        extraBedCharge: 0.0,
-        amenitiesCharge: 30.0,
-        totalSum: 860.0,
-      ),
-    ];
+    final rooms = <RoomModel>[];
+    final bookings = <BookingModel>[];
 
     return PmsState(resorts: resorts, rooms: rooms, bookings: bookings);
   }
 
-  void createBooking(BookingModel booking) {
-    state = state.copyWith(
-      bookings: [...state.bookings, booking],
-      rooms: state.rooms.map((room) {
-        if (room.id == booking.roomId) {
-          return room.copyWith(
-            status: 'Occupied',
-            currentBookingId: booking.id,
-          );
-        }
-        return room;
-      }).toList(),
-    );
+  Future<void> createBooking(BookingModel booking) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final guestUuid = const Uuid().v4();
+      
+      final response = await dio.post('/bookings', data: {
+        'property_id': booking.resortId == 'resort-1' 
+            ? '33333333-3333-3333-3333-333333333333' 
+            : '44444444-4444-4444-4444-444444444444',
+        'room_id': booking.roomId,
+        'guest_id': guestUuid,
+        'booking_type': 'walkin',
+        'booking_source': booking.bookingSource,
+        'check_in_date': booking.checkInDate.toIso8601String().substring(0, 10),
+        'check_out_date': booking.checkOutDate.toIso8601String().substring(0, 10),
+        'adults': 1,
+        'children': 0,
+        'room_rent': booking.totalSum - booking.depositPaid,
+        'deposit': booking.depositPaid,
+        'discount': 0.0,
+        'taxes': booking.amenitiesCharge,
+        'advance_paid': booking.depositPaid,
+        'extra_bed': false,
+        'guest_name': booking.guestName,
+        'guest_phone': booking.guestPhone,
+        'guest_id_proof': booking.guestIdProof,
+        'guest_id_number': booking.guestIdNumber,
+      });
+      
+      if (response.statusCode == 201) {
+        // Re-check-in if needed or just reload
+        final newBookingId = response.data['booking_id'];
+        await dio.post('/bookings/$newBookingId/check-in');
+        
+        await loadRooms();
+        await loadBookings();
+      }
+    } catch (e) {
+      print('Failed to create booking: $e');
+    }
   }
 
-  void checkOut(
+  Future<void> checkOut(
     String bookingId, {
     double damage = 0,
     double laundry = 0,
     double miniBar = 0,
     double restaurant = 0,
-  }) {
-    state = state.copyWith(
-      bookings: state.bookings.map((booking) {
-        if (booking.id == bookingId) {
-          return booking.copyWith(
-            status: 'Completed',
-            damageBill: damage,
-            laundryBill: laundry,
-            miniBarBill: miniBar,
-            restaurantBill: restaurant,
-            isPaid: true,
-          );
-        }
-        return booking;
-      }).toList(),
-      rooms: state.rooms.map((room) {
-        if (room.currentBookingId == bookingId) {
-          return room.copyWith(
-            status: 'Maintenance', // default to Maintenance after checkout
-            currentBookingId: null,
-          );
-        }
-        return room;
-      }).toList(),
-    );
+  }) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.post('/bookings/$bookingId/check-out', data: {
+        'damage_bill': damage,
+        'laundry_bill': laundry,
+        'minibar_bill': miniBar,
+        'restaurant_bill': restaurant,
+      });
+      
+      if (response.statusCode == 200) {
+        await loadRooms();
+        await loadBookings();
+      }
+    } catch (e) {
+      print('Failed to check out: $e');
+    }
   }
 
-  void updateRoomStatus(String roomId, String status) {
-    state = state.copyWith(
-      rooms: state.rooms.map((room) {
-        if (room.id == roomId) {
-          return room.copyWith(
-            status: status,
-            currentBookingId: status != 'Occupied' ? null : room.currentBookingId,
-          );
+  Future<void> updateRoomStatus(String roomId, String status) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      if (status == 'Vacant') {
+        final response = await dio.post('/properties/rooms/$roomId/clean');
+        if (response.statusCode == 200) {
+          await loadRooms();
         }
-        return room;
-      }).toList(),
-    );
+      }
+    } catch (e) {
+      print('Failed to update room status: $e');
+    }
   }
 
   void updateRoomDetails(String roomId, RoomModel updatedRoom) {
@@ -482,10 +434,24 @@ class PmsNotifier extends Notifier<PmsState> {
     }
   }
 
-  void addRoom(RoomModel room) {
-    state = state.copyWith(
-      rooms: [...state.rooms, room],
-    );
+  Future<void> addRoom(RoomModel room) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.post('/properties/rooms', data: {
+        'room_number': room.roomNumber,
+        'type': room.type,
+        'price': room.price,
+        'resort_id': room.resortId == 'resort-1' 
+            ? '33333333-3333-3333-3333-333333333333' 
+            : '44444444-4444-4444-4444-444444444444',
+      });
+      
+      if (response.statusCode == 201) {
+        await loadRooms();
+      }
+    } catch (e) {
+      print('Failed to add room: $e');
+    }
   }
 
   void addResort(ResortModel resort) {

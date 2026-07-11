@@ -14,8 +14,9 @@ class KpiSnapshotEntity {
   String propertyId;
 
   /// The calendar date this snapshot represents (YYYY-MM-DD)
-  @Unique(onConflict: ConflictStrategy.replace)
+  @Index()
   String snapshotDate;
+
 
   int occupiedRooms;
   int vacantRooms;

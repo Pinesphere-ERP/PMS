@@ -107,15 +107,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildPropertySettingsSection(BuildContext context, SettingsState state) {
-    if (state is _Loading) {
+    if (state is Loading) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
-    if (state is _Error) {
+    if (state is ErrorState) {
       return _buildMenuGroup(context, [
         _buildMenuItem(context, Icons.error_outline, 'Failed to load settings: ${state.message}'),
       ]);
     }
-    if (state is _Loaded) {
+    if (state is Loaded) {
       final settings = state.propertySettings;
       if (settings.isEmpty) {
         return _buildMenuGroup(context, [
@@ -141,7 +141,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildDeviceSettingsSection(BuildContext context, SettingsState state) {
     bool biometricEnabled = false;
-    if (state is _Loaded) {
+    if (state is Loaded) {
       biometricEnabled = state.deviceConfig.biometricEnabled;
     }
     return _buildMenuGroup(context, [

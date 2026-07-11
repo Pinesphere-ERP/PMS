@@ -48,4 +48,4 @@ final class BookingServiceProvider
   }
 }
 
-String _$bookingServiceHash() => r'16dcef8de0b09651ba3772f4692a4d90c0ed06f3';
+String _$bookingServiceHash() => r'13cc74b4337c67979e52c2a602e55dd8484b451b';

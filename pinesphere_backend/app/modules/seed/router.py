@@ -12,7 +12,7 @@ from app.infra.database import get_db
 from app.infra.models import (
     Owner, Business, Property, Role, User, Device,
     RoomCategory, Room, Guest, Subscription, Invoice,
-    PaymentTransaction, PendingDue, AuditLog
+    SubscriptionTransaction, PendingDue, AuditLog
 )
 
 router = APIRouter()
@@ -213,7 +213,7 @@ async def run_seed(db: AsyncSession = Depends(get_db)):
     tx_statuses = ["Success", "Success", "Success", "Failed"]
     for i in range(4):
         amt = PLAN_PRICE[sub_objs[i].plan]
-        db.add(PaymentTransaction(
+        db.add(SubscriptionTransaction(
             id=uid(),
             payment_id=f"PAY-{9000000+i:08d}",
             invoice_id=invoice_objs[i].invoice_id,

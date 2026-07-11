@@ -1,0 +1,4 @@
+Validation Error: [{'type': 'missing', 'loc': ('body', 'amount'), 'msg': 'Field required', 'input': {'razorpay_order_id': 'test', 'razorpay_payment_id': 'test', 'razorpay_signature': 'test'}}]
+Body: {'razorpay_order_id': 'test', 'razorpay_payment_id': 'test', 'razorpay_signature': 'test'}
+Validation Error: [{'type': 'json_invalid', 'loc': ('body', 1), 'msg': 'JSON decode error', 'input': {}, 'ctx': {'error': 'Expecting property name enclosed in double quotes'}}]
+Body: {\

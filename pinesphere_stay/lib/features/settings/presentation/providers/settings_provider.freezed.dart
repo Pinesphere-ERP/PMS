@@ -55,14 +55,14 @@ extension SettingsStatePatterns on SettingsState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Initial value)?  initial,TResult Function( _Loading value)?  loading,TResult Function( _Loaded value)?  loaded,TResult Function( _Error value)?  error,TResult Function( _Saved value)?  saved,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SettingsStateInitial value)?  initial,TResult Function( SettingsStateLoading value)?  loading,TResult Function( SettingsStateLoaded value)?  loaded,TResult Function( SettingsStateError value)?  error,TResult Function( SettingsStateSaved value)?  saved,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _Initial() when initial != null:
-return initial(_that);case _Loading() when loading != null:
-return loading(_that);case _Loaded() when loaded != null:
-return loaded(_that);case _Error() when error != null:
-return error(_that);case _Saved() when saved != null:
+case SettingsStateInitial() when initial != null:
+return initial(_that);case SettingsStateLoading() when loading != null:
+return loading(_that);case SettingsStateLoaded() when loaded != null:
+return loaded(_that);case SettingsStateError() when error != null:
+return error(_that);case SettingsStateSaved() when saved != null:
 return saved(_that);case _:
   return orElse();
 
@@ -81,14 +81,14 @@ return saved(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Initial value)  initial,required TResult Function( _Loading value)  loading,required TResult Function( _Loaded value)  loaded,required TResult Function( _Error value)  error,required TResult Function( _Saved value)  saved,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SettingsStateInitial value)  initial,required TResult Function( SettingsStateLoading value)  loading,required TResult Function( SettingsStateLoaded value)  loaded,required TResult Function( SettingsStateError value)  error,required TResult Function( SettingsStateSaved value)  saved,}){
 final _that = this;
 switch (_that) {
-case _Initial():
-return initial(_that);case _Loading():
-return loading(_that);case _Loaded():
-return loaded(_that);case _Error():
-return error(_that);case _Saved():
+case SettingsStateInitial():
+return initial(_that);case SettingsStateLoading():
+return loading(_that);case SettingsStateLoaded():
+return loaded(_that);case SettingsStateError():
+return error(_that);case SettingsStateSaved():
 return saved(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -103,14 +103,14 @@ return saved(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Initial value)?  initial,TResult? Function( _Loading value)?  loading,TResult? Function( _Loaded value)?  loaded,TResult? Function( _Error value)?  error,TResult? Function( _Saved value)?  saved,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SettingsStateInitial value)?  initial,TResult? Function( SettingsStateLoading value)?  loading,TResult? Function( SettingsStateLoaded value)?  loaded,TResult? Function( SettingsStateError value)?  error,TResult? Function( SettingsStateSaved value)?  saved,}){
 final _that = this;
 switch (_that) {
-case _Initial() when initial != null:
-return initial(_that);case _Loading() when loading != null:
-return loading(_that);case _Loaded() when loaded != null:
-return loaded(_that);case _Error() when error != null:
-return error(_that);case _Saved() when saved != null:
+case SettingsStateInitial() when initial != null:
+return initial(_that);case SettingsStateLoading() when loading != null:
+return loading(_that);case SettingsStateLoaded() when loaded != null:
+return loaded(_that);case SettingsStateError() when error != null:
+return error(_that);case SettingsStateSaved() when saved != null:
 return saved(_that);case _:
   return null;
 
@@ -130,11 +130,11 @@ return saved(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Map<String, dynamic>> propertySettings,  DeviceConfigEntity deviceConfig)?  loaded,TResult Function( String message)?  error,TResult Function()?  saved,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _Initial() when initial != null:
-return initial();case _Loading() when loading != null:
-return loading();case _Loaded() when loaded != null:
-return loaded(_that.propertySettings,_that.deviceConfig);case _Error() when error != null:
-return error(_that.message);case _Saved() when saved != null:
+case SettingsStateInitial() when initial != null:
+return initial();case SettingsStateLoading() when loading != null:
+return loading();case SettingsStateLoaded() when loaded != null:
+return loaded(_that.propertySettings,_that.deviceConfig);case SettingsStateError() when error != null:
+return error(_that.message);case SettingsStateSaved() when saved != null:
 return saved();case _:
   return orElse();
 
@@ -155,11 +155,11 @@ return saved();case _:
 
 @optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Map<String, dynamic>> propertySettings,  DeviceConfigEntity deviceConfig)  loaded,required TResult Function( String message)  error,required TResult Function()  saved,}) {final _that = this;
 switch (_that) {
-case _Initial():
-return initial();case _Loading():
-return loading();case _Loaded():
-return loaded(_that.propertySettings,_that.deviceConfig);case _Error():
-return error(_that.message);case _Saved():
+case SettingsStateInitial():
+return initial();case SettingsStateLoading():
+return loading();case SettingsStateLoaded():
+return loaded(_that.propertySettings,_that.deviceConfig);case SettingsStateError():
+return error(_that.message);case SettingsStateSaved():
 return saved();}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -176,11 +176,11 @@ return saved();}
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Map<String, dynamic>> propertySettings,  DeviceConfigEntity deviceConfig)?  loaded,TResult? Function( String message)?  error,TResult? Function()?  saved,}) {final _that = this;
 switch (_that) {
-case _Initial() when initial != null:
-return initial();case _Loading() when loading != null:
-return loading();case _Loaded() when loaded != null:
-return loaded(_that.propertySettings,_that.deviceConfig);case _Error() when error != null:
-return error(_that.message);case _Saved() when saved != null:
+case SettingsStateInitial() when initial != null:
+return initial();case SettingsStateLoading() when loading != null:
+return loading();case SettingsStateLoaded() when loaded != null:
+return loaded(_that.propertySettings,_that.deviceConfig);case SettingsStateError() when error != null:
+return error(_that.message);case SettingsStateSaved() when saved != null:
 return saved();case _:
   return null;
 
@@ -192,8 +192,8 @@ return saved();case _:
 /// @nodoc
 
 
-class _Initial implements SettingsState {
-  const _Initial();
+class SettingsStateInitial implements SettingsState {
+  const SettingsStateInitial();
   
 
 
@@ -203,7 +203,7 @@ class _Initial implements SettingsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Initial);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsStateInitial);
 }
 
 
@@ -224,8 +224,8 @@ String toString() {
 /// @nodoc
 
 
-class _Loading implements SettingsState {
-  const _Loading();
+class SettingsStateLoading implements SettingsState {
+  const SettingsStateLoading();
   
 
 
@@ -235,7 +235,7 @@ class _Loading implements SettingsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Loading);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsStateLoading);
 }
 
 
@@ -256,8 +256,8 @@ String toString() {
 /// @nodoc
 
 
-class _Loaded implements SettingsState {
-  const _Loaded({required final  List<Map<String, dynamic>> propertySettings, required this.deviceConfig}): _propertySettings = propertySettings;
+class SettingsStateLoaded implements SettingsState {
+  const SettingsStateLoaded({required final  List<Map<String, dynamic>> propertySettings, required this.deviceConfig}): _propertySettings = propertySettings;
   
 
  final  List<Map<String, dynamic>> _propertySettings;
@@ -273,18 +273,18 @@ class _Loaded implements SettingsState {
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$LoadedCopyWith<_Loaded> get copyWith => __$LoadedCopyWithImpl<_Loaded>(this, _$identity);
+$SettingsStateLoadedCopyWith<SettingsStateLoaded> get copyWith => _$SettingsStateLoadedCopyWithImpl<SettingsStateLoaded>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Loaded&&const DeepCollectionEquality().equals(other._propertySettings, _propertySettings)&&const DeepCollectionEquality().equals(other.deviceConfig, deviceConfig));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsStateLoaded&&const DeepCollectionEquality().equals(other._propertySettings, _propertySettings)&&(identical(other.deviceConfig, deviceConfig) || other.deviceConfig == deviceConfig));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_propertySettings),const DeepCollectionEquality().hash(deviceConfig));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_propertySettings),deviceConfig);
 
 @override
 String toString() {
@@ -295,8 +295,8 @@ String toString() {
 }
 
 /// @nodoc
-abstract mixin class _$LoadedCopyWith<$Res> implements $SettingsStateCopyWith<$Res> {
-  factory _$LoadedCopyWith(_Loaded value, $Res Function(_Loaded) _then) = __$LoadedCopyWithImpl;
+abstract mixin class $SettingsStateLoadedCopyWith<$Res> implements $SettingsStateCopyWith<$Res> {
+  factory $SettingsStateLoadedCopyWith(SettingsStateLoaded value, $Res Function(SettingsStateLoaded) _then) = _$SettingsStateLoadedCopyWithImpl;
 @useResult
 $Res call({
  List<Map<String, dynamic>> propertySettings, DeviceConfigEntity deviceConfig
@@ -307,19 +307,19 @@ $Res call({
 
 }
 /// @nodoc
-class __$LoadedCopyWithImpl<$Res>
-    implements _$LoadedCopyWith<$Res> {
-  __$LoadedCopyWithImpl(this._self, this._then);
+class _$SettingsStateLoadedCopyWithImpl<$Res>
+    implements $SettingsStateLoadedCopyWith<$Res> {
+  _$SettingsStateLoadedCopyWithImpl(this._self, this._then);
 
-  final _Loaded _self;
-  final $Res Function(_Loaded) _then;
+  final SettingsStateLoaded _self;
+  final $Res Function(SettingsStateLoaded) _then;
 
 /// Create a copy of SettingsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? propertySettings = null,Object? deviceConfig = freezed,}) {
-  return _then(_Loaded(
+@pragma('vm:prefer-inline') $Res call({Object? propertySettings = null,Object? deviceConfig = null,}) {
+  return _then(SettingsStateLoaded(
 propertySettings: null == propertySettings ? _self._propertySettings : propertySettings // ignore: cast_nullable_to_non_nullable
-as List<Map<String, dynamic>>,deviceConfig: freezed == deviceConfig ? _self.deviceConfig : deviceConfig // ignore: cast_nullable_to_non_nullable
+as List<Map<String, dynamic>>,deviceConfig: null == deviceConfig ? _self.deviceConfig : deviceConfig // ignore: cast_nullable_to_non_nullable
 as DeviceConfigEntity,
   ));
 }
@@ -330,8 +330,8 @@ as DeviceConfigEntity,
 /// @nodoc
 
 
-class _Error implements SettingsState {
-  const _Error(this.message);
+class SettingsStateError implements SettingsState {
+  const SettingsStateError(this.message);
   
 
  final  String message;
@@ -340,13 +340,13 @@ class _Error implements SettingsState {
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$ErrorCopyWith<_Error> get copyWith => __$ErrorCopyWithImpl<_Error>(this, _$identity);
+$SettingsStateErrorCopyWith<SettingsStateError> get copyWith => _$SettingsStateErrorCopyWithImpl<SettingsStateError>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Error&&(identical(other.message, message) || other.message == message));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsStateError&&(identical(other.message, message) || other.message == message));
 }
 
 
@@ -362,8 +362,8 @@ String toString() {
 }
 
 /// @nodoc
-abstract mixin class _$ErrorCopyWith<$Res> implements $SettingsStateCopyWith<$Res> {
-  factory _$ErrorCopyWith(_Error value, $Res Function(_Error) _then) = __$ErrorCopyWithImpl;
+abstract mixin class $SettingsStateErrorCopyWith<$Res> implements $SettingsStateCopyWith<$Res> {
+  factory $SettingsStateErrorCopyWith(SettingsStateError value, $Res Function(SettingsStateError) _then) = _$SettingsStateErrorCopyWithImpl;
 @useResult
 $Res call({
  String message
@@ -374,17 +374,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$ErrorCopyWithImpl<$Res>
-    implements _$ErrorCopyWith<$Res> {
-  __$ErrorCopyWithImpl(this._self, this._then);
+class _$SettingsStateErrorCopyWithImpl<$Res>
+    implements $SettingsStateErrorCopyWith<$Res> {
+  _$SettingsStateErrorCopyWithImpl(this._self, this._then);
 
-  final _Error _self;
-  final $Res Function(_Error) _then;
+  final SettingsStateError _self;
+  final $Res Function(SettingsStateError) _then;
 
 /// Create a copy of SettingsState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
-  return _then(_Error(
+  return _then(SettingsStateError(
 null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,
   ));
@@ -396,8 +396,8 @@ as String,
 /// @nodoc
 
 
-class _Saved implements SettingsState {
-  const _Saved();
+class SettingsStateSaved implements SettingsState {
+  const SettingsStateSaved();
   
 
 
@@ -407,7 +407,7 @@ class _Saved implements SettingsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Saved);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsStateSaved);
 }
 
 

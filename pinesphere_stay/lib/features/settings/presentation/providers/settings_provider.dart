@@ -1,23 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../data/settings_service.dart';
-import '../domain/models/property_setting_entity.dart';
-import '../domain/models/device_config_entity.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../data/settings_service.dart';
+import '../../domain/models/property_setting_entity.dart';
+import '../../domain/models/device_config_entity.dart';
 
 part 'settings_provider.freezed.dart';
+part 'settings_provider.g.dart';
 
 // ── State ──────────────────────────────────────────────────────
 
 @freezed
 sealed class SettingsState with _$SettingsState {
-  const factory SettingsState.initial() = _Initial;
-  const factory SettingsState.loading() = _Loading;
+  const factory SettingsState.initial() = SettingsStateInitial;
+  const factory SettingsState.loading() = SettingsStateLoading;
   const factory SettingsState.loaded({
     required List<Map<String, dynamic>> propertySettings,
     required DeviceConfigEntity deviceConfig,
-  }) = _Loaded;
-  const factory SettingsState.error(String message) = _Error;
-  const factory SettingsState.saved() = _Saved;
+  }) = SettingsStateLoaded;
+  const factory SettingsState.error(String message) = SettingsStateError;
+  const factory SettingsState.saved() = SettingsStateSaved;
 }
 
 // ── Notifier ───────────────────────────────────────────────────
@@ -81,7 +83,7 @@ class SettingsNotifier extends _$SettingsNotifier {
       );
       final deviceConfig = await _service.getDeviceConfig(deviceUid);
       final current = state;
-      if (current is _Loaded) {
+      if (current is SettingsStateLoaded) {
         state = current.copyWith(deviceConfig: deviceConfig);
       }
     } catch (e) {

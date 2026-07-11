@@ -1089,10 +1089,90 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "13:5529333314135770933",
+      "lastPropertyId": "13:3493084505853074023",
+      "name": "KpiSnapshotEntity",
+      "properties": [
+        {
+          "id": "1:3916847073017071917",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8798628914813709875",
+          "name": "uuid",
+          "indexId": "13:6316751815516699346",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:843859956112657450",
+          "name": "propertyId",
+          "indexId": "14:7331020963077311612",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:332135626490241205",
+          "name": "snapshotDate",
+          "indexId": "15:6364991816235469336",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "5:196987686110509323",
+          "name": "occupiedRooms",
+          "type": 6
+        },
+        {
+          "id": "6:5460101419526658810",
+          "name": "vacantRooms",
+          "type": 6
+        },
+        {
+          "id": "7:4216657291858027667",
+          "name": "revenueRoomRent",
+          "type": 8
+        },
+        {
+          "id": "8:4637013240384672449",
+          "name": "revenueAddons",
+          "type": 8
+        },
+        {
+          "id": "9:6962787722452342615",
+          "name": "expensesAmount",
+          "type": 8
+        },
+        {
+          "id": "10:8037106156872325228",
+          "name": "outstandingPayments",
+          "type": 8
+        },
+        {
+          "id": "11:1662076914303328098",
+          "name": "gstCollected",
+          "type": 8
+        },
+        {
+          "id": "12:6155064195686749970",
+          "name": "isLocalOnly",
+          "type": 1
+        },
+        {
+          "id": "13:3493084505853074023",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "12:894830027575710388",
-  "lastIndexId": "12:3830347986775904518",
+  "lastEntityId": "13:5529333314135770933",
+  "lastIndexId": "15:6364991816235469336",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

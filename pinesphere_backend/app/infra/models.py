@@ -340,19 +340,23 @@ class Invoice(Base, TimestampMixin):
 
 
 class Payment(Base, TimestampMixin, SyncMixin):
-    """Guest payment (property-level, recorded by front desk)."""
+    """Guest payment."""
     __tablename__ = "payments"
     payment_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("invoices.invoice_id"))
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
-    guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id"))
-    transaction_id: Mapped[Optional[str]] = mapped_column(String(60))
-    payment_method: Mapped[str] = mapped_column(String(20), nullable=False)
+    transaction_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    reference_number: Mapped[Optional[str]] = mapped_column(String(100))
+    payment_mode: Mapped[str] = mapped_column(String(20), nullable=False)
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    upi_id: Mapped[Optional[str]] = mapped_column(String(100))
+    bank_name: Mapped[Optional[str]] = mapped_column(String(100))
+    card_last4: Mapped[Optional[str]] = mapped_column(String(4))
     collected_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
-    status: Mapped[str] = mapped_column(String(20), default='pending')
     remarks: Mapped[Optional[str]] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default='pending')
+    synced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
 
 
 # ── J. Admin Subscriptions & Billing ─────────────────────────────────────────
@@ -373,9 +377,9 @@ class Subscription(Base, TimestampMixin):
     registered_devices: Mapped[int] = mapped_column(Integer, default=0)
 
 
-class PaymentTransaction(Base, TimestampMixin):
+class SubscriptionTransaction(Base, TimestampMixin):
     """Admin-level payment record (Pinesphere platform subscription payment)."""
-    __tablename__ = "payment_transactions"
+    __tablename__ = "subscription_transactions"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     payment_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
@@ -385,6 +389,16 @@ class PaymentTransaction(Base, TimestampMixin):
     method: Mapped[Optional[str]] = mapped_column(String(50))
     status: Mapped[str] = mapped_column(String(20), default="Processing")
     bank_ref: Mapped[Optional[str]] = mapped_column(String(100))
+
+class PaymentTransaction(Base, TimestampMixin):
+    """Guest payment ledger."""
+    __tablename__ = "payment_transactions"
+    __table_args__ = {'extend_existing': True}
+    txn_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    payment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("payments.payment_id"), nullable=False)
+    event: Mapped[str] = mapped_column(String(20), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    meta_data: Mapped[Optional[dict]] = mapped_column(JSONB)
 
 
 class PendingDue(Base, TimestampMixin):

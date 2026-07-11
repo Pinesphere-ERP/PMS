@@ -1,24 +1,12 @@
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
+Validation Error: [{'type': 'missing', 'loc': ('body', 'amount'), 'msg': 'Field required', 'input': {'razorpay_order_id': 'test', 'razorpay_payment_id': 'test', 'razorpay_signature': 'test'}}]
+Body: {'razorpay_order_id': 'test', 'razorpay_payment_id': 'test', 'razorpay_signature': 'test'}
+Validation Error: [{'type': 'json_invalid', 'loc': ('body', 1), 'msg': 'JSON decode error', 'input': {}, 'ctx': {'error': 'Expecting property name enclosed in double quotes'}}]
+Body: {\
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('query', 'property_id'), 'msg': 'Input should be a valid UUID, invalid character: found `p` at 1', 'input': 'prop_001', 'ctx': {'error': 'invalid character: found `p` at 1'}}]
 Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('query', 'property_id'), 'msg': 'Input should be a valid UUID, invalid character: found `p` at 1', 'input': 'prop_001', 'ctx': {'error': 'invalid character: found `p` at 1'}}]
 Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('query', 'property_id'), 'msg': 'Input should be a valid UUID, invalid character: found `p` at 1', 'input': 'prop_001', 'ctx': {'error': 'invalid character: found `p` at 1'}}]
 Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
-Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
-Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
-Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
-Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
-Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
-Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
-Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
-Body: None
-Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('query', 'property_id'), 'msg': 'Input should be a valid UUID, invalid character: found `p` at 1', 'input': 'prop_001', 'ctx': {'error': 'invalid character: found `p` at 1'}}]
 Body: None

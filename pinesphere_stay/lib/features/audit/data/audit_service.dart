@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:objectbox/objectbox.dart';
+import 'package:pinesphere_stay/main.dart';
 import '../domain/models/audit_log_entity.dart';
 import '../../../objectbox.g.dart';
 
-
 final _genesisHash = '0' * 64;
-
+const _genesisHash = '0000000000000000000000000000000000000000000000000000000000000000';
 
 String _computeEntryHash({
   required String previousHash,
@@ -28,18 +29,26 @@ String _computeEntryHash({
   return sha256.convert(utf8.encode(raw)).toString();
 }
 
+final auditServiceProvider = Provider<AuditService>((ref) {
+  return AuditService(objectBox.store);
+});
+
 class AuditService {
-  late final Store _store;
   late final Box<AuditLogEntity> _auditBox;
 
-  void initialize(Store store) {
-    _store = store;
-    _auditBox = _store.box<AuditLogEntity>();
+  AuditService(Store store) {
+    _auditBox = store.box<AuditLogEntity>();
   }
 
   String _getPreviousHash(String? propertyId) {
+    Condition<AuditLogEntity> cond;
+    if (propertyId != null) {
+      cond = AuditLogEntity_.propertyId.equals(propertyId);
+    } else {
+      cond = AuditLogEntity_.propertyId.isNull();
+    }
     final query = _auditBox
-        .query(AuditLogEntity_.propertyId.equals(propertyId ?? ''))
+        .query(cond)
         .order(AuditLogEntity_.timestamp, flags: Order.descending)
         .build();
     final results = query.find();
@@ -50,19 +59,18 @@ class AuditService {
   }
 
   AuditLogEntity log({
-    required String logId,
-    String? propertyId,
-    String? userId,
-    String? deviceId,
-    required DateTime timestamp,
     required String moduleName,
     required String actionType,
     required String targetEntity,
     required String targetRecordId,
+    String? propertyId,
+    String? userId,
+    String? deviceId,
     Map<String, dynamic>? oldValue,
     Map<String, dynamic>? newValue,
     String? ipAddress,
   }) {
+    final timestamp = DateTime.now().toUtc();
     final prevHash = _getPreviousHash(propertyId);
     final oldJson = oldValue != null ? jsonEncode(oldValue) : null;
     final newJson = newValue != null ? jsonEncode(newValue) : null;
@@ -77,7 +85,7 @@ class AuditService {
     );
 
     final entry = AuditLogEntity(
-      logId: logId,
+      logId: DateTime.now().millisecondsSinceEpoch.toString(),
       propertyId: propertyId,
       userId: userId,
       deviceId: deviceId,
@@ -103,30 +111,38 @@ class AuditService {
     String? actionType,
     int limit = 50,
   }) {
-    Condition<AuditLogEntity>? cond;
+    Condition<AuditLogEntity>? condition;
+    
     if (propertyId != null) {
-      cond = AuditLogEntity_.propertyId.equals(propertyId);
+      final c = AuditLogEntity_.propertyId.equals(propertyId);
+      condition = condition == null ? c : condition.and(c);
     }
     if (moduleName != null) {
-      final moduleCond = AuditLogEntity_.moduleName.equals(moduleName);
-      cond = cond == null ? moduleCond : cond & moduleCond;
+      final c = AuditLogEntity_.moduleName.equals(moduleName);
+      condition = condition == null ? c : condition.and(c);
     }
     if (actionType != null) {
-      final actionCond = AuditLogEntity_.actionType.equals(actionType);
-      cond = cond == null ? actionCond : cond & actionCond;
+      final c = AuditLogEntity_.actionType.equals(actionType);
+      condition = condition == null ? c : condition.and(c);
     }
 
-    final qBuilder = _auditBox.query(cond);
-    qBuilder.order(AuditLogEntity_.timestamp, flags: Order.descending);
-    final built = qBuilder.build();
-    final results = built.find();
-    built.close();
+    final query = (condition == null ? _auditBox.query() : _auditBox.query(condition))
+        .order(AuditLogEntity_.timestamp, flags: Order.descending)
+        .build();
+    final results = query.find();
+    query.close();
     return results.take(limit).toList();
   }
 
   bool verifyChain({String? propertyId}) {
+    Condition<AuditLogEntity> cond;
+    if (propertyId != null) {
+      cond = AuditLogEntity_.propertyId.equals(propertyId);
+    } else {
+      cond = AuditLogEntity_.propertyId.isNull();
+    }
     final query = _auditBox
-        .query(AuditLogEntity_.propertyId.equals(propertyId ?? ''))
+        .query(cond)
         .order(AuditLogEntity_.timestamp)
         .build();
     final entries = query.find();

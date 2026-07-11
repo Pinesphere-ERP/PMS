@@ -6,6 +6,7 @@ import '../../../core/database/objectbox.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../objectbox.g.dart';
+import '../../audit/data/audit_service.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/booking_entity.dart';
 
@@ -15,16 +16,20 @@ part 'booking_service.g.dart';
 BookingService bookingService(Ref ref) {
   return BookingService(
     dio: ref.watch(dioClientProvider),
+    auditService: ref.watch(auditServiceProvider),
   );
 }
 
 class BookingService {
   final Dio _dio;
+  final AuditService _audit;
   late final Store _store;
   late final Box<BookingEntity> _bookingBox;
   late final SyncService _syncService;
 
-  BookingService({required Dio dio}) : _dio = dio;
+  BookingService({required Dio dio, required AuditService auditService})
+      : _dio = dio,
+        _audit = auditService;
 
   void initialize(Store store, SyncService syncService) {
     _store = store;
@@ -67,6 +72,20 @@ class BookingService {
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       );
       _bookingBox.put(entity);
+      _audit.log(
+        moduleName: 'bookings',
+        actionType: 'create_booking',
+        targetEntity: 'booking',
+        targetRecordId: body['id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString(),
+        newValue: {
+          'room_id': data['room_id'],
+          'guest_id': data['guest_id'],
+          'check_in_date': data['check_in_date'],
+          'check_out_date': data['check_out_date'],
+          'total_payable': data['total_payable'],
+        },
+      );
       return body;
     } on DioException catch (e) {
       AppLogger.w('createBooking network failed, storing locally and queuing sync', e);
@@ -108,6 +127,20 @@ class BookingService {
         operation: 'CREATE',
         payload: data,
       );
+      _audit.log(
+        moduleName: 'bookings',
+        actionType: 'create_booking',
+        targetEntity: 'booking',
+        targetRecordId: localUuid.toString(),
+        propertyId: data['property_id']?.toString(),
+        newValue: {
+          'room_id': data['room_id'],
+          'guest_id': data['guest_id'],
+          'check_in_date': data['check_in_date'],
+          'check_out_date': data['check_out_date'],
+          'offline': true,
+        },
+      );
       return data;
     } catch (e) {
       AppLogger.e('createBooking unexpected error', e);
@@ -147,6 +180,13 @@ class BookingService {
   Future<void> cancelBooking(String bookingId) async {
     try {
       await _dio.post('/bookings/$bookingId/cancel');
+      _audit.log(
+        moduleName: 'bookings',
+        actionType: 'cancel_booking',
+        targetEntity: 'booking',
+        targetRecordId: bookingId,
+        newValue: {'booking_status': 'cancelled'},
+      );
     } on DioException catch (e) {
       AppLogger.w('cancelBooking network failed, queuing sync', e);
       _syncService.enqueueMutation(
@@ -154,6 +194,13 @@ class BookingService {
         entityId: 0,
         operation: 'UPDATE',
         payload: {'id': bookingId, 'booking_status': 'cancelled'},
+      );
+      _audit.log(
+        moduleName: 'bookings',
+        actionType: 'cancel_booking',
+        targetEntity: 'booking',
+        targetRecordId: bookingId,
+        newValue: {'booking_status': 'cancelled', 'offline': true},
       );
     } catch (e) {
       AppLogger.e('cancelBooking unexpected error', e);

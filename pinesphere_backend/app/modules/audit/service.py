@@ -37,11 +37,6 @@ async def _get_previous_hash(
     db: AsyncSession,
     property_id: Optional[uuid.UUID],
 ) -> str:
-    stmt = (
-        select(AuditLog.entry_hash)
-        .where(AuditLog.property_id == property_id) if property_id else
-        select(AuditLog.entry_hash).where(AuditLog.property_id.is_(None))
-    )
     if property_id:
         stmt = select(AuditLog.entry_hash).where(AuditLog.property_id == property_id)
     else:
@@ -148,11 +143,6 @@ async def verify_chain(
     *,
     property_id: Optional[uuid.UUID] = None,
 ) -> dict:
-    stmt = (
-        select(AuditLog)
-        .where(AuditLog.property_id == property_id) if property_id else
-        select(AuditLog).where(AuditLog.property_id.is_(None))
-    )
     if property_id:
         stmt = select(AuditLog).where(AuditLog.property_id == property_id)
     else:
@@ -219,11 +209,6 @@ def log_entry_sync(
     timestamp: Optional[datetime] = None,
 ) -> AuditLog:
     ts = timestamp or datetime.utcnow()
-    stmt = (
-        select(AuditLog.entry_hash)
-        .where(AuditLog.property_id == property_id) if property_id else
-        select(AuditLog.entry_hash).where(AuditLog.property_id.is_(None))
-    )
     if property_id:
         stmt = select(AuditLog.entry_hash).where(AuditLog.property_id == property_id)
     else:

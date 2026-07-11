@@ -1,15 +1,11 @@
-import json
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi.testclient import TestClient
 from app.main import app
-
 client = TestClient(app)
-
-payload = {
-    "owner_name": "Alice Smith",
-    "business_name": "Alice Luxury Hotels",
-    "property_name": "The Grand Alice"
-}
-
-response = client.post("/api/v1/properties", json=payload)
-print(f"Status Code: {response.status_code}")
-print(f"Response: {json.dumps(response.json(), indent=2)}")
+try:
+  response = client.get('/api/v1/payments/?page=1&size=20')
+  print(response.status_code, response.text)
+except Exception as e:
+  import traceback
+  traceback.print_exc()

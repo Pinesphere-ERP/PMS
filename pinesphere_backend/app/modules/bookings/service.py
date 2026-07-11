@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
 from fastapi import HTTPException, status
 
-from app.infra.models import Booking, Guest, Room, Property
+from app.infra.models import Booking, Guest, Room, RoomCategory, Property
 from app.modules.audit.logger import AuditLogger
 from app.modules.bookings.schemas import (
     GuestCreateRequest, GuestResponse,
@@ -96,19 +96,7 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
     guest_res = await db.execute(guest_stmt)
     guest = guest_res.scalar_one_or_none()
     if not guest:
-        if req.guest_name:
-            guest = Guest(
-                guest_id=req.guest_id,
-                property_id=req.property_id,
-                full_name=req.guest_name,
-                mobile=req.guest_phone,
-                id_type=req.guest_id_proof,
-                id_number=req.guest_id_number
-            )
-            db.add(guest)
-            await db.flush()
-        else:
-            raise HTTPException(status_code=404, detail="Guest not found")
+        raise HTTPException(status_code=404, detail="Guest not found")
 
 
     if req.check_in_date >= req.check_out_date:
@@ -128,7 +116,13 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
         raise HTTPException(status_code=409, detail="Room is not available for the selected dates")
 
     nights = (req.check_out_date - req.check_in_date).days
-    room_rent = req.room_rent or (float(room.price_per_night) if room.price_per_night else 0)
+    if req.room_rent:
+        room_rent = req.room_rent
+    else:
+        rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+        rc_res = await db.execute(rc_stmt)
+        rc = rc_res.scalar_one_or_none()
+        room_rent = float(rc.base_price) if rc and rc.base_price else 0
     total_rent = room_rent * nights if room_rent else 0
     tax_amount = req.taxes if req.taxes is not None else total_rent * 0.12
     deposit = req.deposit or 0

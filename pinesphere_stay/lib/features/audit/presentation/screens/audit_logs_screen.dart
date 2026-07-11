@@ -1,32 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:pinesphere_stay/main.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/audit_service.dart';
 import '../../domain/models/audit_log_entity.dart';
 
-class AuditLogsScreen extends StatefulWidget {
+class AuditLogsScreen extends ConsumerStatefulWidget {
   const AuditLogsScreen({super.key});
 
   @override
-  State<AuditLogsScreen> createState() => _AuditLogsScreenState();
+  ConsumerState<AuditLogsScreen> createState() => _AuditLogsScreenState();
 }
 
-class _AuditLogsScreenState extends State<AuditLogsScreen> {
-  late final AuditService _auditService;
+class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
   List<AuditLogEntity> _logs = [];
   bool _chainValid = true;
 
   @override
   void initState() {
     super.initState();
-    _auditService = AuditService();
-    _auditService.initialize(objectBox.store);
     _loadLogs();
   }
 
   void _loadLogs() {
+    final auditService = ref.read(auditServiceProvider);
     setState(() {
-      _logs = _auditService.queryLogs(limit: 100);
-      _chainValid = _auditService.verifyChain();
+      _logs = auditService.queryLogs(limit: 100);
+      _chainValid = auditService.verifyChain();
     });
   }
 
@@ -42,7 +40,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               color: _chainValid ? Colors.green : Colors.red,
             ),
             onPressed: () {
-              setState(() => _chainValid = _auditService.verifyChain());
+              setState(() => _chainValid = ref.read(auditServiceProvider).verifyChain());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(_chainValid

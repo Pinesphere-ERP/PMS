@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/security/permission_engine.dart';
+import '../../../../core/presentation/widgets/access_restricted_view.dart';
+import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
 import '../providers/checkin_provider.dart';
 
 class CheckInScreen extends ConsumerStatefulWidget {
@@ -281,6 +284,25 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final user = authState.maybeWhen(
+      authenticated: (u) => u,
+      orElse: () => null,
+    );
+    final role = user?.role ?? UserRole.guest;
+
+    final canView = PermissionEngine.hasPermission(role, PermissionModule.checkIn, PermissionAction.view);
+    final canDigitalCheckIn = PermissionEngine.hasPermission(role, PermissionModule.checkIn, PermissionAction.digitalCheckIn);
+    final canFull = PermissionEngine.hasPermission(role, PermissionModule.checkIn, PermissionAction.full);
+
+    if (!canView && !canDigitalCheckIn && !canFull) {
+      return const AccessRestrictedView(
+        title: 'Check-In Restricted',
+        message: 'Your role does not permit access to the Check-In module.',
+      );
+    }
+
+    final isViewOnly = !canFull && !canDigitalCheckIn;
     ref.listen<CheckInState>(checkInProvider, (prev, state) {
       state.maybeWhen(
         error: (msg) => _showError(msg),
@@ -296,20 +318,48 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         backgroundColor: AppColors.surface,
         scrolledUnderElevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
+      body: Column(
         children: [
-          _buildModeToggle(),
-          const SizedBox(height: 16),
-          if (_isWalkInMode) _buildWalkInMode() else _buildBookingCheckInMode(),
-          const SizedBox(height: 32),
+          if (isViewOnly)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.amber.withOpacity(0.2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.visibility, size: 16, color: Colors.amber),
+                  const SizedBox(width: 8),
+                  Text(
+                    'View-Only Mode',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.amber.shade900,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                _buildModeToggle(isViewOnly),
+                const SizedBox(height: 16),
+                if (_isWalkInMode) _buildWalkInMode(isViewOnly) else _buildBookingCheckInMode(isViewOnly),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildModeToggle() {
-    return BentoCard(
+  Widget _buildModeToggle(bool isViewOnly) {
+    return AbsorbPointer(
+      absorbing: isViewOnly,
+      child: BentoCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -334,6 +384,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -365,26 +416,31 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   // BOOKING CHECK-IN MODE
   // ============================================================
 
-  Widget _buildBookingCheckInMode() {
+  Widget _buildBookingCheckInMode(bool isViewOnly) {
     final state = ref.watch(checkInProvider);
     final isLoading = state.maybeWhen(loading: () => true, orElse: () => false);
 
-    return Column(
-      children: [
-        _buildSearchSection(isLoading),
-        if (_selectedBooking != null) ...[
-          const SizedBox(height: 16),
-          _buildGuestVerification(),
-          const SizedBox(height: 16),
-          _buildRoomAssignment(),
-          const SizedBox(height: 16),
-          _buildPaymentDeposit(),
-          const SizedBox(height: 16),
-          _buildAdditionalDetails(),
-          const SizedBox(height: 16),
-          _buildCheckInActions(isLoading),
+    return AbsorbPointer(
+      absorbing: isViewOnly,
+      child: Column(
+        children: [
+          _buildSearchSection(isLoading),
+          if (_selectedBooking != null) ...[
+            const SizedBox(height: 16),
+            _buildGuestVerification(),
+            const SizedBox(height: 16),
+            _buildRoomAssignment(),
+            const SizedBox(height: 16),
+            _buildPaymentDeposit(),
+            const SizedBox(height: 16),
+            _buildAdditionalDetails(),
+            if (!isViewOnly) ...[
+              const SizedBox(height: 16),
+              _buildCheckInActions(isLoading),
+            ],
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -712,28 +768,33 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   // WALK-IN MODE
   // ============================================================
 
-  Widget _buildWalkInMode() {
+  Widget _buildWalkInMode(bool isViewOnly) {
     final state = ref.watch(checkInProvider);
     final isLoading = state.maybeWhen(loading: () => true, orElse: () => false);
 
-    return Form(
-      key: _walkInFormKey,
-      child: Column(
-        children: [
-          _buildWalkInGuestInfo(),
-          const SizedBox(height: 16),
-          _buildWalkInIdentity(),
-          const SizedBox(height: 16),
-          _buildWalkInStayDetails(),
-          const SizedBox(height: 16),
-          _buildWalkInRoomSelection(),
-          const SizedBox(height: 16),
-          _buildWalkInPayment(),
-          const SizedBox(height: 16),
-          _buildWalkInAdditional(),
-          const SizedBox(height: 16),
-          _buildWalkInAction(isLoading),
-        ],
+    return AbsorbPointer(
+      absorbing: isViewOnly,
+      child: Form(
+        key: _walkInFormKey,
+        child: Column(
+          children: [
+            _buildWalkInGuestInfo(),
+            const SizedBox(height: 16),
+            _buildWalkInIdentity(),
+            const SizedBox(height: 16),
+            _buildWalkInStayDetails(),
+            const SizedBox(height: 16),
+            _buildWalkInRoomSelection(),
+            const SizedBox(height: 16),
+            _buildWalkInPayment(),
+            const SizedBox(height: 16),
+            _buildWalkInAdditional(),
+            if (!isViewOnly) ...[
+              const SizedBox(height: 16),
+              _buildWalkInAction(isLoading),
+            ],
+          ],
+        ),
       ),
     );
   }

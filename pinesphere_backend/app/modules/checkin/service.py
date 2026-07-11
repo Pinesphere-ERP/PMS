@@ -8,7 +8,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.models import (
-    CheckIn, Booking, Room, Guest, Invoice, InvoiceItem,
+    CheckIn, Booking, Room, RoomCategory, Guest, Invoice, InvoiceItem,
     RoomAssignment, Property
 )
 from app.modules.audit.logger import AuditLogger
@@ -136,7 +136,10 @@ async def perform_checkin(
     booking.vehicle_number = req.vehicle_number or booking.vehicle_number
 
     nights = max((booking.check_out_date - booking.check_in_date).days, 1)
-    room_rent_per_night = float(room.price_per_night or 0)
+    rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+    rc_res = await db.execute(rc_stmt)
+    rc = rc_res.scalar_one_or_none()
+    room_rent_per_night = float(booking.room_rent / nights) if booking.room_rent else (float(rc.base_price) if rc and rc.base_price else 0)
     room_rent_total = room_rent_per_night * nights
     advance = float(req.advance_paid) if req.advance_paid is not None else float(booking.advance_paid or 0)
     total_payable = room_rent_total - float(booking.discount or 0) + float(booking.taxes or 0)
@@ -231,7 +234,10 @@ async def perform_walkin_checkin(
     await db.flush()
 
     nights = max((req.check_out_date - req.check_in_date).days, 1)
-    room_rent_per_night = float(room.price_per_night or 0)
+    rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+    rc_res = await db.execute(rc_stmt)
+    rc = rc_res.scalar_one_or_none()
+    room_rent_per_night = float(req.room_rent) if req.room_rent else (float(rc.base_price) if rc and rc.base_price else 0)
     room_rent_total = room_rent_per_night * nights
     advance = float(req.advance_paid or 0)
     deposit_val = float(req.deposit or 0)
@@ -331,11 +337,13 @@ async def get_checkin_detail(db: AsyncSession, checkin_id: uuid.UUID) -> dict:
         }
     result["room"] = None
     if room:
+        rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+        rc_res = await db.execute(rc_stmt)
+        rc = rc_res.scalar_one_or_none()
         result["room"] = {
             "room_id": str(room.room_id),
             "room_number": room.room_number,
-            "room_type": room.room_type,
-            "floor": room.floor,
+            "room_type": rc.room_name if rc else None,
             "occupancy_status": room.occupancy_status,
             "housekeeping_status": room.housekeeping_status,
         }

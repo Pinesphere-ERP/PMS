@@ -4,9 +4,7 @@ import 'package:objectbox/objectbox.dart';
 import '../domain/models/audit_log_entity.dart';
 import '../../../objectbox.g.dart';
 
-
-final _genesisHash = '0' * 64;
-
+const _genesisHash = '0000000000000000000000000000000000000000000000000000000000000000';
 
 String _computeEntryHash({
   required String previousHash,
@@ -103,24 +101,26 @@ class AuditService {
     String? actionType,
     int limit = 50,
   }) {
-    Condition<AuditLogEntity>? cond;
+    Condition<AuditLogEntity>? condition;
+    
     if (propertyId != null) {
-      cond = AuditLogEntity_.propertyId.equals(propertyId);
+      final c = AuditLogEntity_.propertyId.equals(propertyId);
+      condition = condition == null ? c : condition.and(c);
     }
     if (moduleName != null) {
-      final moduleCond = AuditLogEntity_.moduleName.equals(moduleName);
-      cond = cond == null ? moduleCond : cond & moduleCond;
+      final c = AuditLogEntity_.moduleName.equals(moduleName);
+      condition = condition == null ? c : condition.and(c);
     }
     if (actionType != null) {
-      final actionCond = AuditLogEntity_.actionType.equals(actionType);
-      cond = cond == null ? actionCond : cond & actionCond;
+      final c = AuditLogEntity_.actionType.equals(actionType);
+      condition = condition == null ? c : condition.and(c);
     }
 
-    final qBuilder = _auditBox.query(cond);
-    qBuilder.order(AuditLogEntity_.timestamp, flags: Order.descending);
-    final built = qBuilder.build();
-    final results = built.find();
-    built.close();
+    final query = (condition == null ? _auditBox.query() : _auditBox.query(condition))
+        .order(AuditLogEntity_.timestamp, flags: Order.descending)
+        .build();
+    final results = query.find();
+    query.close();
     return results.take(limit).toList();
   }
 

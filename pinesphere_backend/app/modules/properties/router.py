@@ -215,6 +215,65 @@ async def clean_room(room_id: str, db: AsyncSession = Depends(get_db)):
     return {"message": "Room status marked clean & vacant"}
 
 
+class RoomUpdateInput(BaseModel):
+    room_number: str
+    type: str
+    price: float
+    status: str
+
+
+@router.put("/rooms/{room_id}")
+async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        rid = _uuid.UUID(room_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid room ID format")
+        
+    q = select(Room).where(Room.room_id == rid)
+    result = await db.execute(q)
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+        
+    cat_q = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+    cat_result = await db.execute(cat_q)
+    category = cat_result.scalar_one_or_none()
+    
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found for room")
+        
+    room.room_number = payload.room_number
+    room.occupancy_status = payload.status
+    
+    category.room_name = payload.type
+    category.base_price = payload.price
+    
+    db.add(room)
+    db.add(category)
+    await db.commit()
+    return {"message": "Room updated successfully"}
+
+
+@router.delete("/rooms/{room_id}")
+async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        rid = _uuid.UUID(room_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid room ID format")
+        
+    q = select(Room).where(Room.room_id == rid)
+    result = await db.execute(q)
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+        
+    await db.delete(room)
+    await db.commit()
+    return {"message": "Room deleted successfully"}
+
+
 @router.get("")
 async def get_properties(db: AsyncSession = Depends(get_db)):
     """List all properties joined with owner, business and latest subscription."""

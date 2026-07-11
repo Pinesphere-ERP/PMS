@@ -392,12 +392,33 @@ class PmsNotifier extends Notifier<PmsState> {
     }
   }
 
-  void updateRoomDetails(String roomId, RoomModel updatedRoom) {
-    state = state.copyWith(
-      rooms: state.rooms.map((room) {
-        return room.id == roomId ? updatedRoom : room;
-      }).toList(),
-    );
+  Future<void> updateRoomDetails(String roomId, RoomModel updatedRoom) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.put('/properties/rooms/$roomId', data: {
+        'room_number': updatedRoom.roomNumber,
+        'type': updatedRoom.type,
+        'price': updatedRoom.price,
+        'status': updatedRoom.status,
+      });
+      if (response.statusCode == 200) {
+        await loadRooms();
+      }
+    } catch (e) {
+      print('Failed to update room details: $e');
+    }
+  }
+
+  Future<void> deleteRoom(String roomId) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.delete('/properties/rooms/$roomId');
+      if (response.statusCode == 200) {
+        await loadRooms();
+      }
+    } catch (e) {
+      print('Failed to delete room: $e');
+    }
   }
 
   void autoVacateExpiredBookings() {

@@ -6,6 +6,7 @@ import '../../../core/database/objectbox.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../objectbox.g.dart';
+import '../../audit/data/audit_service.dart';
 import '../../rooms/domain/models/room_entity.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/checkin_entity.dart';
@@ -16,17 +17,21 @@ part 'checkin_service.g.dart';
 CheckInService checkInService(Ref ref) {
   return CheckInService(
     dio: ref.watch(dioClientProvider),
+    auditService: ref.watch(auditServiceProvider),
   );
 }
 
 class CheckInService {
   final Dio _dio;
+  final AuditService _audit;
   late final Store _store;
   late final Box<CheckInEntity> _checkinBox;
   late final Box<RoomEntity> _roomBox;
   late final SyncService _syncService;
 
-  CheckInService({required Dio dio}) : _dio = dio;
+  CheckInService({required Dio dio, required AuditService auditService})
+      : _dio = dio,
+        _audit = auditService;
 
   void initialize(Store store, SyncService syncService) {
     _store = store;
@@ -63,6 +68,22 @@ class CheckInService {
       );
       _checkinBox.put(entity);
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
+      _audit.log(
+        moduleName: 'checkin',
+        actionType: 'check_in',
+        targetEntity: 'check_in',
+        targetRecordId: body['checkin_id']?.toString() ?? body['id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString(),
+        userId: data['staff_id']?.toString(),
+        newValue: {
+          'booking_id': data['booking_id'],
+          'room_id': data['room_id'],
+          'guest_id': data['guest_id'],
+          'deposit': data['deposit'],
+          'advance_paid': data['advance_paid'],
+          'id_verified': data['id_verified'],
+        },
+      );
       return body;
     } on DioException catch (e) {
       AppLogger.w('performCheckIn network failed, storing locally and queuing sync', e);
@@ -97,6 +118,20 @@ class CheckInService {
         operation: 'CREATE',
         payload: data,
       );
+      _audit.log(
+        moduleName: 'checkin',
+        actionType: 'check_in',
+        targetEntity: 'check_in',
+        targetRecordId: localUuid,
+        propertyId: data['property_id']?.toString(),
+        userId: data['staff_id']?.toString(),
+        newValue: {
+          'booking_id': data['booking_id'],
+          'room_id': data['room_id'],
+          'guest_id': data['guest_id'],
+          'offline': true,
+        },
+      );
       return data;
     } catch (e) {
       AppLogger.e('performCheckIn unexpected error', e);
@@ -107,7 +142,22 @@ class CheckInService {
   Future<Map<String, dynamic>> performWalkIn(Map<String, dynamic> data) async {
     try {
       final response = await _dio.post('/checkin/walkin', data: data);
-      return response.data as Map<String, dynamic>;
+      final body = response.data as Map<String, dynamic>;
+      _audit.log(
+        moduleName: 'checkin',
+        actionType: 'walk_in',
+        targetEntity: 'check_in',
+        targetRecordId: body['checkin_id']?.toString() ?? body['id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString(),
+        userId: data['staff_id']?.toString(),
+        newValue: {
+          'room_id': data['room_id'],
+          'booking_id': data['booking_id'],
+          'guest_name': data['guest_name'],
+          'advance_paid': data['advance_paid'],
+        },
+      );
+      return body;
     } on DioException catch (e) {
       AppLogger.w('performWalkIn network failed', e);
       rethrow;
@@ -163,6 +213,13 @@ class CheckInService {
   Future<void> cancelCheckIn(String checkinId) async {
     try {
       await _dio.post('/checkin/$checkinId/cancel');
+      _audit.log(
+        moduleName: 'checkin',
+        actionType: 'cancel_checkin',
+        targetEntity: 'check_in',
+        targetRecordId: checkinId,
+        newValue: {'status': 'cancelled'},
+      );
     } on DioException catch (e) {
       AppLogger.w('cancelCheckIn network failed, queuing sync', e);
       _syncService.enqueueMutation(
@@ -170,6 +227,13 @@ class CheckInService {
         entityId: 0,
         operation: 'UPDATE',
         payload: {'id': checkinId, 'status': 'cancelled'},
+      );
+      _audit.log(
+        moduleName: 'checkin',
+        actionType: 'cancel_checkin',
+        targetEntity: 'check_in',
+        targetRecordId: checkinId,
+        newValue: {'status': 'cancelled', 'offline': true},
       );
     } catch (e) {
       AppLogger.e('cancelCheckIn unexpected error', e);

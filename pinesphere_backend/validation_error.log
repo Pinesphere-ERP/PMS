@@ -1,0 +1,24 @@
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `k` at 1', 'input': 'kpis', 'ctx': {'error': 'invalid character: found `k` at 1'}}]
+Body: None
+Validation Error: [{'type': 'uuid_parsing', 'loc': ('path', 'payment_id'), 'msg': 'Input should be a valid UUID, invalid character: found `s` at 3', 'input': 'dashboard', 'ctx': {'error': 'invalid character: found `s` at 3'}}]
+Body: None

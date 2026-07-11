@@ -7,7 +7,6 @@ import '../domain/models/audit_log_entity.dart';
 import '../../../objectbox.g.dart';
 
 final _genesisHash = '0' * 64;
-const _genesisHash = '0000000000000000000000000000000000000000000000000000000000000000';
 
 String _computeEntryHash({
   required String previousHash,

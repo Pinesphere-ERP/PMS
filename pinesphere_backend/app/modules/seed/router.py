@@ -14,7 +14,7 @@ from app.infra.models import (
     RoomCategory, Room, Guest, Subscription, Invoice,
     SubscriptionTransaction, PendingDue, AuditLog
 )
-from app.modules.seed.audit_test_seed import main as run_audit_seed
+# from app.modules.seed.audit_test_seed import main as run_audit_seed
 
 router = APIRouter()
 
@@ -283,43 +283,6 @@ async def run_seed(db: AsyncSession = Depends(get_db)):
 @router.post("/audit-test")
 async def seed_audit_test_data(db: AsyncSession = Depends(get_db)):
     """
-    Seed comprehensive booking workflows that generate a full audit trail
-    with proper SHA-256 hash chains. Creates:
-      - 5 bookings, 2 updates, 1 cancel
-      - 3 check-ins, 2 check-outs, 1 check-in cancel
-      - 12+ audit log entries with verified hash chain
-
-    Safe to call multiple times (checks existing data first).
+    Stubbed endpoint.
     """
-    from app.modules.seed.audit_test_seed import (
-        PROPERTY_ID, main as _run_audit_seed,
-    )
-
-    # Guard: skip if the test property already exists
-    existing = await db.execute(
-        select(Property).where(Property.property_id == PROPERTY_ID)
-    )
-    if existing.scalar_one_or_none():
-        return {"message": "Audit test data already seeded. No changes made."}
-
-    await _run_audit_seed()
-    return {
-        "message": "✅ Audit test seed complete!",
-        "property_id": str(PROPERTY_ID),
-        "details": {
-            "bookings_created": 5,
-            "bookings_updated": 2,
-            "bookings_cancelled": 1,
-            "check_ins_performed": 3,
-            "check_outs_performed": 2,
-            "check_ins_cancelled": 1,
-            "expected_audit_entries": 12,
-        },
-        "endpoints": {
-            "list_all_logs": f"/api/v1/audit/?property_id={PROPERTY_ID}",
-            "filter_by_bookings": f"/api/v1/audit/?property_id={PROPERTY_ID}&module_name=bookings",
-            "filter_by_checkin": f"/api/v1/audit/?property_id={PROPERTY_ID}&module_name=checkin",
-            "filter_by_checkout": f"/api/v1/audit/?property_id={PROPERTY_ID}&module_name=checkout",
-            "verify_chain": f"/api/v1/audit/verify?property_id={PROPERTY_ID}",
-        },
-    }
+    return {"message": "Audit test seed endpoint is stubbed / disabled."}

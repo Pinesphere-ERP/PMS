@@ -8,12 +8,14 @@ class ResortModel {
   final String name;
   final String image;
   final String location;
+  final String description;
 
   ResortModel({
     required this.id,
     required this.name,
     required this.image,
     required this.location,
+    this.description = '',
   });
 }
 
@@ -31,6 +33,7 @@ class RoomModel {
   final String resortId;
   final String? currentBookingId;
   final List<String> images;
+  final String description;
 
   RoomModel({
     required this.id,
@@ -46,23 +49,29 @@ class RoomModel {
     required this.resortId,
     this.currentBookingId,
     required this.images,
+    this.description = '',
   });
 
   RoomModel copyWith({
-    String? status,
-    String? currentBookingId,
-    List<String>? images,
+    String? id,
+    String? roomNumber,
+    String? type,
     double? price,
     double? seasonPrice,
     double? weekendPrice,
     double? holidayPrice,
     double? extraBedPrice,
     List<Map<String, dynamic>>? amenities,
+    String? status,
+    String? resortId,
+    String? currentBookingId,
+    List<String>? images,
+    String? description,
   }) {
     return RoomModel(
-      id: id,
-      roomNumber: roomNumber,
-      type: type,
+      id: id ?? this.id,
+      roomNumber: roomNumber ?? this.roomNumber,
+      type: type ?? this.type,
       price: price ?? this.price,
       seasonPrice: seasonPrice ?? this.seasonPrice,
       weekendPrice: weekendPrice ?? this.weekendPrice,
@@ -70,9 +79,10 @@ class RoomModel {
       extraBedPrice: extraBedPrice ?? this.extraBedPrice,
       amenities: amenities ?? this.amenities,
       status: status ?? this.status,
-      resortId: resortId,
+      resortId: resortId ?? this.resortId,
       currentBookingId: currentBookingId ?? this.currentBookingId,
       images: images ?? this.images,
+      description: description ?? this.description,
     );
   }
 }
@@ -122,13 +132,13 @@ class BookingModel {
     required this.checkOutDate,
     required this.status,
     required this.depositPaid,
-    required this.basePriceSum,
-    required this.weekendSurcharge,
-    required this.seasonSurcharge,
-    required this.holidaySurcharge,
-    required this.extraBedCharge,
-    required this.amenitiesCharge,
-    required this.totalSum,
+    this.basePriceSum = 0,
+    this.weekendSurcharge = 0,
+    this.seasonSurcharge = 0,
+    this.holidaySurcharge = 0,
+    this.extraBedCharge = 0,
+    this.amenitiesCharge = 0,
+    this.totalSum = 0,
     this.damageBill = 0,
     this.laundryBill = 0,
     this.miniBarBill = 0,
@@ -201,10 +211,11 @@ class PmsState {
 class PmsNotifier extends Notifier<PmsState> {
   @override
   PmsState build() {
-    // Load data from backend
-    Future.microtask(() {
-      loadRooms();
-      loadBookings();
+    Future.microtask(() async {
+      await loadResorts();
+      await loadRooms();
+      await loadBookings();
+      await autoVacateExpiredBookings();
     });
     return _initialState();
   }
@@ -233,12 +244,39 @@ class PmsNotifier extends Notifier<PmsState> {
           status: json['status'],
           resortId: json['resort_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : 'resort-2',
           images: List<String>.from(json['images'] ?? []),
+          description: json['description'] ?? '',
         )).toList();
         
         state = state.copyWith(rooms: loadedRooms);
       }
     } catch (e) {
       print('Failed to load rooms: $e');
+    }
+  }
+
+  Future<void> loadResorts() async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.get('/properties');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        final loadedResorts = data.map((json) {
+          final id = json['id'];
+          final resortId = id == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (id == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : id);
+          return ResortModel(
+            id: resortId,
+            name: json['name'] ?? '',
+            image: resortId == 'resort-1' 
+                ? 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80'
+                : 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+            location: json['city'] == 'Unknown' ? 'Kodaikanal, Tamil Nadu' : json['city'] ?? '',
+            description: json['description'] ?? '',
+          );
+        }).toList();
+        state = state.copyWith(resorts: loadedResorts.isEmpty ? _initialState().resorts : loadedResorts);
+      }
+    } catch (e) {
+      print('Failed to load resorts: $e');
     }
   }
 
@@ -297,12 +335,14 @@ class PmsNotifier extends Notifier<PmsState> {
         name: 'PineSphere Forest Resort',
         image: 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80',
         location: 'Kodaikanal, Tamil Nadu',
+        description: 'A serene getaway surrounded by towering pines and misty hills.',
       ),
       ResortModel(
         id: 'resort-2',
         name: 'PineSphere Beachside Sanctuary',
         image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
         location: 'Varkala, Kerala',
+        description: 'A beautiful seaside escape with stunning cliffside ocean views.',
       ),
     ];
     final rooms = <RoomModel>[];
@@ -400,6 +440,7 @@ class PmsNotifier extends Notifier<PmsState> {
         'type': updatedRoom.type,
         'price': updatedRoom.price,
         'status': updatedRoom.status,
+        'description': updatedRoom.description,
       });
       if (response.statusCode == 200) {
         await loadRooms();
@@ -421,37 +462,35 @@ class PmsNotifier extends Notifier<PmsState> {
     }
   }
 
-  void autoVacateExpiredBookings() {
+  Future<void> autoVacateExpiredBookings() async {
     final now = DateTime.now();
+    final dio = ref.read(dioClientProvider);
     bool changed = false;
-
-    final updatedRooms = state.rooms.map((room) {
+    for (final room in state.rooms) {
       if (room.status == 'Occupied' && room.currentBookingId != null) {
         final bookingIndex = state.bookings.indexWhere((b) => b.id == room.currentBookingId && b.status == 'Active');
         if (bookingIndex != -1) {
           final booking = state.bookings[bookingIndex];
           if (booking.checkOutDate.isBefore(now)) {
-            changed = true;
-            return room.copyWith(
-              status: 'Vacant',
-              currentBookingId: null,
-            );
+            try {
+              await dio.post('/bookings/${booking.id}/check-out', data: {
+                'damage_bill': 0.0,
+                'laundry_bill': 0.0,
+                'minibar_bill': 0.0,
+                'restaurant_bill': 0.0,
+              });
+              await dio.post('/properties/rooms/${room.id}/clean');
+              changed = true;
+            } catch (e) {
+              print('Auto-vacate backend call failed for booking ${booking.id}: $e');
+            }
           }
         }
       }
-      return room;
-    }).toList();
-
+    }
     if (changed) {
-      state = state.copyWith(
-        rooms: updatedRooms,
-        bookings: state.bookings.map((b) {
-          if (b.status == 'Active' && b.checkOutDate.isBefore(now)) {
-            return b.copyWith(status: 'Completed');
-          }
-          return b;
-        }).toList(),
-      );
+      await loadRooms();
+      await loadBookings();
     }
   }
 
@@ -464,7 +503,8 @@ class PmsNotifier extends Notifier<PmsState> {
         'price': room.price,
         'resort_id': room.resortId == 'resort-1' 
             ? '33333333-3333-3333-3333-333333333333' 
-            : '44444444-4444-4444-4444-444444444444',
+            : (room.resortId == 'resort-2' ? '44444444-4444-4444-4444-444444444444' : room.resortId),
+        'description': room.description,
       });
       
       if (response.statusCode == 201) {
@@ -475,48 +515,85 @@ class PmsNotifier extends Notifier<PmsState> {
     }
   }
 
-  void addResort(ResortModel resort) {
-    state = state.copyWith(
-      resorts: [...state.resorts, resort],
-    );
+  Future<void> addResort(ResortModel resort) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.post('/properties', data: {
+        'owner_name': 'Default Owner',
+        'owner_mobile': '9999999999',
+        'owner_email': 'owner@example.com',
+        'business_name': '${resort.name} Business',
+        'property_name': resort.name,
+        'property_type': 'Resort',
+        'star_category': 5,
+        'year_established': 2024,
+        'total_floors': 3,
+        'total_rooms': 10,
+        'description': resort.description,
+        'city': resort.location,
+      });
+      
+      if (response.statusCode == 201) {
+        await loadResorts();
+      }
+    } catch (e) {
+      print('Failed to create resort: $e');
+    }
   }
 
-  void addResortWithRooms(ResortModel resort, int numRooms) {
-    final generatedRooms = List.generate(numRooms, (index) {
-      final resortIndex = state.resorts.length + 1;
-      final roomNumber = '${resortIndex * 100 + index + 1}';
+  Future<void> addResortWithRooms(ResortModel resort, int numRooms) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.post('/properties', data: {
+        'owner_name': 'Default Owner',
+        'owner_mobile': '9999999999',
+        'owner_email': 'owner@example.com',
+        'business_name': '${resort.name} Business',
+        'property_name': resort.name,
+        'property_type': 'Resort',
+        'star_category': 5,
+        'year_established': 2024,
+        'total_floors': 3,
+        'total_rooms': numRooms,
+        'description': resort.description,
+        'city': resort.location,
+      });
       
-      return RoomModel(
-        id: 'room_${resort.id}_$index',
-        roomNumber: roomNumber,
-        type: index % 2 == 0 ? 'Deluxe Suite' : 'Standard Room',
-        price: index % 2 == 0 ? 150.0 : 90.0,
-        seasonPrice: index % 2 == 0 ? 40.0 : 25.0,
-        weekendPrice: index % 2 == 0 ? 25.0 : 15.0,
-        holidayPrice: index % 2 == 0 ? 60.0 : 35.0,
-        extraBedPrice: index % 2 == 0 ? 20.0 : 10.0,
-        amenities: [
-          {'name': 'Food / Buffet Included', 'price': 30.0},
-          {'name': 'Portable Bluetooth Speaker', 'price': 15.0},
-          {'name': 'Smart TV Access', 'price': 10.0},
-          {'name': 'Projector Setup', 'price': 25.0},
-        ],
-        status: 'Vacant',
-        resortId: resort.id,
-        images: index % 2 == 0 
-            ? [
-                'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=500&q=80',
-              ]
-            : [
-                'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80',
-              ],
-      );
-    });
-
-    state = state.copyWith(
-      resorts: [...state.resorts, resort],
-      rooms: [...state.rooms, ...generatedRooms],
-    );
+      if (response.statusCode == 201) {
+        final newResortId = response.data['property_id'];
+        for (int i = 0; i < numRooms; i++) {
+          final roomNumber = '${(state.resorts.length + 1) * 100 + i + 1}';
+          final newRoom = RoomModel(
+            id: '',
+            roomNumber: roomNumber,
+            type: i % 2 == 0 ? 'Deluxe Suite' : 'Standard Room',
+            price: i % 2 == 0 ? 1500.0 : 900.0,
+            seasonPrice: i % 2 == 0 ? 400.0 : 250.0,
+            weekendPrice: i % 2 == 0 ? 250.0 : 150.0,
+            holidayPrice: i % 2 == 0 ? 600.0 : 350.0,
+            extraBedPrice: i % 2 == 0 ? 200.0 : 100.0,
+            amenities: const [
+              {'name': 'Food / Buffet Included', 'price': 300.0},
+              {'name': 'Portable Bluetooth Speaker', 'price': 150.0},
+              {'name': 'Smart TV Access', 'price': 100.0},
+            ],
+            status: 'Vacant',
+            resortId: newResortId,
+            images: i % 2 == 0 
+                ? ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=500&q=80']
+                : ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80'],
+            description: i % 2 == 0 
+                ? 'Luxurious Deluxe Suite featuring premium view, elegant interiors and master bed.' 
+                : 'Comfortable Standard Room with modern furniture and high-speed Wi-Fi.',
+          );
+          await addRoom(newRoom);
+        }
+        await loadResorts();
+        await loadRooms();
+      }
+    } catch (e) {
+      print('Failed to create resort with rooms: $e');
+    }
   }
 }
 

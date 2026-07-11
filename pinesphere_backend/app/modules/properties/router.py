@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy import func, and_
 from datetime import date, timedelta
-from typing import List
+from typing import List, Optional
 
 from app.infra.database import get_db
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory
@@ -77,6 +77,7 @@ class RoomCreateInput(BaseModel):
     type: str
     price: float
     resort_id: str
+    description: Optional[str] = ""
 
 
 @router.get("/rooms")
@@ -94,6 +95,7 @@ async def get_rooms(db: AsyncSession = Depends(get_db)):
             "price": float(cat.base_price or 1000.0),
             "status": room.occupancy_status or "vacant",
             "resort_id": str(cat.property_id),
+            "description": cat.description or "",
             "images": [
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
@@ -168,13 +170,15 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
             property_id=resort_uuid,
             room_name=payload.type,
             base_price=payload.price,
-            number_of_rooms=1
+            number_of_rooms=1,
+            description=payload.description
         )
         db.add(category)
         await db.flush()
     else:
-        # Update category base price
+        # Update category base price & description
         category.base_price = payload.price
+        category.description = payload.description
         if category.number_of_rooms:
             category.number_of_rooms += 1
         else:
@@ -220,6 +224,7 @@ class RoomUpdateInput(BaseModel):
     type: str
     price: float
     status: str
+    description: Optional[str] = ""
 
 
 @router.put("/rooms/{room_id}")
@@ -248,6 +253,7 @@ async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession =
     
     category.room_name = payload.type
     category.base_price = payload.price
+    category.description = payload.description
     
     db.add(room)
     db.add(category)
@@ -311,6 +317,7 @@ async def get_properties(db: AsyncSession = Depends(get_db)):
             "verificationStatus": _verification_status(prop.onboarding_status),
             "subscriptionStatus": sub.status if sub else "No Subscription",
             "plan": sub.plan if sub else "N/A",
+            "description": prop.description or "",
             "business": biz.business_name,
             "lastUpdated": str(prop.updated_at)[:10] if prop.updated_at else "N/A",
             "onboarding": "100%" if prop.onboarding_status == "completed" else "50%",

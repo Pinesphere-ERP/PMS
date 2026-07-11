@@ -422,6 +422,17 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
             pinned: true,
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
+            leading: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Colors.black45,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 widget.resort.name,

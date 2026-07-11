@@ -1,28 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../data/settings_service.dart';
 import '../../domain/models/property_setting_entity.dart';
 import '../../domain/models/device_config_entity.dart';
 
 part 'settings_provider.freezed.dart';
+part 'settings_provider.g.dart';
 
 // ── State ──────────────────────────────────────────────────────
 
 @freezed
-class SettingsState with _$SettingsState {
-  const factory SettingsState.initial() = Initial;
-  const factory SettingsState.loading() = Loading;
+sealed class SettingsState with _$SettingsState {
+  const factory SettingsState.initial() = SettingsStateInitial;
+  const factory SettingsState.loading() = SettingsStateLoading;
   const factory SettingsState.loaded({
     required List<Map<String, dynamic>> propertySettings,
     required DeviceConfigEntity deviceConfig,
-  }) = Loaded;
-  const factory SettingsState.error(String message) = ErrorState;
-  const factory SettingsState.saved() = Saved;
+  }) = SettingsStateLoaded;
+  const factory SettingsState.error(String message) = SettingsStateError;
+  const factory SettingsState.saved() = SettingsStateSaved;
 }
 
 // ── Notifier ───────────────────────────────────────────────────
 
-class SettingsNotifier extends Notifier<SettingsState> {
+@Riverpod(keepAlive: true)
+class SettingsNotifier extends _$SettingsNotifier {
   @override
   SettingsState build() => const SettingsState.initial();
 
@@ -80,7 +83,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       );
       final deviceConfig = await _service.getDeviceConfig(deviceUid);
       final current = state;
-      if (current is Loaded) {
+      if (current is SettingsStateLoaded) {
         state = current.copyWith(deviceConfig: deviceConfig);
       }
     } catch (e) {
@@ -88,8 +91,3 @@ class SettingsNotifier extends Notifier<SettingsState> {
     }
   }
 }
-
-final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {
-  return SettingsNotifier();
-});
-

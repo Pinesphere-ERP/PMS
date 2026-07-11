@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from typing import List
 
 from app.infra.database import get_db
-from app.infra.models import Property, Owner, Business, Subscription, AuditLog
+from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory
 from app.modules.properties.schemas import PropertyCreateInput
 
 router = APIRouter()
@@ -68,6 +68,151 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
     await db.flush()
 
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
+
+
+from pydantic import BaseModel
+
+class RoomCreateInput(BaseModel):
+    room_number: str
+    type: str
+    price: float
+    resort_id: str
+
+
+@router.get("/rooms")
+async def get_rooms(db: AsyncSession = Depends(get_db)):
+    # Select all rooms joined with their category
+    q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
+    result = await db.execute(q)
+    rows = result.all()
+    data = []
+    for room, cat in rows:
+        data.append({
+            "id": str(room.room_id),
+            "room_number": room.room_number,
+            "type": cat.room_name or "Standard",
+            "price": float(cat.base_price or 1000.0),
+            "status": room.occupancy_status or "vacant",
+            "resort_id": str(cat.property_id),
+            "images": [
+                "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
+            ]
+        })
+    return data
+
+
+@router.post("/rooms", status_code=201)
+async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    resort_uuid = _uuid.UUID(payload.resort_id)
+    
+    # 0. Check if property/resort exists. If not, auto-create a mock property
+    prop_q = select(Property).where(Property.property_id == resort_uuid)
+    prop_result = await db.execute(prop_q)
+    prop = prop_result.scalar_one_or_none()
+    
+    if not prop:
+        # Check or create Owner
+        owner_q = select(Owner).limit(1)
+        owner_result = await db.execute(owner_q)
+        owner = owner_result.scalar_one_or_none()
+        if not owner:
+            owner = Owner(
+                owner_id=_uuid.UUID("11111111-1111-1111-1111-111111111111"),
+                full_name="Mock Owner",
+                mobile_number="9999999999",
+                email="mock@owner.com"
+            )
+            db.add(owner)
+            await db.flush()
+            
+        # Check or create Business
+        biz_q = select(Business).limit(1)
+        biz_result = await db.execute(biz_q)
+        biz = biz_result.scalar_one_or_none()
+        if not biz:
+            biz = Business(
+                business_id=_uuid.UUID("22222222-2222-2222-2222-222222222222"),
+                owner_id=owner.owner_id,
+                business_name="Mock Business"
+            )
+            db.add(biz)
+            await db.flush()
+            
+        # Create Property
+        prop = Property(
+            property_id=resort_uuid,
+            business_id=biz.business_id,
+            owner_id=owner.owner_id,
+            property_name="PineSphere Resort",
+            property_type="Resort",
+            onboarding_status="completed",
+            total_rooms=10
+        )
+        db.add(prop)
+        await db.flush()
+
+    # 1. Check if category with this name and resort exists
+    cat_q = select(RoomCategory).where(
+        and_(
+            RoomCategory.property_id == resort_uuid,
+            RoomCategory.room_name == payload.type
+        )
+    )
+    cat_result = await db.execute(cat_q)
+    category = cat_result.scalar_one_or_none()
+    
+    if not category:
+        # Create a new category
+        category = RoomCategory(
+            property_id=resort_uuid,
+            room_name=payload.type,
+            base_price=payload.price,
+            number_of_rooms=1
+        )
+        db.add(category)
+        await db.flush()
+    else:
+        # Update category base price
+        category.base_price = payload.price
+        if category.number_of_rooms:
+            category.number_of_rooms += 1
+        else:
+            category.number_of_rooms = 1
+        db.add(category)
+        await db.flush()
+        
+    # 2. Create the Room
+    new_room = Room(
+        room_category_id=category.room_category_id,
+        room_number=payload.room_number,
+        housekeeping_status="clean",
+        occupancy_status="vacant"
+    )
+    db.add(new_room)
+    await db.commit()
+    return {"message": "Room created successfully", "room_id": str(new_room.room_id)}
+
+
+@router.post("/rooms/{room_id}/clean")
+async def clean_room(room_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        rid = _uuid.UUID(room_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid room ID format")
+        
+    q = select(Room).where(Room.room_id == rid)
+    result = await db.execute(q)
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+        
+    room.housekeeping_status = "clean"
+    room.occupancy_status = "vacant"
+    db.add(room)
+    await db.commit()
+    return {"message": "Room status marked clean & vacant"}
 
 
 @router.get("")

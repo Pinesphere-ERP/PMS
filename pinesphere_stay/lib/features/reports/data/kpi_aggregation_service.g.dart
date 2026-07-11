@@ -57,58 +57,6 @@ final class KpiAggregationServiceProvider
 String _$kpiAggregationServiceHash() =>
     r'c479c08f2dc6e08fe09a1298580e728e176a50e8';
 
-/// Provides the KpiAggregationService singleton.
-
-@ProviderFor(kpiService)
-final kpiServiceProvider = KpiServiceProvider._();
-
-/// Provides the KpiAggregationService singleton.
-
-final class KpiServiceProvider
-    extends
-        $FunctionalProvider<
-          KpiAggregationService,
-          KpiAggregationService,
-          KpiAggregationService
-        >
-    with $Provider<KpiAggregationService> {
-  /// Provides the KpiAggregationService singleton.
-  KpiServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'kpiServiceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$kpiServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<KpiAggregationService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  KpiAggregationService create(Ref ref) {
-    return kpiService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(KpiAggregationService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<KpiAggregationService>(value),
-    );
-  }
-}
-
-String _$kpiServiceHash() => r'f9c6bf1807a6e9c861fb69825e8eaae61b9a8cab';
-
 /// Stream provider: emits today's KPI snapshot (or null) reactively.
 /// Bind to ObjectBox so the UI re-renders on every local mutation.
 

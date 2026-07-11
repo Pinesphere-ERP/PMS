@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import '../../../../core/security/permission_engine.dart';
+import '../../../../core/presentation/widgets/access_restricted_view.dart';
+import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
 import '../data/payment_repository.dart';
 import '../domain/models/payment.dart';
 
@@ -151,9 +154,14 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
   Future<void> _submitPayment() async {
     if (!_formKey.currentState!.validate()) return;
     
+    final authState = ref.read(authProvider);
+    final user = authState.maybeWhen(authenticated: (u) => u, orElse: () => null);
+    final isGuest = user?.role == UserRole.guest;
+    final effectiveMode = isGuest ? 'online' : _selectedMode;
+
     final amount = double.parse(_amountController.text);
 
-    if (_selectedMode == 'split') {
+    if (effectiveMode == 'split') {
       if (_splits.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add at least one split payment')));
         return;
@@ -169,10 +177,10 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
     try {
       final repo = ref.read(paymentRepositoryProvider);
 
-      bool requiresRazorpay = _selectedMode == 'online';
+      bool requiresRazorpay = effectiveMode == 'online';
       double razorpayAmount = amount;
 
-      if (_selectedMode == 'split') {
+      if (effectiveMode == 'split') {
         final onlineSplits = _splits.where((s) => s.mode == 'online').toList();
         if (onlineSplits.isNotEmpty) {
           requiresRazorpay = true;
@@ -195,12 +203,12 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
         _razorpay.open(options);
       } else {
         final request = PaymentCreateRequest(
-          paymentMode: _selectedMode,
+          paymentMode: effectiveMode,
           amount: amount,
-          upiId: _selectedMode == 'upi' ? _upiController.text : null,
-          cardLast4: ['credit_card', 'debit_card'].contains(_selectedMode) ? _cardLast4Controller.text : null,
+          upiId: effectiveMode == 'upi' ? _upiController.text : null,
+          cardLast4: ['credit_card', 'debit_card'].contains(effectiveMode) ? _cardLast4Controller.text : null,
           remarks: _remarksController.text.isNotEmpty ? _remarksController.text : null,
-          splitPayments: _selectedMode == 'split' ? _splits : null,
+          splitPayments: effectiveMode == 'split' ? _splits : null,
         );
 
         await repo.createPayment(request);
@@ -224,12 +232,61 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final user = authState.maybeWhen(
+      authenticated: (u) => u,
+      orElse: () => null,
+    );
+    final role = user?.role ?? UserRole.guest;
+
+    final canView = PermissionEngine.hasPermission(role, PermissionModule.payments, PermissionAction.view);
+    final canCollect = PermissionEngine.hasPermission(role, PermissionModule.payments, PermissionAction.collect);
+    final canPayOnline = PermissionEngine.hasPermission(role, PermissionModule.payments, PermissionAction.payOnline);
+
+    if (!canView && !canCollect && !canPayOnline) {
+      return const Scaffold(
+        body: AccessRestrictedView(
+          title: 'Payments Restricted',
+          message: 'Your role does not permit access to the Payments module.',
+        ),
+      );
+    }
+
+    final isViewOnly = !canCollect && !canPayOnline;
+    final isGuest = role == UserRole.guest;
+    final effectiveMode = isGuest ? 'online' : _selectedMode;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Collect Payment')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      body: Column(
+        children: [
+          if (isViewOnly)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.amber.withOpacity(0.2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.visibility, size: 16, color: Colors.amber),
+                  const SizedBox(width: 8),
+                  Text(
+                    'View-Only Mode',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.amber.shade900,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: AbsorbPointer(
+                absorbing: isViewOnly,
+                child: Form(
+                  key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -242,39 +299,43 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedMode,
+                value: effectiveMode,
                 decoration: const InputDecoration(labelText: 'Payment Mode', border: OutlineInputBorder()),
-                items: const [
-                  DropdownMenuItem(value: 'online', child: Text('Online (Razorpay)')),
-                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                  DropdownMenuItem(value: 'upi', child: Text('UPI (Manual)')),
-                  DropdownMenuItem(value: 'credit_card', child: Text('Credit Card (Manual)')),
-                  DropdownMenuItem(value: 'debit_card', child: Text('Debit Card (Manual)')),
-                  DropdownMenuItem(value: 'split', child: Text('Split Payment')),
+                items: [
+                  const DropdownMenuItem(value: 'online', child: Text('Online (Razorpay)')),
+                  if (!isGuest) ...[
+                    const DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                    const DropdownMenuItem(value: 'upi', child: Text('UPI (Manual)')),
+                    const DropdownMenuItem(value: 'credit_card', child: Text('Credit Card (Manual)')),
+                    const DropdownMenuItem(value: 'debit_card', child: Text('Debit Card (Manual)')),
+                    const DropdownMenuItem(value: 'split', child: Text('Split Payment')),
+                  ],
                 ],
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedMode = val);
-                },
+                onChanged: isGuest
+                    ? null
+                    : (val) {
+                        if (val != null) setState(() => _selectedMode = val);
+                      },
               ),
-              if (_selectedMode == 'upi') ...[
+              if (effectiveMode == 'upi') ...[
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _upiController,
-                  decoration: const InputDecoration(labelText: 'UPI ID', border: OutlineInputBorder()),
-                  validator: (val) => val == null || val.isEmpty ? 'Enter UPI ID' : null,
+                  decoration: const InputDecoration(labelText: 'UPI Reference ID', border: OutlineInputBorder()),
+                  validator: (val) => effectiveMode == 'upi' && (val == null || val.isEmpty) ? 'Enter UPI Reference ID' : null,
                 ),
               ],
-              if (['credit_card', 'debit_card'].contains(_selectedMode)) ...[
+              if (['credit_card', 'debit_card'].contains(effectiveMode)) ...[
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _cardLast4Controller,
                   decoration: const InputDecoration(labelText: 'Card Last 4 Digits', border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                   maxLength: 4,
-                  validator: (val) => (val == null || val.length != 4) ? 'Must be 4 digits' : null,
+                  validator: (val) => ['credit_card', 'debit_card'].contains(effectiveMode) && (val == null || val.length != 4) ? 'Enter last 4 digits' : null,
                 ),
               ],
-              if (_selectedMode == 'split') ...[
+              if (effectiveMode == 'split') ...[
                 const SizedBox(height: 16),
                 const Text('Split Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
@@ -310,18 +371,24 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
                 decoration: const InputDecoration(labelText: 'Remarks (Optional)', border: OutlineInputBorder()),
                 maxLines: 2,
               ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitPayment,
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: _isLoading 
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                    : const Text('Record Payment', style: TextStyle(fontSize: 18)),
-              ),
+              if (!isViewOnly) ...[
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _submitPayment,
+                  style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                  child: _isLoading 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                      : const Text('Record Payment', style: TextStyle(fontSize: 18)),
+                ),
+              ],
             ],
           ),
         ),
       ),
+    ),
+    ),
+  ],
+),
     );
   }
 }

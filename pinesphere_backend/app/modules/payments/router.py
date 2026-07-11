@@ -13,7 +13,7 @@ from .schemas import (
 from .service import PaymentService
 
 from app.infra.database import get_db
-from app.infra.models import PaymentTransaction, Invoice, PendingDue, Property, Owner, Subscription
+from app.infra.models import SubscriptionTransaction, Invoice, PendingDue, Property, Owner, Subscription
 
 router = APIRouter()
 
@@ -75,7 +75,41 @@ async def create_razorpay_order(
     request: RazorpayOrderRequest,
     service: PaymentService = Depends(get_payment_service)
 ):
-    pass
+    try:
+        order = await service.create_razorpay_order(request.amount)
+        return RazorpayOrderResponse(
+            razorpay_order_id=order["id"],
+            amount=order["amount"]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/razorpay/verify", response_model=PaymentRead)
+async def verify_razorpay_payment(
+    request: RazorpayVerifyRequest,
+    service: PaymentService = Depends(get_payment_service),
+    user_id: uuid.UUID = Depends(get_current_user_id)
+):
+    try:
+        payment = await service.verify_and_record_payment(
+            razorpay_order_id=request.razorpay_order_id,
+            razorpay_payment_id=request.razorpay_payment_id,
+            razorpay_signature=request.razorpay_signature,
+            amount=request.amount,
+            invoice_id=request.invoice_id,
+            booking_id=request.booking_id,
+            remarks=request.remarks,
+            user_id=user_id,
+            payment_mode=request.payment_mode,
+            split_payments=request.split_payments
+        )
+        return payment
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        raise HTTPException(status_code=500, detail=error_detail)
 def _fmt(amount) -> str:
     return f"${float(amount):,.2f}"
 
@@ -83,12 +117,12 @@ def _fmt(amount) -> str:
 @router.get("/transactions")
 async def get_transactions(db: AsyncSession = Depends(get_db)):
     q = (
-        select(PaymentTransaction, Property, Owner, Subscription)
-        .select_from(PaymentTransaction)
-        .join(Property, PaymentTransaction.property_id == Property.property_id)
+        select(SubscriptionTransaction, Property, Owner, Subscription)
+        .select_from(SubscriptionTransaction)
+        .join(Property, SubscriptionTransaction.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
-        .order_by(PaymentTransaction.created_at.desc())
+        .order_by(SubscriptionTransaction.created_at.desc())
     )
     result = await db.execute(q)
     rows = result.unique().all()
@@ -200,8 +234,8 @@ async def get_payment_kpis(db: AsyncSession = Depends(get_db)):
 
     # Failed payments
     failed_q = await db.execute(
-        select(func.count(PaymentTransaction.id))
-        .where(PaymentTransaction.status == "Failed")
+        select(func.count(SubscriptionTransaction.id))
+        .where(SubscriptionTransaction.status == "Failed")
     )
     failed = int(failed_q.scalar() or 0)
 
@@ -261,9 +295,9 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)):
 
     # Payment method breakdown
     method_q = await db.execute(
-        select(PaymentTransaction.method, func.sum(PaymentTransaction.amount))
-        .where(PaymentTransaction.status == "Success")
-        .group_by(PaymentTransaction.method)
+        select(SubscriptionTransaction.method, func.sum(SubscriptionTransaction.amount))
+        .where(SubscriptionTransaction.status == "Success")
+        .group_by(SubscriptionTransaction.method)
     )
     method_rows = method_q.all()
     method_colors = {"UPI": "#6366f1", "Net Banking": "#8aa356", "Credit Card": "#f59e0b", "Cheque": "#64748b"}
@@ -318,25 +352,6 @@ async def mark_due_as_paid(due_id: str, db: AsyncSession = Depends(get_db)):
 async def send_reminder(due_id: str, db: AsyncSession = Depends(get_db)):
     import uuid
     try:
-        payment = await service.verify_and_record_payment(
-            razorpay_order_id=request.razorpay_order_id,
-            razorpay_payment_id=request.razorpay_payment_id,
-            razorpay_signature=request.razorpay_signature,
-            amount=request.amount,
-            invoice_id=request.invoice_id,
-            booking_id=request.booking_id,
-            remarks=request.remarks,
-            user_id=user_id,
-            payment_mode=request.payment_mode,
-            split_payments=request.split_payments
-        )
-        return payment
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        import traceback
-        error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-        raise HTTPException(status_code=500, detail=error_detail)
         uid = uuid.UUID(due_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid due ID")

@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 from app.infra.database import get_db
 from app.infra.models import (
-    Subscription, Property, Owner, PaymentTransaction, Invoice
+    Subscription, Property, Owner, SubscriptionTransaction, Invoice
 )
 
 router = APIRouter()
@@ -162,10 +162,10 @@ async def get_subscription_dashboard(db: AsyncSession = Depends(get_db)):
 
     # Recent paid transactions
     tx_q = await db.execute(
-        select(PaymentTransaction, Property)
-        .join(Property, PaymentTransaction.property_id == Property.property_id)
-        .where(PaymentTransaction.status == "Success")
-        .order_by(PaymentTransaction.created_at.desc())
+        select(SubscriptionTransaction, Property)
+        .join(Property, SubscriptionTransaction.property_id == Property.property_id)
+        .where(SubscriptionTransaction.status == "Success")
+        .order_by(SubscriptionTransaction.created_at.desc())
         .limit(5)
     )
     tx_rows = tx_q.all()

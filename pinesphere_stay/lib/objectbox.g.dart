@@ -22,6 +22,7 @@ import 'features/checkout/domain/models/checkout_entity.dart';
 import 'features/guests/domain/models/guest_entity.dart';
 import 'features/housekeeping/domain/models/housekeeping_task_entity.dart';
 import 'features/housekeeping/domain/models/maintenance_ticket_entity.dart';
+import 'features/reports/domain/models/kpi_snapshot_entity.dart';
 import 'features/rooms/domain/models/room_entity.dart';
 import 'features/settings/domain/models/device_config_entity.dart';
 import 'features/settings/domain/models/property_setting_entity.dart';
@@ -1308,6 +1309,97 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(15, 5827818615960827334),
+    name: 'KpiSnapshotEntity',
+    lastPropertyId: const obx_int.IdUid(13, 1004058565187504592),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 3437941658443828567),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 243920738920693019),
+        name: 'uuid',
+        type: 9,
+        flags: 34848,
+        indexId: const obx_int.IdUid(19, 2414563512100581094),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 5807699665148331620),
+        name: 'propertyId',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(20, 4069286627558153493),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 6145188839590371217),
+        name: 'snapshotDate',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(21, 5340387522408104801),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 2736278178730548810),
+        name: 'occupiedRooms',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 8554196625008411433),
+        name: 'vacantRooms',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 7881284397524020683),
+        name: 'revenueRoomRent',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 3098241673367148206),
+        name: 'revenueAddons',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 8582333606912131938),
+        name: 'expensesAmount',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 1771990949615191035),
+        name: 'outstandingPayments',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 8685103046129682948),
+        name: 'gstCollected',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 5811171044617310545),
+        name: 'isLocalOnly',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 1004058565187504592),
+        name: 'lastModifiedHlc',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -1353,13 +1445,40 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(12, 894830027575710388),
-    lastIndexId: const obx_int.IdUid(12, 3830347986775904518),
+    lastEntityId: const obx_int.IdUid(15, 5827818615960827334),
+    lastIndexId: const obx_int.IdUid(21, 5340387522408104801),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
-    retiredEntityUids: const [],
+    retiredEntityUids: const [3745764649272092082, 1154494236896517405],
     retiredIndexUids: const [],
-    retiredPropertyUids: const [],
+    retiredPropertyUids: const [
+      576615287327577440,
+      6227565810898200548,
+      892013892828593732,
+      5276988533343117037,
+      3243876919199985927,
+      537988497011105654,
+      3560420198521944937,
+      1848651997204492460,
+      8759040967750648028,
+      4121015306897590572,
+      1907358074936237226,
+      191144699426293504,
+      7334335043930221314,
+      5613664679752255290,
+      3861275809071725349,
+      1567106923583829676,
+      8327111530706889189,
+      1916814909110221536,
+      733528425926044883,
+      7410331100605080577,
+      7371273752568415274,
+      5452985774081568673,
+      79495104031886515,
+      3061626180067156003,
+      597702308579886843,
+      9009718097953219331,
+    ],
     retiredRelationUids: const [],
     modelVersion: 5,
     modelVersionParserMinimum: 5,
@@ -2912,6 +3031,124 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    KpiSnapshotEntity: obx_int.EntityDefinition<KpiSnapshotEntity>(
+      model: _entities[12],
+      toOneRelations: (KpiSnapshotEntity object) => [],
+      toManyRelations: (KpiSnapshotEntity object) => {},
+      getId: (KpiSnapshotEntity object) => object.id,
+      setId: (KpiSnapshotEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (KpiSnapshotEntity object, fb.Builder fbb) {
+        final uuidOffset = fbb.writeString(object.uuid);
+        final propertyIdOffset = fbb.writeString(object.propertyId);
+        final snapshotDateOffset = fbb.writeString(object.snapshotDate);
+        final lastModifiedHlcOffset = fbb.writeString(object.lastModifiedHlc);
+        fbb.startTable(14);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, uuidOffset);
+        fbb.addOffset(2, propertyIdOffset);
+        fbb.addOffset(3, snapshotDateOffset);
+        fbb.addInt64(4, object.occupiedRooms);
+        fbb.addInt64(5, object.vacantRooms);
+        fbb.addFloat64(6, object.revenueRoomRent);
+        fbb.addFloat64(7, object.revenueAddons);
+        fbb.addFloat64(8, object.expensesAmount);
+        fbb.addFloat64(9, object.outstandingPayments);
+        fbb.addFloat64(10, object.gstCollected);
+        fbb.addBool(11, object.isLocalOnly);
+        fbb.addOffset(12, lastModifiedHlcOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final uuidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final propertyIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final snapshotDateParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final occupiedRoomsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          12,
+          0,
+        );
+        final vacantRoomsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          0,
+        );
+        final revenueRoomRentParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          16,
+          0,
+        );
+        final revenueAddonsParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          18,
+          0,
+        );
+        final expensesAmountParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          0,
+        );
+        final outstandingPaymentsParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          22,
+          0,
+        );
+        final gstCollectedParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          24,
+          0,
+        );
+        final isLocalOnlyParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          26,
+          false,
+        );
+        final lastModifiedHlcParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 28, '');
+        final object = KpiSnapshotEntity(
+          id: idParam,
+          uuid: uuidParam,
+          propertyId: propertyIdParam,
+          snapshotDate: snapshotDateParam,
+          occupiedRooms: occupiedRoomsParam,
+          vacantRooms: vacantRoomsParam,
+          revenueRoomRent: revenueRoomRentParam,
+          revenueAddons: revenueAddonsParam,
+          expensesAmount: expensesAmountParam,
+          outstandingPayments: outstandingPaymentsParam,
+          gstCollected: gstCollectedParam,
+          isLocalOnly: isLocalOnlyParam,
+          lastModifiedHlc: lastModifiedHlcParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -3915,5 +4152,73 @@ class PropertySettingEntity_ {
   /// See [PropertySettingEntity.lastModifiedHlc].
   static final lastModifiedHlc = obx.QueryStringProperty<PropertySettingEntity>(
     _entities[11].properties[9],
+  );
+}
+
+/// [KpiSnapshotEntity] entity fields to define ObjectBox queries.
+class KpiSnapshotEntity_ {
+  /// See [KpiSnapshotEntity.id].
+  static final id = obx.QueryIntegerProperty<KpiSnapshotEntity>(
+    _entities[12].properties[0],
+  );
+
+  /// See [KpiSnapshotEntity.uuid].
+  static final uuid = obx.QueryStringProperty<KpiSnapshotEntity>(
+    _entities[12].properties[1],
+  );
+
+  /// See [KpiSnapshotEntity.propertyId].
+  static final propertyId = obx.QueryStringProperty<KpiSnapshotEntity>(
+    _entities[12].properties[2],
+  );
+
+  /// See [KpiSnapshotEntity.snapshotDate].
+  static final snapshotDate = obx.QueryStringProperty<KpiSnapshotEntity>(
+    _entities[12].properties[3],
+  );
+
+  /// See [KpiSnapshotEntity.occupiedRooms].
+  static final occupiedRooms = obx.QueryIntegerProperty<KpiSnapshotEntity>(
+    _entities[12].properties[4],
+  );
+
+  /// See [KpiSnapshotEntity.vacantRooms].
+  static final vacantRooms = obx.QueryIntegerProperty<KpiSnapshotEntity>(
+    _entities[12].properties[5],
+  );
+
+  /// See [KpiSnapshotEntity.revenueRoomRent].
+  static final revenueRoomRent = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[6],
+  );
+
+  /// See [KpiSnapshotEntity.revenueAddons].
+  static final revenueAddons = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[7],
+  );
+
+  /// See [KpiSnapshotEntity.expensesAmount].
+  static final expensesAmount = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[8],
+  );
+
+  /// See [KpiSnapshotEntity.outstandingPayments].
+  static final outstandingPayments = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[9],
+  );
+
+  /// See [KpiSnapshotEntity.gstCollected].
+  static final gstCollected = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[10],
+  );
+
+  /// See [KpiSnapshotEntity.isLocalOnly].
+  static final isLocalOnly = obx.QueryBooleanProperty<KpiSnapshotEntity>(
+    _entities[12].properties[11],
+  );
+
+  /// See [KpiSnapshotEntity.lastModifiedHlc].
+  static final lastModifiedHlc = obx.QueryStringProperty<KpiSnapshotEntity>(
+    _entities[12].properties[12],
   );
 }

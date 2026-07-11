@@ -96,7 +96,20 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
     guest_res = await db.execute(guest_stmt)
     guest = guest_res.scalar_one_or_none()
     if not guest:
-        raise HTTPException(status_code=404, detail="Guest not found")
+        if req.guest_name:
+            guest = Guest(
+                guest_id=req.guest_id,
+                property_id=req.property_id,
+                full_name=req.guest_name,
+                mobile=req.guest_phone,
+                id_type=req.guest_id_proof,
+                id_number=req.guest_id_number
+            )
+            db.add(guest)
+            await db.flush()
+        else:
+            raise HTTPException(status_code=404, detail="Guest not found")
+
 
     if req.check_in_date >= req.check_out_date:
         raise HTTPException(status_code=400, detail="Check-out date must be after check-in date")
@@ -352,3 +365,56 @@ async def enrich_booking_response(db: AsyncSession, booking: Booking) -> Booking
     resp.guest_mobile = guest_mobile
     resp.room_number = room_number
     return resp
+
+
+async def check_in_booking(db: AsyncSession, booking_id: uuid.UUID) -> BookingResponse:
+    stmt = select(Booking).where(Booking.booking_id == booking_id, Booking.is_deleted == False)
+    res = await db.execute(stmt)
+    booking = res.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+        
+    booking.booking_status = "checked_in"
+    
+    room_stmt = select(Room).where(Room.room_id == booking.room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        room.occupancy_status = "occupied"
+        db.add(room)
+        
+    db.add(booking)
+    await db.flush()
+    await db.refresh(booking)
+    return await enrich_booking_response(db, booking)
+
+
+async def check_out_booking(db: AsyncSession, booking_id: uuid.UUID, damage_bill: float = 0, laundry_bill: float = 0, minibar_bill: float = 0, restaurant_bill: float = 0) -> BookingResponse:
+    stmt = select(Booking).where(Booking.booking_id == booking_id, Booking.is_deleted == False)
+    res = await db.execute(stmt)
+    booking = res.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+        
+    booking.booking_status = "checked_out"
+    booking.payment_status = "paid"
+    
+    # We can add these bills to total payable or record them
+    extra_charges = damage_bill + laundry_bill + minibar_bill + restaurant_bill
+    if booking.total_payable is not None:
+        booking.total_payable = float(booking.total_payable) + extra_charges
+    booking.pending_amount = 0.0
+    
+    room_stmt = select(Room).where(Room.room_id == booking.room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        room.occupancy_status = "vacant"
+        room.housekeeping_status = "cleaning"
+        db.add(room)
+        
+    db.add(booking)
+    await db.flush()
+    await db.refresh(booking)
+    return await enrich_booking_response(db, booking)
+

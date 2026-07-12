@@ -29,7 +29,7 @@ class TenantMixin:
 
 class SyncMixin:
     """Fields required for offline-first synchronization."""
-    version: Mapped[int] = mapped_column(default=1)
+    last_modified_hlc: Mapped[str] = mapped_column(default="", index=True)
     is_deleted: Mapped[bool] = mapped_column(default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(nullable=True)
     device_id: Mapped[str | None] = mapped_column(nullable=True)

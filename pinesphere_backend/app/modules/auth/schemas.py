@@ -1,0 +1,22 @@
+from pydantic import BaseModel
+from typing import Optional
+import uuid
+
+class LoginRequest(BaseModel):
+    mobile_number: str
+    password: str
+    property_id: Optional[uuid.UUID] = None
+    device_uid: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+class OfflineBootstrapRequest(BaseModel):
+    device_uid: str
+    user_id: uuid.UUID
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+    device_uid: str

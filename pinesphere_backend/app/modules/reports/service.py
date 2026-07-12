@@ -9,10 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, extract, desc
 from fastapi import HTTPException
 
-from app.infra.models import (
-    DailyKPISnapshot, ReportTemplate, ScheduledReport,
-    Booking, Payment, CheckOut,
-)
+from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, ScheduledReport
+from app.infra.models import Booking, Payment, CheckOut
 from app.modules.reports.schemas import (
     DailyKPISnapshotResponse,
     PLReportResponse, MonthlyPLRow,

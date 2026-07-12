@@ -1,6 +1,43 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
+
+from app.infra.database import get_db
+from .schemas import LoginRequest, TokenResponse, OfflineBootstrapRequest, RefreshRequest
+from .service import AuthService
+
 router = APIRouter()
 
-@router.get("/")
-def get_auth():
-    return {"status": "auth stub"}
+def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
+    return AuthService(db)
+
+@router.post("/login", response_model=TokenResponse)
+async def login(
+    request: LoginRequest,
+    service: AuthService = Depends(get_auth_service)
+) -> Any:
+    return await service.login(request)
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(
+    request: RefreshRequest,
+    service: AuthService = Depends(get_auth_service)
+) -> Any:
+    return await service.refresh_token(request)
+
+@router.post("/offline-bootstrap")
+async def offline_bootstrap(
+    request: OfflineBootstrapRequest,
+    service: AuthService = Depends(get_auth_service)
+):
+    # This endpoint is to bootstrap local offline auth.
+    # The device generates a pin hash and stores it on the cloud so that
+    # the super admin can audit it, but the primary source of truth is local for offline.
+    # For now, it's just a stub.
+    return {"status": "offline auth bootstrapped"}
+
+@router.post("/logout")
+async def logout():
+    # Logout is primarily a client-side operation (deleting tokens).
+    # Server-side we might blacklist tokens or invalidate device sessions.
+    return {"status": "logged out"}

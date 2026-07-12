@@ -1,33 +1,36 @@
 import uuid
 from datetime import date, datetime, timedelta
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from fastapi import HTTPException, status
 
 from app.infra.models import User, Role, Property, AuditLog
 from app.modules.staff import models, schemas
 
 class StaffService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
     # Identity & Role Management
-    def create_staff(self, staff_in: schemas.StaffCreate, current_user_id: uuid.UUID) -> User:
+    async def create_staff(self, staff_in: schemas.StaffCreate, current_user_id: uuid.UUID) -> User:
         # Check if mobile_number already exists for the property
         if staff_in.mobile_number:
-            existing = self.db.query(User).filter(
+            result = await self.db.execute(select(User).filter(
                 User.property_id == staff_in.property_id,
                 User.mobile_number == staff_in.mobile_number
-            ).first()
+            ))
+            existing = result.scalars().first()
             if existing:
                 raise HTTPException(status_code=400, detail="Mobile number already registered for this property")
         
         # Check primary owner constraint
         if staff_in.is_primary_owner:
-            existing_owner = self.db.query(User).filter(
+            result = await self.db.execute(select(User).filter(
                 User.property_id == staff_in.property_id,
                 User.is_primary_owner == True
-            ).first()
+            ))
+            existing_owner = result.scalars().first()
             if existing_owner:
                 raise HTTPException(status_code=400, detail="Property already has a primary owner")
 
@@ -50,32 +53,34 @@ class StaffService:
             new_staff.pin_hash = staff_in.pin
 
         self.db.add(new_staff)
-        self.db.commit()
-        self.db.refresh(new_staff)
+        await self.db.commit()
+        await self.db.refresh(new_staff)
         
         # Audit log
-        self._log_audit(current_user_id, staff_in.property_id, "Created", "User", new_staff.id)
+        await self._log_audit(current_user_id, staff_in.property_id, "Created", "User", new_staff.id)
         
         return new_staff
 
-    def get_staff_by_property(self, property_id: uuid.UUID) -> List[User]:
-        return self.db.query(User).filter(User.property_id == property_id).all()
+    async def get_staff_by_property(self, property_id: uuid.UUID) -> List[User]:
+        result = await self.db.execute(select(User).filter(User.property_id == property_id))
+        return result.scalars().all()
 
     # Day-to-day Operations
-    def mark_attendance(self, attendance_in: schemas.StaffAttendanceCreate, staff_id: uuid.UUID, marker_id: Optional[uuid.UUID] = None) -> models.StaffAttendance:
+    async def mark_attendance(self, attendance_in: schemas.StaffAttendanceCreate, staff_id: uuid.UUID, marker_id: Optional[uuid.UUID] = None) -> models.StaffAttendance:
         # Check if already marked for the day
-        existing = self.db.query(models.StaffAttendance).filter(
+        result = await self.db.execute(select(models.StaffAttendance).filter(
             models.StaffAttendance.staff_id == staff_id,
             models.StaffAttendance.attendance_date == attendance_in.attendance_date
-        ).first()
+        ))
+        existing = result.scalars().first()
 
         if existing:
             # Update checkout time or status
             existing.check_out_time = attendance_in.check_out_time
             existing.status = attendance_in.status
             existing.remarks = attendance_in.remarks
-            self.db.commit()
-            self.db.refresh(existing)
+            await self.db.commit()
+            await self.db.refresh(existing)
             return existing
 
         new_attendance = models.StaffAttendance(
@@ -92,13 +97,13 @@ class StaffService:
             remarks=attendance_in.remarks
         )
         self.db.add(new_attendance)
-        self.db.commit()
-        self.db.refresh(new_attendance)
+        await self.db.commit()
+        await self.db.refresh(new_attendance)
         
-        self._log_audit(marker_id or staff_id, attendance_in.property_id, "Created", "StaffAttendance", new_attendance.attendance_id)
+        await self._log_audit(marker_id or staff_id, attendance_in.property_id, "Created", "StaffAttendance", new_attendance.attendance_id)
         return new_attendance
 
-    def apply_leave(self, leave_in: schemas.StaffLeaveCreate, staff_id: uuid.UUID) -> models.StaffLeave:
+    async def apply_leave(self, leave_in: schemas.StaffLeaveCreate, staff_id: uuid.UUID) -> models.StaffLeave:
         # Compute total days
         delta = leave_in.to_date - leave_in.from_date
         total_days = delta.days + 1
@@ -115,12 +120,13 @@ class StaffService:
             status="Pending"
         )
         self.db.add(new_leave)
-        self.db.commit()
-        self.db.refresh(new_leave)
+        await self.db.commit()
+        await self.db.refresh(new_leave)
         return new_leave
 
-    def approve_leave(self, leave_id: uuid.UUID, approver_id: uuid.UUID, status: str, rejection_reason: Optional[str] = None) -> models.StaffLeave:
-        leave = self.db.query(models.StaffLeave).filter(models.StaffLeave.leave_id == leave_id).first()
+    async def approve_leave(self, leave_id: uuid.UUID, approver_id: uuid.UUID, status: str, rejection_reason: Optional[str] = None) -> models.StaffLeave:
+        result = await self.db.execute(select(models.StaffLeave).filter(models.StaffLeave.leave_id == leave_id))
+        leave = result.scalars().first()
         if not leave:
             raise HTTPException(status_code=404, detail="Leave request not found")
 
@@ -130,22 +136,25 @@ class StaffService:
         if status == 'Rejected':
             leave.rejection_reason = rejection_reason
         
-        self.db.commit()
-        self.db.refresh(leave)
+        await self.db.commit()
+        await self.db.refresh(leave)
 
         # Audit
-        staff_record = self.db.query(User).filter(User.id == leave.staff_id).first()
-        self._log_audit(approver_id, staff_record.property_id, status, "StaffLeave", leave.leave_id)
+        user_result = await self.db.execute(select(User).filter(User.id == leave.staff_id))
+        staff_record = user_result.scalars().first()
+        if staff_record:
+            await self._log_audit(approver_id, staff_record.property_id, status, "StaffLeave", leave.leave_id)
         
         return leave
 
     # Payroll Support
-    def generate_salary(self, salary_in: schemas.StaffSalaryCreate, staff_id: uuid.UUID, generator_id: uuid.UUID) -> models.StaffSalary:
-        existing = self.db.query(models.StaffSalary).filter(
+    async def generate_salary(self, salary_in: schemas.StaffSalaryCreate, staff_id: uuid.UUID, generator_id: uuid.UUID) -> models.StaffSalary:
+        result = await self.db.execute(select(models.StaffSalary).filter(
             models.StaffSalary.staff_id == staff_id,
             models.StaffSalary.salary_month == salary_in.salary_month,
             models.StaffSalary.salary_year == salary_in.salary_year
-        ).first()
+        ))
+        existing = result.scalars().first()
 
         if existing:
             raise HTTPException(status_code=400, detail="Salary already generated for this month")
@@ -166,12 +175,12 @@ class StaffService:
             remarks=salary_in.remarks
         )
         self.db.add(new_salary)
-        self.db.commit()
-        self.db.refresh(new_salary)
+        await self.db.commit()
+        await self.db.refresh(new_salary)
         return new_salary
 
     # Tasks
-    def assign_task(self, task_in: schemas.StaffTaskCreate, staff_id: uuid.UUID, assigner_id: uuid.UUID) -> models.StaffTask:
+    async def assign_task(self, task_in: schemas.StaffTaskCreate, staff_id: uuid.UUID, assigner_id: uuid.UUID) -> models.StaffTask:
         new_task = models.StaffTask(
             staff_id=staff_id,
             assigned_by=assigner_id,
@@ -184,12 +193,12 @@ class StaffService:
             due_date=task_in.due_date
         )
         self.db.add(new_task)
-        self.db.commit()
-        self.db.refresh(new_task)
+        await self.db.commit()
+        await self.db.refresh(new_task)
         return new_task
 
     # Audit Logging
-    def _log_audit(self, user_id: uuid.UUID, property_id: uuid.UUID, action_type: str, target_entity: str, target_record_id: uuid.UUID):
+    async def _log_audit(self, user_id: uuid.UUID, property_id: uuid.UUID, action_type: str, target_entity: str, target_record_id: uuid.UUID):
         audit = AuditLog(
             user_id=user_id,
             property_id=property_id,
@@ -200,4 +209,4 @@ class StaffService:
             timestamp=datetime.utcnow()
         )
         self.db.add(audit)
-        self.db.commit()
+        await self.db.commit()

@@ -41,7 +41,7 @@ class Business(Base, TimestampMixin):
 
 # B. Properties & Location
 
-class Property(Base, TimestampMixin):
+class Property(Base, TimestampMixin, SyncMixin):
     __tablename__ = "properties"
     __table_args__ = {'extend_existing': True}
     property_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -124,7 +124,7 @@ class Device(Base, TimestampMixin):
     os_type: Mapped[Optional[str]] = mapped_column(String(20), default='android')
     status: Mapped[Optional[str]] = mapped_column(String(20), default='pending_approval')
 
-class RoomCategory(Base, TimestampMixin):
+class RoomCategory(Base, TimestampMixin, SyncMixin):
     __tablename__ = "room_categories"
     __table_args__ = {'extend_existing': True}
     room_category_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -133,7 +133,7 @@ class RoomCategory(Base, TimestampMixin):
     number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
     base_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
 
-class Room(Base, TimestampMixin):
+class Room(Base, TimestampMixin, SyncMixin):
     __tablename__ = "rooms"
     __table_args__ = {'extend_existing': True}
     room_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -148,7 +148,7 @@ class Room(Base, TimestampMixin):
     occupancy_status: Mapped[Optional[str]] = mapped_column(String(20), default='vacant')
     maintenance_status: Mapped[Optional[str]] = mapped_column(String(20), default='good')
 
-class Guest(Base, TimestampMixin):
+class Guest(Base, TimestampMixin, SyncMixin):
     __tablename__ = "guests"
     __table_args__ = {'extend_existing': True}
     guest_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -414,4 +414,3 @@ class CashRegister(Base):
     status: Mapped[str] = mapped_column(String(20), default='open') # open, closed
 
 # ── Reports & Analytics (Module 13) ──
-from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, ScheduledReport

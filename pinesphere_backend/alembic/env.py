@@ -15,6 +15,7 @@ from alembic import context
 from app.core.config import settings
 from app.infra.database import Base
 import app.infra.models
+import app.modules.reports.models
 
 # Import all models here so Alembic can discover them
 # Models are imported via app.infra.models

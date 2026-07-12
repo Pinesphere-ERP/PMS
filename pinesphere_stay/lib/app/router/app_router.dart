@@ -9,7 +9,7 @@ import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/settings/presentation/screens/property_settings_screen.dart';
-import '../../features/bookings/presentation/screens/new_booking_screen.dart';
+import '../../features/bookings/presentation/screens/booking_list_screen.dart';
 import '../../features/bookings/presentation/screens/pending_checkouts_screen.dart';
 import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart';
 import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
@@ -165,7 +165,7 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: '/bookings',
-                builder: (context, state) => const NewBookingScreen(),
+                builder: (context, state) => const BookingListScreen(),
               ),
             ],
           ),

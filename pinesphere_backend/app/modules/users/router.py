@@ -13,9 +13,19 @@ from app.modules.users import schemas
 
 router = APIRouter()
 
+@router.get("/roles", response_model=List[schemas.RoleResponse])
+async def list_roles(
+    current_user: User = Depends(require_permission("USERS", "VIEW")),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Role).order_by(Role.level)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
 @router.get("", response_model=List[schemas.UserResponse])
 async def list_users(
     property_id: Optional[uuid.UUID] = None,
+    unassigned_only: bool = False,
     current_user: User = Depends(require_permission("USERS", "VIEW")),
     db: AsyncSession = Depends(get_db)
 ):
@@ -24,8 +34,11 @@ async def list_users(
     # Scope check
     if current_user.property_id:
         stmt = stmt.where(User.property_id == current_user.property_id)
-    elif property_id:
-        stmt = stmt.where(User.property_id == property_id)
+    else:
+        if property_id:
+            stmt = stmt.where(User.property_id == property_id)
+        if unassigned_only:
+            stmt = stmt.where(User.property_id.is_(None))
         
     result = await db.execute(stmt)
     users = result.scalars().all()
@@ -39,11 +52,6 @@ async def create_user(
 ):
     # Enforce property_id scoping
     target_property_id = current_user.property_id
-    if not target_property_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Super Admin must specify a property context (not supported directly in V1)"
-        )
         
     # Verify Role exists
     role_stmt = select(Role).where(Role.id == payload.role_id)
@@ -52,16 +60,22 @@ async def create_user(
     if not role:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
         
-    # Verify unique mobile number per property
-    dup_stmt = select(User).where(
-        User.property_id == target_property_id,
-        User.mobile_number == payload.mobile_number
-    )
+    # Verify unique mobile number per property (or globally for unassigned users)
+    if target_property_id:
+        dup_stmt = select(User).where(
+            User.property_id == target_property_id,
+            User.mobile_number == payload.mobile_number
+        )
+    else:
+        dup_stmt = select(User).where(
+            User.property_id.is_(None),
+            User.mobile_number == payload.mobile_number
+        )
     dup_res = await db.execute(dup_stmt)
     if dup_res.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Mobile number already registered in this property"
+            detail="Mobile number already registered in this context"
         )
         
     # Hash password/PIN if present

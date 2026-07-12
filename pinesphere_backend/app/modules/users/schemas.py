@@ -2,6 +2,16 @@ import uuid
 from typing import Optional
 from pydantic import BaseModel, Field
 
+class RoleResponse(BaseModel):
+    id: uuid.UUID
+    role_code: str
+    role_name: str
+    description: Optional[str] = None
+    level: int
+
+    class Config:
+        from_attributes = True
+
 class UserCreate(BaseModel):
     name: str = Field(..., max_length=120)
     mobile_number: str = Field(..., max_length=15)

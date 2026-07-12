@@ -175,8 +175,8 @@ export default function PropertyDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProperties.map((prop) => (
-                  <tr key={prop.id || Math.random()} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => handleOpenDrawer(prop)}>
+                {filteredProperties.map((prop, idx) => (
+                  <tr key={prop.id || idx} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => handleOpenDrawer(prop)}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-pine/10 flex items-center justify-center">

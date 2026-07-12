@@ -21,6 +21,9 @@ import AuditLogs from './pages/AuditManagement/AuditLogs';
 // System Management
 import SystemSettings from './pages/SystemManagement/SystemSettings';
 
+// User Management
+import UserManagement from './pages/UserManagement/UserManagement';
+
 function App() {
   return (
     <BrowserRouter>
@@ -47,6 +50,8 @@ function App() {
           <Route path="audit" element={<AuditLogs />} />
           {/* System Management */}
           <Route path="settings/system" element={<SystemSettings />} />
+          {/* User Management */}
+          <Route path="users" element={<UserManagement />} />
         </Route>
       </Routes>
     </BrowserRouter>

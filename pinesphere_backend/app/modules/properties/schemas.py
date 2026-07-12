@@ -3,10 +3,11 @@ from typing import Optional
 
 class PropertyCreateInput(BaseModel):
     # Owner Details
-    owner_name: str
+    owner_user_id: Optional[str] = None
+    owner_name: Optional[str] = None
     owner_designation: Optional[str] = None
-    owner_mobile: str
-    owner_email: str
+    owner_mobile: Optional[str] = None
+    owner_email: Optional[str] = None
     owner_pan: Optional[str] = None
     
     # Business Details

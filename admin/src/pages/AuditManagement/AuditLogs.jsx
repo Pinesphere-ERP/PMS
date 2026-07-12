@@ -9,7 +9,7 @@ import {
   Settings,
   MoreVertical
 } from 'lucide-react';
-import api from '../../services/api';
+import { fetchAPI } from '../../services/api';
 
 const AuditLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -22,7 +22,7 @@ const AuditLogs = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/audit');
+      const response = await fetchAPI('/audit');
       setLogs(response.data.items || []);
     } catch (error) {
       console.error('Failed to fetch audit logs:', error);

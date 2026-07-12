@@ -15,6 +15,7 @@ from app.modules.reports.router import router as reports
 from app.modules.settings.router import router as settings
 from app.modules.seed.router import router as seed
 from app.modules.audit.router import router as audit
+from app.modules.users.router import router as users
 
 api_router = APIRouter()
 api_router.include_router(auth, prefix="/auth", tags=["Authentication"])
@@ -32,3 +33,4 @@ api_router.include_router(staff)
 api_router.include_router(settings, prefix="/settings", tags=["Settings & Configuration"])
 api_router.include_router(seed, prefix="/seed", tags=["Dev: Seed Data"])
 api_router.include_router(audit, prefix="/audit", tags=["Audit Logs"])
+api_router.include_router(users, prefix="/users", tags=["User Management"])

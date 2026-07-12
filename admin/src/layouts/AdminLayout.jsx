@@ -41,6 +41,7 @@ const auditNavigation = [
 
 const systemNavigation = [
   { name: 'System Configuration', to: '/settings/system', icon: Shield },
+  { name: 'User Management', to: '/users', icon: User },
 ];
 
 export default function AdminLayout() {

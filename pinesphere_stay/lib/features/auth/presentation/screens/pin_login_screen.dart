@@ -55,14 +55,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
   }
 
   void _handleLogin() {
-    if (_pin == '1234') {
-      ref.read(authProvider.notifier).login('${_selectedRole.name}@pinesphere.com', _pin);
-    } else {
-      _shakeController.forward(from: 0).then((_) {
-        setState(() => _pin = '');
-      });
-      HapticFeedback.heavyImpact();
-    }
+    ref.read(authProvider.notifier).loginWithPin(_pin);
   }
 
   @override

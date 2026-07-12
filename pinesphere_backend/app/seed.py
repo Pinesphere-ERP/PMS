@@ -256,13 +256,17 @@ async def seed_data():
                     id=user_id,
                     property_id=resort_1_id,
                     role_id=role_id,
-                    name="Admin User",
-                    email="admin@pinesphere.com",
+                    name="PineSphere Owner",
+                    mobile_number="+91 9999999999",
+                    email="owner@pinesphere.com",
+                    username="owner",
                     password_hash=get_password_hash("password123"),
+                    pin_hash=get_password_hash("1234"),
                     status="ACTIVE",
                     is_primary_owner=True
                 )
                 session.add(user)
+                print("Owner User created.")
                 print("Admin User created (admin@pinesphere.com / password123).")
 
             # Create a Device for Resort 1
@@ -366,27 +370,12 @@ async def seed_data():
             if not room_104:
                 room_104 = Room(
                     room_id=room_104_id,
-            # Create default Owner User
-            owner_role_id = roles_map["owner"].id
-            user_id = uuid.UUID("a551e111-1111-1111-1111-111111111111")
-            user = await session.get(User, user_id)
-            if not user:
-                user = User(
-                    id=user_id,
-                    property_id=resort_1_id,
-                    role_id=owner_role_id,
-                    name="PineSphere Owner",
-                    mobile_number="+91 9999999999",
-                    email="owner@pinesphere.com",
-                    username="owner",
-                    password_hash=get_password_hash("password123"),
-                    pin_hash=get_password_hash("1234"),
-                    biometric_enabled=False,
-                    is_primary_owner=True,
-                    status="ACTIVE",
+                    room_category_id=cat_deluxe_1_id,
+                    room_number="104",
+                    housekeeping_status="clean",
+                    occupancy_status="vacant"
                 )
-                session.add(user)
-                print("Owner User created.")
+                session.add(room_104)
 
             await session.commit()
             print("Database seeded successfully with resorts, rooms, roles, permissions and owner user!")

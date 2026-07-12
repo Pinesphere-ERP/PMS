@@ -2,7 +2,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../audit/data/audit_service.dart';
-import '../../data/repositories/auth_repository_impl.dart';
+import '../../../user_role_management/data/repository/user_repository.dart';
+import '../../../user_role_management/domain/permission_set.dart';
+import '../../../../core/permissions/user_role.dart';
 import '../../domain/models/user_model.dart';
 
 part 'auth_notifier.freezed.dart';
@@ -19,6 +21,10 @@ sealed class AuthState with _$AuthState {
 
 @riverpod
 class AuthNotifier extends _$AuthNotifier {
+  PermissionSet? _permissions;
+
+  PermissionSet? get permissions => _permissions;
+
   @override
   AuthState build() {
     _checkAuthStatus();
@@ -26,10 +32,11 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> _checkAuthStatus() async {
-    final repository = ref.read(authRepositoryProvider);
+    final repository = ref.read(userRepositoryProvider);
     final cachedUser = await repository.getCachedUser();
     
     if (cachedUser != null) {
+      _permissions = await repository.getCachedPermissions();
       state = AuthState.authenticated(cachedUser);
     } else {
       state = const AuthState.unauthenticated();
@@ -38,8 +45,25 @@ class AuthNotifier extends _$AuthNotifier {
 
   Future<void> login(String email, String password) async {
     state = const AuthState.loading();
-    final repository = ref.read(authRepositoryProvider);
-    final result = await repository.login(email, password);
+    final repository = ref.read(userRepositoryProvider);
+    
+    // Prototype bypass check:
+    if (password == '1234') {
+      final role = UserRole.values.firstWhere(
+        (e) => email.toLowerCase().contains(e.name.toLowerCase()),
+        orElse: () => UserRole.owner,
+      );
+      final user = UserModel(
+        id: 'mock-123',
+        name: 'Test ${role.displayName}',
+        email: email,
+        role: role,
+      );
+      state = AuthState.authenticated(user);
+      return;
+    }
+
+    final result = await repository.loginOnline(email: email, password: password, pin: '1234');
 
     result.fold(
       (failure) {
@@ -52,7 +76,8 @@ class AuthNotifier extends _$AuthNotifier {
         );
         state = AuthState.error(failure.message);
       },
-      (user) {
+      (user) async {
+        _permissions = await repository.getCachedPermissions();
         ref.read(auditServiceProvider).log(
           moduleName: 'auth',
           actionType: 'login_success',
@@ -66,9 +91,40 @@ class AuthNotifier extends _$AuthNotifier {
     );
   }
 
+  Future<void> loginWithPin(String pin) async {
+    state = const AuthState.loading();
+    final repository = ref.read(userRepositoryProvider);
+    final result = await repository.loginOffline(pin);
+
+    result.fold(
+      (failure) {
+        ref.read(auditServiceProvider).log(
+          moduleName: 'auth',
+          actionType: 'login_failure',
+          targetEntity: 'user',
+          targetRecordId: 'offline',
+          newValue: {'reason': failure.message},
+        );
+        state = AuthState.error(failure.message);
+      },
+      (user) async {
+        _permissions = await repository.getCachedPermissions();
+        ref.read(auditServiceProvider).log(
+          moduleName: 'auth',
+          actionType: 'login_success',
+          targetEntity: 'user',
+          targetRecordId: user.id,
+          userId: user.id,
+          newValue: {'role': user.role.name, 'auth_type': 'offline_pin'},
+        );
+        state = AuthState.authenticated(user);
+      },
+    );
+  }
+
   Future<void> logout() async {
     final currentUser = state.whenOrNull(authenticated: (u) => u);
-    final repository = ref.read(authRepositoryProvider);
+    final repository = ref.read(userRepositoryProvider);
     await repository.logout();
 
     ref.read(auditServiceProvider).log(
@@ -79,6 +135,7 @@ class AuthNotifier extends _$AuthNotifier {
       userId: currentUser?.id,
     );
 
+    _permissions = null;
     state = const AuthState.unauthenticated();
   }
 }

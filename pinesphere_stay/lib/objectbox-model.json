@@ -1169,10 +1169,404 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "14:71059644921444941",
+      "lastPropertyId": "5:3742890329410476902",
+      "name": "PermissionEntity",
+      "properties": [
+        {
+          "id": "1:4176061183807921879",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3509970097427349189",
+          "name": "serverId",
+          "indexId": "16:4541648114381877583",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:3455067974362345453",
+          "name": "permissionCode",
+          "indexId": "17:5123069996797688952",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "4:3979275053059551408",
+          "name": "moduleName",
+          "type": 9
+        },
+        {
+          "id": "5:3742890329410476902",
+          "name": "description",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "15:838368302646844251",
+      "lastPropertyId": "7:4865136621100359353",
+      "name": "RoleEntity",
+      "properties": [
+        {
+          "id": "1:2200012056230654852",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3913532101121510255",
+          "name": "serverId",
+          "indexId": "18:3643166786903528582",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:6018905029323102654",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "4:6993526687880053664",
+          "name": "roleCode",
+          "type": 9
+        },
+        {
+          "id": "5:6774379373854693706",
+          "name": "roleName",
+          "type": 9
+        },
+        {
+          "id": "6:4440535251264013445",
+          "name": "isSystemRole",
+          "type": 1
+        },
+        {
+          "id": "7:4865136621100359353",
+          "name": "description",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "16:1252691389821472678",
+      "lastPropertyId": "5:874685888840705068",
+      "name": "RolePermissionEntity",
+      "properties": [
+        {
+          "id": "1:1102118488931838222",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3922072041799234951",
+          "name": "serverId",
+          "indexId": "19:28523354827410690",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:3638782146156832099",
+          "name": "roleId",
+          "type": 9
+        },
+        {
+          "id": "4:4920559609965293801",
+          "name": "permissionId",
+          "type": 9
+        },
+        {
+          "id": "5:874685888840705068",
+          "name": "accessLevel",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "17:4269437980796306608",
+      "lastPropertyId": "10:1515145751381999967",
+      "name": "StaffInvitationEntity",
+      "properties": [
+        {
+          "id": "1:6367619525692608606",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8784326548151408663",
+          "name": "serverId",
+          "indexId": "20:2483341723667486327",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:443860874173420796",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "4:4157825428618533226",
+          "name": "roleId",
+          "type": 9
+        },
+        {
+          "id": "5:4142180248101356950",
+          "name": "invitedBy",
+          "type": 9
+        },
+        {
+          "id": "6:8515357683633764554",
+          "name": "mobileNumber",
+          "type": 9
+        },
+        {
+          "id": "7:3949957307041706652",
+          "name": "invitationToken",
+          "type": 9
+        },
+        {
+          "id": "8:1903774427008967683",
+          "name": "status",
+          "type": 9
+        },
+        {
+          "id": "9:7299422566494880467",
+          "name": "expiresAt",
+          "type": 10
+        },
+        {
+          "id": "10:1515145751381999967",
+          "name": "createdAt",
+          "type": 10
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "18:1450945726448091254",
+      "lastPropertyId": "17:4021170114785075431",
+      "name": "UserEntity",
+      "properties": [
+        {
+          "id": "1:4651611470472902941",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8639492935373509856",
+          "name": "serverId",
+          "indexId": "21:1665145359682019556",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:3135298304571334449",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "4:904721115749036438",
+          "name": "roleId",
+          "type": 9
+        },
+        {
+          "id": "5:3373871692490907248",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "6:2954500306080852868",
+          "name": "mobileNumber",
+          "type": 9
+        },
+        {
+          "id": "7:4906123171621082070",
+          "name": "email",
+          "type": 9
+        },
+        {
+          "id": "8:8972556877326387381",
+          "name": "username",
+          "type": 9
+        },
+        {
+          "id": "9:2877720390912560467",
+          "name": "passwordHash",
+          "type": 9
+        },
+        {
+          "id": "10:513865699858028825",
+          "name": "pinHash",
+          "type": 9
+        },
+        {
+          "id": "11:5655365631985424358",
+          "name": "biometricEnabled",
+          "type": 1
+        },
+        {
+          "id": "12:129252668095474713",
+          "name": "isPrimaryOwner",
+          "type": 1
+        },
+        {
+          "id": "13:4070090060787255832",
+          "name": "status",
+          "type": 9
+        },
+        {
+          "id": "14:8504799412111312271",
+          "name": "failedLoginAttempts",
+          "type": 6
+        },
+        {
+          "id": "15:3419757221600442877",
+          "name": "profilePhotoUrl",
+          "type": 9
+        },
+        {
+          "id": "16:1565650716746468273",
+          "name": "createdBy",
+          "type": 9
+        },
+        {
+          "id": "17:4021170114785075431",
+          "name": "isPendingSync",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "19:1554181551042830168",
+      "lastPropertyId": "10:2135391628861532344",
+      "name": "UserSessionEntity",
+      "properties": [
+        {
+          "id": "1:1502560867255502510",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5609434982472294264",
+          "name": "serverId",
+          "indexId": "22:5038355017038581937",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:8205715679231460578",
+          "name": "userId",
+          "type": 9
+        },
+        {
+          "id": "4:8490273026583911498",
+          "name": "deviceId",
+          "type": 9
+        },
+        {
+          "id": "5:1006494574043052677",
+          "name": "sessionToken",
+          "type": 9
+        },
+        {
+          "id": "6:9194961810984187597",
+          "name": "isOfflineSession",
+          "type": 1
+        },
+        {
+          "id": "7:7104381038479659842",
+          "name": "issuedAt",
+          "type": 10
+        },
+        {
+          "id": "8:2403401634137237944",
+          "name": "expiresAt",
+          "type": 10
+        },
+        {
+          "id": "9:2037508113141572524",
+          "name": "revokedAt",
+          "type": 10
+        },
+        {
+          "id": "10:2135391628861532344",
+          "name": "revokedReason",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "20:776231692923876283",
+      "lastPropertyId": "9:5007540856644959312",
+      "name": "UserSyncLogEntity",
+      "properties": [
+        {
+          "id": "1:8083144215432601295",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:231481048449224792",
+          "name": "serverId",
+          "indexId": "23:3425536343357584582",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:3450026880671586351",
+          "name": "entityType",
+          "type": 9
+        },
+        {
+          "id": "4:5532248479793075930",
+          "name": "entityId",
+          "type": 9
+        },
+        {
+          "id": "5:9121946467168599408",
+          "name": "operation",
+          "type": 9
+        },
+        {
+          "id": "6:2668258806881510546",
+          "name": "payloadJson",
+          "type": 9
+        },
+        {
+          "id": "7:4374110201888460351",
+          "name": "syncStatus",
+          "type": 9
+        },
+        {
+          "id": "8:8880745392176552997",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "9:5007540856644959312",
+          "name": "syncedAt",
+          "type": 10
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "13:5529333314135770933",
-  "lastIndexId": "15:6364991816235469336",
+  "lastEntityId": "20:776231692923876283",
+  "lastIndexId": "23:3425536343357584582",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

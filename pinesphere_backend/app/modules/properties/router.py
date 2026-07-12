@@ -65,7 +65,7 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         onboarding_status="draft",
     )
     db.add(new_property)
-    await db.flush()
+    await db.commit()
 
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 

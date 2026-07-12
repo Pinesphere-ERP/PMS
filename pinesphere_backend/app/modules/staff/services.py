@@ -143,15 +143,10 @@ class StaffService:
         await self.db.refresh(leave)
 
         # Audit
-<<<<<<< HEAD
         user_result = await self.db.execute(select(User).filter(User.id == leave.staff_id))
         staff_record = user_result.scalars().first()
         if staff_record:
             await self._log_audit(approver_id, staff_record.property_id, status, "StaffLeave", leave.leave_id)
-=======
-        staff_record = self.db.query(User).filter(User.id == leave.staff_id).first()
-        AuditLogger.log_sync(self.db, module_name="StaffManagement", action_type=status, target_entity="StaffLeave", target_record_id=leave.leave_id, user_id=approver_id, property_id=staff_record.property_id)
->>>>>>> 1b4f4be5403067a62cf7632f075ca957b92d13e7
         
         return leave
 
@@ -204,7 +199,6 @@ class StaffService:
         await self.db.commit()
         await self.db.refresh(new_task)
         return new_task
-<<<<<<< HEAD
 
     # Audit Logging
     async def _log_audit(self, user_id: uuid.UUID, property_id: uuid.UUID, action_type: str, target_entity: str, target_record_id: uuid.UUID):
@@ -219,5 +213,3 @@ class StaffService:
         )
         self.db.add(audit)
         await self.db.commit()
-=======
->>>>>>> 1b4f4be5403067a62cf7632f075ca957b92d13e7

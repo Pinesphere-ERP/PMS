@@ -132,8 +132,6 @@ class Device(Base, TimestampMixin):
     os_type: Mapped[Optional[str]] = mapped_column(String(20), default='android')
     status: Mapped[Optional[str]] = mapped_column(String(20), default='pending_approval')
 
-class RoomCategory(Base, TimestampMixin, SyncMixin):
-
 # ── E. Rooms ──────────────────────────────────────────────────────────────────
 
 class RoomCategory(Base, TimestampMixin):
@@ -461,9 +459,7 @@ class DailyKPISnapshot(Base, TimestampMixin):
     outstanding_payments: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     gst_collected: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
-<<<<<<< HEAD
 # ── Reports & Analytics (Module 13) ──
-=======
 
 class ReportTemplate(Base, TimestampMixin):
     """User-defined or system report templates stored per property."""
@@ -489,4 +485,3 @@ class ScheduledReport(Base, TimestampMixin):
 
 # ── Settings (Module 15) ──
 from app.modules.settings.models import SystemConfiguration, PropertySetting
->>>>>>> 1b4f4be5403067a62cf7632f075ca957b92d13e7

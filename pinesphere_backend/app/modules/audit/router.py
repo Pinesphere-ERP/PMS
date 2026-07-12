@@ -80,6 +80,8 @@ async def list_audit_logs(
     return AuditLogListResponse(
         items=[AuditLogResponse.model_validate(l) for l in logs],
         total=total,
+        page=(skip // limit) + 1 if limit else 1,
+        size=limit,
     )
 
 

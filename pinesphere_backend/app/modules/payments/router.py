@@ -90,18 +90,7 @@ async def create_razorpay_order(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/razorpay/verify")
-async def verify_razorpay_payment(
-    request: RazorpayVerifyRequest,
-    service: PaymentService = Depends(get_payment_service),
-    user_id: Optional[uuid.UUID] = Depends(get_current_user_id)
-        order = await service.create_razorpay_order(request.amount)
-        return RazorpayOrderResponse(
-            razorpay_order_id=order["id"],
-            amount=order["amount"]
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/razorpay/verify", response_model=PaymentRead)
 async def verify_razorpay_payment(

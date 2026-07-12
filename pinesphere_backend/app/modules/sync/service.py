@@ -46,7 +46,13 @@ class SyncService:
                     pk_name = [c.name for c in model.__table__.primary_key][0]
                     pk_col = getattr(model, pk_name)
 
-                existing_result = await self.db.execute(select(model).filter(pk_col == record.entity_id))
+                import uuid
+                try:
+                    entity_uuid = uuid.UUID(record.entity_id)
+                except ValueError:
+                    entity_uuid = record.entity_id
+
+                existing_result = await self.db.execute(select(model).filter(pk_col == entity_uuid))
                 existing = existing_result.scalars().first()
 
                 if existing:
@@ -69,7 +75,7 @@ class SyncService:
                     if not existing:
                         new_instance = model(**record.payload)
                         # Ensure PK is set
-                        setattr(new_instance, pk_col.name, record.entity_id)
+                        setattr(new_instance, pk_col.name, entity_uuid)
                         self.db.add(new_instance)
                 
                 elif record.operation == "UPDATE":
@@ -80,7 +86,7 @@ class SyncService:
                     else:
                         # Upsert if missing
                         new_instance = model(**record.payload)
-                        setattr(new_instance, pk_col.name, record.entity_id)
+                        setattr(new_instance, pk_col.name, entity_uuid)
                         self.db.add(new_instance)
 
                 elif record.operation == "DELETE":

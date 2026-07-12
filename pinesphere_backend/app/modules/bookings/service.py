@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 
 from app.infra.models import Booking, Guest, Room, RoomCategory, Property
 from app.modules.audit.logger import AuditLogger
+from app.core.notifications import whatsapp
 from app.modules.bookings.schemas import (
     GuestCreateRequest, GuestResponse,
     BookingCreateRequest, BookingUpdateRequest, BookingResponse,
@@ -17,13 +18,11 @@ from app.modules.bookings.schemas import (
 async def create_guest(db: AsyncSession, req: GuestCreateRequest) -> GuestResponse:
     if req.mobile:
         dup_stmt = select(Guest).where(
-            Guest.mobile == req.mobile,
-            Guest.property_id == req.property_id,
-            Guest.is_deleted == False
+            Guest.mobile == req.mobile
         )
         dup_res = await db.execute(dup_stmt)
-        if dup_res.scalar_one_or_none():
-            raise HTTPException(status_code=409, detail="Guest with this mobile number already exists in this property")
+        if dup_res.scalars().first():
+            raise HTTPException(status_code=409, detail="Guest with this mobile number already exists")
 
     prop_stmt = select(Property).where(Property.property_id == req.property_id)
     prop_res = await db.execute(prop_stmt)
@@ -31,25 +30,9 @@ async def create_guest(db: AsyncSession, req: GuestCreateRequest) -> GuestRespon
         raise HTTPException(status_code=404, detail="Property not found")
 
     guest = Guest(
-        property_id=req.property_id,
         full_name=req.full_name,
         mobile=req.mobile,
         email=req.email,
-        address=req.address,
-        city=req.city,
-        state=req.state,
-        country=req.country,
-        nationality=req.nationality,
-        dob=req.dob,
-        gender=req.gender,
-        id_type=req.id_type,
-        id_number=req.id_number,
-        id_front_url=req.id_front_url,
-        id_back_url=req.id_back_url,
-        passport_number=req.passport_number,
-        visa_number=req.visa_number,
-        emergency_contact_name=req.emergency_contact_name,
-        emergency_contact_phone=req.emergency_contact_phone,
     )
     db.add(guest)
     await db.flush()
@@ -180,6 +163,23 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
             "total_payable": float(total_payable),
         },
     )
+
+    # WhatsApp Integration: Send Booking Confirmation
+    if guest.mobile:
+        try:
+            # Handle sync/async differences in datetime depending on how check_in_date is passed
+            if isinstance(booking.check_in_date, date) and not isinstance(booking.check_in_date, datetime):
+                dt = datetime.combine(booking.check_in_date, datetime.min.time())
+            else:
+                dt = booking.check_in_date
+            await whatsapp.send_booking_confirmation(
+                phone_number=guest.mobile,
+                booking_ref=f"BKG-{str(booking.booking_id)[:8].upper()}",
+                guest_name=guest.full_name,
+                check_in_date=dt
+            )
+        except Exception as e:
+            print(f"Failed to send WhatsApp message: {e}")
 
     return await enrich_booking_response(db, booking)
 

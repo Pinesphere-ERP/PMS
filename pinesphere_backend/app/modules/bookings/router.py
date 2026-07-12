@@ -8,11 +8,12 @@ from app.infra.database import get_db
 from app.modules.bookings.schemas import (
     GuestCreateRequest, GuestResponse,
     BookingCreateRequest, BookingUpdateRequest, BookingResponse,
-    BookingListResponse,
+    BookingListResponse, CheckOutRequest,
 )
 from app.modules.bookings import service
 
 router = APIRouter()
+
 
 
 @router.post("/guests", response_model=GuestResponse, status_code=status.HTTP_201_CREATED)
@@ -80,3 +81,30 @@ async def cancel_booking(
 ):
     """Cancel a booking and release the room."""
     return await service.cancel_booking(db, booking_id)
+
+
+@router.post("/{booking_id}/check-in", response_model=BookingResponse)
+async def check_in_booking(
+    booking_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Check in a booking and mark the room as occupied."""
+    return await service.check_in_booking(db, booking_id)
+
+
+@router.post("/{booking_id}/check-out", response_model=BookingResponse)
+async def check_out_booking(
+    booking_id: uuid.UUID,
+    req: CheckOutRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Check out a booking, clear outstanding balances, and mark the room as dirty."""
+    return await service.check_out_booking(
+        db, 
+        booking_id, 
+        damage_bill=req.damage_bill,
+        laundry_bill=req.laundry_bill,
+        minibar_bill=req.minibar_bill,
+        restaurant_bill=req.restaurant_bill
+    )
+

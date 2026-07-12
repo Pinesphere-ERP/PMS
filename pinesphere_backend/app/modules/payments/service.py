@@ -6,6 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 
 from app.infra.models import Payment, PaymentTransaction, SplitPayment, Invoice
+from app.modules.audit.logger import AuditLogger
 from .schemas import PaymentCreate, SplitPaymentCreate
 
 class PaymentService:
@@ -66,6 +67,22 @@ class PaymentService:
 
         await self.db.flush()
         await self.db.refresh(new_payment)
+
+        await AuditLogger.log(
+            self.db,
+            module_name="payments",
+            action_type="create_payment",
+            target_entity="payment",
+            target_record_id=new_payment.payment_id,
+            user_id=user_id,
+            property_id=getattr(new_payment, 'property_id', None),
+            new_value={
+                "payment_id": str(new_payment.payment_id),
+                "amount": float(payment_data.amount),
+                "payment_mode": payment_data.payment_mode,
+                "invoice_id": str(payment_data.invoice_id) if payment_data.invoice_id else None,
+            },
+        )
         return new_payment
 
     async def list_payments(self, skip: int = 0, limit: int = 20) -> tuple[List[Payment], int]:

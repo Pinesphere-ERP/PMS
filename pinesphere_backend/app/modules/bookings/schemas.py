@@ -172,3 +172,11 @@ class CheckInResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CheckOutRequest(BaseModel):
+    damage_bill: Optional[float] = 0.0
+    laundry_bill: Optional[float] = 0.0
+    minibar_bill: Optional[float] = 0.0
+    restaurant_bill: Optional[float] = 0.0
+

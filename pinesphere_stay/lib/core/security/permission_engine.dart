@@ -1,12 +1,5 @@
-enum UserRole {
-  superAdmin,
-  owner,
-  manager,
-  reception,
-  housekeeping,
-  accountant,
-  guest
-}
+import '../permissions/user_role.dart';
+export '../permissions/user_role.dart';
 
 enum PermissionModule {
   propertyOnboarding,
@@ -30,6 +23,8 @@ enum PermissionAction {
   collect,
   financial,
   ownActions,
+  digitalCheckIn,
+  payOnline,
   full,
 }
 
@@ -42,8 +37,8 @@ class PermissionEngine {
       PermissionModule.deviceManagement: PermissionAction.full,
       PermissionModule.roomManagement: PermissionAction.full,
       PermissionModule.bookingManagement: PermissionAction.full,
-      PermissionModule.checkIn: PermissionAction.full,
-      PermissionModule.payments: PermissionAction.full,
+      PermissionModule.checkIn: PermissionAction.view,
+      PermissionModule.payments: PermissionAction.view,
       PermissionModule.reports: PermissionAction.full,
       PermissionModule.auditLogs: PermissionAction.full,
     },
@@ -102,10 +97,10 @@ class PermissionEngine {
       PermissionModule.deviceManagement: PermissionAction.none,
       PermissionModule.roomManagement: PermissionAction.none,
       PermissionModule.bookingManagement: PermissionAction.view,
-      PermissionModule.checkIn: PermissionAction.none,
-      PermissionModule.payments: PermissionAction.financial,
+      PermissionModule.checkIn: PermissionAction.view,
+      PermissionModule.payments: PermissionAction.full,
       PermissionModule.reports: PermissionAction.financial,
-      PermissionModule.auditLogs: PermissionAction.none,
+      PermissionModule.auditLogs: PermissionAction.limited,
     },
     UserRole.guest: {
       PermissionModule.propertyOnboarding: PermissionAction.none,
@@ -114,10 +109,10 @@ class PermissionEngine {
       PermissionModule.deviceManagement: PermissionAction.none,
       PermissionModule.roomManagement: PermissionAction.none,
       PermissionModule.bookingManagement: PermissionAction.ownActions,
-      PermissionModule.checkIn: PermissionAction.ownActions,
-      PermissionModule.payments: PermissionAction.ownActions,
+      PermissionModule.checkIn: PermissionAction.digitalCheckIn,
+      PermissionModule.payments: PermissionAction.payOnline,
       PermissionModule.reports: PermissionAction.none,
-      PermissionModule.auditLogs: PermissionAction.none,
+      PermissionModule.auditLogs: PermissionAction.limited,
     },
   };
 
@@ -134,6 +129,14 @@ class PermissionEngine {
 
     // View is subset of almost everything else except none
     if (requiredAction == PermissionAction.view && allowedAction != PermissionAction.none) {
+      return true;
+    }
+
+    // specific guest actions
+    if (requiredAction == PermissionAction.digitalCheckIn && allowedAction == PermissionAction.digitalCheckIn) {
+      return true;
+    }
+    if (requiredAction == PermissionAction.payOnline && allowedAction == PermissionAction.payOnline) {
       return true;
     }
 

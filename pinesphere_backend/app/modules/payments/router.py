@@ -10,6 +10,17 @@ from app.infra.database import get_db
 from app.infra.models import PaymentTransaction, Invoice, PendingDue, Property, Owner, Subscription
 from .service import PaymentService
 from .schemas import PaymentCreate, PaymentRead, PaymentListResponse
+import uuid
+from typing import Optional, List
+
+from .schemas import (
+    PaymentCreate, PaymentRead, PaymentListResponse,
+    RazorpayOrderRequest, RazorpayOrderResponse, RazorpayVerifyRequest
+)
+from .service import PaymentService
+
+from app.infra.database import get_db
+from app.infra.models import SubscriptionTransaction, Invoice, PendingDue, Property, Owner, Subscription
 
 router = APIRouter()
 
@@ -84,6 +95,19 @@ async def verify_razorpay_payment(
     request: RazorpayVerifyRequest,
     service: PaymentService = Depends(get_payment_service),
     user_id: Optional[uuid.UUID] = Depends(get_current_user_id)
+        order = await service.create_razorpay_order(request.amount)
+        return RazorpayOrderResponse(
+            razorpay_order_id=order["id"],
+            amount=order["amount"]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/razorpay/verify", response_model=PaymentRead)
+async def verify_razorpay_payment(
+    request: RazorpayVerifyRequest,
+    service: PaymentService = Depends(get_payment_service),
+    user_id: uuid.UUID = Depends(get_current_user_id)
 ):
     try:
         payment = await service.verify_and_record_payment(
@@ -105,16 +129,19 @@ async def verify_razorpay_payment(
         import traceback
         error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
         raise HTTPException(status_code=500, detail=error_detail)
+def _fmt(amount) -> str:
+    return f"${float(amount):,.2f}"
 
 
 @router.get("/transactions")
 async def get_transactions(db: AsyncSession = Depends(get_db)):
     q = (
-        select(PaymentTransaction, Property, Owner, Subscription)
-        .join(Property, PaymentTransaction.property_id == Property.property_id)
+        select(SubscriptionTransaction, Property, Owner, Subscription)
+        .select_from(SubscriptionTransaction)
+        .join(Property, SubscriptionTransaction.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
-        .order_by(PaymentTransaction.created_at.desc())
+        .order_by(SubscriptionTransaction.created_at.desc())
     )
     result = await db.execute(q)
     rows = result.unique().all()
@@ -148,6 +175,7 @@ async def get_transactions(db: AsyncSession = Depends(get_db)):
 async def get_pending_dues(db: AsyncSession = Depends(get_db)):
     q = (
         select(PendingDue, Property, Owner)
+        .select_from(PendingDue)
         .join(Property, PendingDue.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .order_by(PendingDue.days_overdue.desc())
@@ -176,6 +204,7 @@ async def get_pending_dues(db: AsyncSession = Depends(get_db)):
 async def get_invoices(db: AsyncSession = Depends(get_db)):
     q = (
         select(Invoice, Property, Owner)
+        .select_from(Invoice)
         .join(Property, Invoice.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .order_by(Invoice.date.desc())
@@ -224,18 +253,18 @@ async def get_payment_kpis(db: AsyncSession = Depends(get_db)):
 
     # Failed payments
     failed_q = await db.execute(
-        select(func.count(PaymentTransaction.id))
-        .where(PaymentTransaction.status == "Failed")
+        select(func.count(SubscriptionTransaction.id))
+        .where(SubscriptionTransaction.status == "Failed")
     )
     failed = int(failed_q.scalar() or 0)
 
     # Total invoices
-    inv_count_q = await db.execute(select(func.count(Invoice.id)))
+    inv_count_q = await db.execute(select(func.count(Invoice.invoice_id)))
     inv_count = int(inv_count_q.scalar() or 0)
 
     # Collection rate
     paid_q = await db.execute(
-        select(func.count(Invoice.id)).where(Invoice.status == "Paid")
+        select(func.count(Invoice.invoice_id)).where(Invoice.status == "Paid")
     )
     paid_count = int(paid_q.scalar() or 0)
     rate = round((paid_count / max(inv_count, 1)) * 100)
@@ -285,9 +314,9 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)):
 
     # Payment method breakdown
     method_q = await db.execute(
-        select(PaymentTransaction.method, func.sum(PaymentTransaction.amount))
-        .where(PaymentTransaction.status == "Success")
-        .group_by(PaymentTransaction.method)
+        select(SubscriptionTransaction.method, func.sum(SubscriptionTransaction.amount))
+        .where(SubscriptionTransaction.status == "Success")
+        .group_by(SubscriptionTransaction.method)
     )
     method_rows = method_q.all()
     method_colors = {"UPI": "#6366f1", "Net Banking": "#8aa356", "Credit Card": "#f59e0b", "Cheque": "#64748b"}
@@ -299,6 +328,7 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)):
     # Outstanding dues
     outstanding_q = await db.execute(
         select(PendingDue, Property)
+        .select_from(PendingDue)
         .join(Property, PendingDue.property_id == Property.property_id)
         .order_by(PendingDue.days_overdue.desc())
         .limit(5)

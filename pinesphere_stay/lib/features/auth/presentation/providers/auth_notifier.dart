@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../audit/data/audit_service.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/models/user_model.dart';
 
@@ -42,17 +43,42 @@ class AuthNotifier extends _$AuthNotifier {
 
     result.fold(
       (failure) {
+        ref.read(auditServiceProvider).log(
+          moduleName: 'auth',
+          actionType: 'login_failure',
+          targetEntity: 'user',
+          targetRecordId: email,
+          newValue: {'email': email, 'reason': failure.message},
+        );
         state = AuthState.error(failure.message);
       },
       (user) {
+        ref.read(auditServiceProvider).log(
+          moduleName: 'auth',
+          actionType: 'login_success',
+          targetEntity: 'user',
+          targetRecordId: user.id,
+          userId: user.id,
+          newValue: {'email': email, 'role': user.role.name},
+        );
         state = AuthState.authenticated(user);
       },
     );
   }
 
   Future<void> logout() async {
+    final currentUser = state.whenOrNull(authenticated: (u) => u);
     final repository = ref.read(authRepositoryProvider);
     await repository.logout();
+
+    ref.read(auditServiceProvider).log(
+      moduleName: 'auth',
+      actionType: 'logout',
+      targetEntity: 'user',
+      targetRecordId: currentUser?.id ?? 'unknown',
+      userId: currentUser?.id,
+    );
+
     state = const AuthState.unauthenticated();
   }
 }

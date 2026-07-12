@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy import func, and_
 from datetime import date, timedelta
-from typing import List
+from typing import List, Optional
 
 from app.infra.database import get_db
-from app.infra.models import Property, Owner, Business, Subscription, AuditLog
+from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory
+from app.modules.properties.schemas import PropertyCreateInput
 
 router = APIRouter()
 
@@ -23,11 +25,267 @@ def _verification_status(onboarding_status: str) -> str:
     return "Verified" if onboarding_status == "completed" else "Pending"
 
 
-@router.get("/")
+@router.post("")
+async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depends(get_db)):
+    # Create Owner
+    new_owner = Owner(
+        full_name=payload.owner_name,
+        mobile_number=payload.owner_mobile,
+        email=payload.owner_email,
+        pan_number=payload.owner_pan,
+    )
+    db.add(new_owner)
+    try:
+        await db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="An owner with this email or mobile number already exists.")
+
+    # Create Business
+    new_business = Business(
+        owner_id=new_owner.owner_id,
+        business_name=payload.business_name,
+        business_reg_number=payload.business_reg_number,
+        gst_number=payload.business_gst,
+        pan_number=payload.business_pan,
+    )
+    db.add(new_business)
+    await db.flush()
+
+    # Create Property
+    new_property = Property(
+        business_id=new_business.business_id,
+        owner_id=new_owner.owner_id,
+        property_name=payload.property_name,
+        property_type=payload.property_type,
+        star_category=payload.star_category,
+        year_established=payload.year_established,
+        total_floors=payload.total_floors,
+        total_rooms=payload.total_rooms,
+        description=payload.description,
+        onboarding_status="draft",
+    )
+    db.add(new_property)
+    await db.flush()
+
+    return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
+
+
+from pydantic import BaseModel
+
+class RoomCreateInput(BaseModel):
+    room_number: str
+    type: str
+    price: float
+    resort_id: str
+    description: Optional[str] = ""
+
+
+@router.get("/rooms")
+async def get_rooms(db: AsyncSession = Depends(get_db)):
+    # Select all rooms joined with their category
+    q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
+    result = await db.execute(q)
+    rows = result.all()
+    data = []
+    for room, cat in rows:
+        data.append({
+            "id": str(room.room_id),
+            "room_number": room.room_number,
+            "type": cat.room_name or "Standard",
+            "price": float(cat.base_price or 1000.0),
+            "status": room.occupancy_status or "vacant",
+            "resort_id": str(cat.property_id),
+            "description": cat.description or "",
+            "images": [
+                "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
+            ]
+        })
+    return data
+
+
+@router.post("/rooms", status_code=201)
+async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    resort_uuid = _uuid.UUID(payload.resort_id)
+    
+    # 0. Check if property/resort exists. If not, auto-create a mock property
+    prop_q = select(Property).where(Property.property_id == resort_uuid)
+    prop_result = await db.execute(prop_q)
+    prop = prop_result.scalar_one_or_none()
+    
+    if not prop:
+        # Check or create Owner
+        owner_q = select(Owner).limit(1)
+        owner_result = await db.execute(owner_q)
+        owner = owner_result.scalar_one_or_none()
+        if not owner:
+            owner = Owner(
+                owner_id=_uuid.UUID("11111111-1111-1111-1111-111111111111"),
+                full_name="Mock Owner",
+                mobile_number="9999999999",
+                email="mock@owner.com"
+            )
+            db.add(owner)
+            await db.flush()
+            
+        # Check or create Business
+        biz_q = select(Business).limit(1)
+        biz_result = await db.execute(biz_q)
+        biz = biz_result.scalar_one_or_none()
+        if not biz:
+            biz = Business(
+                business_id=_uuid.UUID("22222222-2222-2222-2222-222222222222"),
+                owner_id=owner.owner_id,
+                business_name="Mock Business"
+            )
+            db.add(biz)
+            await db.flush()
+            
+        # Create Property
+        prop = Property(
+            property_id=resort_uuid,
+            business_id=biz.business_id,
+            owner_id=owner.owner_id,
+            property_name="PineSphere Resort",
+            property_type="Resort",
+            onboarding_status="completed",
+            total_rooms=10
+        )
+        db.add(prop)
+        await db.flush()
+
+    # 1. Check if category with this name and resort exists
+    cat_q = select(RoomCategory).where(
+        and_(
+            RoomCategory.property_id == resort_uuid,
+            RoomCategory.room_name == payload.type
+        )
+    )
+    cat_result = await db.execute(cat_q)
+    category = cat_result.scalar_one_or_none()
+    
+    if not category:
+        # Create a new category
+        category = RoomCategory(
+            property_id=resort_uuid,
+            room_name=payload.type,
+            base_price=payload.price,
+            number_of_rooms=1,
+            description=payload.description
+        )
+        db.add(category)
+        await db.flush()
+    else:
+        # Update category base price & description
+        category.base_price = payload.price
+        category.description = payload.description
+        if category.number_of_rooms:
+            category.number_of_rooms += 1
+        else:
+            category.number_of_rooms = 1
+        db.add(category)
+        await db.flush()
+        
+    # 2. Create the Room
+    new_room = Room(
+        room_category_id=category.room_category_id,
+        room_number=payload.room_number,
+        housekeeping_status="clean",
+        occupancy_status="vacant"
+    )
+    db.add(new_room)
+    await db.commit()
+    return {"message": "Room created successfully", "room_id": str(new_room.room_id)}
+
+
+@router.post("/rooms/{room_id}/clean")
+async def clean_room(room_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        rid = _uuid.UUID(room_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid room ID format")
+        
+    q = select(Room).where(Room.room_id == rid)
+    result = await db.execute(q)
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+        
+    room.housekeeping_status = "clean"
+    room.occupancy_status = "vacant"
+    db.add(room)
+    await db.commit()
+    return {"message": "Room status marked clean & vacant"}
+
+
+class RoomUpdateInput(BaseModel):
+    room_number: str
+    type: str
+    price: float
+    status: str
+    description: Optional[str] = ""
+
+
+@router.put("/rooms/{room_id}")
+async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        rid = _uuid.UUID(room_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid room ID format")
+        
+    q = select(Room).where(Room.room_id == rid)
+    result = await db.execute(q)
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+        
+    cat_q = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+    cat_result = await db.execute(cat_q)
+    category = cat_result.scalar_one_or_none()
+    
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found for room")
+        
+    room.room_number = payload.room_number
+    room.occupancy_status = payload.status
+    
+    category.room_name = payload.type
+    category.base_price = payload.price
+    category.description = payload.description
+    
+    db.add(room)
+    db.add(category)
+    await db.commit()
+    return {"message": "Room updated successfully"}
+
+
+@router.delete("/rooms/{room_id}")
+async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        rid = _uuid.UUID(room_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid room ID format")
+        
+    q = select(Room).where(Room.room_id == rid)
+    result = await db.execute(q)
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+        
+    await db.delete(room)
+    await db.commit()
+    return {"message": "Room deleted successfully"}
+
+
+@router.get("")
 async def get_properties(db: AsyncSession = Depends(get_db)):
     """List all properties joined with owner, business and latest subscription."""
     q = (
         select(Property, Owner, Business, Subscription)
+        .select_from(Property)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .join(Business, Property.business_id == Business.business_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
@@ -59,6 +317,7 @@ async def get_properties(db: AsyncSession = Depends(get_db)):
             "verificationStatus": _verification_status(prop.onboarding_status),
             "subscriptionStatus": sub.status if sub else "No Subscription",
             "plan": sub.plan if sub else "N/A",
+            "description": prop.description or "",
             "business": biz.business_name,
             "lastUpdated": str(prop.updated_at)[:10] if prop.updated_at else "N/A",
             "onboarding": "100%" if prop.onboarding_status == "completed" else "50%",
@@ -197,6 +456,7 @@ async def get_property_detail(property_id: str, db: AsyncSession = Depends(get_d
 
     q = (
         select(Property, Owner, Business, Subscription)
+        .select_from(Property)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .join(Business, Property.business_id == Business.business_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)

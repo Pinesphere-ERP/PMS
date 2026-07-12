@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/security/permission_engine.dart';
+import '../../../../core/presentation/widgets/access_restricted_view.dart';
+import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
 import '../providers/checkout_provider.dart';
 
 class CheckOutScreen extends ConsumerStatefulWidget {
@@ -51,6 +54,26 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final user = authState.maybeWhen(
+      authenticated: (u) => u,
+      orElse: () => null,
+    );
+    final role = user?.role ?? UserRole.guest;
+
+    final canView = PermissionEngine.hasPermission(role, PermissionModule.checkIn, PermissionAction.view);
+    final canDigitalCheckIn = PermissionEngine.hasPermission(role, PermissionModule.checkIn, PermissionAction.digitalCheckIn);
+    final canFull = PermissionEngine.hasPermission(role, PermissionModule.checkIn, PermissionAction.full);
+
+    if (!canView && !canDigitalCheckIn && !canFull) {
+      return const AccessRestrictedView(
+        title: 'Checkout Restricted',
+        message: 'Your role does not permit access to the Checkout module.',
+      );
+    }
+
+    final isViewOnly = !canFull && !canDigitalCheckIn;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -68,11 +91,37 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildPendingCheckoutsTab(),
-          _buildTodaysCheckoutsTab(),
+          if (isViewOnly)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.amber.withOpacity(0.2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.visibility, size: 16, color: Colors.amber),
+                  const SizedBox(width: 8),
+                  Text(
+                    'View-Only Mode',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.amber.shade900,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildPendingCheckoutsTab(isViewOnly),
+                _buildTodaysCheckoutsTab(isViewOnly),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -80,21 +129,21 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
 
   // ─── PENDING CHECKOUTS TAB ────────────────────────────────────────────────
 
-  Widget _buildPendingCheckoutsTab() {
+  Widget _buildPendingCheckoutsTab(bool isViewOnly) {
     final state = ref.watch(checkOutProvider);
     return state.when(
       initial: () => const Center(child: Text('Select a property to view pending checkouts')),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getPendingCheckOuts(_dummyPropertyId)),
       success: (_, __) => const Center(child: Text('Action completed')),
-      loadedPendingCheckouts: (checkouts) => _buildPendingCheckoutsList(checkouts),
+      loadedPendingCheckouts: (checkouts) => _buildPendingCheckoutsList(checkouts, isViewOnly),
       loadedBilling: (_) => const SizedBox.shrink(),
       loadedTodaysCheckouts: (_) => const SizedBox.shrink(),
       loadedDetail: (_) => const SizedBox.shrink(),
     );
   }
 
-  Widget _buildPendingCheckoutsList(List<Map<String, dynamic>> checkouts) {
+  Widget _buildPendingCheckoutsList(List<Map<String, dynamic>> checkouts, bool isViewOnly) {
     if (checkouts.isEmpty) {
       return Center(
         child: Column(
@@ -122,12 +171,12 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
         padding: const EdgeInsets.all(16),
         itemCount: checkouts.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => _buildPendingCheckoutCard(checkouts[index]),
+        itemBuilder: (context, index) => _buildPendingCheckoutCard(checkouts[index], isViewOnly),
       ),
     );
   }
 
-  Widget _buildPendingCheckoutCard(Map<String, dynamic> checkout) {
+  Widget _buildPendingCheckoutCard(Map<String, dynamic> checkout, bool isViewOnly) {
     final guestName = checkout['guest_name']?.toString() ?? checkout['guestName'] ?? 'Unknown Guest';
     final roomNumber = checkout['room_number']?.toString() ?? checkout['roomNumber'] ?? '-';
     final checkinDate = checkout['checkin_date']?.toString() ?? checkout['checkinDate'] ?? '';
@@ -141,7 +190,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     final ratePerNight = checkout['rate_per_night']?.toString() ?? checkout['ratePerNight'] ?? '0';
 
     return BentoCard(
-      onTap: () => _openBillingSheet(checkout),
+      onTap: () => _openBillingSheet(checkout, isViewOnly),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -215,21 +264,21 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
 
   // ─── TODAY'S CHECKOUTS TAB ────────────────────────────────────────────────
 
-  Widget _buildTodaysCheckoutsTab() {
+  Widget _buildTodaysCheckoutsTab(bool isViewOnly) {
     final state = ref.watch(checkOutProvider);
     return state.when(
       initial: () => const Center(child: Text('Select a property to view today\'s checkouts')),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getTodaysCheckOuts(_dummyPropertyId)),
       success: (_, __) => const Center(child: Text('Action completed')),
-      loadedTodaysCheckouts: (checkouts) => _buildTodaysCheckoutsTable(checkouts),
+      loadedTodaysCheckouts: (checkouts) => _buildTodaysCheckoutsTable(checkouts, isViewOnly),
       loadedPendingCheckouts: (_) => const SizedBox.shrink(),
       loadedBilling: (_) => const SizedBox.shrink(),
       loadedDetail: (_) => const SizedBox.shrink(),
     );
   }
 
-  Widget _buildTodaysCheckoutsTable(List<Map<String, dynamic>> checkouts) {
+  Widget _buildTodaysCheckoutsTable(List<Map<String, dynamic>> checkouts, bool isViewOnly) {
     if (checkouts.isEmpty) {
       return Center(
         child: Column(
@@ -357,7 +406,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
 
   // ─── BILLING SHEET ────────────────────────────────────────────────────────
 
-  void _openBillingSheet(Map<String, dynamic> checkout) {
+  void _openBillingSheet(Map<String, dynamic> checkout, bool isViewOnly) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -366,6 +415,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
         checkout: checkout,
         dateFormat: _dateFormat,
         ref: ref,
+        isViewOnly: isViewOnly,
       ),
     );
   }
@@ -379,11 +429,13 @@ class _BillingSheet extends ConsumerStatefulWidget {
   final Map<String, dynamic> checkout;
   final DateFormat dateFormat;
   final WidgetRef ref;
+  final bool isViewOnly;
 
   const _BillingSheet({
     required this.checkout,
     required this.dateFormat,
     required this.ref,
+    required this.isViewOnly,
   });
 
   @override
@@ -492,15 +544,18 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(bottom: viewInsets + 24),
-              child: Column(
-                children: [
-                  _buildSection1GuestSummary(),
-                  _buildSection2Charges(),
-                  _buildSection3Adjustments(),
-                  _buildSection4PaymentSummary(),
-                  _buildSection5CheckoutOptions(),
-                  _buildSection6Actions(),
-                ],
+              child: AbsorbPointer(
+                absorbing: widget.isViewOnly,
+                child: Column(
+                  children: [
+                    _buildSection1GuestSummary(),
+                    _buildSection2Charges(),
+                    _buildSection3Adjustments(),
+                    _buildSection4PaymentSummary(),
+                    _buildSection5CheckoutOptions(),
+                    if (!widget.isViewOnly) _buildSection6Actions(),
+                  ],
+                ),
               ),
             ),
           ),

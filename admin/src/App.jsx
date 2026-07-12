@@ -18,6 +18,8 @@ import DeviceDiagnosticsPanel from './pages/DeviceManagement/DeviceDiagnosticsPa
 
 // Audit Logs (New)
 import AuditLogs from './pages/AuditManagement/AuditLogs';
+// System Management
+import SystemSettings from './pages/SystemManagement/SystemSettings';
 
 function App() {
   return (
@@ -43,6 +45,8 @@ function App() {
 
           {/* Audit Logs */}
           <Route path="audit" element={<AuditLogs />} />
+          {/* System Management */}
+          <Route path="settings/system" element={<SystemSettings />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 from app.infra.database import get_db
 from app.infra.models import (
-    Subscription, Property, Owner, PaymentTransaction, Invoice
+    Subscription, Property, Owner, SubscriptionTransaction, Invoice
 )
 
 router = APIRouter()
@@ -26,6 +26,7 @@ def _fmt_amount(amount: float) -> str:
 async def get_subscriptions(db: AsyncSession = Depends(get_db)):
     q = (
         select(Subscription, Property, Owner)
+        .select_from(Subscription)
         .join(Property, Subscription.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .order_by(Subscription.expiry_date.asc())
@@ -161,10 +162,10 @@ async def get_subscription_dashboard(db: AsyncSession = Depends(get_db)):
 
     # Recent paid transactions
     tx_q = await db.execute(
-        select(PaymentTransaction, Property)
-        .join(Property, PaymentTransaction.property_id == Property.property_id)
-        .where(PaymentTransaction.status == "Success")
-        .order_by(PaymentTransaction.created_at.desc())
+        select(SubscriptionTransaction, Property)
+        .join(Property, SubscriptionTransaction.property_id == Property.property_id)
+        .where(SubscriptionTransaction.status == "Success")
+        .order_by(SubscriptionTransaction.created_at.desc())
         .limit(5)
     )
     tx_rows = tx_q.all()
@@ -206,6 +207,7 @@ async def get_renewal_data(db: AsyncSession = Depends(get_db)):
     # Upcoming (next 7 days, still active)
     upcoming_q = await db.execute(
         select(Subscription, Property, Owner)
+        .select_from(Subscription)
         .join(Property, Subscription.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .where(
@@ -220,6 +222,7 @@ async def get_renewal_data(db: AsyncSession = Depends(get_db)):
     # Grace period
     grace_q = await db.execute(
         select(Subscription, Property, Owner)
+        .select_from(Subscription)
         .join(Property, Subscription.property_id == Property.property_id)
         .join(Owner, Property.owner_id == Owner.owner_id)
         .where(Subscription.status == "Grace Period")
@@ -230,6 +233,7 @@ async def get_renewal_data(db: AsyncSession = Depends(get_db)):
     # Enforcement (disabled / long expired)
     enforce_q = await db.execute(
         select(Subscription, Property)
+        .select_from(Subscription)
         .join(Property, Subscription.property_id == Property.property_id)
         .where(Subscription.status.in_(["Disabled", "Expired"]))
         .order_by(Subscription.expiry_date.asc())

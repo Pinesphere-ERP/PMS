@@ -8,6 +8,7 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/settings/presentation/screens/property_settings_screen.dart';
 import '../../features/bookings/presentation/screens/new_booking_screen.dart';
 import '../../features/bookings/presentation/screens/pending_checkouts_screen.dart';
 import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart';
@@ -23,6 +24,7 @@ import '../../features/checkin/presentation/screens/checkin_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
+import '../../features/audit/presentation/screens/audit_logs_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -81,6 +83,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/device-status',
         builder: (context, state) => const DeviceSyncStatusScreen(),
+      ),
+      GoRoute(
+        path: '/property-settings',
+        builder: (context, state) => const PropertySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/audit-logs',
+        builder: (context, state) => const AuditLogsScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

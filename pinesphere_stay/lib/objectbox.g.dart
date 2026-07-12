@@ -15,13 +15,17 @@ import 'package:objectbox/objectbox.dart' as obx;
 import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
 import 'core/sync/queue/sync_operation.dart';
+import 'features/audit/domain/models/audit_log_entity.dart';
 import 'features/bookings/domain/models/booking_entity.dart';
 import 'features/checkin/domain/models/checkin_entity.dart';
 import 'features/checkout/domain/models/checkout_entity.dart';
 import 'features/guests/domain/models/guest_entity.dart';
 import 'features/housekeeping/domain/models/housekeeping_task_entity.dart';
 import 'features/housekeeping/domain/models/maintenance_ticket_entity.dart';
+import 'features/reports/domain/models/kpi_snapshot_entity.dart';
 import 'features/rooms/domain/models/room_entity.dart';
+import 'features/settings/domain/models/device_config_entity.dart';
+import 'features/settings/domain/models/property_setting_entity.dart';
 import 'features/sync/domain/models/sync_queue_entity.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
@@ -1080,6 +1084,322 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(10, 4054418690488619972),
+    name: 'AuditLogEntity',
+    lastPropertyId: const obx_int.IdUid(15, 5660315046905947804),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 190814987595055737),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 7763696573159931794),
+        name: 'logId',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(10, 4174368094601614611),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 6917113042235191437),
+        name: 'propertyId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 436969503335493264),
+        name: 'userId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 2559923580272195552),
+        name: 'deviceId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 6043290595334147346),
+        name: 'timestamp',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 2413461516436587507),
+        name: 'moduleName',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 1349423850540445625),
+        name: 'actionType',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 3185513692982668732),
+        name: 'targetEntity',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 4640805611001930862),
+        name: 'targetRecordId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 1318092403370200026),
+        name: 'oldValueSnapshot',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 7342646559860562999),
+        name: 'newValueSnapshot',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 3552191205884013088),
+        name: 'ipAddress',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 3109842256676025930),
+        name: 'previousLogHash',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 5660315046905947804),
+        name: 'entryHash',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(11, 3083489583569915725),
+    name: 'DeviceConfigEntity',
+    lastPropertyId: const obx_int.IdUid(7, 8419341695083477562),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 696673395112777550),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 9148597992762053983),
+        name: 'deviceUid',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(11, 9069501086277746343),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 2640861152835470573),
+        name: 'biometricEnabled',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 67958218240328605),
+        name: 'syncIntervalMins',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 4485010618127892675),
+        name: 'thermalPrinterMac',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 496263026858307734),
+        name: 'localLogLevel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 8419341695083477562),
+        name: 'lastModifiedHlc',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(12, 894830027575710388),
+    name: 'PropertySettingEntity',
+    lastPropertyId: const obx_int.IdUid(10, 38738978754718938),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 966632073692395748),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 808510318443107534),
+        name: 'uuid',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(12, 3830347986775904518),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 7767367920961730269),
+        name: 'propertyId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 8157679949708132311),
+        name: 'settingKey',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 2325031179651140089),
+        name: 'settingValue',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 4304551992531408426),
+        name: 'valueType',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 1777020722617458193),
+        name: 'description',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 1180842955347529411),
+        name: 'updatedBy',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 4311119012241257985),
+        name: 'version',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 38738978754718938),
+        name: 'lastModifiedHlc',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(13, 5529333314135770933),
+    name: 'KpiSnapshotEntity',
+    lastPropertyId: const obx_int.IdUid(13, 3493084505853074023),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 3916847073017071917),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 8798628914813709875),
+        name: 'uuid',
+        type: 9,
+        flags: 34848,
+        indexId: const obx_int.IdUid(13, 6316751815516699346),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 843859956112657450),
+        name: 'propertyId',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(14, 7331020963077311612),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 332135626490241205),
+        name: 'snapshotDate',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(15, 6364991816235469336),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 196987686110509323),
+        name: 'occupiedRooms',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 5460101419526658810),
+        name: 'vacantRooms',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 4216657291858027667),
+        name: 'revenueRoomRent',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 4637013240384672449),
+        name: 'revenueAddons',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 6962787722452342615),
+        name: 'expensesAmount',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 8037106156872325228),
+        name: 'outstandingPayments',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 1662076914303328098),
+        name: 'gstCollected',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 6155064195686749970),
+        name: 'isLocalOnly',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 3493084505853074023),
+        name: 'lastModifiedHlc',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -1125,8 +1445,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(9, 5282025660670065698),
-    lastIndexId: const obx_int.IdUid(9, 1691103865544267302),
+    lastEntityId: const obx_int.IdUid(13, 5529333314135770933),
+    lastIndexId: const obx_int.IdUid(15, 6364991816235469336),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -2389,6 +2709,419 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    AuditLogEntity: obx_int.EntityDefinition<AuditLogEntity>(
+      model: _entities[9],
+      toOneRelations: (AuditLogEntity object) => [],
+      toManyRelations: (AuditLogEntity object) => {},
+      getId: (AuditLogEntity object) => object.id,
+      setId: (AuditLogEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (AuditLogEntity object, fb.Builder fbb) {
+        final logIdOffset = fbb.writeString(object.logId);
+        final propertyIdOffset = object.propertyId == null
+            ? null
+            : fbb.writeString(object.propertyId!);
+        final userIdOffset = object.userId == null
+            ? null
+            : fbb.writeString(object.userId!);
+        final deviceIdOffset = object.deviceId == null
+            ? null
+            : fbb.writeString(object.deviceId!);
+        final moduleNameOffset = object.moduleName == null
+            ? null
+            : fbb.writeString(object.moduleName!);
+        final actionTypeOffset = object.actionType == null
+            ? null
+            : fbb.writeString(object.actionType!);
+        final targetEntityOffset = object.targetEntity == null
+            ? null
+            : fbb.writeString(object.targetEntity!);
+        final targetRecordIdOffset = object.targetRecordId == null
+            ? null
+            : fbb.writeString(object.targetRecordId!);
+        final oldValueSnapshotOffset = object.oldValueSnapshot == null
+            ? null
+            : fbb.writeString(object.oldValueSnapshot!);
+        final newValueSnapshotOffset = object.newValueSnapshot == null
+            ? null
+            : fbb.writeString(object.newValueSnapshot!);
+        final ipAddressOffset = object.ipAddress == null
+            ? null
+            : fbb.writeString(object.ipAddress!);
+        final previousLogHashOffset = object.previousLogHash == null
+            ? null
+            : fbb.writeString(object.previousLogHash!);
+        final entryHashOffset = object.entryHash == null
+            ? null
+            : fbb.writeString(object.entryHash!);
+        fbb.startTable(16);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, logIdOffset);
+        fbb.addOffset(2, propertyIdOffset);
+        fbb.addOffset(3, userIdOffset);
+        fbb.addOffset(4, deviceIdOffset);
+        fbb.addInt64(5, object.timestamp.millisecondsSinceEpoch);
+        fbb.addOffset(6, moduleNameOffset);
+        fbb.addOffset(7, actionTypeOffset);
+        fbb.addOffset(8, targetEntityOffset);
+        fbb.addOffset(9, targetRecordIdOffset);
+        fbb.addOffset(10, oldValueSnapshotOffset);
+        fbb.addOffset(11, newValueSnapshotOffset);
+        fbb.addOffset(12, ipAddressOffset);
+        fbb.addOffset(13, previousLogHashOffset);
+        fbb.addOffset(14, entryHashOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final logIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final propertyIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 8);
+        final userIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 10);
+        final deviceIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 12);
+        final timestampParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 14, 0),
+        );
+        final moduleNameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 16);
+        final actionTypeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 18);
+        final targetEntityParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 20);
+        final targetRecordIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 22);
+        final oldValueSnapshotParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 24);
+        final newValueSnapshotParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 26);
+        final ipAddressParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 28);
+        final previousLogHashParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 30);
+        final entryHashParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 32);
+        final object = AuditLogEntity(
+          id: idParam,
+          logId: logIdParam,
+          propertyId: propertyIdParam,
+          userId: userIdParam,
+          deviceId: deviceIdParam,
+          timestamp: timestampParam,
+          moduleName: moduleNameParam,
+          actionType: actionTypeParam,
+          targetEntity: targetEntityParam,
+          targetRecordId: targetRecordIdParam,
+          oldValueSnapshot: oldValueSnapshotParam,
+          newValueSnapshot: newValueSnapshotParam,
+          ipAddress: ipAddressParam,
+          previousLogHash: previousLogHashParam,
+          entryHash: entryHashParam,
+        );
+
+        return object;
+      },
+    ),
+    DeviceConfigEntity: obx_int.EntityDefinition<DeviceConfigEntity>(
+      model: _entities[10],
+      toOneRelations: (DeviceConfigEntity object) => [],
+      toManyRelations: (DeviceConfigEntity object) => {},
+      getId: (DeviceConfigEntity object) => object.id,
+      setId: (DeviceConfigEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (DeviceConfigEntity object, fb.Builder fbb) {
+        final deviceUidOffset = fbb.writeString(object.deviceUid);
+        final thermalPrinterMacOffset = fbb.writeString(
+          object.thermalPrinterMac,
+        );
+        final localLogLevelOffset = fbb.writeString(object.localLogLevel);
+        final lastModifiedHlcOffset = fbb.writeString(object.lastModifiedHlc);
+        fbb.startTable(8);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, deviceUidOffset);
+        fbb.addBool(2, object.biometricEnabled);
+        fbb.addInt64(3, object.syncIntervalMins);
+        fbb.addOffset(4, thermalPrinterMacOffset);
+        fbb.addOffset(5, localLogLevelOffset);
+        fbb.addOffset(6, lastModifiedHlcOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final deviceUidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final biometricEnabledParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          8,
+          false,
+        );
+        final syncIntervalMinsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          10,
+          0,
+        );
+        final thermalPrinterMacParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final localLogLevelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final lastModifiedHlcParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 16, '');
+        final object = DeviceConfigEntity(
+          id: idParam,
+          deviceUid: deviceUidParam,
+          biometricEnabled: biometricEnabledParam,
+          syncIntervalMins: syncIntervalMinsParam,
+          thermalPrinterMac: thermalPrinterMacParam,
+          localLogLevel: localLogLevelParam,
+          lastModifiedHlc: lastModifiedHlcParam,
+        );
+
+        return object;
+      },
+    ),
+    PropertySettingEntity: obx_int.EntityDefinition<PropertySettingEntity>(
+      model: _entities[11],
+      toOneRelations: (PropertySettingEntity object) => [],
+      toManyRelations: (PropertySettingEntity object) => {},
+      getId: (PropertySettingEntity object) => object.id,
+      setId: (PropertySettingEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (PropertySettingEntity object, fb.Builder fbb) {
+        final uuidOffset = fbb.writeString(object.uuid);
+        final propertyIdOffset = fbb.writeString(object.propertyId);
+        final settingKeyOffset = fbb.writeString(object.settingKey);
+        final settingValueOffset = fbb.writeString(object.settingValue);
+        final valueTypeOffset = fbb.writeString(object.valueType);
+        final descriptionOffset = fbb.writeString(object.description);
+        final updatedByOffset = fbb.writeString(object.updatedBy);
+        final lastModifiedHlcOffset = fbb.writeString(object.lastModifiedHlc);
+        fbb.startTable(11);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, uuidOffset);
+        fbb.addOffset(2, propertyIdOffset);
+        fbb.addOffset(3, settingKeyOffset);
+        fbb.addOffset(4, settingValueOffset);
+        fbb.addOffset(5, valueTypeOffset);
+        fbb.addOffset(6, descriptionOffset);
+        fbb.addOffset(7, updatedByOffset);
+        fbb.addInt64(8, object.version);
+        fbb.addOffset(9, lastModifiedHlcOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final uuidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final propertyIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final settingKeyParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final settingValueParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final valueTypeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final descriptionParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 16, '');
+        final updatedByParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
+        final versionParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          0,
+        );
+        final lastModifiedHlcParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 22, '');
+        final object = PropertySettingEntity(
+          id: idParam,
+          uuid: uuidParam,
+          propertyId: propertyIdParam,
+          settingKey: settingKeyParam,
+          settingValue: settingValueParam,
+          valueType: valueTypeParam,
+          description: descriptionParam,
+          updatedBy: updatedByParam,
+          version: versionParam,
+          lastModifiedHlc: lastModifiedHlcParam,
+        );
+
+        return object;
+      },
+    ),
+    KpiSnapshotEntity: obx_int.EntityDefinition<KpiSnapshotEntity>(
+      model: _entities[12],
+      toOneRelations: (KpiSnapshotEntity object) => [],
+      toManyRelations: (KpiSnapshotEntity object) => {},
+      getId: (KpiSnapshotEntity object) => object.id,
+      setId: (KpiSnapshotEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (KpiSnapshotEntity object, fb.Builder fbb) {
+        final uuidOffset = fbb.writeString(object.uuid);
+        final propertyIdOffset = fbb.writeString(object.propertyId);
+        final snapshotDateOffset = fbb.writeString(object.snapshotDate);
+        final lastModifiedHlcOffset = fbb.writeString(object.lastModifiedHlc);
+        fbb.startTable(14);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, uuidOffset);
+        fbb.addOffset(2, propertyIdOffset);
+        fbb.addOffset(3, snapshotDateOffset);
+        fbb.addInt64(4, object.occupiedRooms);
+        fbb.addInt64(5, object.vacantRooms);
+        fbb.addFloat64(6, object.revenueRoomRent);
+        fbb.addFloat64(7, object.revenueAddons);
+        fbb.addFloat64(8, object.expensesAmount);
+        fbb.addFloat64(9, object.outstandingPayments);
+        fbb.addFloat64(10, object.gstCollected);
+        fbb.addBool(11, object.isLocalOnly);
+        fbb.addOffset(12, lastModifiedHlcOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final uuidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final propertyIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final snapshotDateParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final occupiedRoomsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          12,
+          0,
+        );
+        final vacantRoomsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          0,
+        );
+        final revenueRoomRentParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          16,
+          0,
+        );
+        final revenueAddonsParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          18,
+          0,
+        );
+        final expensesAmountParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          0,
+        );
+        final outstandingPaymentsParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          22,
+          0,
+        );
+        final gstCollectedParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          24,
+          0,
+        );
+        final isLocalOnlyParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          26,
+          false,
+        );
+        final lastModifiedHlcParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 28, '');
+        final object = KpiSnapshotEntity(
+          id: idParam,
+          uuid: uuidParam,
+          propertyId: propertyIdParam,
+          snapshotDate: snapshotDateParam,
+          occupiedRooms: occupiedRoomsParam,
+          vacantRooms: vacantRoomsParam,
+          revenueRoomRent: revenueRoomRentParam,
+          revenueAddons: revenueAddonsParam,
+          expensesAmount: expensesAmountParam,
+          outstandingPayments: outstandingPaymentsParam,
+          gstCollected: gstCollectedParam,
+          isLocalOnly: isLocalOnlyParam,
+          lastModifiedHlc: lastModifiedHlcParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -3224,4 +3957,241 @@ class MaintenanceTicketEntity_ {
       obx.QueryStringProperty<MaintenanceTicketEntity>(
         _entities[8].properties[17],
       );
+}
+
+/// [AuditLogEntity] entity fields to define ObjectBox queries.
+class AuditLogEntity_ {
+  /// See [AuditLogEntity.id].
+  static final id = obx.QueryIntegerProperty<AuditLogEntity>(
+    _entities[9].properties[0],
+  );
+
+  /// See [AuditLogEntity.logId].
+  static final logId = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[1],
+  );
+
+  /// See [AuditLogEntity.propertyId].
+  static final propertyId = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[2],
+  );
+
+  /// See [AuditLogEntity.userId].
+  static final userId = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[3],
+  );
+
+  /// See [AuditLogEntity.deviceId].
+  static final deviceId = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[4],
+  );
+
+  /// See [AuditLogEntity.timestamp].
+  static final timestamp = obx.QueryDateProperty<AuditLogEntity>(
+    _entities[9].properties[5],
+  );
+
+  /// See [AuditLogEntity.moduleName].
+  static final moduleName = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[6],
+  );
+
+  /// See [AuditLogEntity.actionType].
+  static final actionType = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[7],
+  );
+
+  /// See [AuditLogEntity.targetEntity].
+  static final targetEntity = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[8],
+  );
+
+  /// See [AuditLogEntity.targetRecordId].
+  static final targetRecordId = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[9],
+  );
+
+  /// See [AuditLogEntity.oldValueSnapshot].
+  static final oldValueSnapshot = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[10],
+  );
+
+  /// See [AuditLogEntity.newValueSnapshot].
+  static final newValueSnapshot = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[11],
+  );
+
+  /// See [AuditLogEntity.ipAddress].
+  static final ipAddress = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[12],
+  );
+
+  /// See [AuditLogEntity.previousLogHash].
+  static final previousLogHash = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[13],
+  );
+
+  /// See [AuditLogEntity.entryHash].
+  static final entryHash = obx.QueryStringProperty<AuditLogEntity>(
+    _entities[9].properties[14],
+  );
+}
+
+/// [DeviceConfigEntity] entity fields to define ObjectBox queries.
+class DeviceConfigEntity_ {
+  /// See [DeviceConfigEntity.id].
+  static final id = obx.QueryIntegerProperty<DeviceConfigEntity>(
+    _entities[10].properties[0],
+  );
+
+  /// See [DeviceConfigEntity.deviceUid].
+  static final deviceUid = obx.QueryStringProperty<DeviceConfigEntity>(
+    _entities[10].properties[1],
+  );
+
+  /// See [DeviceConfigEntity.biometricEnabled].
+  static final biometricEnabled = obx.QueryBooleanProperty<DeviceConfigEntity>(
+    _entities[10].properties[2],
+  );
+
+  /// See [DeviceConfigEntity.syncIntervalMins].
+  static final syncIntervalMins = obx.QueryIntegerProperty<DeviceConfigEntity>(
+    _entities[10].properties[3],
+  );
+
+  /// See [DeviceConfigEntity.thermalPrinterMac].
+  static final thermalPrinterMac = obx.QueryStringProperty<DeviceConfigEntity>(
+    _entities[10].properties[4],
+  );
+
+  /// See [DeviceConfigEntity.localLogLevel].
+  static final localLogLevel = obx.QueryStringProperty<DeviceConfigEntity>(
+    _entities[10].properties[5],
+  );
+
+  /// See [DeviceConfigEntity.lastModifiedHlc].
+  static final lastModifiedHlc = obx.QueryStringProperty<DeviceConfigEntity>(
+    _entities[10].properties[6],
+  );
+}
+
+/// [PropertySettingEntity] entity fields to define ObjectBox queries.
+class PropertySettingEntity_ {
+  /// See [PropertySettingEntity.id].
+  static final id = obx.QueryIntegerProperty<PropertySettingEntity>(
+    _entities[11].properties[0],
+  );
+
+  /// See [PropertySettingEntity.uuid].
+  static final uuid = obx.QueryStringProperty<PropertySettingEntity>(
+    _entities[11].properties[1],
+  );
+
+  /// See [PropertySettingEntity.propertyId].
+  static final propertyId = obx.QueryStringProperty<PropertySettingEntity>(
+    _entities[11].properties[2],
+  );
+
+  /// See [PropertySettingEntity.settingKey].
+  static final settingKey = obx.QueryStringProperty<PropertySettingEntity>(
+    _entities[11].properties[3],
+  );
+
+  /// See [PropertySettingEntity.settingValue].
+  static final settingValue = obx.QueryStringProperty<PropertySettingEntity>(
+    _entities[11].properties[4],
+  );
+
+  /// See [PropertySettingEntity.valueType].
+  static final valueType = obx.QueryStringProperty<PropertySettingEntity>(
+    _entities[11].properties[5],
+  );
+
+  /// See [PropertySettingEntity.description].
+  static final description = obx.QueryStringProperty<PropertySettingEntity>(
+    _entities[11].properties[6],
+  );
+
+  /// See [PropertySettingEntity.updatedBy].
+  static final updatedBy = obx.QueryStringProperty<PropertySettingEntity>(
+    _entities[11].properties[7],
+  );
+
+  /// See [PropertySettingEntity.version].
+  static final version = obx.QueryIntegerProperty<PropertySettingEntity>(
+    _entities[11].properties[8],
+  );
+
+  /// See [PropertySettingEntity.lastModifiedHlc].
+  static final lastModifiedHlc = obx.QueryStringProperty<PropertySettingEntity>(
+    _entities[11].properties[9],
+  );
+}
+
+/// [KpiSnapshotEntity] entity fields to define ObjectBox queries.
+class KpiSnapshotEntity_ {
+  /// See [KpiSnapshotEntity.id].
+  static final id = obx.QueryIntegerProperty<KpiSnapshotEntity>(
+    _entities[12].properties[0],
+  );
+
+  /// See [KpiSnapshotEntity.uuid].
+  static final uuid = obx.QueryStringProperty<KpiSnapshotEntity>(
+    _entities[12].properties[1],
+  );
+
+  /// See [KpiSnapshotEntity.propertyId].
+  static final propertyId = obx.QueryStringProperty<KpiSnapshotEntity>(
+    _entities[12].properties[2],
+  );
+
+  /// See [KpiSnapshotEntity.snapshotDate].
+  static final snapshotDate = obx.QueryStringProperty<KpiSnapshotEntity>(
+    _entities[12].properties[3],
+  );
+
+  /// See [KpiSnapshotEntity.occupiedRooms].
+  static final occupiedRooms = obx.QueryIntegerProperty<KpiSnapshotEntity>(
+    _entities[12].properties[4],
+  );
+
+  /// See [KpiSnapshotEntity.vacantRooms].
+  static final vacantRooms = obx.QueryIntegerProperty<KpiSnapshotEntity>(
+    _entities[12].properties[5],
+  );
+
+  /// See [KpiSnapshotEntity.revenueRoomRent].
+  static final revenueRoomRent = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[6],
+  );
+
+  /// See [KpiSnapshotEntity.revenueAddons].
+  static final revenueAddons = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[7],
+  );
+
+  /// See [KpiSnapshotEntity.expensesAmount].
+  static final expensesAmount = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[8],
+  );
+
+  /// See [KpiSnapshotEntity.outstandingPayments].
+  static final outstandingPayments = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[9],
+  );
+
+  /// See [KpiSnapshotEntity.gstCollected].
+  static final gstCollected = obx.QueryDoubleProperty<KpiSnapshotEntity>(
+    _entities[12].properties[10],
+  );
+
+  /// See [KpiSnapshotEntity.isLocalOnly].
+  static final isLocalOnly = obx.QueryBooleanProperty<KpiSnapshotEntity>(
+    _entities[12].properties[11],
+  );
+
+  /// See [KpiSnapshotEntity.lastModifiedHlc].
+  static final lastModifiedHlc = obx.QueryStringProperty<KpiSnapshotEntity>(
+    _entities[12].properties[12],
+  );
 }

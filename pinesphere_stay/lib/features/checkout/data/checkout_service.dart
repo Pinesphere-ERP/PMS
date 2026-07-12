@@ -6,6 +6,7 @@ import '../../../core/database/objectbox.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../objectbox.g.dart';
+import '../../audit/data/audit_service.dart';
 import '../../rooms/domain/models/room_entity.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/checkout_entity.dart';
@@ -16,17 +17,21 @@ part 'checkout_service.g.dart';
 CheckOutService checkOutService(Ref ref) {
   return CheckOutService(
     dio: ref.watch(dioClientProvider),
+    auditService: ref.watch(auditServiceProvider),
   );
 }
 
 class CheckOutService {
   final Dio _dio;
+  final AuditService _audit;
   late final Store _store;
   late final Box<CheckOutEntity> _checkoutBox;
   late final Box<RoomEntity> _roomBox;
   late final SyncService _syncService;
 
-  CheckOutService({required Dio dio}) : _dio = dio;
+  CheckOutService({required Dio dio, required AuditService auditService})
+      : _dio = dio,
+        _audit = auditService;
 
   void initialize(Store store, SyncService syncService) {
     _store = store;
@@ -71,6 +76,21 @@ class CheckOutService {
       );
       _checkoutBox.put(entity);
       _updateRoomToDirty(data['room_id']?.toString() ?? '');
+      _audit.log(
+        moduleName: 'checkout',
+        actionType: 'check_out',
+        targetEntity: 'check_out',
+        targetRecordId: body['id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString(),
+        userId: data['staff_id']?.toString(),
+        newValue: {
+          'booking_id': data['booking_id'],
+          'checkin_id': data['checkin_id'],
+          'room_id': data['room_id'],
+          'total_amount': data['total_amount'],
+          'payment_status': data['payment_status'],
+        },
+      );
       return body;
     } on DioException catch (e) {
       AppLogger.w('performCheckOut network failed, storing locally and queuing sync', e);
@@ -112,6 +132,21 @@ class CheckOutService {
         entityId: localId,
         operation: 'CREATE',
         payload: data,
+      );
+      _audit.log(
+        moduleName: 'checkout',
+        actionType: 'check_out',
+        targetEntity: 'check_out',
+        targetRecordId: localUuid.toString(),
+        propertyId: data['property_id']?.toString(),
+        userId: data['staff_id']?.toString(),
+        newValue: {
+          'booking_id': data['booking_id'],
+          'checkin_id': data['checkin_id'],
+          'room_id': data['room_id'],
+          'total_amount': data['total_amount'],
+          'offline': true,
+        },
       );
       return data;
     } catch (e) {

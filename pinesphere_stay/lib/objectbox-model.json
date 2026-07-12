@@ -896,10 +896,283 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "10:4054418690488619972",
+      "lastPropertyId": "15:5660315046905947804",
+      "name": "AuditLogEntity",
+      "properties": [
+        {
+          "id": "1:190814987595055737",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7763696573159931794",
+          "name": "logId",
+          "indexId": "10:4174368094601614611",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:6917113042235191437",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "4:436969503335493264",
+          "name": "userId",
+          "type": 9
+        },
+        {
+          "id": "5:2559923580272195552",
+          "name": "deviceId",
+          "type": 9
+        },
+        {
+          "id": "6:6043290595334147346",
+          "name": "timestamp",
+          "type": 10
+        },
+        {
+          "id": "7:2413461516436587507",
+          "name": "moduleName",
+          "type": 9
+        },
+        {
+          "id": "8:1349423850540445625",
+          "name": "actionType",
+          "type": 9
+        },
+        {
+          "id": "9:3185513692982668732",
+          "name": "targetEntity",
+          "type": 9
+        },
+        {
+          "id": "10:4640805611001930862",
+          "name": "targetRecordId",
+          "type": 9
+        },
+        {
+          "id": "11:1318092403370200026",
+          "name": "oldValueSnapshot",
+          "type": 9
+        },
+        {
+          "id": "12:7342646559860562999",
+          "name": "newValueSnapshot",
+          "type": 9
+        },
+        {
+          "id": "13:3552191205884013088",
+          "name": "ipAddress",
+          "type": 9
+        },
+        {
+          "id": "14:3109842256676025930",
+          "name": "previousLogHash",
+          "type": 9
+        },
+        {
+          "id": "15:5660315046905947804",
+          "name": "entryHash",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "11:3083489583569915725",
+      "lastPropertyId": "7:8419341695083477562",
+      "name": "DeviceConfigEntity",
+      "properties": [
+        {
+          "id": "1:696673395112777550",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:9148597992762053983",
+          "name": "deviceUid",
+          "indexId": "11:9069501086277746343",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:2640861152835470573",
+          "name": "biometricEnabled",
+          "type": 1
+        },
+        {
+          "id": "4:67958218240328605",
+          "name": "syncIntervalMins",
+          "type": 6
+        },
+        {
+          "id": "5:4485010618127892675",
+          "name": "thermalPrinterMac",
+          "type": 9
+        },
+        {
+          "id": "6:496263026858307734",
+          "name": "localLogLevel",
+          "type": 9
+        },
+        {
+          "id": "7:8419341695083477562",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "12:894830027575710388",
+      "lastPropertyId": "10:38738978754718938",
+      "name": "PropertySettingEntity",
+      "properties": [
+        {
+          "id": "1:966632073692395748",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:808510318443107534",
+          "name": "uuid",
+          "indexId": "12:3830347986775904518",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:7767367920961730269",
+          "name": "propertyId",
+          "type": 9
+        },
+        {
+          "id": "4:8157679949708132311",
+          "name": "settingKey",
+          "type": 9
+        },
+        {
+          "id": "5:2325031179651140089",
+          "name": "settingValue",
+          "type": 9
+        },
+        {
+          "id": "6:4304551992531408426",
+          "name": "valueType",
+          "type": 9
+        },
+        {
+          "id": "7:1777020722617458193",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "8:1180842955347529411",
+          "name": "updatedBy",
+          "type": 9
+        },
+        {
+          "id": "9:4311119012241257985",
+          "name": "version",
+          "type": 6
+        },
+        {
+          "id": "10:38738978754718938",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "13:5529333314135770933",
+      "lastPropertyId": "13:3493084505853074023",
+      "name": "KpiSnapshotEntity",
+      "properties": [
+        {
+          "id": "1:3916847073017071917",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8798628914813709875",
+          "name": "uuid",
+          "indexId": "13:6316751815516699346",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:843859956112657450",
+          "name": "propertyId",
+          "indexId": "14:7331020963077311612",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:332135626490241205",
+          "name": "snapshotDate",
+          "indexId": "15:6364991816235469336",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "5:196987686110509323",
+          "name": "occupiedRooms",
+          "type": 6
+        },
+        {
+          "id": "6:5460101419526658810",
+          "name": "vacantRooms",
+          "type": 6
+        },
+        {
+          "id": "7:4216657291858027667",
+          "name": "revenueRoomRent",
+          "type": 8
+        },
+        {
+          "id": "8:4637013240384672449",
+          "name": "revenueAddons",
+          "type": 8
+        },
+        {
+          "id": "9:6962787722452342615",
+          "name": "expensesAmount",
+          "type": 8
+        },
+        {
+          "id": "10:8037106156872325228",
+          "name": "outstandingPayments",
+          "type": 8
+        },
+        {
+          "id": "11:1662076914303328098",
+          "name": "gstCollected",
+          "type": 8
+        },
+        {
+          "id": "12:6155064195686749970",
+          "name": "isLocalOnly",
+          "type": 1
+        },
+        {
+          "id": "13:3493084505853074023",
+          "name": "lastModifiedHlc",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "9:5282025660670065698",
-  "lastIndexId": "9:1691103865544267302",
+  "lastEntityId": "13:5529333314135770933",
+  "lastIndexId": "15:6364991816235469336",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

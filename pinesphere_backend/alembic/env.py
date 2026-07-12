@@ -24,8 +24,10 @@ import app.modules.reports.models
 # access to the values within the .ini file in use.
 config = context.config
 
-# Overwrite the sqlalchemy.url from config.py settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Overwrite the sqlalchemy.url with the admin connection string for migrations.
+# ALEMBIC_DATABASE_URL lets migrations run as the admin/superuser (pinesphere)
+# while the app itself connects as the restricted pinesphere_app role.
+config.set_main_option("sqlalchemy.url", settings.ALEMBIC_DATABASE_URL)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

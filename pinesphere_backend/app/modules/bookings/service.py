@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
 from fastapi import HTTPException, status
 
-from app.infra.models import Booking, Guest, Room, Property
+from app.infra.models import Booking, Guest, Room, RoomCategory, Property
+from app.modules.audit.logger import AuditLogger
 from app.modules.bookings.schemas import (
     GuestCreateRequest, GuestResponse,
     BookingCreateRequest, BookingUpdateRequest, BookingResponse,
@@ -97,6 +98,7 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
     if not guest:
         raise HTTPException(status_code=404, detail="Guest not found")
 
+
     if req.check_in_date >= req.check_out_date:
         raise HTTPException(status_code=400, detail="Check-out date must be after check-in date")
 
@@ -114,7 +116,13 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
         raise HTTPException(status_code=409, detail="Room is not available for the selected dates")
 
     nights = (req.check_out_date - req.check_in_date).days
-    room_rent = req.room_rent or (float(room.price_per_night) if room.price_per_night else 0)
+    if req.room_rent:
+        room_rent = req.room_rent
+    else:
+        rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+        rc_res = await db.execute(rc_stmt)
+        rc = rc_res.scalar_one_or_none()
+        room_rent = float(rc.base_price) if rc and rc.base_price else 0
     total_rent = room_rent * nights if room_rent else 0
     tax_amount = req.taxes if req.taxes is not None else total_rent * 0.12
     deposit = req.deposit or 0
@@ -155,6 +163,23 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
     db.add(booking)
     await db.flush()
     await db.refresh(booking)
+
+    await AuditLogger.log(
+        db,
+        module_name="bookings",
+        action_type="create_booking",
+        target_entity="booking",
+        target_record_id=booking.booking_id,
+        property_id=req.property_id,
+        new_value={
+            "booking_id": str(booking.booking_id),
+            "room_id": str(req.room_id),
+            "guest_id": str(req.guest_id),
+            "check_in_date": str(req.check_in_date),
+            "check_out_date": str(req.check_out_date),
+            "total_payable": float(total_payable),
+        },
+    )
 
     return await enrich_booking_response(db, booking)
 
@@ -261,6 +286,17 @@ async def update_booking(db: AsyncSession, booking_id: uuid.UUID, req: BookingUp
 
     await db.flush()
     await db.refresh(booking)
+
+    await AuditLogger.log(
+        db,
+        module_name="bookings",
+        action_type="update_booking",
+        target_entity="booking",
+        target_record_id=booking.booking_id,
+        property_id=booking.property_id,
+        new_value={"updated_fields": list(update_data.keys())},
+    )
+
     return await enrich_booking_response(db, booking)
 
 
@@ -283,6 +319,18 @@ async def cancel_booking(db: AsyncSession, booking_id: uuid.UUID) -> BookingResp
     booking.booking_status = "cancelled"
     await db.flush()
     await db.refresh(booking)
+
+    await AuditLogger.log(
+        db,
+        module_name="bookings",
+        action_type="cancel_booking",
+        target_entity="booking",
+        target_record_id=booking.booking_id,
+        property_id=booking.property_id,
+        old_value={"booking_status": "confirmed"},
+        new_value={"booking_status": "cancelled"},
+    )
+
     return await enrich_booking_response(db, booking)
 
 
@@ -311,3 +359,56 @@ async def enrich_booking_response(db: AsyncSession, booking: Booking) -> Booking
     resp.guest_mobile = guest_mobile
     resp.room_number = room_number
     return resp
+
+
+async def check_in_booking(db: AsyncSession, booking_id: uuid.UUID) -> BookingResponse:
+    stmt = select(Booking).where(Booking.booking_id == booking_id, Booking.is_deleted == False)
+    res = await db.execute(stmt)
+    booking = res.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+        
+    booking.booking_status = "checked_in"
+    
+    room_stmt = select(Room).where(Room.room_id == booking.room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        room.occupancy_status = "occupied"
+        db.add(room)
+        
+    db.add(booking)
+    await db.flush()
+    await db.refresh(booking)
+    return await enrich_booking_response(db, booking)
+
+
+async def check_out_booking(db: AsyncSession, booking_id: uuid.UUID, damage_bill: float = 0, laundry_bill: float = 0, minibar_bill: float = 0, restaurant_bill: float = 0) -> BookingResponse:
+    stmt = select(Booking).where(Booking.booking_id == booking_id, Booking.is_deleted == False)
+    res = await db.execute(stmt)
+    booking = res.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+        
+    booking.booking_status = "checked_out"
+    booking.payment_status = "paid"
+    
+    # We can add these bills to total payable or record them
+    extra_charges = damage_bill + laundry_bill + minibar_bill + restaurant_bill
+    if booking.total_payable is not None:
+        booking.total_payable = float(booking.total_payable) + extra_charges
+    booking.pending_amount = 0.0
+    
+    room_stmt = select(Room).where(Room.room_id == booking.room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        room.occupancy_status = "vacant"
+        room.housekeeping_status = "cleaning"
+        db.add(room)
+        
+    db.add(booking)
+    await db.flush()
+    await db.refresh(booking)
+    return await enrich_booking_response(db, booking)
+

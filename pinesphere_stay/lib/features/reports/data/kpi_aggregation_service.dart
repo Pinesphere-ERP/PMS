@@ -48,7 +48,7 @@ class KpiAggregationService {
               KpiSnapshotEntity_.snapshotDate.equals(dateKey),
         )
         .watch();
-    return query.map((results) => results.isNotEmpty ? results.first : null);
+    return query.map((q) => q.findFirst());
   }
 
   /// Get KPI snapshots for a date range (for charts / multi-day views).
@@ -179,19 +179,13 @@ class KpiAggregationService {
 //  Riverpod providers for reactive UI binding
 // ───────────────────────────────────────────────────────────────
 
-/// Provides the KpiAggregationService singleton.
-@riverpod
-KpiAggregationService kpiService(KpiServiceRef ref) {
-  final service = KpiAggregationService();
-  // Caller must initialize with ObjectBox store before use.
-  return service;
-}
+
 
 /// Stream provider: emits today's KPI snapshot (or null) reactively.
 /// Bind to ObjectBox so the UI re-renders on every local mutation.
 @riverpod
 Stream<KpiSnapshotEntity?> todaysKpiStream(
-  TodaysKpiStreamRef ref, {
+  Ref ref, {
   required String propertyId,
 }) {
   final service = ref.watch(kpiAggregationServiceProvider);

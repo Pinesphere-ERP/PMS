@@ -8,7 +8,6 @@ import '../../../../core/presentation/widgets/role_guard.dart';
 import '../../../../core/permissions/permission_matrix.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../../data/kpi_aggregation_service.dart';
-import '../../domain/models/kpi_snapshot_entity.dart';
 
 class ReportsDashboardScreen extends ConsumerWidget {
   const ReportsDashboardScreen({super.key});

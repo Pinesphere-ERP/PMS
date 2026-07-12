@@ -6,7 +6,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../../data/kpi_aggregation_service.dart';
-import '../../domain/models/kpi_snapshot_entity.dart';
 
 class TodaysRevenueScreen extends ConsumerWidget {
   const TodaysRevenueScreen({super.key});

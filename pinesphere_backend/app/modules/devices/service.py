@@ -10,6 +10,7 @@ from sqlalchemy import select, func, and_, or_, desc
 from fastapi import HTTPException, status
 
 from app.infra.models import Device, AuditLog, User, Property
+from app.modules.audit.logger import AuditLogger
 from app.modules.subscriptions.models import Subscription, SubscriptionPlan, License
 from app.modules.devices.schemas import (
     DeviceRegisterRequest, DeviceActivateRequest, DeviceActivateResponse,
@@ -74,15 +75,15 @@ async def register_device(db: AsyncSession, req: DeviceRegisterRequest, current_
         await db.flush()
 
     # Create immutable audit log entry
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=req.property_id,
         user_id=current_user_id,
-        timestamp=datetime.utcnow(),
         module_name="device_management",
         action_type="register",
         target_entity="device",
         target_record_id=device.id,
-        new_value_snapshot={
+        new_value={
             "device_uid": req.device_uid,
             "device_name": display_name,
             "os_type": req.os_type,
@@ -91,7 +92,6 @@ async def register_device(db: AsyncSession, req: DeviceRegisterRequest, current_
             "status": device.status
         }
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(device)
     return await enrich_device_response(db, device)
@@ -261,23 +261,22 @@ async def perform_device_action(
         raise HTTPException(status_code=400, detail=f"Unsupported action_type: {action}")
 
     # Write immutable audit entry
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=device.property_id,
         user_id=current_user_id,
-        timestamp=datetime.utcnow(),
         module_name="device_management",
         action_type=action,
         target_entity="device",
         target_record_id=device.id,
-        old_value_snapshot={"status": old_status},
-        new_value_snapshot={
+        old_value={"status": old_status},
+        new_value={
             "status": device.status,
             "reason": req.reason,
             "pending_remote_command": pending_cmd,
             "performed_by": str(current_user_id) if current_user_id else "admin"
         }
     )
-    db.add(audit)
     await db.commit()
     await db.refresh(device)
     return await enrich_device_response(db, device)
@@ -293,15 +292,15 @@ async def sync_checkin(db: AsyncSession, req: DeviceSyncCheckinRequest) -> Devic
     device.updated_at = datetime.utcnow()
 
     # Record sync checkin audit log
-    audit = AuditLog(
+    await AuditLogger.log(
+        db,
         property_id=device.property_id,
         user_id=device.primary_user_id,
-        timestamp=datetime.utcnow(),
         module_name="device_sync",
         action_type="checkin",
         target_entity="device",
         target_record_id=device.id,
-        new_value_snapshot={
+        new_value={
             "battery_level": req.battery_level,
             "records_pushed": req.records_pushed,
             "records_pulled": req.records_pulled,
@@ -309,7 +308,6 @@ async def sync_checkin(db: AsyncSession, req: DeviceSyncCheckinRequest) -> Devic
             "error_message": req.error_message
         }
     )
-    db.add(audit)
 
     # Check for pending remote commands (revoke, logout, lock) queued in audit logs
     cmd_stmt = select(AuditLog).where(

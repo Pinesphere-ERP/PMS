@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../providers/settings_provider.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // TODO: replace with real propertyId and deviceUid from auth state
+      ref.read(settingsProvider.notifier).loadPropertySettings('demo-property-id', 'demo-device-uid');
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final settingsState = ref.watch(settingsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -27,11 +45,11 @@ class SettingsScreen extends StatelessWidget {
                     _buildMenuItem(context, Icons.credit_card, 'Subscription', isLast: true),
                   ]),
                   const SizedBox(height: 24),
+                  _buildSectionTitle(context, 'Property Settings'),
+                  _buildPropertySettingsSection(context, settingsState),
+                  const SizedBox(height: 24),
                   _buildSectionTitle(context, 'App Preferences'),
-                  _buildMenuGroup(context, [
-                    _buildMenuItem(context, Icons.dark_mode_outlined, 'Dark Mode', trailing: Switch(value: false, onChanged: (v){}, activeColor: AppColors.primary)),
-                    _buildMenuItem(context, Icons.print_outlined, 'Printer Settings', isLast: true),
-                  ]),
+                  _buildDeviceSettingsSection(context, settingsState),
                   const SizedBox(height: 24),
                   _buildSectionTitle(context, 'Hardware & Device Management'),
                   _buildMenuGroup(context, [
@@ -86,6 +104,111 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildPropertySettingsSection(BuildContext context, SettingsState state) {
+    if (state is SettingsStateLoading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    if (state is SettingsStateError) {
+      return _buildMenuGroup(context, [
+        _buildMenuItem(context, Icons.error_outline, 'Failed to load settings: ${state.message}'),
+      ]);
+    }
+    if (state is SettingsStateLoaded) {
+      final settings = state.propertySettings;
+      if (settings.isEmpty) {
+        return _buildMenuGroup(context, [
+          _buildMenuItem(context, Icons.add_circle_outline, 'No property settings configured', isLast: true),
+        ]);
+      }
+      return _buildMenuGroup(context, [
+        for (int i = 0; i < settings.length; i++)
+          _buildMenuItem(
+            context,
+            _iconForSettingKey(settings[i]['setting_key'] ?? ''),
+            _labelForSettingKey(settings[i]['setting_key'] ?? ''),
+            trailing: Text(
+              settings[i]['setting_value']?.toString() ?? '',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.onSurfaceVariant),
+            ),
+            isLast: i == settings.length - 1,
+          ),
+      ]);
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildDeviceSettingsSection(BuildContext context, SettingsState state) {
+    bool biometricEnabled = false;
+    if (state is SettingsStateLoaded) {
+      biometricEnabled = state.deviceConfig.biometricEnabled;
+    }
+    return _buildMenuGroup(context, [
+      _buildMenuItem(
+        context,
+        Icons.fingerprint,
+        'Biometric Authentication',
+        trailing: Switch(
+          value: biometricEnabled,
+          onChanged: (v) {
+            ref.read(settingsProvider.notifier).updateDeviceConfig(
+              'demo-device-uid',
+              biometricEnabled: v,
+            );
+          },
+          activeColor: AppColors.primary,
+        ),
+      ),
+      _buildMenuItem(context, Icons.dark_mode_outlined, 'Dark Mode', trailing: Switch(value: false, onChanged: (v) {}, activeColor: AppColors.primary)),
+      _buildMenuItem(context, Icons.print_outlined, 'Printer Settings', isLast: true),
+    ]);
+  }
+
+  IconData _iconForSettingKey(String key) {
+    switch (key) {
+      case 'CHECK_IN_TIME':
+      case 'CHECK_OUT_TIME':
+        return Icons.access_time;
+      case 'TAX_PERCENT':
+      case 'GST_NUMBER':
+        return Icons.receipt_long;
+      case 'CURRENCY':
+        return Icons.monetization_on;
+      case 'ACCEPTED_IDS':
+        return Icons.badge;
+      case 'PET_POLICY':
+        return Icons.pets;
+      case 'COUPLE_FRIENDLY':
+        return Icons.favorite_outline;
+      default:
+        return Icons.settings;
+    }
+  }
+
+  String _labelForSettingKey(String key) {
+    switch (key) {
+      case 'CHECK_IN_TIME':
+        return 'Check-In Time';
+      case 'CHECK_OUT_TIME':
+        return 'Check-Out Time';
+      case 'TAX_PERCENT':
+        return 'Tax Percentage';
+      case 'GST_NUMBER':
+        return 'GST Number';
+      case 'CURRENCY':
+        return 'Default Currency';
+      case 'ACCEPTED_IDS':
+        return 'Accepted ID Types';
+      case 'PET_POLICY':
+        return 'Pet Policy';
+      case 'COUPLE_FRIENDLY':
+        return 'Couple Friendly';
+      case 'EXTRA_ADULT_CHARGE':
+        return 'Extra Adult Charge';
+      default:
+        return key.replaceAll('_', ' ');
+    }
   }
 
   Widget _buildAppBar(BuildContext context) {

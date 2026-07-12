@@ -60,15 +60,6 @@ async def list_payments(
         "size": size
     }
 
-@router.get("/{payment_id}", response_model=PaymentRead)
-async def get_payment(
-    payment_id: uuid.UUID,
-    service: PaymentService = Depends(get_payment_service)
-):
-    payment = await service.get_payment(payment_id)
-    if not payment:
-        raise HTTPException(status_code=404, detail="Payment not found")
-    return payment
 
 @router.get("/razorpay/config")
 async def get_razorpay_config():
@@ -370,6 +361,43 @@ async def send_reminder(due_id: str, db: AsyncSession = Depends(get_db)):
     due.reminder_status = "Reminded"
     await db.commit()
     return {"message": "Reminder queued successfully"}
+
+@router.post("/razorpay/verify")
+async def verify_razorpay_payment(
+    request: RazorpayVerifyRequest,
+    service: PaymentService = Depends(get_payment_service),
+    user_id: uuid.UUID = Depends(get_current_user_id)
+):
+    try:
+        payment = await service.verify_and_record_payment(
+            razorpay_order_id=request.razorpay_order_id,
+            razorpay_payment_id=request.razorpay_payment_id,
+            razorpay_signature=request.razorpay_signature,
+            amount=request.amount,
+            invoice_id=request.invoice_id,
+            booking_id=request.booking_id,
+            remarks=request.remarks,
+            user_id=user_id,
+            payment_mode=request.payment_mode,
+            split_payments=request.split_payments
+        )
+        return payment
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        raise HTTPException(status_code=500, detail=error_detail)
+
+@router.get("/{payment_id}", response_model=PaymentRead)
+async def get_payment(
+    payment_id: uuid.UUID,
+    service: PaymentService = Depends(get_payment_service)
+):
+    payment = await service.get_payment(payment_id)
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    return payment
 
 
 @router.post("/pending/{due_id}/link")

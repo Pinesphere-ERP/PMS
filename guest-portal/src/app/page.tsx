@@ -1,9 +1,10 @@
 import Header from "@/components/dashboard/Header";
 import StayCard from "@/components/dashboard/StayCard";
-
+import QuickActions from "@/components/dashboard/QuickActions";
 import AppContainer from "@/components/ui/AppContainer";
-
+import RoomInfo from "@/components/dashboard/RoomInfo";
 import { guest } from "@/data/guest";
+import BalanceCard from "@/components/dashboard/BalanceCard";
 
 export default function Home() {
   return (
@@ -24,7 +25,12 @@ export default function Home() {
           checkOut={guest.checkOut}
           status={guest.status}
         />
-
+        <QuickActions />
+        <RoomInfo
+          roomNumber={guest.roomNumber}
+          roomType={guest.roomType}
+        />
+        <BalanceCard balance={guest.balance} />
       </AppContainer>
     </>
   );

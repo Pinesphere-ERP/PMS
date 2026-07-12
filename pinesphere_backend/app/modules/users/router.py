@@ -18,9 +18,27 @@ async def list_roles(
     current_user: User = Depends(require_permission("USERS", "VIEW")),
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(Role).order_by(Role.level)
+    stmt = select(Role)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+@router.post("/roles")
+async def create_role(
+    role_code: str,
+    role_name: str,
+    db: AsyncSession = Depends(get_db)
+):
+    import uuid
+    new_role = Role(
+        id=uuid.uuid4(),
+        role_code=role_code,
+        role_name=role_name,
+        is_system_role=True,
+        description=role_name + " role"
+    )
+    db.add(new_role)
+    await db.commit()
+    return {"status": "success"}
 
 @router.get("", response_model=List[schemas.UserResponse])
 async def list_users(

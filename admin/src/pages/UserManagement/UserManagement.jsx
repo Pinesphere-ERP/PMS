@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchAPI, postAPI } from '../../services/api';
+import { fetchAPI } from '../../services/api';
 import { 
   Users, Search, Plus, Shield, Mail, Phone, Lock, Hash
 } from 'lucide-react';
@@ -28,7 +28,7 @@ export default function UserManagement() {
     try {
       setLoading(true);
       const res = await fetchAPI('/users?unassigned_only=true'); // Or list all? Let's list all for now
-      setUsers(res.data || []);
+      setUsers(Array.isArray(res) ? res : res.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -39,7 +39,7 @@ export default function UserManagement() {
   const fetchRoles = async () => {
     try {
       const res = await fetchAPI('/users/roles');
-      setRoles(res.data || []);
+      setRoles(Array.isArray(res) ? res : res.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -50,7 +50,10 @@ export default function UserManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await postAPI('/users', formData);
+      await fetchAPI('/users', {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
       setShowModal(false);
       setFormData({ name: '', email: '', mobile_number: '', username: '', password: '', role_id: '' });
       fetchUsers();
@@ -115,7 +118,7 @@ export default function UserManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {roles.find(r => r.id === user.role_id)?.role_name || user.role_id.split('-')[0]}
+                        {roles.find(r => r.id === user.role_id)?.role_name || (user.role_id ? String(user.role_id).split('-')[0] : 'N/A')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

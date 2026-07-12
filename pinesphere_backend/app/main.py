@@ -39,6 +39,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors(), "body": exc.body},
     )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    tb = traceback.format_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "traceback": tb, "error": str(exc)},
+    )
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "version": settings.VERSION}

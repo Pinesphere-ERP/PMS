@@ -2,14 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../domain/models/kpi_dto.dart';
+import '../../../../core/network/dio_client.dart';
 
 part 'reports_repository.g.dart';
 
 @riverpod
-ReportsRepository reportsRepository(ReportsRepositoryRef ref) {
-  return ReportsRepository(
-    Dio(BaseOptions(baseUrl: 'http://localhost:8000/api/v1')),
-  );
+ReportsRepository reportsRepository(Ref ref) {
+  return ReportsRepository(ref.watch(dioClientProvider));
 }
 
 class ReportsRepository {

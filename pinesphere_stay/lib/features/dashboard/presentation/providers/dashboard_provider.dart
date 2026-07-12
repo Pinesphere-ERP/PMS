@@ -64,12 +64,12 @@ class DashboardNotifier extends _$DashboardNotifier {
     // Watch the live stream of today's KPI Snapshot from the KPI service
     final snapshotAsync = ref.watch(todaysKpiStreamProvider(propertyId: propertyId));
 
-    // Get live counts from DB, falling back to sensible mocks if empty
-    int arrivals = 4;
-    int departures = 6;
-    int checkouts = 3;
-    int housekeeping = 4;
-    int pendingPayments = 2;
+    // Get live counts from DB, falling back to 0 if empty
+    int arrivals = 0;
+    int departures = 0;
+    int checkouts = 0;
+    int housekeeping = 0;
+    int pendingPayments = 0;
 
     try {
       final bookingBox = objectBox.store.box<BookingEntity>();
@@ -94,27 +94,25 @@ class DashboardNotifier extends _$DashboardNotifier {
       return DashboardState(
         todaysArrivals: arrivals,
         todaysDepartures: departures,
-        occupiedRooms: kpi.occupiedRooms > 0 ? kpi.occupiedRooms : 12,
-        vacantRooms: kpi.vacantRooms > 0 ? kpi.vacantRooms : 8,
+        occupiedRooms: kpi.occupiedRooms,
+        vacantRooms: kpi.vacantRooms,
         pendingCheckouts: checkouts,
         housekeepingCount: housekeeping,
         pendingPaymentsCount: pendingPayments,
-        revenueToday: (kpi.revenueRoomRent + kpi.revenueAddons) > 0 
-            ? (kpi.revenueRoomRent + kpi.revenueAddons) 
-            : 4250.0,
+        revenueToday: (kpi.revenueRoomRent + kpi.revenueAddons),
       );
     }
 
-    // Default mock fallback values when no snapshot exists
+    // Default 0 fallback values when no snapshot exists
     return DashboardState(
       todaysArrivals: arrivals,
       todaysDepartures: departures,
-      occupiedRooms: 12,
-      vacantRooms: 8,
+      occupiedRooms: 0,
+      vacantRooms: 0,
       pendingCheckouts: checkouts,
       housekeepingCount: housekeeping,
       pendingPaymentsCount: pendingPayments,
-      revenueToday: 4250.0,
+      revenueToday: 0.0,
     );
   }
 }

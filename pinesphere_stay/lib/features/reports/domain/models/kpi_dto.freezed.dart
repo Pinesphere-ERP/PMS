@@ -217,8 +217,8 @@ return $default(_that.snapshotId,_that.propertyId,_that.snapshotDate,_that.occup
 /// @nodoc
 @JsonSerializable()
 
-class _KpiSnapshotDto implements KpiSnapshotDto {
-  const _KpiSnapshotDto({required this.snapshotId, required this.propertyId, required this.snapshotDate, required this.occupiedRooms, required this.vacantRooms, required this.revenueRoomRent, required this.revenueAddons, required this.expensesAmount, required this.outstandingPayments, required this.gstCollected});
+class _KpiSnapshotDto extends KpiSnapshotDto {
+  const _KpiSnapshotDto({required this.snapshotId, required this.propertyId, required this.snapshotDate, required this.occupiedRooms, required this.vacantRooms, required this.revenueRoomRent, required this.revenueAddons, required this.expensesAmount, required this.outstandingPayments, required this.gstCollected}): super._();
   factory _KpiSnapshotDto.fromJson(Map<String, dynamic> json) => _$KpiSnapshotDtoFromJson(json);
 
 @override final  String snapshotId;
@@ -505,8 +505,8 @@ return $default(_that.month,_that.totalRoomRent,_that.totalAddons,_that.totalRev
 /// @nodoc
 @JsonSerializable()
 
-class _MonthlyPLRowDto implements MonthlyPLRowDto {
-  const _MonthlyPLRowDto({required this.month, required this.totalRoomRent, required this.totalAddons, required this.totalRevenue, required this.totalExpenses, required this.netProfit, required this.gstCollected, required this.outstanding});
+class _MonthlyPLRowDto extends MonthlyPLRowDto {
+  const _MonthlyPLRowDto({required this.month, required this.totalRoomRent, required this.totalAddons, required this.totalRevenue, required this.totalExpenses, required this.netProfit, required this.gstCollected, required this.outstanding}): super._();
   factory _MonthlyPLRowDto.fromJson(Map<String, dynamic> json) => _$MonthlyPLRowDtoFromJson(json);
 
 @override final  String month;
@@ -788,8 +788,8 @@ return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.monthly
 /// @nodoc
 @JsonSerializable()
 
-class _PLReportDto implements PLReportDto {
-  const _PLReportDto({required this.propertyId, required this.periodStart, required this.periodEnd, required final  List<MonthlyPLRowDto> monthlyBreakdown, required this.summaryTotalRevenue, required this.summaryTotalExpenses, required this.summaryNetProfit}): _monthlyBreakdown = monthlyBreakdown;
+class _PLReportDto extends PLReportDto {
+  const _PLReportDto({required this.propertyId, required this.periodStart, required this.periodEnd, required final  List<MonthlyPLRowDto> monthlyBreakdown, required this.summaryTotalRevenue, required this.summaryTotalExpenses, required this.summaryNetProfit}): _monthlyBreakdown = monthlyBreakdown,super._();
   factory _PLReportDto.fromJson(Map<String, dynamic> json) => _$PLReportDtoFromJson(json);
 
 @override final  String propertyId;
@@ -1077,8 +1077,8 @@ return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.totalTa
 /// @nodoc
 @JsonSerializable()
 
-class _GSTReturnDto implements GSTReturnDto {
-  const _GSTReturnDto({required this.propertyId, required this.periodStart, required this.periodEnd, required this.totalTaxableRevenue, required this.totalGstCollected, required this.cgst, required this.sgst, required this.igst, required final  List<Map<String, dynamic>> monthlyGst}): _monthlyGst = monthlyGst;
+class _GSTReturnDto extends GSTReturnDto {
+  const _GSTReturnDto({required this.propertyId, required this.periodStart, required this.periodEnd, required this.totalTaxableRevenue, required this.totalGstCollected, required this.cgst, required this.sgst, required this.igst, required final  List<Map<String, dynamic>> monthlyGst}): _monthlyGst = monthlyGst,super._();
   factory _GSTReturnDto.fromJson(Map<String, dynamic> json) => _$GSTReturnDtoFromJson(json);
 
 @override final  String propertyId;
@@ -1366,8 +1366,8 @@ return $default(_that.templateId,_that.propertyId,_that.reportName,_that.reportT
 /// @nodoc
 @JsonSerializable()
 
-class _ReportTemplateDto implements ReportTemplateDto {
-  const _ReportTemplateDto({required this.templateId, this.propertyId, required this.reportName, required this.reportType, final  Map<String, dynamic>? configurationJson}): _configurationJson = configurationJson;
+class _ReportTemplateDto extends ReportTemplateDto {
+  const _ReportTemplateDto({required this.templateId, this.propertyId, required this.reportName, required this.reportType, final  Map<String, dynamic>? configurationJson}): _configurationJson = configurationJson,super._();
   factory _ReportTemplateDto.fromJson(Map<String, dynamic> json) => _$ReportTemplateDtoFromJson(json);
 
 @override final  String templateId;
@@ -1650,8 +1650,8 @@ return $default(_that.scheduleId,_that.templateId,_that.recipientRole,_that.deli
 /// @nodoc
 @JsonSerializable()
 
-class _ScheduledReportDto implements ScheduledReportDto {
-  const _ScheduledReportDto({required this.scheduleId, required this.templateId, required this.recipientRole, required this.deliveryChannel, required this.frequency, required this.isActive});
+class _ScheduledReportDto extends ScheduledReportDto {
+  const _ScheduledReportDto({required this.scheduleId, required this.templateId, required this.recipientRole, required this.deliveryChannel, required this.frequency, required this.isActive}): super._();
   factory _ScheduledReportDto.fromJson(Map<String, dynamic> json) => _$ScheduledReportDtoFromJson(json);
 
 @override final  String scheduleId;

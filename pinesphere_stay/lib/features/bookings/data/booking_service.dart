@@ -1,3 +1,4 @@
+import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -12,10 +13,12 @@ part 'booking_service.g.dart';
 
 @Riverpod(keepAlive: true)
 BookingService bookingService(Ref ref) {
-  return BookingService(
+  final service = BookingService(
     dio: ref.watch(dioClientProvider),
     auditService: ref.watch(auditServiceProvider),
   );
+  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  return service;
 }
 
 class BookingService {

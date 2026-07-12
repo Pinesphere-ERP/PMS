@@ -30,6 +30,7 @@ class OfflineLicense {
 
 class LicenseService {
   // RSA Public Key from Pinesphere Stay Backend
+  // ignore: unused_field
   static const String _publicKeyString = '''-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA... (placeholder)
 -----END PUBLIC KEY-----''';

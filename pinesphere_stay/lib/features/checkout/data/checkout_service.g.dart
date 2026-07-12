@@ -49,4 +49,4 @@ final class CheckOutServiceProvider
   }
 }
 
-String _$checkOutServiceHash() => r'47aa237d0c29c1877f712481bed285c588f1307a';
+String _$checkOutServiceHash() => r'94cc7f4e2d16d81bc4a3733fd480f3c39c9869d1';

@@ -1,3 +1,4 @@
+import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -11,9 +12,11 @@ part 'guest_service.g.dart';
 
 @Riverpod(keepAlive: true)
 GuestService guestService(Ref ref) {
-  return GuestService(
+  final service = GuestService(
     dio: ref.watch(dioClientProvider),
   );
+  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  return service;
 }
 
 class GuestService {

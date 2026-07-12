@@ -93,17 +93,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       biometricOnly: true,
                     );
                     
-                    if (didAuthenticate && mounted) {
+                    if (didAuthenticate && context.mounted) {
                       // Attempt a cached user login
                       final cachedUser = await ref.read(authProvider.notifier).tryBiometricLogin();
-                      if (!cachedUser && mounted) {
+                      if (!cachedUser && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('No previous session found for biometric login. Please login with password first.')),
                         );
                       }
                     }
                   } else {
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Biometrics not available on this device')),
                       );

@@ -1,4 +1,6 @@
+import '../../../main.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -16,10 +18,12 @@ part 'sync_service.g.dart';
 
 @Riverpod(keepAlive: true)
 SyncService syncService(Ref ref) {
-  return SyncService(
+  final service = SyncService(
     dio: ref.watch(dioClientProvider),
     secureStorage: const FlutterSecureStorage(),
   );
+  service.initialize(objectBox.store);
+  return service;
 }
 
 class SyncService {
@@ -50,14 +54,14 @@ class SyncService {
     Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
       final hasConnection = !results.contains(ConnectivityResult.none);
       if (hasConnection) {
-        _triggerSync();
+        triggerSync();
       }
     });
 
     // Initial sync check
     final results = await Connectivity().checkConnectivity();
     if (!results.contains(ConnectivityResult.none)) {
-      _triggerSync();
+      triggerSync();
     }
   }
 
@@ -81,10 +85,10 @@ class SyncService {
     );
     
     _syncQueueBox.put(item);
-    _triggerSync();
+    triggerSync();
   }
 
-  Future<void> _triggerSync() async {
+  Future<void> triggerSync() async {
     if (_isSyncing) return;
     
     _isSyncing = true;
@@ -244,7 +248,7 @@ class SyncService {
       
     } catch (e) {
       // On failure, items remain in queue. Will retry next time.
-      print("Sync failed: $e");
+      debugPrint("Sync failed: $e");
     } finally {
       _isSyncing = false;
     }

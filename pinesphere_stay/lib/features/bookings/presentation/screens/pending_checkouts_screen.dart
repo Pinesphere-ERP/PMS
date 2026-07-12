@@ -1,101 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../rooms/presentation/providers/pms_provider.dart';
 
-class PendingCheckout {
-  final String roomNumber;
-  final String bookingId;
-  final String guestName;
-  final String mobileNumber;
-  final String checkInDate;
-  final String checkOutDate;
-  final String expectedTime;
-  final String adults;
-  final String children;
-  final String nights;
-  final String source;
-  final String roomCharges;
-  final String additionalCharges;
-  final String taxes;
-  final String discount;
-  final String totalBill;
-  final String amountPaid;
-  final String balanceDue;
-  final String paymentStatus;
-  final String securityDeposit;
-  final String depositRefundStatus;
-  final String keyReturnStatus;
-  final String idReturnStatus;
-  final String housekeepingStatus;
-  final String checkoutStatus;
-
-  PendingCheckout({
-    required this.roomNumber,
-    required this.bookingId,
-    required this.guestName,
-    required this.mobileNumber,
-    required this.checkInDate,
-    required this.checkOutDate,
-    required this.expectedTime,
-    required this.adults,
-    required this.children,
-    required this.nights,
-    required this.source,
-    required this.roomCharges,
-    required this.additionalCharges,
-    required this.taxes,
-    required this.discount,
-    required this.totalBill,
-    required this.amountPaid,
-    required this.balanceDue,
-    required this.paymentStatus,
-    required this.securityDeposit,
-    required this.depositRefundStatus,
-    required this.keyReturnStatus,
-    required this.idReturnStatus,
-    required this.housekeepingStatus,
-    required this.checkoutStatus,
-  });
-}
-
-class PendingCheckoutsScreen extends StatefulWidget {
+class PendingCheckoutsScreen extends ConsumerStatefulWidget {
   const PendingCheckoutsScreen({super.key});
 
   @override
-  State<PendingCheckoutsScreen> createState() => _PendingCheckoutsScreenState();
+  ConsumerState<PendingCheckoutsScreen> createState() => _PendingCheckoutsScreenState();
 }
 
-class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
-  final List<PendingCheckout> _checkouts = [
-    PendingCheckout(
-      roomNumber: '302', bookingId: 'BKG-10101', guestName: 'James Smith', mobileNumber: '+1 555-0991',
-      checkInDate: 'Oct 20, 2024', checkOutDate: 'Oct 24, 2024', expectedTime: '11:00 AM', adults: '2', children: '0', nights: '4',
-      source: 'Website', roomCharges: '\$400.00', additionalCharges: '\$40.00', taxes: '\$40.00', discount: '\$0.00',
-      totalBill: '\$480.00', amountPaid: '\$480.00', balanceDue: '\$0.00', paymentStatus: 'Paid',
-      securityDeposit: '\$50.00', depositRefundStatus: 'Refund Pending', keyReturnStatus: 'Pending', idReturnStatus: 'Returned',
-      housekeepingStatus: 'Cleaning Started', checkoutStatus: 'Pending',
-    ),
-    PendingCheckout(
-      roomNumber: '105', bookingId: 'BKG-10105', guestName: 'Maria Garcia', mobileNumber: '+44 7700 900011',
-      checkInDate: 'Oct 22, 2024', checkOutDate: 'Oct 24, 2024', expectedTime: '10:30 AM', adults: '1', children: '0', nights: '2',
-      source: 'Booking.com', roomCharges: '\$150.00', additionalCharges: '\$10.00', taxes: '\$10.00', discount: '\$0.00',
-      totalBill: '\$170.00', amountPaid: '\$150.00', balanceDue: '\$20.00', paymentStatus: 'Partial',
-      securityDeposit: '\$0.00', depositRefundStatus: 'N/A', keyReturnStatus: 'Pending', idReturnStatus: 'N/A',
-      housekeepingStatus: 'Pending', checkoutStatus: 'Pending',
-    ),
-    PendingCheckout(
-      roomNumber: '212', bookingId: 'BKG-10112', guestName: 'David Chen', mobileNumber: '+61 400 123 789',
-      checkInDate: 'Oct 19, 2024', checkOutDate: 'Oct 24, 2024', expectedTime: '12:00 PM', adults: '2', children: '1', nights: '5',
-      source: 'Airbnb', roomCharges: '\$450.00', additionalCharges: '\$0.00', taxes: '\$45.00', discount: '\$20.00',
-      totalBill: '\$475.00', amountPaid: '\$475.00', balanceDue: '\$0.00', paymentStatus: 'Paid',
-      securityDeposit: '\$100.00', depositRefundStatus: 'Refund Pending', keyReturnStatus: 'Returned', idReturnStatus: 'Pending',
-      housekeepingStatus: 'Pending', checkoutStatus: 'Pending',
-    ),
-  ];
-
+class _PendingCheckoutsScreenState extends ConsumerState<PendingCheckoutsScreen> {
   @override
   Widget build(BuildContext context) {
+    final pmsState = ref.watch(pmsProvider);
+    final now = DateTime.now();
+
+    // Filter bookings where status == 'Active' AND checkOutDate is on or before today
+    final checkouts = pmsState.bookings.where((booking) {
+      if (booking.status != 'Active') return false;
+      return booking.checkOutDate.isBefore(now) || DateUtils.isSameDay(booking.checkOutDate, now);
+    }).toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -122,16 +51,34 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _checkouts.length,
-                  itemBuilder: (context, index) {
-                    final checkout = _checkouts[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: _buildCheckoutCard(checkout),
-                    );
-                  },
-                ),
+                child: checkouts.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.hourglass_empty, size: 64, color: AppColors.outline),
+                            SizedBox(height: 16),
+                            Text(
+                              'No pending checkouts',
+                              style: TextStyle(
+                                color: AppColors.outline,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: checkouts.length,
+                        itemBuilder: (context, index) {
+                          final checkout = checkouts[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: _buildCheckoutCard(checkout),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -140,7 +87,10 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
     );
   }
 
-  Widget _buildCheckoutCard(PendingCheckout checkout) {
+  Widget _buildCheckoutCard(BookingModel checkout) {
+    final isOverdue = checkout.checkOutDate.isBefore(DateTime.now()) && !DateUtils.isSameDay(checkout.checkOutDate, DateTime.now());
+    final amountDue = checkout.totalSum - checkout.depositPaid;
+
     return BentoCard(
       onTap: () => _showCheckoutDetails(checkout),
       padding: const EdgeInsets.all(16),
@@ -148,13 +98,13 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.secondaryContainer,
+            decoration: BoxDecoration(
+              color: isOverdue ? AppColors.errorContainer : AppColors.secondaryContainer,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.hourglass_bottom,
-              color: AppColors.onSecondaryContainer,
+            child: Icon(
+              Icons.exit_to_app,
+              color: isOverdue ? AppColors.error : AppColors.onSecondaryContainer,
             ),
           ),
           const SizedBox(width: 16),
@@ -171,7 +121,7 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Room: ${checkout.roomNumber} | ID: ${checkout.bookingId}',
+                  'Room: ${checkout.roomNumber} | ID: ${checkout.id}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -181,8 +131,8 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    _buildStatusChip(checkout.paymentStatus),
-                    if (checkout.balanceDue != '\$0.00') _buildStatusChip('Due: ${checkout.balanceDue}', isAlert: true),
+                    if (isOverdue) _buildStatusChip('Overdue', isError: true),
+                    if (amountDue > 0) _buildStatusChip('Due: \$${amountDue.toStringAsFixed(0)}', isError: true),
                   ],
                 ),
               ],
@@ -192,15 +142,15 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                checkout.expectedTime,
+                DateFormat('hh:mm a').format(checkout.checkOutDate),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.primary,
+                  color: isOverdue ? AppColors.error : AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Check-out',
+                'Expected',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -212,7 +162,12 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
     );
   }
 
-  void _showCheckoutDetails(PendingCheckout checkout) {
+  void _showCheckoutDetails(BookingModel checkout) {
+    final extraCharges = checkout.damageBill + checkout.laundryBill + checkout.miniBarBill + checkout.restaurantBill;
+    final amountDue = checkout.totalSum - checkout.depositPaid;
+    final paymentStatus = checkout.isPaid ? 'Paid' : (checkout.depositPaid > 0 ? 'Partial' : 'Pending');
+    final nights = checkout.checkOutDate.difference(checkout.checkInDate).inDays;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -223,7 +178,7 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
       builder: (context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.75,
+          initialChildSize: 0.85,
           maxChildSize: 0.95,
           minChildSize: 0.5,
           builder: (context, scrollController) {
@@ -244,59 +199,89 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        _buildStatusChip(checkout.checkoutStatus),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Process Checkout',
+                            style: TextStyle(
+                              color: AppColors.onPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
+                    _buildSectionHeader('Guest Information'),
                     _buildDetailRow(Icons.person, 'Guest Name', checkout.guestName),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.phone, 'Mobile Number', checkout.mobileNumber),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.meeting_room, 'Room / Cottage', checkout.roomNumber),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.tag, 'Booking ID', checkout.bookingId),
+                    _buildDetailRow(Icons.phone, 'Mobile Number', checkout.guestPhone),
+                    _buildDetailRow(Icons.meeting_room, 'Room', checkout.roomNumber),
+                    _buildDetailRow(Icons.tag, 'Booking ID', checkout.id),
+                    _buildDetailRow(Icons.source, 'Booking Source', checkout.bookingSource),
+                    
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.login, 'Check-in Date', checkout.checkInDate),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.logout, 'Scheduled Check-out', checkout.checkOutDate),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.access_time, 'Expected Check-out', checkout.expectedTime),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.group, 'Guests', '${checkout.adults} Adults, ${checkout.children} Children'),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.bedtime, 'Total Nights Stayed', checkout.nights),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.source, 'Booking Source', checkout.source),
+                    _buildSectionHeader('Stay Details'),
+                    _buildDetailRow(Icons.calendar_today, 'Check-in', DateFormat('MMM dd, yyyy').format(checkout.checkInDate)),
+                    _buildDetailRow(Icons.event_busy, 'Check-out', DateFormat('MMM dd, yyyy').format(checkout.checkOutDate)),
+                    _buildDetailRow(Icons.access_time, 'Expected Time', DateFormat('hh:mm a').format(checkout.checkOutDate)),
+                    _buildDetailRow(Icons.bedtime, 'Nights Stayed', nights.toString()),
+                    
                     const Divider(height: 32),
-                    Text('Billing Summary', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primary)),
+                    _buildSectionHeader('Billing Summary'),
+                    _buildDetailRow(Icons.hotel, 'Room Charges', '\$${checkout.basePriceSum.toStringAsFixed(2)}'),
+                    _buildDetailRow(Icons.add_shopping_cart, 'Additional Charges', '\$${extraCharges.toStringAsFixed(2)}'),
+                    _buildDetailRow(Icons.account_balance, 'Taxes (GST)', '\$0.00'),
+                    _buildDetailRow(Icons.local_offer, 'Discount', '\$0.00'),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total Bill', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.onSurface)),
+                              Text('\$${checkout.totalSum.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Amount Paid', style: TextStyle(color: AppColors.onSurfaceVariant)),
+                              Text('\$${checkout.depositPaid.toStringAsFixed(2)}', style: TextStyle(color: AppColors.onSurfaceVariant)),
+                            ],
+                          ),
+                          const Divider(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Balance Due', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.error)),
+                              Text('\$${amountDue.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.error)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.receipt, 'Total Room Charges', checkout.roomCharges),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.add_shopping_cart, 'Additional Charges', checkout.additionalCharges),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.account_balance, 'Taxes', checkout.taxes),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.local_offer, 'Discount', checkout.discount),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.monetization_on, 'Total Bill Amount', checkout.totalBill),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.payment, 'Amount Paid', checkout.amountPaid),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.money_off, 'Balance Due', checkout.balanceDue, isAlert: checkout.balanceDue != '\$0.00'),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.verified, 'Payment Status', checkout.paymentStatus),
+                    _buildDetailRow(Icons.payment, 'Payment Status', paymentStatus),
+                    _buildDetailRow(Icons.security, 'Security Deposit', '\$${checkout.depositPaid.toStringAsFixed(2)}'),
+                    _buildDetailRow(Icons.money_off, 'Deposit Refund', 'Refund Pending'),
+                    
                     const Divider(height: 32),
-                    Text('Deposits & Verification', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primary)),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.shield, 'Security Deposit', checkout.securityDeposit),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.autorenew, 'Deposit Refund Status', checkout.depositRefundStatus),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.vpn_key, 'Key Return Status', checkout.keyReturnStatus),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.badge, 'ID Return Status', checkout.idReturnStatus),
-                    const Divider(height: 32),
-                    _buildDetailRow(Icons.cleaning_services, 'Housekeeping', checkout.housekeepingStatus),
+                    _buildSectionHeader('Clearance Status'),
+                    _buildDetailRow(Icons.vpn_key, 'Key Returned', 'Pending', isAlert: true),
+                    _buildDetailRow(Icons.badge, 'ID Returned', 'Pending', isAlert: true),
+                    _buildDetailRow(Icons.cleaning_services, 'Housekeeping Status', 'Pending', isAlert: true),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -308,44 +293,30 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
     );
   }
 
-  Widget _buildStatusChip(String status, {bool isAlert = false}) {
-    Color bgColor;
-    Color textColor;
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          color: AppColors.onSurface,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
-    if (isAlert) {
-      bgColor = AppColors.errorContainer;
-      textColor = AppColors.onErrorContainer;
-    } else {
-      switch (status.toLowerCase()) {
-        case 'paid':
-        case 'returned':
-        case 'completed':
-          bgColor = AppColors.secondaryContainer;
-          textColor = AppColors.onSecondaryContainer;
-          break;
-        case 'pending':
-        case 'partial':
-        case 'cleaning started':
-        case 'refund pending':
-          bgColor = AppColors.errorContainer;
-          textColor = AppColors.onErrorContainer;
-          break;
-        default:
-          bgColor = AppColors.surfaceVariant;
-          textColor = AppColors.onSurfaceVariant;
-      }
-    }
-
+  Widget _buildStatusChip(String status, {bool isError = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: isError ? AppColors.errorContainer : AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         status,
         style: TextStyle(
-          color: textColor,
+          color: isError ? AppColors.error : AppColors.onSurfaceVariant,
           fontWeight: FontWeight.w600,
           fontSize: 11,
         ),
@@ -354,32 +325,35 @@ class _PendingCheckoutsScreenState extends State<PendingCheckoutsScreen> {
   }
 
   Widget _buildDetailRow(IconData icon, String label, String value, {bool isAlert = false}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: isAlert ? AppColors.error : AppColors.outline),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: isAlert ? AppColors.error : AppColors.outline),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isAlert ? AppColors.error : AppColors.onSurface,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: isAlert ? AppColors.error : AppColors.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

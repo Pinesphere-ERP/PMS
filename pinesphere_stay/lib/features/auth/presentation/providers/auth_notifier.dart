@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../audit/data/audit_service.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/models/user_model.dart';
+import '../../../sync/data/sync_service.dart';
 
 part 'auth_notifier.freezed.dart';
 part 'auth_notifier.g.dart';
@@ -13,6 +14,7 @@ sealed class AuthState with _$AuthState {
   const factory AuthState.initial() = _Initial;
   const factory AuthState.loading() = _Loading;
   const factory AuthState.authenticated(UserModel user) = _Authenticated;
+  const factory AuthState.locked(UserModel user) = _Locked;
   const factory AuthState.unauthenticated() = _Unauthenticated;
   const factory AuthState.error(String message) = _Error;
 }
@@ -30,7 +32,7 @@ class AuthNotifier extends _$AuthNotifier {
     final cachedUser = await repository.getCachedUser();
     
     if (cachedUser != null) {
-      state = AuthState.authenticated(cachedUser);
+      state = AuthState.locked(cachedUser);
     } else {
       state = const AuthState.unauthenticated();
     }
@@ -62,6 +64,7 @@ class AuthNotifier extends _$AuthNotifier {
           newValue: {'email': email, 'role': user.role.name},
         );
         state = AuthState.authenticated(user);
+        ref.read(syncServiceProvider).triggerSync();
       },
     );
   }
@@ -99,5 +102,14 @@ class AuthNotifier extends _$AuthNotifier {
     }
     
     return false;
+  }
+
+  void unlockPin() {
+    state.maybeWhen(
+      locked: (user) {
+        state = AuthState.authenticated(user);
+      },
+      orElse: () {},
+    );
   }
 }

@@ -1,3 +1,4 @@
+import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
@@ -9,12 +10,15 @@ part 'room_service.g.dart';
 
 @Riverpod(keepAlive: true)
 RoomService roomService(Ref ref) {
-  return RoomService(
+  final service = RoomService(
     dio: ref.watch(dioClientProvider),
   );
+  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  return service;
 }
 
 class RoomService {
+  // ignore: unused_field
   final Dio _dio;
   late final Store _store;
   late final Box<RoomEntity> _roomBox;

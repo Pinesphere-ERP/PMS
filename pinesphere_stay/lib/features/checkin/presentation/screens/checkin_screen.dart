@@ -94,7 +94,13 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     super.dispose();
   }
 
-  String get _propertyId => '1234';
+  String get _propertyId {
+    final state = ref.read(authProvider);
+    return state.maybeWhen(
+      authenticated: (user) => user.propertyId ?? '',
+      orElse: () => '',
+    );
+  }
 
   void _onSearchChanged(String query) {
     if (query.length >= 2) {
@@ -113,7 +119,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   Future<void> _completeCheckIn() async {
     if (_selectedBooking == null) return;
     final data = <String, dynamic>{
-      'booking_id': _selectedBooking!['id']?.toString() ?? '',
+      'booking_id': _selectedBooking!['booking_id']?.toString() ?? _selectedBooking!['id']?.toString() ?? '',
       'room_id': _selectedBooking!['room_id']?.toString() ?? '',
       'guest_id': _selectedBooking!['guest_id']?.toString() ?? '',
       'property_id': _propertyId,
@@ -506,7 +512,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final booking = bookings[index];
-            final isSelected = _selectedBooking?['id']?.toString() == booking['id']?.toString();
+            final isSelected = (_selectedBooking?['booking_id']?.toString() ?? _selectedBooking?['id']?.toString()) == (booking['booking_id']?.toString() ?? booking['id']?.toString());
             return _buildBookingCard(booking, isSelected);
           },
         );
@@ -933,9 +939,11 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     title: Text('${room['name']} (${room['type']})'),
                     subtitle: Text('\$${room['price_per_night']}/night - ${room['status']}'),
                     value: room['id'] as String,
+                    // ignore: deprecated_member_use
                     groupValue: _selectedRoomId,
                     activeColor: AppColors.primary,
                     contentPadding: EdgeInsets.zero,
+                    // ignore: deprecated_member_use
                     onChanged: (v) {
                       setState(() {
                         _selectedRoomId = v;

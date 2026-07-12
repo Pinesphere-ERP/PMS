@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -100,7 +101,7 @@ class AuthRepository {
         store.box<SyncQueueEntity>().removeAll();
         await _secureStorage.delete(key: 'last_sync_timestamp');
       } catch (e) {
-        print("Failed to clear local db on login: $e");
+        debugPrint("Failed to clear local db on login: $e");
       }
 
       return Right(user);

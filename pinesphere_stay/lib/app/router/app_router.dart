@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'app_scaffold.dart';
 import '../../features/auth/presentation/providers/auth_notifier.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/pin_login_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
@@ -59,13 +60,23 @@ GoRouter appRouter(Ref ref) {
         authenticated: (_) => true,
         orElse: () => false,
       );
-      final isGoingToLogin = state.matchedLocation == '/login';
+      final isLocked = authState.maybeWhen(
+        locked: (_) => true,
+        orElse: () => false,
+      );
 
-      if (!isAuth && !isGoingToLogin) {
+      final isGoingToLogin = state.matchedLocation == '/login';
+      final isGoingToPinLogin = state.matchedLocation == '/pin-login';
+
+      if (!isAuth && !isLocked && !isGoingToLogin) {
         return '/login';
       }
 
-      if (isAuth && isGoingToLogin) {
+      if (isLocked && !isGoingToPinLogin) {
+        return '/pin-login';
+      }
+
+      if (isAuth && (isGoingToLogin || isGoingToPinLogin)) {
         return '/dashboard';
       }
 
@@ -75,6 +86,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/pin-login',
+        builder: (context, state) => const PinLoginScreen(),
       ),
       GoRoute(
         path: '/device-registration',

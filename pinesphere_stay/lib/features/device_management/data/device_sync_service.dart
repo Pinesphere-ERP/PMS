@@ -23,6 +23,7 @@ class DeviceSyncCheckinResponse {
 }
 
 class DeviceSyncService {
+  // ignore: unused_field
   final LicenseService _licenseService = LicenseService();
 
   /// Executes periodic or manual `sync-checkin` against backend /api/v1/devices/sync-checkin

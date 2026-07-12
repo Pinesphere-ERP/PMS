@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AttendanceDashboardScreen extends StatelessWidget {
-  const AttendanceDashboardScreen({Key? key}) : super(key: key);
+  const AttendanceDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

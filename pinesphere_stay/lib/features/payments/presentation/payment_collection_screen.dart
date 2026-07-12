@@ -8,7 +8,7 @@ import '../data/payment_repository.dart';
 import '../domain/models/payment.dart';
 
 class PaymentCollectionScreen extends ConsumerStatefulWidget {
-  const PaymentCollectionScreen({Key? key}) : super(key: key);
+  const PaymentCollectionScreen({super.key});
 
   @override
   ConsumerState<PaymentCollectionScreen> createState() => _PaymentCollectionScreenState();
@@ -62,7 +62,7 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: splitMode,
+                  initialValue: splitMode,
                   items: const [
                     DropdownMenuItem(value: 'online', child: Text('Online (Razorpay)')),
                     DropdownMenuItem(value: 'cash', child: Text('Cash')),
@@ -264,7 +264,7 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              color: Colors.amber.withOpacity(0.2),
+              color: Colors.amber.withValues(alpha: 0.2),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -299,7 +299,7 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: effectiveMode,
+                initialValue: effectiveMode,
                 decoration: const InputDecoration(labelText: 'Payment Mode', border: OutlineInputBorder()),
                 items: [
                   const DropdownMenuItem(value: 'online', child: Text('Online (Razorpay)')),

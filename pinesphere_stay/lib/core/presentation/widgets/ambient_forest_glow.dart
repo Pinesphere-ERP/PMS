@@ -15,7 +15,7 @@ class AmbientForestGlow extends StatelessWidget {
                   center: const Alignment(-0.6, -0.4),
                   radius: 1.0,
                   colors: [
-                    const Color(0xFF2E7D32).withOpacity(0.05),
+                    const Color(0xFF2E7D32).withValues(alpha: 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -29,7 +29,7 @@ class AmbientForestGlow extends StatelessWidget {
                   center: const Alignment(0.6, 0.4),
                   radius: 1.0,
                   colors: [
-                    const Color(0xFF88D982).withOpacity(0.05),
+                    const Color(0xFF88D982).withValues(alpha: 0.05),
                     Colors.transparent,
                   ],
                 ),

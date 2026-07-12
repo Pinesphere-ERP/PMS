@@ -76,6 +76,10 @@ class AuthRepository {
       );
       
       await _secureStorage.write(key: 'cached_user', value: jsonEncode(user.toJson()));
+      await _secureStorage.write(key: 'device_uid', value: fingerprint);
+      if (propertyId != null) {
+        await _secureStorage.write(key: 'tenant_id', value: propertyId);
+      }
 
       return Right(user);
     } on DioException catch (e) {

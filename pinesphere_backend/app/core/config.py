@@ -1,15 +1,17 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+import os
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Pinesphere Stay API"
     VERSION: str = "1.0.0"
     
     # Database — app connects as the non-superuser pinesphere_app role
-    DATABASE_URL: str = "sqlite+aiosqlite:///./pinesphere.db"
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./pinesphere.db")
     
     # Alembic migrations connect as the admin/superuser pinesphere role
     # (needed to create roles, grants, DDL that pinesphere_app cannot do)
-    ALEMBIC_DATABASE_URL: str = "sqlite+aiosqlite:///./pinesphere.db"
+    ALEMBIC_DATABASE_URL: str = os.getenv("ALEMBIC_DATABASE_URL", "sqlite+aiosqlite:///./pinesphere.db")
     
     # Security
     SECRET_KEY: str = "supersecretkey-change-in-production"

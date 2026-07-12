@@ -333,7 +333,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -401,7 +401,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -448,7 +448,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                         const Text('Digital Signature', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.outline)),
                         const SizedBox(height: 16),
                         Center(
-                          child: Icon(Icons.gesture, size: 48, color: AppColors.primary.withOpacity(0.5)),
+                          child: Icon(Icons.gesture, size: 48, color: AppColors.primary.withValues(alpha: 0.5)),
                         ),
                         const Center(
                           child: Text('Digitally signed on check-in', style: TextStyle(fontStyle: FontStyle.italic, fontSize: 11, color: AppColors.outline)),
@@ -680,7 +680,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: selectedRoomId,
+                      initialValue: selectedRoomId,
                       decoration: const InputDecoration(labelText: 'Select Room (Vacant Only)', border: OutlineInputBorder()),
                       items: vacantRooms.map((room) {
                         final resName = pmsState.resorts.firstWhere((res) => res.id == room.resortId).name;
@@ -696,7 +696,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: selectedIdProof,
+                            initialValue: selectedIdProof,
                             decoration: InputDecoration(labelText: 'ID Proof Type', border: const OutlineInputBorder()),
                             items: ['Aadhaar Card', 'Passport', 'Driving License', 'Voter ID'].map((proof) {
                               return DropdownMenuItem(value: proof, child: Text(proof));
@@ -765,7 +765,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: selectedSource,
+                            initialValue: selectedSource,
                             decoration: InputDecoration(labelText: 'Booking Source', border: const OutlineInputBorder()),
                             items: ['Walk-in', 'Phone', 'WhatsApp', 'Online'].map((src) {
                               return DropdownMenuItem(value: src, child: Text(src));

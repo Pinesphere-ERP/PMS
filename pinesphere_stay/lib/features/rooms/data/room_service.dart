@@ -1,10 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:objectbox/objectbox.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../core/database/objectbox.dart';
 import '../../../core/network/dio_client.dart';
-import '../../../core/utils/logger.dart';
 import '../../../objectbox.g.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/room_entity.dart';
@@ -24,7 +20,7 @@ class RoomService {
   late final Box<RoomEntity> _roomBox;
   late final SyncService _syncService;
 
-  RoomService({required Dio dio}) : _dio = dio;
+  RoomService({required this._dio});
 
   void initialize(Store store, SyncService syncService) {
     _store = store;

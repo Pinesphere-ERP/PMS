@@ -1,8 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../data/settings_service.dart';
-import '../../domain/models/property_setting_entity.dart';
 import '../../domain/models/device_config_entity.dart';
 
 part 'settings_provider.freezed.dart';

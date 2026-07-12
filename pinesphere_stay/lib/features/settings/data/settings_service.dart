@@ -1,9 +1,5 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:objectbox/objectbox.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../core/database/objectbox.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../objectbox.g.dart';
@@ -27,7 +23,7 @@ class SettingsService {
   late final Box<DeviceConfigEntity> _deviceConfigBox;
   late final SyncService _syncService;
 
-  SettingsService({required Dio dio}) : _dio = dio;
+  SettingsService({required this._dio});
 
   void initialize(Store store, SyncService syncService) {
     _store = store;

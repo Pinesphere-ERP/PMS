@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/ambient_forest_glow.dart';
 import '../../../../core/theme/app_colors.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/auth_notifier.dart';
 import '../../../../core/permissions/user_role.dart';
 
@@ -117,10 +116,10 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
           decoration: BoxDecoration(
             color: AppColors.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -131,7 +130,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
             child: Image.network(
               'https://lh3.googleusercontent.com/aida/AP1WRLsNZfpr3SqCh2qriKKtYjH3uwarOjm8WmUIl71HNz8fYek1c5NKdyXhRSPtmTbLkKFU775bH_e2t5xTAHDFce_0YZTY-D26wL-oUlvXoJHFIu7BgyA6yZFUMgK4P0KfUJbWXascFNRKodev-4l532l1SA6F-NJ8SStFQQLLv_RI-t95BeAkN2cFYlnXuR7SC9oZ2zlaWLIsmcHu_z01tIoyhkn5Mczc6MUYcROmCzq3Qo6Y3-WAZ_tpnPc',
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(Icons.hotel, size: 40),
+              errorBuilder: (_, _, _) => const Icon(Icons.hotel, size: 40),
             ),
           ),
         ),
@@ -247,7 +246,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.secondaryContainer.withOpacity(0.5),
+            color: AppColors.secondaryContainer.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(99),
           ),
           child: Row(

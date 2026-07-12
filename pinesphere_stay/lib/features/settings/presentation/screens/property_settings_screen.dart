@@ -89,6 +89,7 @@ class _PropertySettingsScreenState extends ConsumerState<PropertySettingsScreen>
     }
 
     return ListView(
+      controller: _scrollController,
       padding: const EdgeInsets.all(16),
       children: [
         for (final entry in grouped.entries) ...[
@@ -131,7 +132,7 @@ class _PropertySettingsScreenState extends ConsumerState<PropertySettingsScreen>
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.2)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
       ),
       child: Column(children: items),
     );

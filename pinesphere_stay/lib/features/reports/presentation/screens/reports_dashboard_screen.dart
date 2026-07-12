@@ -36,8 +36,8 @@ class ReportsDashboardScreen extends ConsumerWidget {
                   RoleGuard(
                     module: Module.reports,
                     minimumLevel: AccessLevel.full,
-                    child: _buildPNLSection(context, ref),
                     fallback: const SizedBox.shrink(),
+                    child: _buildPNLSection(context, ref),
                   ),
                   const SizedBox(height: 16),
                   _buildTopRooms(context),
@@ -178,7 +178,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
         );
       },
       loading: () => _staticMetricsGrid(context),
-      error: (_, __) => _staticMetricsGrid(context),
+      error: (_, _) => _staticMetricsGrid(context),
     );
   }
 
@@ -223,7 +223,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         color:
                             (textColor ?? AppColors.onSurfaceVariant)
-                                .withOpacity(0.8),
+                                .withValues(alpha: 0.8),
                       )),
               Text(value,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -276,7 +276,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text('Weekly',
@@ -318,7 +318,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
                   width: double.infinity,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(8),
                       topRight: Radius.circular(8),
@@ -469,7 +469,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text('Owner Only',
@@ -550,7 +550,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -558,7 +558,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: AppColors.primary),
@@ -618,7 +618,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
           border: Border.all(color: AppColors.outlineVariant),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

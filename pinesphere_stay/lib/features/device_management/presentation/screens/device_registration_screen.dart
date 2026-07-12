@@ -327,7 +327,7 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
               children: [
                 Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 3),
-                Text(subtitle, style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.85), height: 1.3)),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: textColor.withValues(alpha: 0.85), height: 1.3)),
               ],
             ),
           ),

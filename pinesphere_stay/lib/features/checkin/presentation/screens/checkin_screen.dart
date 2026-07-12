@@ -231,7 +231,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(
           labelText: isRequired ? '$label *' : label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -324,7 +324,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              color: Colors.amber.withOpacity(0.2),
+              color: Colors.amber.withValues(alpha: 0.2),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -503,7 +503,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: bookings.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final booking = bookings[index];
             final isSelected = _selectedBooking?['id']?.toString() == booking['id']?.toString();
@@ -536,7 +536,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryFixed.withOpacity(0.15) : AppColors.surface,
+          color: isSelected ? AppColors.primaryFixed.withValues(alpha: 0.15) : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.outlineVariant,
@@ -563,7 +563,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: _statusColor(status).withOpacity(0.15),
+                color: _statusColor(status).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -615,7 +615,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
               title: const Text('ID Verified'),
               subtitle: const Text('Mark if guest ID has been verified'),
               value: _idVerified,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               contentPadding: EdgeInsets.zero,
               onChanged: (v) => setState(() => _idVerified = v),
             ),

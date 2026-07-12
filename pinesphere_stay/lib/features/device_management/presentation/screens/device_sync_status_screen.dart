@@ -222,7 +222,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
                   children: [
                     Text(statusLabel, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
                     const SizedBox(height: 2),
-                    Text('UID: a89c-44e1-bb20-99f1 • Android 14', style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.8), fontFamily: 'monospace')),
+                    Text('UID: a89c-44e1-bb20-99f1 • Android 14', style: TextStyle(fontSize: 12, color: textColor.withValues(alpha: 0.8), fontFamily: 'monospace')),
                   ],
                 ),
               ),
@@ -405,7 +405,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _localSyncLogs.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.outlineVariant),
+        separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.outlineVariant),
         itemBuilder: (context, idx) {
           final log = _localSyncLogs[idx];
           return Padding(
@@ -447,7 +447,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
     final isRevoked = _authorizationState == 'REVOKED';
 
     return Container(
-      color: Colors.black.withOpacity(0.92),
+      color: Colors.black.withValues(alpha: 0.92),
       width: double.infinity,
       height: double.infinity,
       padding: const EdgeInsets.all(32),
@@ -477,7 +477,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white24),
             ),
@@ -488,7 +488,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
                 Expanded(
                   child: Text(
                     'To unlock or re-activate, contact property management or call support at +1 (800) PINE-STAY.',
-                    style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.9)),
+                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9)),
                   ),
                 ),
               ],

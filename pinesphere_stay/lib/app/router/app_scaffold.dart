@@ -27,7 +27,7 @@ class AppScaffold extends ConsumerWidget {
           color: AppColors.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               offset: const Offset(0, -1),
               blurRadius: 3,
             ),

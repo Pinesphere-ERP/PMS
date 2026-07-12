@@ -373,7 +373,7 @@ class _HousekeepingScreenState extends ConsumerState<HousekeepingScreen>
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final f = filters[index];
           final isActive = _taskStatusFilter == f;
@@ -1162,7 +1162,7 @@ class _HousekeepingScreenState extends ConsumerState<HousekeepingScreen>
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: statusFilters.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final f = statusFilters[index];
               final isActive = _ticketStatusFilter == f;
@@ -1196,7 +1196,7 @@ class _HousekeepingScreenState extends ConsumerState<HousekeepingScreen>
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: categoryFilters.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final f = categoryFilters[index];
               final isActive = _ticketCategoryFilter == f;
@@ -1706,7 +1706,7 @@ class _HousekeepingScreenState extends ConsumerState<HousekeepingScreen>
                 Text('Category', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.onSurface)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _createTicketCategory,
+                  initialValue: _createTicketCategory,
                   decoration: _inputDecoration('Select category'),
                   items: ['Electrical', 'AC', 'Plumbing', 'TV', 'Furniture', 'Other']
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -1719,7 +1719,7 @@ class _HousekeepingScreenState extends ConsumerState<HousekeepingScreen>
                 Text('Priority', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.onSurface)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _createTicketPriority,
+                  initialValue: _createTicketPriority,
                   decoration: _inputDecoration('Select priority'),
                   items: const [
                     DropdownMenuItem(value: 'low', child: Text('Low')),

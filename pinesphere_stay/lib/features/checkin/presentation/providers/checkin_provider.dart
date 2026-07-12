@@ -33,7 +33,7 @@ class CheckInNotifier extends _$CheckInNotifier {
       final bookings = await bookingService.getBookings(propertyId, status: 'confirmed');
       if (search != null && search.isNotEmpty) {
         final query = search.toLowerCase();
-        final filtered = (bookings as List).where((b) {
+        final filtered = (bookings).where((b) {
           final bMap = b as Map<String, dynamic>;
           final name = (bMap['guest_name']?.toString() ?? '').toLowerCase();
           final bookingId = (bMap['id']?.toString() ?? '').toLowerCase();

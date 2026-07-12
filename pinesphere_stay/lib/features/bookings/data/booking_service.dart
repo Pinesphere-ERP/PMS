@@ -1,8 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../core/database/objectbox.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../objectbox.g.dart';
@@ -27,9 +25,8 @@ class BookingService {
   late final Box<BookingEntity> _bookingBox;
   late final SyncService _syncService;
 
-  BookingService({required Dio dio, required AuditService auditService})
-      : _dio = dio,
-        _audit = auditService;
+  BookingService({required this._dio, required AuditService auditService})
+      : _audit = auditService;
 
   void initialize(Store store, SyncService syncService) {
     _store = store;

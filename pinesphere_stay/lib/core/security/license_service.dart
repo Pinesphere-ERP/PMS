@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 enum DeviceAuthorizationStatus { active, pendingApproval, locked, revoked, expired }
 

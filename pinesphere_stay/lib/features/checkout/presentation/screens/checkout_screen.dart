@@ -96,7 +96,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              color: Colors.amber.withOpacity(0.2),
+              color: Colors.amber.withValues(alpha: 0.2),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -134,7 +134,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
       initial: () => const Center(child: Text('Select a property to view pending checkouts')),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getPendingCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '')),
-      success: (_, __) => const Center(child: Text('Action completed')),
+      success: (_, _) => const Center(child: Text('Action completed')),
       loadedPendingCheckouts: (checkouts) => _buildPendingCheckoutsList(checkouts, isViewOnly),
       loadedBilling: (_) => const SizedBox.shrink(),
       loadedTodaysCheckouts: (_) => const SizedBox.shrink(),
@@ -148,7 +148,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, size: 64, color: AppColors.primary.withOpacity(0.4)),
+            Icon(Icons.check_circle_outline, size: 64, color: AppColors.primary.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
               'No pending checkouts',
@@ -169,7 +169,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: checkouts.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) => _buildPendingCheckoutCard(checkouts[index], isViewOnly),
       ),
     );
@@ -269,7 +269,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
       initial: () => const Center(child: Text('Select a property to view today\'s checkouts')),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getTodaysCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '')),
-      success: (_, __) => const Center(child: Text('Action completed')),
+      success: (_, _) => const Center(child: Text('Action completed')),
       loadedTodaysCheckouts: (checkouts) => _buildTodaysCheckoutsTable(checkouts, isViewOnly),
       loadedPendingCheckouts: (_) => const SizedBox.shrink(),
       loadedBilling: (_) => const SizedBox.shrink(),
@@ -283,7 +283,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.event_available, size: 64, color: AppColors.primary.withOpacity(0.4)),
+            Icon(Icons.event_available, size: 64, color: AppColors.primary.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
               'No checkouts today',
@@ -354,9 +354,9 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.1),
+        color: chipColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: chipColor.withOpacity(0.3)),
+        border: Border.all(color: chipColor.withValues(alpha: 0.3)),
       ),
       child: Text(
         status[0].toUpperCase() + status.substring(1),
@@ -668,7 +668,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
                 labelText: 'Total',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
-                fillColor: AppColors.primaryContainer.withOpacity(0.1),
+                fillColor: AppColors.primaryContainer.withValues(alpha: 0.1),
               ),
               child: Text(
                 '₹${_totalAmount.toStringAsFixed(2)}',
@@ -730,7 +730,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
               ),
               value: _keyReturned,
               onChanged: (v) => setState(() => _keyReturned = v),
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -741,7 +741,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
               ),
               value: _idReturned,
               onChanged: (v) => setState(() => _idReturned = v),
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
             ),
             const SizedBox(height: 8),
             TextFormField(
@@ -775,7 +775,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
             foregroundColor: AppColors.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+            disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
           ),
           child: _isSubmitting
               ? const SizedBox(

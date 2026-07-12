@@ -77,7 +77,7 @@ class _BentoCardState extends State<BentoCard> with SingleTickerProviderStateMix
           border: Border.all(color: AppColors.outlineVariant, width: 1),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2E7D32).withOpacity(_isHovered ? 0.08 : 0.04),
+              color: const Color(0xFF2E7D32).withValues(alpha: _isHovered ? 0.08 : 0.04),
               offset: Offset(0, _isHovered ? 8 : 4),
               blurRadius: _isHovered ? 16 : 12,
             ),

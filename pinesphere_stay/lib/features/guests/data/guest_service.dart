@@ -1,8 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../core/database/objectbox.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../objectbox.g.dart';
@@ -24,7 +22,7 @@ class GuestService {
   late final Box<GuestEntity> _guestBox;
   late final SyncService _syncService;
 
-  GuestService({required Dio dio}) : _dio = dio;
+  GuestService({required this._dio});
 
   void initialize(Store store, SyncService syncService) {
     _store = store;

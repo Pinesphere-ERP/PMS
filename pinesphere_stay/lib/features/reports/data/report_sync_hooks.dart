@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
-import '../../../core/database/objectbox.dart';
 import '../../../objectbox.g.dart';
-import '../../../sync/domain/models/sync_queue_entity.dart';
+import '../../sync/domain/models/sync_queue_entity.dart';
 import '../domain/models/kpi_dto.dart';
 
 /// Provides enqueue operations for report-related entities to the existing

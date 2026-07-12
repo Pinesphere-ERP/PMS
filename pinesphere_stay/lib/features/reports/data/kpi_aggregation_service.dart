@@ -1,9 +1,6 @@
-import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/objectbox.dart';
 import '../../../objectbox.g.dart';
 import '../domain/models/kpi_snapshot_entity.dart';
 
@@ -159,15 +156,13 @@ class KpiAggregationService {
     var entity = query.findFirst();
     query.close();
 
-    if (entity == null) {
-      entity = KpiSnapshotEntity(
+    entity ??= KpiSnapshotEntity(
         uuid: '',
         propertyId: propertyId,
         snapshotDate: dateKey,
         isLocalOnly: true,
         lastModifiedHlc: hlc,
       );
-    }
 
     mutator(entity);
     entity.lastModifiedHlc = hlc;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SuperAdminStaffAnalyticsScreen extends StatelessWidget {
-  const SuperAdminStaffAnalyticsScreen({Key? key}) : super(key: key);
+  const SuperAdminStaffAnalyticsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

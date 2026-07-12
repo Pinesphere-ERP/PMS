@@ -1,18 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../widgets/step_1_owner_registration.dart';
-import '../widgets/step_2_business_info.dart';
-import '../widgets/step_3_property_info.dart';
-import '../widgets/step_4_property_location.dart';
-import '../widgets/step_5_ownership_details.dart';
-import '../widgets/step_6_room_configuration.dart';
-import '../widgets/step_7_room_amenities.dart';
-import '../widgets/step_8_hotel_amenities.dart';
-import '../widgets/step_9_property_photos.dart';
-import '../widgets/step_10_hotel_policies.dart';
-import '../widgets/step_11_pricing.dart';
-import '../widgets/step_12_inventory.dart';
-import '../widgets/step_13_bank_details.dart';
+import '../widgets/property_onboarding_widgets.dart';
 
 class PropertyOnboardingScreen extends StatefulWidget {
   const PropertyOnboardingScreen({super.key});

@@ -13,7 +13,7 @@ Future<List<Payment>> paymentsList(Ref ref) {
 }
 
 class PaymentHistoryScreen extends ConsumerWidget {
-  const PaymentHistoryScreen({Key? key}) : super(key: key);
+  const PaymentHistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

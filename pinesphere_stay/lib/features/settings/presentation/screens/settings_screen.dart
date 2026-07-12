@@ -157,10 +157,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               biometricEnabled: v,
             );
           },
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
       ),
-      _buildMenuItem(context, Icons.dark_mode_outlined, 'Dark Mode', trailing: Switch(value: false, onChanged: (v) {}, activeColor: AppColors.primary)),
+      _buildMenuItem(context, Icons.dark_mode_outlined, 'Dark Mode', trailing: Switch(value: false, onChanged: (v) {}, activeThumbColor: AppColors.primary)),
       _buildMenuItem(context, Icons.print_outlined, 'Printer Settings', isLast: true),
     ]);
   }
@@ -249,7 +249,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -257,7 +257,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: AppColors.primaryContainer.withOpacity(0.1),
+              color: AppColors.primaryContainer.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.local_florist, color: AppColors.primary, size: 32),
@@ -293,7 +293,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.2)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: items,
@@ -350,7 +350,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SizedBox(height: 24),
         Text(
           'Pinesphere Stay Android v1.0.4-stable',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.onSurfaceVariant.withOpacity(0.5)),
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.onSurfaceVariant.withValues(alpha: 0.5)),
         ),
       ],
     );

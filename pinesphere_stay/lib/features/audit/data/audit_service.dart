@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:objectbox/objectbox.dart';
 import 'package:pinesphere_stay/main.dart';
 import '../domain/models/audit_log_entity.dart';
 import '../../../objectbox.g.dart';
@@ -114,7 +113,7 @@ class AuditService {
     
     if (propertyId != null) {
       final c = AuditLogEntity_.propertyId.equals(propertyId);
-      condition = condition == null ? c : condition.and(c);
+      condition = c;
     }
     if (moduleName != null) {
       final c = AuditLogEntity_.moduleName.equals(moduleName);

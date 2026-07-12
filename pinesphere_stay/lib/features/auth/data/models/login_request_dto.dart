@@ -10,7 +10,7 @@ class LoginRequestDto {
   final String deviceId;
   @JsonKey(name: 'device_name')
   final String deviceName;
-  @JsonKey(name: 'device_fingerprint')
+  @JsonKey(name: 'device_uid')
   final String deviceFingerprint;
 
   LoginRequestDto({

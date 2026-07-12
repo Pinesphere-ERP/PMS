@@ -8,6 +8,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 
+from sqlalchemy.ext.compiler import compiles
+
+@compiles(JSONB, "sqlite")
+def compile_jsonb_sqlite(type_, compiler, **kw):
+    return "JSON"
+
+@compiles(PGUUID, "sqlite")
+def compile_uuid_sqlite(type_, compiler, **kw):
+    return "CHAR(32)"
+
 from app.infra.database import Base, TimestampMixin, SyncMixin
 
 # ── A. Owners & Access ────────────────────────────────────────────────────────

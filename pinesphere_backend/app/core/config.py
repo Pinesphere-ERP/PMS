@@ -5,11 +5,11 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     
     # Database — app connects as the non-superuser pinesphere_app role
-    DATABASE_URL: str = "postgresql+asyncpg://pinesphere_app:pinesphere_password@localhost:5432/pinesphere"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./pinesphere.db"
     
     # Alembic migrations connect as the admin/superuser pinesphere role
     # (needed to create roles, grants, DDL that pinesphere_app cannot do)
-    ALEMBIC_DATABASE_URL: str = "postgresql+asyncpg://pinesphere:pinesphere_password@localhost:5432/pinesphere"
+    ALEMBIC_DATABASE_URL: str = "sqlite+aiosqlite:///./pinesphere.db"
     
     # Security
     SECRET_KEY: str = "supersecretkey-change-in-production"

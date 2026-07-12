@@ -10,3 +10,5 @@ Validation Error: [{'type': 'uuid_parsing', 'loc': ('query', 'property_id'), 'ms
 Body: None
 Validation Error: [{'type': 'uuid_parsing', 'loc': ('query', 'property_id'), 'msg': 'Input should be a valid UUID, invalid character: found `p` at 1', 'input': 'prop_001', 'ctx': {'error': 'invalid character: found `p` at 1'}}]
 Body: None
+Validation Error: [{'type': 'missing', 'loc': ('body', 'device_uid'), 'msg': 'Field required', 'input': {'email': 'admin@pinesphere.com', 'password': 'password123', 'device_id': 'test_device_1', 'device_name': 'Test Device', 'device_fingerprint': 'mock-device-fingerprint-12345'}}]
+Body: {'email': 'admin@pinesphere.com', 'password': 'password123', 'device_id': 'test_device_1', 'device_name': 'Test Device', 'device_fingerprint': 'mock-device-fingerprint-12345'}

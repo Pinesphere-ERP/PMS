@@ -3,7 +3,7 @@ from typing import Optional
 import uuid
 
 class LoginRequest(BaseModel):
-    mobile_number: str
+    email: str
     password: str
     property_id: Optional[uuid.UUID] = None
     device_uid: str

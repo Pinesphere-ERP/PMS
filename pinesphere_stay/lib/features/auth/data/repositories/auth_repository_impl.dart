@@ -28,24 +28,7 @@ class AuthRepository {
 
   Future<Either<Failure, UserModel>> login(String email, String password) async {
     try {
-      if (password == '1234') {
-        // Prototype bypass: Generate a mock user based on email (or default to owner)
-        final role = UserRole.values.firstWhere(
-          (e) => email.toLowerCase().contains(e.name.toLowerCase()),
-          orElse: () => UserRole.owner, // Default to owner if no role in email
-        );
-        
-        final mockUser = UserModel(
-          id: 'mock-123',
-          name: 'Test ${role.displayName}',
-          email: email,
-          role: role,
-        );
 
-        await _secureStorage.write(key: 'access_token', value: 'mock_token');
-        await _secureStorage.write(key: 'cached_user', value: jsonEncode(mockUser.toJson()));
-        return Right(mockUser);
-      }
 
       final deviceInfo = DeviceInfoService(_secureStorage);
       final fingerprint = await deviceInfo.getDeviceFingerprint();
@@ -65,9 +48,33 @@ class AuthRepository {
       await _secureStorage.write(key: 'access_token', value: tokenResponse.accessToken);
       await _secureStorage.write(key: 'refresh_token', value: tokenResponse.refreshToken);
 
-      // Assuming backend returns user info in the token response or a /me endpoint
-      // For now, defaulting to Owner if real network request succeeds but doesn't return user
-      final user = UserModel(id: '1', name: 'Real User', email: email, role: UserRole.owner);
+      // Decode JWT to get user_id and tenant_id
+      final parts = tokenResponse.accessToken.split('.');
+      if (parts.length != 3) {
+        throw Exception('invalid token');
+      }
+      
+      String output = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      switch (output.length % 4) {
+        case 0: break;
+        case 2: output += '=='; break;
+        case 3: output += '='; break;
+        default: throw Exception('Illegal base64url string!"');
+      }
+      final payloadStr = utf8.decode(base64Url.decode(output));
+      final payload = jsonDecode(payloadStr);
+
+      final userId = payload['sub']?.toString() ?? 'unknown_id';
+      final propertyId = payload['tenant_id']?.toString();
+
+      final user = UserModel(
+        id: userId,
+        name: email.split('@')[0], // Placeholder until /me is added
+        email: email,
+        role: UserRole.owner, // Placeholder
+        propertyId: propertyId,
+      );
+      
       await _secureStorage.write(key: 'cached_user', value: jsonEncode(user.toJson()));
 
       return Right(user);

@@ -12,7 +12,7 @@ LoginRequestDto _$LoginRequestDtoFromJson(Map<String, dynamic> json) =>
       password: json['password'] as String,
       deviceId: json['device_id'] as String,
       deviceName: json['device_name'] as String,
-      deviceFingerprint: json['device_fingerprint'] as String,
+      deviceFingerprint: json['device_uid'] as String,
     );
 
 Map<String, dynamic> _$LoginRequestDtoToJson(LoginRequestDto instance) =>
@@ -21,7 +21,7 @@ Map<String, dynamic> _$LoginRequestDtoToJson(LoginRequestDto instance) =>
       'password': instance.password,
       'device_id': instance.deviceId,
       'device_name': instance.deviceName,
-      'device_fingerprint': instance.deviceFingerprint,
+      'device_uid': instance.deviceFingerprint,
     };
 
 TokenResponseDto _$TokenResponseDtoFromJson(Map<String, dynamic> json) =>

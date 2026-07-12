@@ -4,7 +4,7 @@ import sys
 
 async def main():
     try:
-        conn = await asyncpg.connect('postgresql://pinesphere:pinesphere_password@localhost:5444/pinesphere')
+        conn = await asyncpg.connect('postgresql://pinesphere:pinesphere_password@localhost:5432/pinesphere')
         print("Connected as superuser. Creating pinesphere_app role...")
         
         await conn.execute("""

@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
-from app.infra.models import Owner, Business, Property, RoomCategory, Room
+from app.core.security import get_password_hash
+from app.infra.models import Owner, Business, Property, RoomCategory, Room, User, Subscription, Device, Role
 
 async def seed_data():
     engine = create_async_engine(settings.DATABASE_URL, echo=True)
@@ -65,6 +66,73 @@ async def seed_data():
                 )
                 session.add(resort_2)
                 print("Resort 2 created.")
+
+            await session.flush()
+
+            # Create a Role for Resort 1
+            role_id = uuid.UUID("cccccccc-cccc-cccc-cccc-cccccccccccc")
+            role = await session.get(Role, role_id)
+            if not role:
+                role = Role(
+                    id=role_id,
+                    property_id=resort_1_id,
+                    role_code="owner",
+                    role_name="Owner",
+                    is_system_role=True
+                )
+                session.add(role)
+                print("Role created.")
+
+            # Create a Subscription for Resort 1
+            subscription_id = uuid.UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
+            subscription = await session.get(Subscription, subscription_id)
+            if not subscription:
+                from datetime import date
+                subscription = Subscription(
+                    id=subscription_id,
+                    property_id=resort_1_id,
+                    plan="Enterprise Offline",
+                    billing_cycle="yearly",
+                    start_date=date(2026, 1, 1),
+                    expiry_date=date(2030, 12, 31),
+                    status="Active",
+                    license_id="LIC-12345"
+                )
+                session.add(subscription)
+                print("Subscription created.")
+
+            # Create a User (Staff/Admin) for Resort 1
+            user_id = uuid.UUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+            user = await session.get(User, user_id)
+            if not user:
+                user = User(
+                    id=user_id,
+                    property_id=resort_1_id,
+                    role_id=role_id,
+                    name="Admin User",
+                    email="admin@pinesphere.com",
+                    password_hash=get_password_hash("password123"),
+                    status="ACTIVE",
+                    is_primary_owner=True
+                )
+                session.add(user)
+                print("Admin User created (admin@pinesphere.com / password123).")
+
+            # Create a Device for Resort 1
+            device_id = uuid.UUID("ffffffff-ffff-ffff-ffff-ffffffffffff")
+            device = await session.get(Device, device_id)
+            if not device:
+                device = Device(
+                    id=device_id,
+                    device_uid="mock-device-fingerprint-12345",
+                    property_id=resort_1_id,
+                    primary_user_id=user_id,
+                    device_name="Admin Test Device",
+                    os_type="android",
+                    status="active"
+                )
+                session.add(device)
+                print("Admin Device created.")
 
             await session.flush()
 

@@ -22,7 +22,6 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
   final DateFormat _dateFormat = DateFormat('MMM dd, yyyy');
   final DateFormat _timeFormat = DateFormat('hh:mm a');
 
-  static const String _dummyPropertyId = 'prop_001';
 
   @override
   void initState() {
@@ -42,14 +41,14 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
   void _onTabChanged() {
     if (_tabController.indexIsChanging) return;
     if (_tabController.index == 0) {
-      ref.read(checkOutProvider.notifier).getPendingCheckOuts(_dummyPropertyId);
+      ref.read(checkOutProvider.notifier).getPendingCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '');
     } else {
-      ref.read(checkOutProvider.notifier).getTodaysCheckOuts(_dummyPropertyId);
+      ref.read(checkOutProvider.notifier).getTodaysCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '');
     }
   }
 
   void _loadInitialData() {
-    ref.read(checkOutProvider.notifier).getPendingCheckOuts(_dummyPropertyId);
+    ref.read(checkOutProvider.notifier).getPendingCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '');
   }
 
   @override
@@ -134,7 +133,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     return state.when(
       initial: () => const Center(child: Text('Select a property to view pending checkouts')),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getPendingCheckOuts(_dummyPropertyId)),
+      error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getPendingCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '')),
       success: (_, __) => const Center(child: Text('Action completed')),
       loadedPendingCheckouts: (checkouts) => _buildPendingCheckoutsList(checkouts, isViewOnly),
       loadedBilling: (_) => const SizedBox.shrink(),
@@ -166,7 +165,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(checkOutProvider.notifier).getPendingCheckOuts(_dummyPropertyId),
+      onRefresh: () => ref.read(checkOutProvider.notifier).getPendingCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? ''),
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: checkouts.length,
@@ -186,7 +185,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     final checkinId = checkout['checkin_id']?.toString() ?? checkout['checkinId'] ?? '';
     final bookingId = checkout['booking_id']?.toString() ?? checkout['bookingId'] ?? '';
     final roomId = checkout['room_id']?.toString() ?? checkout['roomId'] ?? '';
-    final propertyId = checkout['property_id']?.toString() ?? checkout['propertyId'] ?? _dummyPropertyId;
+    final propertyId = checkout['property_id']?.toString() ?? checkout['propertyId'] ?? (ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '');
     final ratePerNight = checkout['rate_per_night']?.toString() ?? checkout['ratePerNight'] ?? '0';
 
     return BentoCard(
@@ -269,7 +268,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     return state.when(
       initial: () => const Center(child: Text('Select a property to view today\'s checkouts')),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getTodaysCheckOuts(_dummyPropertyId)),
+      error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getTodaysCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '')),
       success: (_, __) => const Center(child: Text('Action completed')),
       loadedTodaysCheckouts: (checkouts) => _buildTodaysCheckoutsTable(checkouts, isViewOnly),
       loadedPendingCheckouts: (_) => const SizedBox.shrink(),
@@ -301,7 +300,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(checkOutProvider.notifier).getTodaysCheckOuts(_dummyPropertyId),
+      onRefresh: () => ref.read(checkOutProvider.notifier).getTodaysCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? ''),
       child: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: SingleChildScrollView(

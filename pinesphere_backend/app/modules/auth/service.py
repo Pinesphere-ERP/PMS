@@ -15,7 +15,7 @@ class AuthService:
         self.db = db
 
     async def authenticate_user(self, login_data: LoginRequest) -> User:
-        query = select(User).filter(User.mobile_number == login_data.mobile_number)
+        query = select(User).filter(User.email == login_data.email)
         if login_data.property_id:
             query = query.filter(User.property_id == login_data.property_id)
             
@@ -23,14 +23,14 @@ class AuthService:
         user = result.scalars().first()
         
         if not user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid mobile number or password")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
             
         if not verify_password(login_data.password, user.password_hash):
             user.failed_login_attempts += 1
             if user.failed_login_attempts >= 5:
                 user.status = "LOCKED"
             await self.db.commit()
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid mobile number or password")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
             
         if user.status != "ACTIVE":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"User account is {user.status}")

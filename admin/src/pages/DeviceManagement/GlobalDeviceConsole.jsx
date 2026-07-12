@@ -189,8 +189,8 @@ export default function GlobalDeviceConsole() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {filteredDevices.map((dev) => (
-                  <tr key={dev.id || Math.random()} className="hover:bg-gray-50/80 transition cursor-pointer" onClick={() => handleOpenDrawer(dev)}>
+                {filteredDevices.map((dev, idx) => (
+                  <tr key={dev.id || idx} className="hover:bg-gray-50/80 transition cursor-pointer" onClick={() => handleOpenDrawer(dev)}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">

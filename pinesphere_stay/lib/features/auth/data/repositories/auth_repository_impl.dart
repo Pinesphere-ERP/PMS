@@ -10,6 +10,13 @@ import '../../../../core/permissions/user_role.dart';
 import 'dart:convert';
 import '../../domain/models/user_model.dart';
 import '../models/login_request_dto.dart';
+import '../../../../main.dart';
+import '../../../../features/bookings/domain/models/booking_entity.dart';
+import '../../../../features/rooms/domain/models/room_entity.dart';
+import '../../../../features/guests/domain/models/guest_entity.dart';
+import '../../../../features/checkin/domain/models/checkin_entity.dart';
+import '../../../../features/checkout/domain/models/checkout_entity.dart';
+import '../../../../features/sync/domain/models/sync_queue_entity.dart';
 
 part 'auth_repository_impl.g.dart';
 
@@ -79,6 +86,21 @@ class AuthRepository {
       await _secureStorage.write(key: 'device_uid', value: fingerprint);
       if (propertyId != null) {
         await _secureStorage.write(key: 'tenant_id', value: propertyId);
+      }
+
+      // Wipe local database on successful login to prevent conflicts
+      // We will pull the fresh state from the cloud immediately after.
+      try {
+        final store = objectBox.store;
+        store.box<BookingEntity>().removeAll();
+        store.box<RoomEntity>().removeAll();
+        store.box<GuestEntity>().removeAll();
+        store.box<CheckInEntity>().removeAll();
+        store.box<CheckOutEntity>().removeAll();
+        store.box<SyncQueueEntity>().removeAll();
+        await _secureStorage.delete(key: 'last_sync_timestamp');
+      } catch (e) {
+        print("Failed to clear local db on login: $e");
       }
 
       return Right(user);

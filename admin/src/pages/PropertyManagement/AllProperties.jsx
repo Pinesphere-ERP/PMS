@@ -110,8 +110,8 @@ export default function AllProperties() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProperties.map((prop) => (
-                  <tr key={prop.id || Math.random()} className="hover:bg-gray-50 transition">
+                {filteredProperties.map((prop, idx) => (
+                  <tr key={prop.id || idx} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{prop.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{prop.name || prop.property_name}</div>

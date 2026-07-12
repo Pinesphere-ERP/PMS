@@ -138,4 +138,23 @@ class AuthNotifier extends _$AuthNotifier {
     _permissions = null;
     state = const AuthState.unauthenticated();
   }
+
+  Future<bool> tryBiometricLogin() async {
+    final repository = ref.read(authRepositoryProvider);
+    final cachedUser = await repository.getCachedUser();
+    
+    if (cachedUser != null) {
+      ref.read(auditServiceProvider).log(
+        moduleName: 'auth',
+        actionType: 'biometric_login_success',
+        targetEntity: 'user',
+        targetRecordId: cachedUser.id,
+        userId: cachedUser.id,
+      );
+      state = AuthState.authenticated(cachedUser);
+      return true;
+    }
+    
+    return false;
+  }
 }

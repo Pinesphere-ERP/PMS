@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_notifier.dart';
 import '../../../../core/widgets/app_button.dart';
+import 'package:local_auth/local_auth.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -78,6 +79,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 text: 'Login',
                 isLoading: isLoading,
                 onPressed: _login,
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final localAuth = LocalAuthentication();
+                  final canCheckBiometrics = await localAuth.canCheckBiometrics;
+                  final isDeviceSupported = await localAuth.isDeviceSupported();
+                  
+                  if (canCheckBiometrics && isDeviceSupported) {
+                    final didAuthenticate = await localAuth.authenticate(
+                      localizedReason: 'Please authenticate to login',
+                      biometricOnly: true,
+                    );
+                    
+                    if (didAuthenticate && mounted) {
+                      // Attempt a cached user login
+                      final cachedUser = await ref.read(authProvider.notifier).tryBiometricLogin();
+                      if (!cachedUser && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No previous session found for biometric login. Please login with password first.')),
+                        );
+                      }
+                    }
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Biometrics not available on this device')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.fingerprint, size: 24),
+                label: const Text('Login with Biometrics'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
             ],
           ),

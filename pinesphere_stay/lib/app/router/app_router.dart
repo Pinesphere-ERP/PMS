@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'app_scaffold.dart';
 import '../../features/auth/presentation/providers/auth_notifier.dart';
-import '../../features/auth/presentation/screens/pin_login_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
@@ -74,7 +74,7 @@ GoRouter appRouter(Ref ref) {
     routes: [
       GoRoute(
         path: '/login',
-        builder: (context, state) => const PinLoginScreen(),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/device-registration',

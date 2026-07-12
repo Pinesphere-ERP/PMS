@@ -110,9 +110,9 @@ export default function DeviceDiagnosticsPanel() {
             {!loading && !error && filteredDevices.length === 0 && (
               <div className="p-4 text-center text-xs text-gray-500">No devices match your search.</div>
             )}
-            {filteredDevices.map(dev => (
+            {filteredDevices.map((dev, idx) => (
               <button 
-                key={dev.id || Math.random()}
+                key={dev.id || idx}
                 onClick={() => setSelectedDevice(dev)}
                 className={`w-full text-left p-3 rounded-lg transition-colors border ${
                   selectedDevice?.id === dev.id 

@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./pinesphere.db")
-    ALEMBIC_DATABASE_URL: str = os.getenv("ALEMBIC_DATABASE_URL", "sqlite+aiosqlite:///./pinesphere.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://neondb_owner:npg_TpsoV0gdryS5@ep-wild-bird-atptd648.c-9.us-east-1.aws.neon.tech/neondb?ssl=require")
+    ALEMBIC_DATABASE_URL: str = os.getenv("ALEMBIC_DATABASE_URL", "postgresql+asyncpg://neondb_owner:npg_TpsoV0gdryS5@ep-wild-bird-atptd648.c-9.us-east-1.aws.neon.tech/neondb?ssl=require")
     
     @field_validator("DATABASE_URL", "ALEMBIC_DATABASE_URL", mode="before")
     @classmethod

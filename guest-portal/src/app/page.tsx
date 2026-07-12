@@ -5,7 +5,7 @@ import AppContainer from "@/components/ui/AppContainer";
 import RoomInfo from "@/components/dashboard/RoomInfo";
 import { guest } from "@/data/guest";
 import BalanceCard from "@/components/dashboard/BalanceCard";
-
+import BottomNavigation from "@/components/dashboard/BottomNavigation";
 export default function Home() {
   return (
     <>
@@ -32,6 +32,7 @@ export default function Home() {
         />
         <BalanceCard balance={guest.balance} />
       </AppContainer>
+      <BottomNavigation />
     </>
   );
 }

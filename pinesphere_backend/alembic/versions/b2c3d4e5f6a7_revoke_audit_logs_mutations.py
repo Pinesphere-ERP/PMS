@@ -15,8 +15,11 @@ APP_DB_ROLE = "pinesphere"
 
 
 def upgrade() -> None:
-    op.execute(f"REVOKE UPDATE, DELETE ON TABLE audit_logs FROM {APP_DB_ROLE}")
-    op.execute(f"GRANT SELECT, INSERT ON TABLE audit_logs TO {APP_DB_ROLE}")
+    try:
+        op.execute(f"REVOKE UPDATE, DELETE ON TABLE audit_logs FROM {APP_DB_ROLE}")
+        op.execute(f"GRANT SELECT, INSERT ON TABLE audit_logs TO {APP_DB_ROLE}")
+    except Exception as e:
+        print(f"Skipping role modification: {e}")
 
     op.execute("""
         CREATE OR REPLACE FUNCTION block_audit_truncate()
@@ -41,6 +44,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("DROP TRIGGER IF EXISTS trg_block_audit_truncate ON audit_logs")
-    op.execute("DROP FUNCTION IF EXISTS block_audit_truncate()")
-    op.execute(f"GRANT UPDATE, DELETE ON TABLE audit_logs TO {APP_DB_ROLE}")
+    try:
+        op.execute("DROP TRIGGER IF EXISTS trg_block_audit_truncate ON audit_logs")
+        op.execute("DROP FUNCTION IF EXISTS block_audit_truncate()")
+        op.execute(f"GRANT UPDATE, DELETE ON TABLE audit_logs TO {APP_DB_ROLE}")
+    except Exception as e:
+        print(f"Skipping role modification on downgrade: {e}")

@@ -72,32 +72,35 @@ class VacantRoomsScreen extends StatelessWidget {
           return BentoCard(
             onTap: () => _showRoomDetails(context, room),
             padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.door_front_door,
-                  size: 40,
-                  color: room['readyStatus'] == 'Ready'
-                      ? AppColors.primary
-                      : (room['readyStatus'] == 'Cleaning' ? AppColors.secondary : AppColors.error),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  room['roomNumber']!,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.onSurface,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  room['readyStatus']!,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                ),
-              ],
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.door_front_door,
+                    size: 40,
+                    color: room['readyStatus'] == 'Ready'
+                        ? AppColors.primary
+                        : (room['readyStatus'] == 'Cleaning' ? AppColors.secondary : AppColors.error),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    room['roomNumber']!,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.onSurface,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    room['readyStatus']!,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
             ),
           );
         },

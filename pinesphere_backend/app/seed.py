@@ -2,10 +2,14 @@ import asyncio
 import uuid
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.infra.models import Owner, Business, Property, RoomCategory, Room, User, Subscription, Device, Role
+from app.infra.models import (
+    Owner, Business, Property, RoomCategory, Room,
+    Role, Permission, RolePermission, User, Subscription, Device
+)
 
 async def seed_data():
     engine = create_async_engine(settings.DATABASE_URL, echo=True)
@@ -13,6 +17,149 @@ async def seed_data():
     
     async with async_session() as session:
         async with session.begin():
+            # 1. Seed Permissions Catalog
+            permissions_data = [
+                ("BOOKINGS", "bookingManagement", "Create / view / manage bookings"),
+                ("CHECKIN_CHECKOUT", "checkInCheckOut", "Perform check-in and check-out"),
+                ("PAYMENTS", "payments", "Collect and view payments"),
+                ("EXPENSES", "payments", "Record and view expenses"),
+                ("REPORTS", "reports", "View operational/financial reports"),
+                ("DELETE", "settings", "Delete records across modules"),
+                ("REFUND", "payments", "Approve refunds"),
+                ("ROOM_PRICING", "roomManagement", "Change room / seasonal pricing"),
+                ("DISCOUNT", "payments", "Apply discounts / coupons"),
+                ("USERS", "userRoleManagement", "Create/edit/deactivate staff & assign roles"),
+                ("INVENTORY", "inventory", "Manage stock, vendors, purchase entries"),
+                ("RESTAURANT", "restaurant", "Orders, kitchen, billing, stock"),
+                ("SETTINGS", "settings", "Property-level configuration"),
+                ("DEVICE_MANAGEMENT", "deviceManagement", "Approve / lock / revoke devices"),
+                ("AUDIT_LOGS", "auditLogs", "View the audit trail"),
+                ("SUBSCRIPTION", "subscriptionManagement", "View/renew subscription"),
+                ("HOUSEKEEPING_MAINTENANCE", "housekeeping", "Cleaning/maintenance task status"),
+            ]
+            
+            permissions_map = {}
+            for code, module, desc in permissions_data:
+                stmt = select(Permission).where(Permission.permission_code == code)
+                res = await session.execute(stmt)
+                perm = res.scalar_one_or_none()
+                if not perm:
+                    perm = Permission(
+                        id=uuid.uuid4(),
+                        permission_code=code,
+                        module_name=module,
+                        description=desc
+                    )
+                    session.add(perm)
+                permissions_map[code] = perm
+
+            await session.flush()
+
+            # 2. Seed System Roles (property_id = None)
+            roles_data = [
+                ("superAdmin", "Super Admin", "Global — all properties"),
+                ("owner", "Owner", "Full control of one property"),
+                ("manager", "Manager", "Operational control under Owner"),
+                ("reception", "Reception", "Bookings, check-in/out, payments"),
+                ("housekeeping", "Housekeeping", "Cleaning, laundry, room status, lost & found"),
+                ("accountant", "Accountant", "Payments, expenses, GST, reports, invoices"),
+                ("guest", "Guest", "No login credentials — WhatsApp / PWA"),
+            ]
+
+            roles_map = {}
+            for code, name, desc in roles_data:
+                stmt = select(Role).where(Role.role_code == code, Role.property_id.is_(None))
+                res = await session.execute(stmt)
+                role = res.scalar_one_or_none()
+                if not role:
+                    role = Role(
+                        id=uuid.uuid4(),
+                        property_id=None,
+                        role_code=code,
+                        role_name=name,
+                        is_system_role=True,
+                        description=desc
+                    )
+                    session.add(role)
+                roles_map[code] = role
+
+            await session.flush()
+
+            # 3. Seed Default Role-Permission Matrix
+            # Map of role_code -> { permission_code: access_level }
+            matrix = {
+                "superAdmin": {code: "FULL" for code, _, _ in permissions_data},
+                "owner": {
+                    "USERS": "FULL",
+                    "DEVICE_MANAGEMENT": "VIEW",
+                    "ROOM_PRICING": "FULL",
+                    "SETTINGS": "FULL",
+                    "BOOKINGS": "FULL",
+                    "CHECKIN_CHECKOUT": "FULL",
+                    "PAYMENTS": "FULL",
+                    "EXPENSES": "FULL",
+                    "REPORTS": "FULL",
+                    "AUDIT_LOGS": "VIEW",
+                    "SUBSCRIPTION": "FULL",
+                    "HOUSEKEEPING_MAINTENANCE": "FULL",
+                },
+                "manager": {
+                    "USERS": "LIMITED",
+                    "ROOM_PRICING": "FULL",
+                    "BOOKINGS": "FULL",
+                    "CHECKIN_CHECKOUT": "FULL",
+                    "PAYMENTS": "FULL",
+                    "EXPENSES": "FULL",
+                    "REPORTS": "LIMITED",
+                    "AUDIT_LOGS": "LIMITED",
+                    "HOUSEKEEPING_MAINTENANCE": "FULL",
+                },
+                "reception": {
+                    "BOOKINGS": "FULL",
+                    "CHECKIN_CHECKOUT": "FULL",
+                    "PAYMENTS": "LIMITED",
+                    "REPORTS": "LIMITED",
+                    "AUDIT_LOGS": "LIMITED",
+                    "HOUSEKEEPING_MAINTENANCE": "LIMITED",
+                },
+                "housekeeping": {
+                    "HOUSEKEEPING_MAINTENANCE": "LIMITED",
+                    "AUDIT_LOGS": "LIMITED",
+                },
+                "accountant": {
+                    "PAYMENTS": "LIMITED",
+                    "EXPENSES": "FULL",
+                    "REPORTS": "LIMITED",
+                    "AUDIT_LOGS": "LIMITED",
+                },
+                "guest": {
+                    "BOOKINGS": "LIMITED",
+                    "CHECKIN_CHECKOUT": "LIMITED",
+                    "PAYMENTS": "LIMITED",
+                }
+            }
+
+            for r_code, perm_dict in matrix.items():
+                r_id = roles_map[r_code].id
+                for p_code, level in perm_dict.items():
+                    p_id = permissions_map[p_code].id
+                    stmt = select(RolePermission).where(
+                        RolePermission.role_id == r_id,
+                        RolePermission.permission_id == p_id
+                    )
+                    res = await session.execute(stmt)
+                    rp = res.scalar_one_or_none()
+                    if not rp:
+                        rp = RolePermission(
+                            id=uuid.uuid4(),
+                            role_id=r_id,
+                            permission_id=p_id,
+                            access_level=level
+                        )
+                        session.add(rp)
+
+            await session.flush()
+
             # Check if Owner already exists
             owner_id = uuid.UUID("11111111-1111-1111-1111-111111111111")
             owner = await session.get(Owner, owner_id)
@@ -219,15 +366,30 @@ async def seed_data():
             if not room_104:
                 room_104 = Room(
                     room_id=room_104_id,
-                    room_category_id=cat_deluxe_1_id,
-                    room_number="104",
-                    housekeeping_status="clean",
-                    occupancy_status="vacant"
+            # Create default Owner User
+            owner_role_id = roles_map["owner"].id
+            user_id = uuid.UUID("a551e111-1111-1111-1111-111111111111")
+            user = await session.get(User, user_id)
+            if not user:
+                user = User(
+                    id=user_id,
+                    property_id=resort_1_id,
+                    role_id=owner_role_id,
+                    name="PineSphere Owner",
+                    mobile_number="+91 9999999999",
+                    email="owner@pinesphere.com",
+                    username="owner",
+                    password_hash=get_password_hash("password123"),
+                    pin_hash=get_password_hash("1234"),
+                    biometric_enabled=False,
+                    is_primary_owner=True,
+                    status="ACTIVE",
                 )
-                session.add(room_104)
+                session.add(user)
+                print("Owner User created.")
 
             await session.commit()
-            print("Database seeded successfully with resorts and rooms!")
+            print("Database seeded successfully with resorts, rooms, roles, permissions and owner user!")
 
 if __name__ == "__main__":
     asyncio.run(seed_data())

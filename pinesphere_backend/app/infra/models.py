@@ -3,7 +3,7 @@ from datetime import date, datetime, time
 from typing import Optional
 from sqlalchemy import (
     String, Boolean, Integer, SmallInteger, Text, DateTime, Date, Time,
-    Numeric, ForeignKey, Enum, UniqueConstraint, Index, JSON, BIGINT
+    Numeric, ForeignKey, Enum, UniqueConstraint, Index, JSON, BIGINT, text
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
@@ -95,6 +95,7 @@ class Permission(Base):
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     permission_code: Mapped[str] = mapped_column(String(60), nullable=False, unique=True)
     module_name: Mapped[str] = mapped_column(String(60), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
 
 
 class RolePermission(Base):
@@ -107,19 +108,32 @@ class RolePermission(Base):
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
     permission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("permissions.id", ondelete="CASCADE"), nullable=False)
     access_level: Mapped[str] = mapped_column(String(20), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
 
 # ── D. Users & Devices ────────────────────────────────────────────────────────
 
 class User(Base, TimestampMixin, SyncMixin):
     __tablename__ = "users"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = (
+        UniqueConstraint('property_id', 'mobile_number', name='uq_users_property_mobile'),
+        UniqueConstraint('property_id', 'username', name='uq_users_property_username'),
+        Index(
+            'uq_users_primary_owner',
+            'property_id',
+            unique=True,
+            postgresql_where=text("is_primary_owner = true AND status <> 'INACTIVE'"),
+            sqlite_where=text("is_primary_owner = 1 AND status <> 'INACTIVE'"),
+        ),
+        {'extend_existing': True}
+    )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     mobile_number: Mapped[Optional[str]] = mapped_column(String(15))
     email: Mapped[Optional[str]] = mapped_column(String(120))
+    username: Mapped[Optional[str]] = mapped_column(String(60))
     password_hash: Mapped[Optional[str]] = mapped_column(String(255))
     pin_hash: Mapped[Optional[str]] = mapped_column(String(255))
     biometric_enabled: Mapped[bool] = mapped_column(default=False)
@@ -142,6 +156,73 @@ class Device(Base, TimestampMixin):
     os_type: Mapped[Optional[str]] = mapped_column(String(20), default='android')
     status: Mapped[Optional[str]] = mapped_column(String(20), default='pending_approval')
 
+
+class UserDevice(Base):
+    __tablename__ = "user_devices"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'device_id', name='uq_user_devices_user_device'),
+        {'extend_existing': True}
+    )
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), nullable=False)
+    is_primary_device: Mapped[bool] = mapped_column(default=True, nullable=False)
+    linked_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE", nullable=False)
+
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id"), nullable=False)
+    session_token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    is_offline_session: Mapped[bool] = mapped_column(default=False, nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    revoked_reason: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+
+
+class StaffInvitation(Base):
+    __tablename__ = "staff_invitations"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
+    invited_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    mobile_number: Mapped[str] = mapped_column(String(15), nullable=False)
+    invitation_token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+
+
+class CredentialResetRequest(Base):
+    __tablename__ = "credential_reset_requests"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reset_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    requested_via: Mapped[str] = mapped_column(String(20), nullable=False)
+    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False)
+    requested_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+
+
+class UserSyncLog(Base):
+    __tablename__ = "user_sync_log"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    entity_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    entity_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+    operation: Mapped[str] = mapped_column(String(20), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    sync_status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+    synced_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 # ── E. Rooms ──────────────────────────────────────────────────────────────────
 
 class RoomCategory(Base, TimestampMixin):

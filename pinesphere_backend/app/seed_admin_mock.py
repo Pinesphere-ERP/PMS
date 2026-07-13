@@ -16,9 +16,10 @@ from app.infra.models import (
 )
 from app.core.security import get_password_hash
 
+from app.infra.database import AsyncSessionLocal
+
 async def seed_admin_mock_data():
-    engine = create_async_engine("sqlite+aiosqlite:///./pinesphere.db", echo=True)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = AsyncSessionLocal
     
     async with async_session() as session:
         async with session.begin():

@@ -569,13 +569,25 @@ export default function AddPropertyWizard() {
 
       {/* Floating Action Footer */}
       <div className="fixed bottom-0 left-0 lg:left-64 right-0 bg-white border-t border-gray-200 p-4 shadow-saas z-40 flex items-center justify-between px-6 sm:px-10">
-        <button 
-          onClick={prevStep}
-          disabled={currentStep === 1}
-          className="saas-button-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Back
-        </button>
+        <div className="flex space-x-3">
+          <button 
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className="saas-button-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" /> Back
+          </button>
+          <button 
+            onClick={() => {
+              if (window.confirm('Are you sure you need to exit from add property?')) {
+                navigate('/properties');
+              }
+            }}
+            className="saas-button-secondary text-red-600 hover:bg-red-50 border-red-200"
+          >
+            Exit
+          </button>
+        </div>
         
         <div className="flex space-x-3">
           <button className="saas-button-secondary font-medium text-gray-600 hidden sm:block">

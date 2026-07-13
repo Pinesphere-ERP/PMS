@@ -8,6 +8,22 @@ import '../../../../core/presentation/widgets/role_guard.dart';
 import '../../../../core/permissions/permission_matrix.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../../data/kpi_aggregation_service.dart';
+import '../../../rooms/data/room_service.dart';
+import '../../../rooms/domain/models/room_entity.dart';
+import '../../data/report_export_service.dart';
+import 'pl_report_screen.dart';
+
+final topRoomsProvider = FutureProvider.autoDispose<List<RoomEntity>>((ref) async {
+  final authState = ref.watch(authProvider);
+  final propertyId = authState.maybeWhen(
+    authenticated: (user) => user.id,
+    orElse: () => '',
+  );
+  if (propertyId.isEmpty) return [];
+  final rooms = await ref.read(roomServiceProvider).getRooms(propertyId);
+  rooms.sort((a, b) => b.pricePerNight.compareTo(a.pricePerNight));
+  return rooms.take(3).toList();
+});
 
 class ReportsDashboardScreen extends ConsumerWidget {
   const ReportsDashboardScreen({super.key});
@@ -40,7 +56,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
                     child: _buildPNLSection(context, ref),
                   ),
                   const SizedBox(height: 16),
-                  _buildTopRooms(context),
+                  _buildTopRooms(context, ref),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -48,7 +64,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: _buildExportBar(context),
+      floatingActionButton: _buildExportBar(context, ref),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
@@ -192,15 +208,15 @@ class ReportsDashboardScreen extends ConsumerWidget {
       childAspectRatio: 1.3,
       children: [
         _buildMetricCard(context, Icons.payments_outlined, AppColors.primary,
-            "Today's Collection", '\$0'),
+            "Today's Collection", '₹0'),
         _buildMetricCard(context, Icons.trending_up,
-            AppColors.onPrimaryContainer, 'Monthly Revenue', '\$0',
+            AppColors.onPrimaryContainer, 'Monthly Revenue', '₹0',
             bg: AppColors.primaryContainer,
             textColor: AppColors.onPrimaryContainer),
         _buildMetricCard(
             context, Icons.bed_outlined, AppColors.secondary, 'Avg Occupancy', '0%'),
         _buildMetricCard(context, Icons.pending_actions_outlined,
-            AppColors.error, 'Pending Payments', '\$0'),
+            AppColors.error, 'Pending Payments', '₹0'),
       ],
     );
   }
@@ -492,7 +508,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => context.push('/pl-report'),
               icon: const Icon(Icons.receipt_long, size: 18),
               label: const Text('View Full P&L Report'),
               style: ElevatedButton.styleFrom(
@@ -507,7 +523,8 @@ class ReportsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTopRooms(BuildContext context) {
+  Widget _buildTopRooms(BuildContext context, WidgetRef ref) {
+    final topRoomsAsync = ref.watch(topRoomsProvider);
     return Column(
       children: [
         Row(
@@ -531,14 +548,19 @@ class ReportsDashboardScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        _buildRoomRow(context, Icons.apartment, 'Room 401', 'Penthouse Suite',
-            '\$12.4k', '98% Occ.'),
-        const SizedBox(height: 12),
-        _buildRoomRow(context, Icons.hotel, 'Room 302', 'Deluxe Garden View',
-            '\$9.8k', '94% Occ.'),
-        const SizedBox(height: 12),
-        _buildRoomRow(context, Icons.holiday_village, 'Cabin 12',
-            'Premium Forest Lodge', '\$8.2k', '89% Occ.'),
+        topRoomsAsync.when(
+          data: (rooms) {
+            if (rooms.isEmpty) return const Text('No rooms found.');
+            return Column(
+              children: rooms.map<Widget>((room) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildRoomRow(context, Icons.hotel, 'Room ${room.name}', room.type, _formatCurrency(room.pricePerNight), room.status),
+              )).toList(),
+            );
+          },
+          loading: () => const CircularProgressIndicator(),
+          error: (err, stack) => const Text('Error loading top units'),
+        ),
       ],
     );
   }
@@ -607,7 +629,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildExportBar(BuildContext context) {
+  Widget _buildExportBar(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Container(
@@ -628,7 +650,19 @@ class ReportsDashboardScreen extends ConsumerWidget {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () async {
+                  try {
+                    final report = await ref.read(plReportProvider.future);
+                    await ref.read(reportExportServiceProvider).exportToPdf(report);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF exported successfully')));
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+                    }
+                  }
+                },
                 icon: const Icon(Icons.picture_as_pdf, size: 20),
                 label: const Text('Export PDF'),
                 style: ElevatedButton.styleFrom(
@@ -641,7 +675,19 @@ class ReportsDashboardScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () async {
+                  try {
+                    final report = await ref.read(plReportProvider.future);
+                    await ref.read(reportExportServiceProvider).exportToExcel(report);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Excel exported successfully')));
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+                    }
+                  }
+                },
                 icon: const Icon(Icons.table_chart, size: 20),
                 label: const Text('Export Excel'),
                 style: ElevatedButton.styleFrom(
@@ -661,9 +707,9 @@ class ReportsDashboardScreen extends ConsumerWidget {
   }
 
   String _formatCurrency(double amount) {
-    if (amount >= 100000) {
-      return '\$${(amount / 1000).toStringAsFixed(1)}k';
+    if (amount >= 1000) {
+      return '₹${(amount / 1000).toStringAsFixed(1)}k';
     }
-    return NumberFormat.currency(symbol: '\$', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(symbol: '₹', decimalDigits: 0).format(amount);
   }
 }

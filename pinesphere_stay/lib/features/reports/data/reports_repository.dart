@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../audit/data/audit_service.dart';
 import '../domain/models/kpi_dto.dart';
 import '../../../../core/network/dio_client.dart';
 
@@ -8,13 +9,17 @@ part 'reports_repository.g.dart';
 
 @riverpod
 ReportsRepository reportsRepository(Ref ref) {
-  return ReportsRepository(ref.watch(dioClientProvider));
+  return ReportsRepository(
+    ref.watch(dioClientProvider),
+    ref.watch(auditServiceProvider),
+  );
 }
 
 class ReportsRepository {
   final Dio _dio;
+  final AuditService _audit;
 
-  ReportsRepository(this._dio);
+  ReportsRepository(this._dio, this._audit);
 
   Future<PLReportDto> getPLReport({
     required String propertyId,
@@ -63,6 +68,18 @@ class ReportsRepository {
     required String reportType,
     Map<String, dynamic>? config,
   }) async {
+    _audit.log(
+      moduleName: 'reports',
+      actionType: 'create_template',
+      targetEntity: 'report_template',
+      targetRecordId: reportName,
+      propertyId: propertyId,
+      newValue: {
+        'report_name': reportName,
+        'report_type': reportType,
+        'configuration_json': config,
+      },
+    );
     final response = await _dio.post(
       '/reports/templates',
       queryParameters: {'property_id': propertyId},

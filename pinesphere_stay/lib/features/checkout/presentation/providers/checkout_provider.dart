@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/checkout_service.dart';
+import '../../../audit/data/audit_service.dart';
 
 part 'checkout_provider.freezed.dart';
 part 'checkout_provider.g.dart';
@@ -48,6 +49,23 @@ class CheckOutNotifier extends _$CheckOutNotifier {
 
   Future<void> performCheckOut({required Map<String, dynamic> data}) async {
     state = const CheckOutState.loading();
+
+    ref.read(auditServiceProvider).log(
+      moduleName: 'checkout',
+      actionType: 'check_out',
+      targetEntity: 'check_out',
+      targetRecordId: '',
+      propertyId: data['property_id']?.toString(),
+      userId: data['staff_id']?.toString(),
+      newValue: {
+        'booking_id': data['booking_id'],
+        'checkin_id': data['checkin_id'],
+        'room_id': data['room_id'],
+        'total_amount': data['total_amount'],
+        'payment_status': data['payment_status'],
+      },
+    );
+
     try {
       final service = ref.read(checkOutServiceProvider);
       final result = await service.performCheckOut(data);

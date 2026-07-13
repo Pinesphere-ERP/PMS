@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../objectbox.g.dart';
+import '../../audit/data/audit_service.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/guest_entity.dart';
 
@@ -15,7 +16,11 @@ GuestService guestService(Ref ref) {
   final service = GuestService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  service.initialize(
+    objectBox.store,
+    ref.read(syncServiceProvider),
+    ref.read(auditServiceProvider),
+  );
   return service;
 }
 
@@ -24,13 +29,15 @@ class GuestService {
   late final Store _store;
   late final Box<GuestEntity> _guestBox;
   late final SyncService _syncService;
+  late final AuditService _audit;
 
   GuestService({required this._dio});
 
-  void initialize(Store store, SyncService syncService) {
+  void initialize(Store store, SyncService syncService, AuditService audit) {
     _store = store;
     _guestBox = _store.box<GuestEntity>();
     _syncService = syncService;
+    _audit = audit;
   }
 
   Future<List<dynamic>> searchGuests(String propertyId, {String? search}) async {
@@ -52,6 +59,20 @@ class GuestService {
 
   Future<Map<String, dynamic>> createGuest(Map<String, dynamic> data) async {
     try {
+      _audit.log(
+        moduleName: 'guests',
+        actionType: 'create_guest',
+        targetEntity: 'guest',
+        targetRecordId: data['uuid']?.toString() ?? '',
+        propertyId: data['property_id']?.toString(),
+        newValue: {
+          'full_name': data['full_name'],
+          'mobile': data['mobile'],
+          'email': data['email'],
+          'id_type': data['id_type'],
+          'id_number': data['id_number'],
+        },
+      );
       final response = await _dio.post('/bookings/guests', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = GuestEntity(

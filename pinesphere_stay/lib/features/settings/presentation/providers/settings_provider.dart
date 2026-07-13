@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../audit/data/audit_service.dart';
 import '../../data/settings_service.dart';
 import '../../domain/models/device_config_entity.dart';
 
@@ -45,6 +46,14 @@ class SettingsNotifier extends _$SettingsNotifier {
 
   Future<void> createPropertySetting(String propertyId, Map<String, dynamic> data) async {
     try {
+      ref.read(auditServiceProvider).log(
+        moduleName: 'settings',
+        actionType: 'create_property_setting',
+        targetEntity: 'property_setting',
+        targetRecordId: propertyId,
+        propertyId: propertyId,
+        newValue: data,
+      );
       await _service.createPropertySetting(propertyId, data);
       state = const SettingsState.saved();
     } catch (e) {
@@ -58,6 +67,14 @@ class SettingsNotifier extends _$SettingsNotifier {
     Map<String, dynamic> data,
   ) async {
     try {
+      ref.read(auditServiceProvider).log(
+        moduleName: 'settings',
+        actionType: 'update_property_setting',
+        targetEntity: 'property_setting',
+        targetRecordId: settingId,
+        propertyId: propertyId,
+        newValue: data,
+      );
       await _service.updatePropertySetting(propertyId, settingId, data);
       state = const SettingsState.saved();
     } catch (e) {
@@ -72,6 +89,18 @@ class SettingsNotifier extends _$SettingsNotifier {
     String? localLogLevel,
   }) async {
     try {
+      final changedFields = <String, dynamic>{};
+      if (biometricEnabled != null) changedFields['biometric_enabled'] = biometricEnabled;
+      if (syncIntervalMins != null) changedFields['sync_interval_mins'] = syncIntervalMins;
+      if (thermalPrinterMac != null) changedFields['thermal_printer_mac'] = thermalPrinterMac;
+      if (localLogLevel != null) changedFields['local_log_level'] = localLogLevel;
+      ref.read(auditServiceProvider).log(
+        moduleName: 'settings',
+        actionType: 'update_device_config',
+        targetEntity: 'device_config',
+        targetRecordId: deviceUid,
+        newValue: changedFields,
+      );
       await _service.updateDeviceConfig(
         deviceUid,
         biometricEnabled: biometricEnabled,

@@ -75,9 +75,7 @@ Map<String, dynamic> _$PLReportDtoToJson(_PLReportDto instance) =>
       'property_id': instance.propertyId,
       'period_start': instance.periodStart,
       'period_end': instance.periodEnd,
-      'monthly_breakdown': instance.monthlyBreakdown
-          .map((e) => e.toJson())
-          .toList(),
+      'monthly_breakdown': instance.monthlyBreakdown,
       'summary_total_revenue': instance.summaryTotalRevenue,
       'summary_total_expenses': instance.summaryTotalExpenses,
       'summary_net_profit': instance.summaryNetProfit,

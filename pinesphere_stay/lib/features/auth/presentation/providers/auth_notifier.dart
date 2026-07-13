@@ -7,6 +7,7 @@ import '../../../user_role_management/domain/permission_set.dart';
 import '../../../../core/permissions/user_role.dart';
 import '../../domain/models/user_model.dart';
 import '../../../sync/data/sync_service.dart';
+import '../../data/repositories/auth_repository_impl.dart';
 
 part 'auth_notifier.freezed.dart';
 part 'auth_notifier.g.dart';

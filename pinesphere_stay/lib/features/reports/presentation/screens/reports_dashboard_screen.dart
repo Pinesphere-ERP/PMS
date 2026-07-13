@@ -208,15 +208,15 @@ class ReportsDashboardScreen extends ConsumerWidget {
       childAspectRatio: 1.3,
       children: [
         _buildMetricCard(context, Icons.payments_outlined, AppColors.primary,
-            "Today's Collection", '\$0'),
+            "Today's Collection", '₹0'),
         _buildMetricCard(context, Icons.trending_up,
-            AppColors.onPrimaryContainer, 'Monthly Revenue', '\$0',
+            AppColors.onPrimaryContainer, 'Monthly Revenue', '₹0',
             bg: AppColors.primaryContainer,
             textColor: AppColors.onPrimaryContainer),
         _buildMetricCard(
             context, Icons.bed_outlined, AppColors.secondary, 'Avg Occupancy', '0%'),
         _buildMetricCard(context, Icons.pending_actions_outlined,
-            AppColors.error, 'Pending Payments', '\$0'),
+            AppColors.error, 'Pending Payments', '₹0'),
       ],
     );
   }
@@ -707,9 +707,9 @@ class ReportsDashboardScreen extends ConsumerWidget {
   }
 
   String _formatCurrency(double amount) {
-    if (amount >= 100000) {
-      return '\$${(amount / 1000).toStringAsFixed(1)}k';
+    if (amount >= 1000) {
+      return '₹${(amount / 1000).toStringAsFixed(1)}k';
     }
-    return NumberFormat.currency(symbol: '\$', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(symbol: '₹', decimalDigits: 0).format(amount);
   }
 }

@@ -56,7 +56,7 @@ class PLReportScreen extends ConsumerWidget {
   }
 
   Widget _buildReportView(BuildContext context, PLReportDto report) {
-    final formatCurrency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final formatCurrency = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
 
     return ListView(
       padding: const EdgeInsets.all(16),

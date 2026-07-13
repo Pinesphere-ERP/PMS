@@ -6,16 +6,16 @@ part 'kpi_dto.g.dart';
 @freezed
 abstract class KpiSnapshotDto with _$KpiSnapshotDto {
   const factory KpiSnapshotDto({
-    required String snapshotId,
-    required String propertyId,
-    required String snapshotDate,
-    required int occupiedRooms,
-    required int vacantRooms,
-    required double revenueRoomRent,
-    required double revenueAddons,
-    required double expensesAmount,
-    required double outstandingPayments,
-    required double gstCollected,
+    @JsonKey(name: 'snapshot_id') required String snapshotId,
+    @JsonKey(name: 'property_id') required String propertyId,
+    @JsonKey(name: 'snapshot_date') required String snapshotDate,
+    @JsonKey(name: 'occupied_rooms') required int occupiedRooms,
+    @JsonKey(name: 'vacant_rooms') required int vacantRooms,
+    @JsonKey(name: 'revenue_room_rent') required double revenueRoomRent,
+    @JsonKey(name: 'revenue_addons') required double revenueAddons,
+    @JsonKey(name: 'expenses_amount') required double expensesAmount,
+    @JsonKey(name: 'outstanding_payments') required double outstandingPayments,
+    @JsonKey(name: 'gst_collected') required double gstCollected,
   }) = _KpiSnapshotDto;
 
   const KpiSnapshotDto._();
@@ -28,12 +28,12 @@ abstract class KpiSnapshotDto with _$KpiSnapshotDto {
 abstract class MonthlyPLRowDto with _$MonthlyPLRowDto {
   const factory MonthlyPLRowDto({
     required String month,
-    required double totalRoomRent,
-    required double totalAddons,
-    required double totalRevenue,
-    required double totalExpenses,
-    required double netProfit,
-    required double gstCollected,
+    @JsonKey(name: 'total_room_rent') required double totalRoomRent,
+    @JsonKey(name: 'total_addons') required double totalAddons,
+    @JsonKey(name: 'total_revenue') required double totalRevenue,
+    @JsonKey(name: 'total_expenses') required double totalExpenses,
+    @JsonKey(name: 'net_profit') required double netProfit,
+    @JsonKey(name: 'gst_collected') required double gstCollected,
     required double outstanding,
   }) = _MonthlyPLRowDto;
 
@@ -46,13 +46,13 @@ abstract class MonthlyPLRowDto with _$MonthlyPLRowDto {
 @freezed
 abstract class PLReportDto with _$PLReportDto {
   const factory PLReportDto({
-    required String propertyId,
-    required String periodStart,
-    required String periodEnd,
-    required List<MonthlyPLRowDto> monthlyBreakdown,
-    required double summaryTotalRevenue,
-    required double summaryTotalExpenses,
-    required double summaryNetProfit,
+    @JsonKey(name: 'property_id') required String propertyId,
+    @JsonKey(name: 'period_start') required String periodStart,
+    @JsonKey(name: 'period_end') required String periodEnd,
+    @JsonKey(name: 'monthly_breakdown') required List<MonthlyPLRowDto> monthlyBreakdown,
+    @JsonKey(name: 'summary_total_revenue') required double summaryTotalRevenue,
+    @JsonKey(name: 'summary_total_expenses') required double summaryTotalExpenses,
+    @JsonKey(name: 'summary_net_profit') required double summaryNetProfit,
   }) = _PLReportDto;
 
   const PLReportDto._();
@@ -64,15 +64,15 @@ abstract class PLReportDto with _$PLReportDto {
 @freezed
 abstract class GSTReturnDto with _$GSTReturnDto {
   const factory GSTReturnDto({
-    required String propertyId,
-    required String periodStart,
-    required String periodEnd,
-    required double totalTaxableRevenue,
-    required double totalGstCollected,
+    @JsonKey(name: 'property_id') required String propertyId,
+    @JsonKey(name: 'period_start') required String periodStart,
+    @JsonKey(name: 'period_end') required String periodEnd,
+    @JsonKey(name: 'total_taxable_revenue') required double totalTaxableRevenue,
+    @JsonKey(name: 'total_gst_collected') required double totalGstCollected,
     required double cgst,
     required double sgst,
     required double igst,
-    required List<Map<String, dynamic>> monthlyGst,
+    @JsonKey(name: 'monthly_gst') required List<Map<String, dynamic>> monthlyGst,
   }) = _GSTReturnDto;
 
   const GSTReturnDto._();
@@ -84,11 +84,11 @@ abstract class GSTReturnDto with _$GSTReturnDto {
 @freezed
 abstract class ReportTemplateDto with _$ReportTemplateDto {
   const factory ReportTemplateDto({
-    required String templateId,
-    String? propertyId,
-    required String reportName,
-    required String reportType,
-    Map<String, dynamic>? configurationJson,
+    @JsonKey(name: 'template_id') required String templateId,
+    @JsonKey(name: 'property_id') String? propertyId,
+    @JsonKey(name: 'report_name') required String reportName,
+    @JsonKey(name: 'report_type') required String reportType,
+    @JsonKey(name: 'configuration_json') Map<String, dynamic>? configurationJson,
   }) = _ReportTemplateDto;
 
   const ReportTemplateDto._();
@@ -100,12 +100,12 @@ abstract class ReportTemplateDto with _$ReportTemplateDto {
 @freezed
 abstract class ScheduledReportDto with _$ScheduledReportDto {
   const factory ScheduledReportDto({
-    required String scheduleId,
-    required String templateId,
-    required String recipientRole,
-    required String deliveryChannel,
+    @JsonKey(name: 'schedule_id') required String scheduleId,
+    @JsonKey(name: 'template_id') required String templateId,
+    @JsonKey(name: 'recipient_role') required String recipientRole,
+    @JsonKey(name: 'delivery_channel') required String deliveryChannel,
     required String frequency,
-    required bool isActive,
+    @JsonKey(name: 'is_active') required bool isActive,
   }) = _ScheduledReportDto;
 
   const ScheduledReportDto._();

@@ -323,7 +323,7 @@ class _KeypadButtonState extends State<_KeypadButton> {
           shape: BoxShape.circle,
           color: _isPressed ? AppColors.secondaryContainer : Colors.transparent,
         ),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.92 : 1.0),
+        transform: Matrix4.diagonal3Values(_isPressed ? 0.92 : 1.0, _isPressed ? 0.92 : 1.0, 1.0),
         transformAlignment: Alignment.center,
         alignment: Alignment.center,
         child: widget.icon != null

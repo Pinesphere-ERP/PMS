@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$KpiSnapshotDto {
 
- String get snapshotId; String get propertyId; String get snapshotDate; int get occupiedRooms; int get vacantRooms; double get revenueRoomRent; double get revenueAddons; double get expensesAmount; double get outstandingPayments; double get gstCollected;
+@JsonKey(name: 'snapshot_id') String get snapshotId;@JsonKey(name: 'property_id') String get propertyId;@JsonKey(name: 'snapshot_date') String get snapshotDate;@JsonKey(name: 'occupied_rooms') int get occupiedRooms;@JsonKey(name: 'vacant_rooms') int get vacantRooms;@JsonKey(name: 'revenue_room_rent') double get revenueRoomRent;@JsonKey(name: 'revenue_addons') double get revenueAddons;@JsonKey(name: 'expenses_amount') double get expensesAmount;@JsonKey(name: 'outstanding_payments') double get outstandingPayments;@JsonKey(name: 'gst_collected') double get gstCollected;
 /// Create a copy of KpiSnapshotDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $KpiSnapshotDtoCopyWith<$Res>  {
   factory $KpiSnapshotDtoCopyWith(KpiSnapshotDto value, $Res Function(KpiSnapshotDto) _then) = _$KpiSnapshotDtoCopyWithImpl;
 @useResult
 $Res call({
- String snapshotId, String propertyId, String snapshotDate, int occupiedRooms, int vacantRooms, double revenueRoomRent, double revenueAddons, double expensesAmount, double outstandingPayments, double gstCollected
+@JsonKey(name: 'snapshot_id') String snapshotId,@JsonKey(name: 'property_id') String propertyId,@JsonKey(name: 'snapshot_date') String snapshotDate,@JsonKey(name: 'occupied_rooms') int occupiedRooms,@JsonKey(name: 'vacant_rooms') int vacantRooms,@JsonKey(name: 'revenue_room_rent') double revenueRoomRent,@JsonKey(name: 'revenue_addons') double revenueAddons,@JsonKey(name: 'expenses_amount') double expensesAmount,@JsonKey(name: 'outstanding_payments') double outstandingPayments,@JsonKey(name: 'gst_collected') double gstCollected
 });
 
 
@@ -162,7 +162,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String snapshotId,  String propertyId,  String snapshotDate,  int occupiedRooms,  int vacantRooms,  double revenueRoomRent,  double revenueAddons,  double expensesAmount,  double outstandingPayments,  double gstCollected)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'snapshot_id')  String snapshotId, @JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'snapshot_date')  String snapshotDate, @JsonKey(name: 'occupied_rooms')  int occupiedRooms, @JsonKey(name: 'vacant_rooms')  int vacantRooms, @JsonKey(name: 'revenue_room_rent')  double revenueRoomRent, @JsonKey(name: 'revenue_addons')  double revenueAddons, @JsonKey(name: 'expenses_amount')  double expensesAmount, @JsonKey(name: 'outstanding_payments')  double outstandingPayments, @JsonKey(name: 'gst_collected')  double gstCollected)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _KpiSnapshotDto() when $default != null:
 return $default(_that.snapshotId,_that.propertyId,_that.snapshotDate,_that.occupiedRooms,_that.vacantRooms,_that.revenueRoomRent,_that.revenueAddons,_that.expensesAmount,_that.outstandingPayments,_that.gstCollected);case _:
@@ -183,7 +183,7 @@ return $default(_that.snapshotId,_that.propertyId,_that.snapshotDate,_that.occup
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String snapshotId,  String propertyId,  String snapshotDate,  int occupiedRooms,  int vacantRooms,  double revenueRoomRent,  double revenueAddons,  double expensesAmount,  double outstandingPayments,  double gstCollected)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'snapshot_id')  String snapshotId, @JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'snapshot_date')  String snapshotDate, @JsonKey(name: 'occupied_rooms')  int occupiedRooms, @JsonKey(name: 'vacant_rooms')  int vacantRooms, @JsonKey(name: 'revenue_room_rent')  double revenueRoomRent, @JsonKey(name: 'revenue_addons')  double revenueAddons, @JsonKey(name: 'expenses_amount')  double expensesAmount, @JsonKey(name: 'outstanding_payments')  double outstandingPayments, @JsonKey(name: 'gst_collected')  double gstCollected)  $default,) {final _that = this;
 switch (_that) {
 case _KpiSnapshotDto():
 return $default(_that.snapshotId,_that.propertyId,_that.snapshotDate,_that.occupiedRooms,_that.vacantRooms,_that.revenueRoomRent,_that.revenueAddons,_that.expensesAmount,_that.outstandingPayments,_that.gstCollected);case _:
@@ -203,7 +203,7 @@ return $default(_that.snapshotId,_that.propertyId,_that.snapshotDate,_that.occup
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String snapshotId,  String propertyId,  String snapshotDate,  int occupiedRooms,  int vacantRooms,  double revenueRoomRent,  double revenueAddons,  double expensesAmount,  double outstandingPayments,  double gstCollected)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'snapshot_id')  String snapshotId, @JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'snapshot_date')  String snapshotDate, @JsonKey(name: 'occupied_rooms')  int occupiedRooms, @JsonKey(name: 'vacant_rooms')  int vacantRooms, @JsonKey(name: 'revenue_room_rent')  double revenueRoomRent, @JsonKey(name: 'revenue_addons')  double revenueAddons, @JsonKey(name: 'expenses_amount')  double expensesAmount, @JsonKey(name: 'outstanding_payments')  double outstandingPayments, @JsonKey(name: 'gst_collected')  double gstCollected)?  $default,) {final _that = this;
 switch (_that) {
 case _KpiSnapshotDto() when $default != null:
 return $default(_that.snapshotId,_that.propertyId,_that.snapshotDate,_that.occupiedRooms,_that.vacantRooms,_that.revenueRoomRent,_that.revenueAddons,_that.expensesAmount,_that.outstandingPayments,_that.gstCollected);case _:
@@ -218,19 +218,19 @@ return $default(_that.snapshotId,_that.propertyId,_that.snapshotDate,_that.occup
 @JsonSerializable()
 
 class _KpiSnapshotDto extends KpiSnapshotDto {
-  const _KpiSnapshotDto({required this.snapshotId, required this.propertyId, required this.snapshotDate, required this.occupiedRooms, required this.vacantRooms, required this.revenueRoomRent, required this.revenueAddons, required this.expensesAmount, required this.outstandingPayments, required this.gstCollected}): super._();
+  const _KpiSnapshotDto({@JsonKey(name: 'snapshot_id') required this.snapshotId, @JsonKey(name: 'property_id') required this.propertyId, @JsonKey(name: 'snapshot_date') required this.snapshotDate, @JsonKey(name: 'occupied_rooms') required this.occupiedRooms, @JsonKey(name: 'vacant_rooms') required this.vacantRooms, @JsonKey(name: 'revenue_room_rent') required this.revenueRoomRent, @JsonKey(name: 'revenue_addons') required this.revenueAddons, @JsonKey(name: 'expenses_amount') required this.expensesAmount, @JsonKey(name: 'outstanding_payments') required this.outstandingPayments, @JsonKey(name: 'gst_collected') required this.gstCollected}): super._();
   factory _KpiSnapshotDto.fromJson(Map<String, dynamic> json) => _$KpiSnapshotDtoFromJson(json);
 
-@override final  String snapshotId;
-@override final  String propertyId;
-@override final  String snapshotDate;
-@override final  int occupiedRooms;
-@override final  int vacantRooms;
-@override final  double revenueRoomRent;
-@override final  double revenueAddons;
-@override final  double expensesAmount;
-@override final  double outstandingPayments;
-@override final  double gstCollected;
+@override@JsonKey(name: 'snapshot_id') final  String snapshotId;
+@override@JsonKey(name: 'property_id') final  String propertyId;
+@override@JsonKey(name: 'snapshot_date') final  String snapshotDate;
+@override@JsonKey(name: 'occupied_rooms') final  int occupiedRooms;
+@override@JsonKey(name: 'vacant_rooms') final  int vacantRooms;
+@override@JsonKey(name: 'revenue_room_rent') final  double revenueRoomRent;
+@override@JsonKey(name: 'revenue_addons') final  double revenueAddons;
+@override@JsonKey(name: 'expenses_amount') final  double expensesAmount;
+@override@JsonKey(name: 'outstanding_payments') final  double outstandingPayments;
+@override@JsonKey(name: 'gst_collected') final  double gstCollected;
 
 /// Create a copy of KpiSnapshotDto
 /// with the given fields replaced by the non-null parameter values.
@@ -265,7 +265,7 @@ abstract mixin class _$KpiSnapshotDtoCopyWith<$Res> implements $KpiSnapshotDtoCo
   factory _$KpiSnapshotDtoCopyWith(_KpiSnapshotDto value, $Res Function(_KpiSnapshotDto) _then) = __$KpiSnapshotDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String snapshotId, String propertyId, String snapshotDate, int occupiedRooms, int vacantRooms, double revenueRoomRent, double revenueAddons, double expensesAmount, double outstandingPayments, double gstCollected
+@JsonKey(name: 'snapshot_id') String snapshotId,@JsonKey(name: 'property_id') String propertyId,@JsonKey(name: 'snapshot_date') String snapshotDate,@JsonKey(name: 'occupied_rooms') int occupiedRooms,@JsonKey(name: 'vacant_rooms') int vacantRooms,@JsonKey(name: 'revenue_room_rent') double revenueRoomRent,@JsonKey(name: 'revenue_addons') double revenueAddons,@JsonKey(name: 'expenses_amount') double expensesAmount,@JsonKey(name: 'outstanding_payments') double outstandingPayments,@JsonKey(name: 'gst_collected') double gstCollected
 });
 
 
@@ -305,7 +305,7 @@ as double,
 /// @nodoc
 mixin _$MonthlyPLRowDto {
 
- String get month; double get totalRoomRent; double get totalAddons; double get totalRevenue; double get totalExpenses; double get netProfit; double get gstCollected; double get outstanding;
+ String get month;@JsonKey(name: 'total_room_rent') double get totalRoomRent;@JsonKey(name: 'total_addons') double get totalAddons;@JsonKey(name: 'total_revenue') double get totalRevenue;@JsonKey(name: 'total_expenses') double get totalExpenses;@JsonKey(name: 'net_profit') double get netProfit;@JsonKey(name: 'gst_collected') double get gstCollected; double get outstanding;
 /// Create a copy of MonthlyPLRowDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -338,7 +338,7 @@ abstract mixin class $MonthlyPLRowDtoCopyWith<$Res>  {
   factory $MonthlyPLRowDtoCopyWith(MonthlyPLRowDto value, $Res Function(MonthlyPLRowDto) _then) = _$MonthlyPLRowDtoCopyWithImpl;
 @useResult
 $Res call({
- String month, double totalRoomRent, double totalAddons, double totalRevenue, double totalExpenses, double netProfit, double gstCollected, double outstanding
+ String month,@JsonKey(name: 'total_room_rent') double totalRoomRent,@JsonKey(name: 'total_addons') double totalAddons,@JsonKey(name: 'total_revenue') double totalRevenue,@JsonKey(name: 'total_expenses') double totalExpenses,@JsonKey(name: 'net_profit') double netProfit,@JsonKey(name: 'gst_collected') double gstCollected, double outstanding
 });
 
 
@@ -450,7 +450,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String month,  double totalRoomRent,  double totalAddons,  double totalRevenue,  double totalExpenses,  double netProfit,  double gstCollected,  double outstanding)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String month, @JsonKey(name: 'total_room_rent')  double totalRoomRent, @JsonKey(name: 'total_addons')  double totalAddons, @JsonKey(name: 'total_revenue')  double totalRevenue, @JsonKey(name: 'total_expenses')  double totalExpenses, @JsonKey(name: 'net_profit')  double netProfit, @JsonKey(name: 'gst_collected')  double gstCollected,  double outstanding)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MonthlyPLRowDto() when $default != null:
 return $default(_that.month,_that.totalRoomRent,_that.totalAddons,_that.totalRevenue,_that.totalExpenses,_that.netProfit,_that.gstCollected,_that.outstanding);case _:
@@ -471,7 +471,7 @@ return $default(_that.month,_that.totalRoomRent,_that.totalAddons,_that.totalRev
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String month,  double totalRoomRent,  double totalAddons,  double totalRevenue,  double totalExpenses,  double netProfit,  double gstCollected,  double outstanding)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String month, @JsonKey(name: 'total_room_rent')  double totalRoomRent, @JsonKey(name: 'total_addons')  double totalAddons, @JsonKey(name: 'total_revenue')  double totalRevenue, @JsonKey(name: 'total_expenses')  double totalExpenses, @JsonKey(name: 'net_profit')  double netProfit, @JsonKey(name: 'gst_collected')  double gstCollected,  double outstanding)  $default,) {final _that = this;
 switch (_that) {
 case _MonthlyPLRowDto():
 return $default(_that.month,_that.totalRoomRent,_that.totalAddons,_that.totalRevenue,_that.totalExpenses,_that.netProfit,_that.gstCollected,_that.outstanding);case _:
@@ -491,7 +491,7 @@ return $default(_that.month,_that.totalRoomRent,_that.totalAddons,_that.totalRev
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String month,  double totalRoomRent,  double totalAddons,  double totalRevenue,  double totalExpenses,  double netProfit,  double gstCollected,  double outstanding)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String month, @JsonKey(name: 'total_room_rent')  double totalRoomRent, @JsonKey(name: 'total_addons')  double totalAddons, @JsonKey(name: 'total_revenue')  double totalRevenue, @JsonKey(name: 'total_expenses')  double totalExpenses, @JsonKey(name: 'net_profit')  double netProfit, @JsonKey(name: 'gst_collected')  double gstCollected,  double outstanding)?  $default,) {final _that = this;
 switch (_that) {
 case _MonthlyPLRowDto() when $default != null:
 return $default(_that.month,_that.totalRoomRent,_that.totalAddons,_that.totalRevenue,_that.totalExpenses,_that.netProfit,_that.gstCollected,_that.outstanding);case _:
@@ -506,16 +506,16 @@ return $default(_that.month,_that.totalRoomRent,_that.totalAddons,_that.totalRev
 @JsonSerializable()
 
 class _MonthlyPLRowDto extends MonthlyPLRowDto {
-  const _MonthlyPLRowDto({required this.month, required this.totalRoomRent, required this.totalAddons, required this.totalRevenue, required this.totalExpenses, required this.netProfit, required this.gstCollected, required this.outstanding}): super._();
+  const _MonthlyPLRowDto({required this.month, @JsonKey(name: 'total_room_rent') required this.totalRoomRent, @JsonKey(name: 'total_addons') required this.totalAddons, @JsonKey(name: 'total_revenue') required this.totalRevenue, @JsonKey(name: 'total_expenses') required this.totalExpenses, @JsonKey(name: 'net_profit') required this.netProfit, @JsonKey(name: 'gst_collected') required this.gstCollected, required this.outstanding}): super._();
   factory _MonthlyPLRowDto.fromJson(Map<String, dynamic> json) => _$MonthlyPLRowDtoFromJson(json);
 
 @override final  String month;
-@override final  double totalRoomRent;
-@override final  double totalAddons;
-@override final  double totalRevenue;
-@override final  double totalExpenses;
-@override final  double netProfit;
-@override final  double gstCollected;
+@override@JsonKey(name: 'total_room_rent') final  double totalRoomRent;
+@override@JsonKey(name: 'total_addons') final  double totalAddons;
+@override@JsonKey(name: 'total_revenue') final  double totalRevenue;
+@override@JsonKey(name: 'total_expenses') final  double totalExpenses;
+@override@JsonKey(name: 'net_profit') final  double netProfit;
+@override@JsonKey(name: 'gst_collected') final  double gstCollected;
 @override final  double outstanding;
 
 /// Create a copy of MonthlyPLRowDto
@@ -551,7 +551,7 @@ abstract mixin class _$MonthlyPLRowDtoCopyWith<$Res> implements $MonthlyPLRowDto
   factory _$MonthlyPLRowDtoCopyWith(_MonthlyPLRowDto value, $Res Function(_MonthlyPLRowDto) _then) = __$MonthlyPLRowDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String month, double totalRoomRent, double totalAddons, double totalRevenue, double totalExpenses, double netProfit, double gstCollected, double outstanding
+ String month,@JsonKey(name: 'total_room_rent') double totalRoomRent,@JsonKey(name: 'total_addons') double totalAddons,@JsonKey(name: 'total_revenue') double totalRevenue,@JsonKey(name: 'total_expenses') double totalExpenses,@JsonKey(name: 'net_profit') double netProfit,@JsonKey(name: 'gst_collected') double gstCollected, double outstanding
 });
 
 
@@ -589,7 +589,7 @@ as double,
 /// @nodoc
 mixin _$PLReportDto {
 
- String get propertyId; String get periodStart; String get periodEnd; List<MonthlyPLRowDto> get monthlyBreakdown; double get summaryTotalRevenue; double get summaryTotalExpenses; double get summaryNetProfit;
+@JsonKey(name: 'property_id') String get propertyId;@JsonKey(name: 'period_start') String get periodStart;@JsonKey(name: 'period_end') String get periodEnd;@JsonKey(name: 'monthly_breakdown') List<MonthlyPLRowDto> get monthlyBreakdown;@JsonKey(name: 'summary_total_revenue') double get summaryTotalRevenue;@JsonKey(name: 'summary_total_expenses') double get summaryTotalExpenses;@JsonKey(name: 'summary_net_profit') double get summaryNetProfit;
 /// Create a copy of PLReportDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -622,7 +622,7 @@ abstract mixin class $PLReportDtoCopyWith<$Res>  {
   factory $PLReportDtoCopyWith(PLReportDto value, $Res Function(PLReportDto) _then) = _$PLReportDtoCopyWithImpl;
 @useResult
 $Res call({
- String propertyId, String periodStart, String periodEnd, List<MonthlyPLRowDto> monthlyBreakdown, double summaryTotalRevenue, double summaryTotalExpenses, double summaryNetProfit
+@JsonKey(name: 'property_id') String propertyId,@JsonKey(name: 'period_start') String periodStart,@JsonKey(name: 'period_end') String periodEnd,@JsonKey(name: 'monthly_breakdown') List<MonthlyPLRowDto> monthlyBreakdown,@JsonKey(name: 'summary_total_revenue') double summaryTotalRevenue,@JsonKey(name: 'summary_total_expenses') double summaryTotalExpenses,@JsonKey(name: 'summary_net_profit') double summaryNetProfit
 });
 
 
@@ -733,7 +733,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String propertyId,  String periodStart,  String periodEnd,  List<MonthlyPLRowDto> monthlyBreakdown,  double summaryTotalRevenue,  double summaryTotalExpenses,  double summaryNetProfit)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'period_start')  String periodStart, @JsonKey(name: 'period_end')  String periodEnd, @JsonKey(name: 'monthly_breakdown')  List<MonthlyPLRowDto> monthlyBreakdown, @JsonKey(name: 'summary_total_revenue')  double summaryTotalRevenue, @JsonKey(name: 'summary_total_expenses')  double summaryTotalExpenses, @JsonKey(name: 'summary_net_profit')  double summaryNetProfit)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PLReportDto() when $default != null:
 return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.monthlyBreakdown,_that.summaryTotalRevenue,_that.summaryTotalExpenses,_that.summaryNetProfit);case _:
@@ -754,7 +754,7 @@ return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.monthly
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String propertyId,  String periodStart,  String periodEnd,  List<MonthlyPLRowDto> monthlyBreakdown,  double summaryTotalRevenue,  double summaryTotalExpenses,  double summaryNetProfit)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'period_start')  String periodStart, @JsonKey(name: 'period_end')  String periodEnd, @JsonKey(name: 'monthly_breakdown')  List<MonthlyPLRowDto> monthlyBreakdown, @JsonKey(name: 'summary_total_revenue')  double summaryTotalRevenue, @JsonKey(name: 'summary_total_expenses')  double summaryTotalExpenses, @JsonKey(name: 'summary_net_profit')  double summaryNetProfit)  $default,) {final _that = this;
 switch (_that) {
 case _PLReportDto():
 return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.monthlyBreakdown,_that.summaryTotalRevenue,_that.summaryTotalExpenses,_that.summaryNetProfit);case _:
@@ -774,7 +774,7 @@ return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.monthly
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String propertyId,  String periodStart,  String periodEnd,  List<MonthlyPLRowDto> monthlyBreakdown,  double summaryTotalRevenue,  double summaryTotalExpenses,  double summaryNetProfit)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'period_start')  String periodStart, @JsonKey(name: 'period_end')  String periodEnd, @JsonKey(name: 'monthly_breakdown')  List<MonthlyPLRowDto> monthlyBreakdown, @JsonKey(name: 'summary_total_revenue')  double summaryTotalRevenue, @JsonKey(name: 'summary_total_expenses')  double summaryTotalExpenses, @JsonKey(name: 'summary_net_profit')  double summaryNetProfit)?  $default,) {final _that = this;
 switch (_that) {
 case _PLReportDto() when $default != null:
 return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.monthlyBreakdown,_that.summaryTotalRevenue,_that.summaryTotalExpenses,_that.summaryNetProfit);case _:
@@ -789,22 +789,22 @@ return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.monthly
 @JsonSerializable()
 
 class _PLReportDto extends PLReportDto {
-  const _PLReportDto({required this.propertyId, required this.periodStart, required this.periodEnd, required final  List<MonthlyPLRowDto> monthlyBreakdown, required this.summaryTotalRevenue, required this.summaryTotalExpenses, required this.summaryNetProfit}): _monthlyBreakdown = monthlyBreakdown,super._();
+  const _PLReportDto({@JsonKey(name: 'property_id') required this.propertyId, @JsonKey(name: 'period_start') required this.periodStart, @JsonKey(name: 'period_end') required this.periodEnd, @JsonKey(name: 'monthly_breakdown') required final  List<MonthlyPLRowDto> monthlyBreakdown, @JsonKey(name: 'summary_total_revenue') required this.summaryTotalRevenue, @JsonKey(name: 'summary_total_expenses') required this.summaryTotalExpenses, @JsonKey(name: 'summary_net_profit') required this.summaryNetProfit}): _monthlyBreakdown = monthlyBreakdown,super._();
   factory _PLReportDto.fromJson(Map<String, dynamic> json) => _$PLReportDtoFromJson(json);
 
-@override final  String propertyId;
-@override final  String periodStart;
-@override final  String periodEnd;
+@override@JsonKey(name: 'property_id') final  String propertyId;
+@override@JsonKey(name: 'period_start') final  String periodStart;
+@override@JsonKey(name: 'period_end') final  String periodEnd;
  final  List<MonthlyPLRowDto> _monthlyBreakdown;
-@override List<MonthlyPLRowDto> get monthlyBreakdown {
+@override@JsonKey(name: 'monthly_breakdown') List<MonthlyPLRowDto> get monthlyBreakdown {
   if (_monthlyBreakdown is EqualUnmodifiableListView) return _monthlyBreakdown;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_monthlyBreakdown);
 }
 
-@override final  double summaryTotalRevenue;
-@override final  double summaryTotalExpenses;
-@override final  double summaryNetProfit;
+@override@JsonKey(name: 'summary_total_revenue') final  double summaryTotalRevenue;
+@override@JsonKey(name: 'summary_total_expenses') final  double summaryTotalExpenses;
+@override@JsonKey(name: 'summary_net_profit') final  double summaryNetProfit;
 
 /// Create a copy of PLReportDto
 /// with the given fields replaced by the non-null parameter values.
@@ -839,7 +839,7 @@ abstract mixin class _$PLReportDtoCopyWith<$Res> implements $PLReportDtoCopyWith
   factory _$PLReportDtoCopyWith(_PLReportDto value, $Res Function(_PLReportDto) _then) = __$PLReportDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String propertyId, String periodStart, String periodEnd, List<MonthlyPLRowDto> monthlyBreakdown, double summaryTotalRevenue, double summaryTotalExpenses, double summaryNetProfit
+@JsonKey(name: 'property_id') String propertyId,@JsonKey(name: 'period_start') String periodStart,@JsonKey(name: 'period_end') String periodEnd,@JsonKey(name: 'monthly_breakdown') List<MonthlyPLRowDto> monthlyBreakdown,@JsonKey(name: 'summary_total_revenue') double summaryTotalRevenue,@JsonKey(name: 'summary_total_expenses') double summaryTotalExpenses,@JsonKey(name: 'summary_net_profit') double summaryNetProfit
 });
 
 
@@ -876,7 +876,7 @@ as double,
 /// @nodoc
 mixin _$GSTReturnDto {
 
- String get propertyId; String get periodStart; String get periodEnd; double get totalTaxableRevenue; double get totalGstCollected; double get cgst; double get sgst; double get igst; List<Map<String, dynamic>> get monthlyGst;
+@JsonKey(name: 'property_id') String get propertyId;@JsonKey(name: 'period_start') String get periodStart;@JsonKey(name: 'period_end') String get periodEnd;@JsonKey(name: 'total_taxable_revenue') double get totalTaxableRevenue;@JsonKey(name: 'total_gst_collected') double get totalGstCollected; double get cgst; double get sgst; double get igst;@JsonKey(name: 'monthly_gst') List<Map<String, dynamic>> get monthlyGst;
 /// Create a copy of GSTReturnDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -909,7 +909,7 @@ abstract mixin class $GSTReturnDtoCopyWith<$Res>  {
   factory $GSTReturnDtoCopyWith(GSTReturnDto value, $Res Function(GSTReturnDto) _then) = _$GSTReturnDtoCopyWithImpl;
 @useResult
 $Res call({
- String propertyId, String periodStart, String periodEnd, double totalTaxableRevenue, double totalGstCollected, double cgst, double sgst, double igst, List<Map<String, dynamic>> monthlyGst
+@JsonKey(name: 'property_id') String propertyId,@JsonKey(name: 'period_start') String periodStart,@JsonKey(name: 'period_end') String periodEnd,@JsonKey(name: 'total_taxable_revenue') double totalTaxableRevenue,@JsonKey(name: 'total_gst_collected') double totalGstCollected, double cgst, double sgst, double igst,@JsonKey(name: 'monthly_gst') List<Map<String, dynamic>> monthlyGst
 });
 
 
@@ -1022,7 +1022,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String propertyId,  String periodStart,  String periodEnd,  double totalTaxableRevenue,  double totalGstCollected,  double cgst,  double sgst,  double igst,  List<Map<String, dynamic>> monthlyGst)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'period_start')  String periodStart, @JsonKey(name: 'period_end')  String periodEnd, @JsonKey(name: 'total_taxable_revenue')  double totalTaxableRevenue, @JsonKey(name: 'total_gst_collected')  double totalGstCollected,  double cgst,  double sgst,  double igst, @JsonKey(name: 'monthly_gst')  List<Map<String, dynamic>> monthlyGst)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GSTReturnDto() when $default != null:
 return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.totalTaxableRevenue,_that.totalGstCollected,_that.cgst,_that.sgst,_that.igst,_that.monthlyGst);case _:
@@ -1043,7 +1043,7 @@ return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.totalTa
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String propertyId,  String periodStart,  String periodEnd,  double totalTaxableRevenue,  double totalGstCollected,  double cgst,  double sgst,  double igst,  List<Map<String, dynamic>> monthlyGst)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'period_start')  String periodStart, @JsonKey(name: 'period_end')  String periodEnd, @JsonKey(name: 'total_taxable_revenue')  double totalTaxableRevenue, @JsonKey(name: 'total_gst_collected')  double totalGstCollected,  double cgst,  double sgst,  double igst, @JsonKey(name: 'monthly_gst')  List<Map<String, dynamic>> monthlyGst)  $default,) {final _that = this;
 switch (_that) {
 case _GSTReturnDto():
 return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.totalTaxableRevenue,_that.totalGstCollected,_that.cgst,_that.sgst,_that.igst,_that.monthlyGst);case _:
@@ -1063,7 +1063,7 @@ return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.totalTa
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String propertyId,  String periodStart,  String periodEnd,  double totalTaxableRevenue,  double totalGstCollected,  double cgst,  double sgst,  double igst,  List<Map<String, dynamic>> monthlyGst)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'property_id')  String propertyId, @JsonKey(name: 'period_start')  String periodStart, @JsonKey(name: 'period_end')  String periodEnd, @JsonKey(name: 'total_taxable_revenue')  double totalTaxableRevenue, @JsonKey(name: 'total_gst_collected')  double totalGstCollected,  double cgst,  double sgst,  double igst, @JsonKey(name: 'monthly_gst')  List<Map<String, dynamic>> monthlyGst)?  $default,) {final _that = this;
 switch (_that) {
 case _GSTReturnDto() when $default != null:
 return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.totalTaxableRevenue,_that.totalGstCollected,_that.cgst,_that.sgst,_that.igst,_that.monthlyGst);case _:
@@ -1078,19 +1078,19 @@ return $default(_that.propertyId,_that.periodStart,_that.periodEnd,_that.totalTa
 @JsonSerializable()
 
 class _GSTReturnDto extends GSTReturnDto {
-  const _GSTReturnDto({required this.propertyId, required this.periodStart, required this.periodEnd, required this.totalTaxableRevenue, required this.totalGstCollected, required this.cgst, required this.sgst, required this.igst, required final  List<Map<String, dynamic>> monthlyGst}): _monthlyGst = monthlyGst,super._();
+  const _GSTReturnDto({@JsonKey(name: 'property_id') required this.propertyId, @JsonKey(name: 'period_start') required this.periodStart, @JsonKey(name: 'period_end') required this.periodEnd, @JsonKey(name: 'total_taxable_revenue') required this.totalTaxableRevenue, @JsonKey(name: 'total_gst_collected') required this.totalGstCollected, required this.cgst, required this.sgst, required this.igst, @JsonKey(name: 'monthly_gst') required final  List<Map<String, dynamic>> monthlyGst}): _monthlyGst = monthlyGst,super._();
   factory _GSTReturnDto.fromJson(Map<String, dynamic> json) => _$GSTReturnDtoFromJson(json);
 
-@override final  String propertyId;
-@override final  String periodStart;
-@override final  String periodEnd;
-@override final  double totalTaxableRevenue;
-@override final  double totalGstCollected;
+@override@JsonKey(name: 'property_id') final  String propertyId;
+@override@JsonKey(name: 'period_start') final  String periodStart;
+@override@JsonKey(name: 'period_end') final  String periodEnd;
+@override@JsonKey(name: 'total_taxable_revenue') final  double totalTaxableRevenue;
+@override@JsonKey(name: 'total_gst_collected') final  double totalGstCollected;
 @override final  double cgst;
 @override final  double sgst;
 @override final  double igst;
  final  List<Map<String, dynamic>> _monthlyGst;
-@override List<Map<String, dynamic>> get monthlyGst {
+@override@JsonKey(name: 'monthly_gst') List<Map<String, dynamic>> get monthlyGst {
   if (_monthlyGst is EqualUnmodifiableListView) return _monthlyGst;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_monthlyGst);
@@ -1130,7 +1130,7 @@ abstract mixin class _$GSTReturnDtoCopyWith<$Res> implements $GSTReturnDtoCopyWi
   factory _$GSTReturnDtoCopyWith(_GSTReturnDto value, $Res Function(_GSTReturnDto) _then) = __$GSTReturnDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String propertyId, String periodStart, String periodEnd, double totalTaxableRevenue, double totalGstCollected, double cgst, double sgst, double igst, List<Map<String, dynamic>> monthlyGst
+@JsonKey(name: 'property_id') String propertyId,@JsonKey(name: 'period_start') String periodStart,@JsonKey(name: 'period_end') String periodEnd,@JsonKey(name: 'total_taxable_revenue') double totalTaxableRevenue,@JsonKey(name: 'total_gst_collected') double totalGstCollected, double cgst, double sgst, double igst,@JsonKey(name: 'monthly_gst') List<Map<String, dynamic>> monthlyGst
 });
 
 
@@ -1169,7 +1169,7 @@ as List<Map<String, dynamic>>,
 /// @nodoc
 mixin _$ReportTemplateDto {
 
- String get templateId; String? get propertyId; String get reportName; String get reportType; Map<String, dynamic>? get configurationJson;
+@JsonKey(name: 'template_id') String get templateId;@JsonKey(name: 'property_id') String? get propertyId;@JsonKey(name: 'report_name') String get reportName;@JsonKey(name: 'report_type') String get reportType;@JsonKey(name: 'configuration_json') Map<String, dynamic>? get configurationJson;
 /// Create a copy of ReportTemplateDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1202,7 +1202,7 @@ abstract mixin class $ReportTemplateDtoCopyWith<$Res>  {
   factory $ReportTemplateDtoCopyWith(ReportTemplateDto value, $Res Function(ReportTemplateDto) _then) = _$ReportTemplateDtoCopyWithImpl;
 @useResult
 $Res call({
- String templateId, String? propertyId, String reportName, String reportType, Map<String, dynamic>? configurationJson
+@JsonKey(name: 'template_id') String templateId,@JsonKey(name: 'property_id') String? propertyId,@JsonKey(name: 'report_name') String reportName,@JsonKey(name: 'report_type') String reportType,@JsonKey(name: 'configuration_json') Map<String, dynamic>? configurationJson
 });
 
 
@@ -1311,7 +1311,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String templateId,  String? propertyId,  String reportName,  String reportType,  Map<String, dynamic>? configurationJson)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'template_id')  String templateId, @JsonKey(name: 'property_id')  String? propertyId, @JsonKey(name: 'report_name')  String reportName, @JsonKey(name: 'report_type')  String reportType, @JsonKey(name: 'configuration_json')  Map<String, dynamic>? configurationJson)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReportTemplateDto() when $default != null:
 return $default(_that.templateId,_that.propertyId,_that.reportName,_that.reportType,_that.configurationJson);case _:
@@ -1332,7 +1332,7 @@ return $default(_that.templateId,_that.propertyId,_that.reportName,_that.reportT
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String templateId,  String? propertyId,  String reportName,  String reportType,  Map<String, dynamic>? configurationJson)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'template_id')  String templateId, @JsonKey(name: 'property_id')  String? propertyId, @JsonKey(name: 'report_name')  String reportName, @JsonKey(name: 'report_type')  String reportType, @JsonKey(name: 'configuration_json')  Map<String, dynamic>? configurationJson)  $default,) {final _that = this;
 switch (_that) {
 case _ReportTemplateDto():
 return $default(_that.templateId,_that.propertyId,_that.reportName,_that.reportType,_that.configurationJson);case _:
@@ -1352,7 +1352,7 @@ return $default(_that.templateId,_that.propertyId,_that.reportName,_that.reportT
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String templateId,  String? propertyId,  String reportName,  String reportType,  Map<String, dynamic>? configurationJson)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'template_id')  String templateId, @JsonKey(name: 'property_id')  String? propertyId, @JsonKey(name: 'report_name')  String reportName, @JsonKey(name: 'report_type')  String reportType, @JsonKey(name: 'configuration_json')  Map<String, dynamic>? configurationJson)?  $default,) {final _that = this;
 switch (_that) {
 case _ReportTemplateDto() when $default != null:
 return $default(_that.templateId,_that.propertyId,_that.reportName,_that.reportType,_that.configurationJson);case _:
@@ -1367,15 +1367,15 @@ return $default(_that.templateId,_that.propertyId,_that.reportName,_that.reportT
 @JsonSerializable()
 
 class _ReportTemplateDto extends ReportTemplateDto {
-  const _ReportTemplateDto({required this.templateId, this.propertyId, required this.reportName, required this.reportType, final  Map<String, dynamic>? configurationJson}): _configurationJson = configurationJson,super._();
+  const _ReportTemplateDto({@JsonKey(name: 'template_id') required this.templateId, @JsonKey(name: 'property_id') this.propertyId, @JsonKey(name: 'report_name') required this.reportName, @JsonKey(name: 'report_type') required this.reportType, @JsonKey(name: 'configuration_json') final  Map<String, dynamic>? configurationJson}): _configurationJson = configurationJson,super._();
   factory _ReportTemplateDto.fromJson(Map<String, dynamic> json) => _$ReportTemplateDtoFromJson(json);
 
-@override final  String templateId;
-@override final  String? propertyId;
-@override final  String reportName;
-@override final  String reportType;
+@override@JsonKey(name: 'template_id') final  String templateId;
+@override@JsonKey(name: 'property_id') final  String? propertyId;
+@override@JsonKey(name: 'report_name') final  String reportName;
+@override@JsonKey(name: 'report_type') final  String reportType;
  final  Map<String, dynamic>? _configurationJson;
-@override Map<String, dynamic>? get configurationJson {
+@override@JsonKey(name: 'configuration_json') Map<String, dynamic>? get configurationJson {
   final value = _configurationJson;
   if (value == null) return null;
   if (_configurationJson is EqualUnmodifiableMapView) return _configurationJson;
@@ -1417,7 +1417,7 @@ abstract mixin class _$ReportTemplateDtoCopyWith<$Res> implements $ReportTemplat
   factory _$ReportTemplateDtoCopyWith(_ReportTemplateDto value, $Res Function(_ReportTemplateDto) _then) = __$ReportTemplateDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String templateId, String? propertyId, String reportName, String reportType, Map<String, dynamic>? configurationJson
+@JsonKey(name: 'template_id') String templateId,@JsonKey(name: 'property_id') String? propertyId,@JsonKey(name: 'report_name') String reportName,@JsonKey(name: 'report_type') String reportType,@JsonKey(name: 'configuration_json') Map<String, dynamic>? configurationJson
 });
 
 
@@ -1452,7 +1452,7 @@ as Map<String, dynamic>?,
 /// @nodoc
 mixin _$ScheduledReportDto {
 
- String get scheduleId; String get templateId; String get recipientRole; String get deliveryChannel; String get frequency; bool get isActive;
+@JsonKey(name: 'schedule_id') String get scheduleId;@JsonKey(name: 'template_id') String get templateId;@JsonKey(name: 'recipient_role') String get recipientRole;@JsonKey(name: 'delivery_channel') String get deliveryChannel; String get frequency;@JsonKey(name: 'is_active') bool get isActive;
 /// Create a copy of ScheduledReportDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1485,7 +1485,7 @@ abstract mixin class $ScheduledReportDtoCopyWith<$Res>  {
   factory $ScheduledReportDtoCopyWith(ScheduledReportDto value, $Res Function(ScheduledReportDto) _then) = _$ScheduledReportDtoCopyWithImpl;
 @useResult
 $Res call({
- String scheduleId, String templateId, String recipientRole, String deliveryChannel, String frequency, bool isActive
+@JsonKey(name: 'schedule_id') String scheduleId,@JsonKey(name: 'template_id') String templateId,@JsonKey(name: 'recipient_role') String recipientRole,@JsonKey(name: 'delivery_channel') String deliveryChannel, String frequency,@JsonKey(name: 'is_active') bool isActive
 });
 
 
@@ -1595,7 +1595,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String scheduleId,  String templateId,  String recipientRole,  String deliveryChannel,  String frequency,  bool isActive)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'schedule_id')  String scheduleId, @JsonKey(name: 'template_id')  String templateId, @JsonKey(name: 'recipient_role')  String recipientRole, @JsonKey(name: 'delivery_channel')  String deliveryChannel,  String frequency, @JsonKey(name: 'is_active')  bool isActive)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ScheduledReportDto() when $default != null:
 return $default(_that.scheduleId,_that.templateId,_that.recipientRole,_that.deliveryChannel,_that.frequency,_that.isActive);case _:
@@ -1616,7 +1616,7 @@ return $default(_that.scheduleId,_that.templateId,_that.recipientRole,_that.deli
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String scheduleId,  String templateId,  String recipientRole,  String deliveryChannel,  String frequency,  bool isActive)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'schedule_id')  String scheduleId, @JsonKey(name: 'template_id')  String templateId, @JsonKey(name: 'recipient_role')  String recipientRole, @JsonKey(name: 'delivery_channel')  String deliveryChannel,  String frequency, @JsonKey(name: 'is_active')  bool isActive)  $default,) {final _that = this;
 switch (_that) {
 case _ScheduledReportDto():
 return $default(_that.scheduleId,_that.templateId,_that.recipientRole,_that.deliveryChannel,_that.frequency,_that.isActive);case _:
@@ -1636,7 +1636,7 @@ return $default(_that.scheduleId,_that.templateId,_that.recipientRole,_that.deli
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String scheduleId,  String templateId,  String recipientRole,  String deliveryChannel,  String frequency,  bool isActive)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'schedule_id')  String scheduleId, @JsonKey(name: 'template_id')  String templateId, @JsonKey(name: 'recipient_role')  String recipientRole, @JsonKey(name: 'delivery_channel')  String deliveryChannel,  String frequency, @JsonKey(name: 'is_active')  bool isActive)?  $default,) {final _that = this;
 switch (_that) {
 case _ScheduledReportDto() when $default != null:
 return $default(_that.scheduleId,_that.templateId,_that.recipientRole,_that.deliveryChannel,_that.frequency,_that.isActive);case _:
@@ -1651,15 +1651,15 @@ return $default(_that.scheduleId,_that.templateId,_that.recipientRole,_that.deli
 @JsonSerializable()
 
 class _ScheduledReportDto extends ScheduledReportDto {
-  const _ScheduledReportDto({required this.scheduleId, required this.templateId, required this.recipientRole, required this.deliveryChannel, required this.frequency, required this.isActive}): super._();
+  const _ScheduledReportDto({@JsonKey(name: 'schedule_id') required this.scheduleId, @JsonKey(name: 'template_id') required this.templateId, @JsonKey(name: 'recipient_role') required this.recipientRole, @JsonKey(name: 'delivery_channel') required this.deliveryChannel, required this.frequency, @JsonKey(name: 'is_active') required this.isActive}): super._();
   factory _ScheduledReportDto.fromJson(Map<String, dynamic> json) => _$ScheduledReportDtoFromJson(json);
 
-@override final  String scheduleId;
-@override final  String templateId;
-@override final  String recipientRole;
-@override final  String deliveryChannel;
+@override@JsonKey(name: 'schedule_id') final  String scheduleId;
+@override@JsonKey(name: 'template_id') final  String templateId;
+@override@JsonKey(name: 'recipient_role') final  String recipientRole;
+@override@JsonKey(name: 'delivery_channel') final  String deliveryChannel;
 @override final  String frequency;
-@override final  bool isActive;
+@override@JsonKey(name: 'is_active') final  bool isActive;
 
 /// Create a copy of ScheduledReportDto
 /// with the given fields replaced by the non-null parameter values.
@@ -1694,7 +1694,7 @@ abstract mixin class _$ScheduledReportDtoCopyWith<$Res> implements $ScheduledRep
   factory _$ScheduledReportDtoCopyWith(_ScheduledReportDto value, $Res Function(_ScheduledReportDto) _then) = __$ScheduledReportDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String scheduleId, String templateId, String recipientRole, String deliveryChannel, String frequency, bool isActive
+@JsonKey(name: 'schedule_id') String scheduleId,@JsonKey(name: 'template_id') String templateId,@JsonKey(name: 'recipient_role') String recipientRole,@JsonKey(name: 'delivery_channel') String deliveryChannel, String frequency,@JsonKey(name: 'is_active') bool isActive
 });
 
 

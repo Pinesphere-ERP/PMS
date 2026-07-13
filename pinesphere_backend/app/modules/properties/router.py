@@ -89,7 +89,6 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
     db.add(new_business)
     await db.flush()
 
-    # Create Property
     new_property = Property(
         business_id=new_business.business_id,
         owner_id=owner.owner_id,
@@ -100,6 +99,8 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         total_floors=payload.total_floors,
         total_rooms=payload.total_rooms,
         description=payload.description,
+        city=payload.city,
+        cover_image=payload.cover_image,
         onboarding_status="draft",
     )
     db.add(new_property)
@@ -122,6 +123,7 @@ class RoomCreateInput(BaseModel):
     price: float
     resort_id: str
     description: Optional[str] = ""
+    image_url: Optional[str] = ""
 
 
 @router.get("/rooms")
@@ -141,7 +143,7 @@ async def get_rooms(db: AsyncSession = Depends(get_db)):
             "resort_id": str(cat.property_id),
             "description": cat.description or "",
             "images": [
-                "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
+                room.image_url or "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
         })
     return data
@@ -230,12 +232,12 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
         db.add(category)
         await db.flush()
         
-    # 2. Create the Room
     new_room = Room(
         room_category_id=category.room_category_id,
         room_number=payload.room_number,
         housekeeping_status="clean",
-        occupancy_status="vacant"
+        occupancy_status="vacant",
+        image_url=payload.image_url
     )
     db.add(new_room)
     await db.commit()
@@ -353,9 +355,10 @@ async def get_properties(db: AsyncSession = Depends(get_db)):
             "property_name": prop.property_name,
             "type": prop.property_type or "Hotel",
             "property_type": prop.property_type or "Hotel",
+            "image": prop.cover_image or "https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80",
             "owner": owner.full_name,
             "mobile": owner.mobile_number,
-            "city": "Unknown",  # city not in current schema; extend Property model to add
+            "city": prop.city or "Unknown",
             "rooms": prop.total_rooms or 0,
             "status": status,
             "verificationStatus": _verification_status(prop.onboarding_status),

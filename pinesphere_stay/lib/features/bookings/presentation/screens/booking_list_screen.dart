@@ -644,7 +644,17 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
       return;
     }
 
-    String? selectedRoomId = vacantRooms.first.id;
+    String? selectedResortId = pmsState.resorts.isNotEmpty ? pmsState.resorts.first.id : null;
+    
+    // Helper to get rooms for resort
+    List<RoomModel> getFilteredRooms(String? resortId) {
+      if (resortId == null) return [];
+      return vacantRooms.where((r) => r.resortId == resortId).toList();
+    }
+
+    final initialRooms = getFilteredRooms(selectedResortId);
+    String? selectedRoomId = initialRooms.isNotEmpty ? initialRooms.first.id : null;
+
     final guestNameCtrl = TextEditingController();
     final guestPhoneCtrl = TextEditingController();
     final guestIdCtrl = TextEditingController();
@@ -679,18 +689,37 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final selectedRoom = vacantRooms.firstWhere(
-              (r) => r.id == selectedRoomId,
-              orElse: () => vacantRooms.first,
-            );
+            final currentFilteredRooms = getFilteredRooms(selectedResortId);
+            
+            final selectedRoom = selectedRoomId != null && currentFilteredRooms.any((r) => r.id == selectedRoomId)
+                ? currentFilteredRooms.firstWhere((r) => r.id == selectedRoomId)
+                : (currentFilteredRooms.isNotEmpty
+                    ? currentFilteredRooms.first
+                    : RoomModel(
+                        id: 'dummy',
+                        roomNumber: 'None',
+                        type: 'No Room Available',
+                        price: 0.0,
+                        seasonPrice: 0.0,
+                        weekendPrice: 0.0,
+                        holidayPrice: 0.0,
+                        extraBedPrice: 0.0,
+                        amenities: const [],
+                        status: 'Vacant',
+                        resortId: selectedResortId ?? '',
+                        images: const [],
+                      ));
+            
             final selectedResort = pmsState.resorts.firstWhere(
-              (res) => res.id == selectedRoom.resortId,
-              orElse: () => ResortModel(
-                id: selectedRoom.resortId,
-                name: 'Unknown Resort',
-                image: '',
-                location: 'Unknown',
-              ),
+              (res) => res.id == selectedResortId,
+              orElse: () => pmsState.resorts.isNotEmpty
+                  ? pmsState.resorts.first
+                  : ResortModel(
+                      id: 'dummy_resort',
+                      name: 'No Resort Selected',
+                      image: '',
+                      location: 'Unknown',
+                    ),
             );
 
             final nights = checkOutDate.difference(checkInDate).inDays.clamp(1, 365);
@@ -741,20 +770,43 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
+                        value: selectedResortId,
+                        decoration: const InputDecoration(labelText: 'Select Resort / Property', border: OutlineInputBorder()),
+                        items: pmsState.resorts.map((resort) {
+                          return DropdownMenuItem(
+                            value: resort.id,
+                            child: Text(resort.name),
+                          );
+                        }).toList(),
+                        onChanged: (val) => setSheetState(() {
+                          selectedResortId = val;
+                          final filtered = getFilteredRooms(selectedResortId);
+                          selectedRoomId = filtered.isNotEmpty ? filtered.first.id : null;
+                          selectedAmenities.clear();
+                        }),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
                         value: selectedRoomId,
                         decoration: const InputDecoration(labelText: 'Select Room (Vacant Only)', border: OutlineInputBorder()),
-                        items: vacantRooms.map((room) {
-                          final resName = pmsState.resorts.firstWhere((res) => res.id == room.resortId, orElse: () => ResortModel(id: '', name: 'Unknown', image: '', location: '')).name;
+                        items: currentFilteredRooms.map((room) {
                           return DropdownMenuItem(
                             value: room.id,
-                            child: Text('${room.roomNumber} - ${room.type} (₹${room.price}) | $resName'),
+                            child: Text('Room ${room.roomNumber} - ${room.type} (₹${room.price.toStringAsFixed(0)}/night)'),
                           );
                         }).toList(),
                         onChanged: (val) => setSheetState(() {
                           selectedRoomId = val;
-                          selectedAmenities.clear(); // Reset selected amenities for new room
+                          selectedAmenities.clear();
                         }),
                       ),
+                      if (selectedRoomId == null) ...[
+                        const SizedBox(height: 8),
+                        const Text(
+                          'No vacant rooms available for this property.',
+                          style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -923,49 +975,55 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                         children: [
                           Expanded(
                             child: CheckboxListTile(
-                              title: const Text('Season', style: TextStyle(fontSize: 12)),
-                              contentPadding: EdgeInsets.zero,
-                              value: isSeason,
-                              onChanged: (val) => setSheetState(() => isSeason = val ?? false),
-                              controlAffinity: ListTileControlAffinity.leading,
-                            ),
-                          ),
-                          Expanded(
-                            child: CheckboxListTile(
-                              title: const Text('Weekend', style: TextStyle(fontSize: 12)),
-                              contentPadding: EdgeInsets.zero,
+                              title: Text('Weekend (+₹${selectedRoom.weekendPrice.toStringAsFixed(0)})', style: const TextStyle(fontSize: 11)),
                               value: isWeekend,
-                              onChanged: (val) => setSheetState(() => isWeekend = val ?? false),
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
                               controlAffinity: ListTileControlAffinity.leading,
+                              onChanged: (val) => setSheetState(() => isWeekend = val ?? false),
                             ),
                           ),
                           Expanded(
                             child: CheckboxListTile(
-                              title: const Text('Holiday', style: TextStyle(fontSize: 12)),
+                              title: Text('Season (+₹${selectedRoom.seasonPrice.toStringAsFixed(0)})', style: const TextStyle(fontSize: 11)),
+                              value: isSeason,
+                              dense: true,
                               contentPadding: EdgeInsets.zero,
-                              value: isHoliday,
-                              onChanged: (val) => setSheetState(() => isHoliday = val ?? false),
                               controlAffinity: ListTileControlAffinity.leading,
+                              onChanged: (val) => setSheetState(() => isSeason = val ?? false),
                             ),
                           ),
                         ],
                       ),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Extra Beds', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove_circle_outline, size: 20),
-                                onPressed: extraBedsCount > 0 ? () => setSheetState(() => extraBedsCount--) : null,
-                              ),
-                              Text('$extraBedsCount', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              IconButton(
-                                icon: const Icon(Icons.add_circle_outline, size: 20),
-                                onPressed: () => setSheetState(() => extraBedsCount++),
-                              ),
-                            ],
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: Text('Holiday (+₹${selectedRoom.holidayPrice.toStringAsFixed(0)})', style: const TextStyle(fontSize: 11)),
+                              value: isHoliday,
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              onChanged: (val) => setSheetState(() => isHoliday = val ?? false),
+                            ),
+                          ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Text('Extra Beds: ', style: TextStyle(fontSize: 11)),
+                                const SizedBox(width: 4),
+                                DropdownButton<int>(
+                                  value: extraBedsCount,
+                                  items: [0, 1, 2, 3].map((cnt) {
+                                    return DropdownMenuItem(
+                                      value: cnt, 
+                                      child: Text('$cnt (+₹${(selectedRoom.extraBedPrice * cnt).toStringAsFixed(0)})', style: const TextStyle(fontSize: 11))
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) => setSheetState(() => extraBedsCount = val ?? 0),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),

@@ -72,6 +72,8 @@ class Property(Base, TimestampMixin, SyncMixin):
     whatsapp_number: Mapped[Optional[str]] = mapped_column(String(15))
     onboarding_status: Mapped[str] = mapped_column(String(20), default='draft')
     created_by_admin_id: Mapped[Optional[uuid.UUID]] = mapped_column(PGUUID(as_uuid=True))
+    city: Mapped[Optional[str]] = mapped_column(String(100))
+    cover_image: Mapped[Optional[str]] = mapped_column(String(500))
     owner: Mapped["Owner"] = relationship(back_populates="properties")
 
 
@@ -246,6 +248,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')
     occupancy_status: Mapped[Optional[str]] = mapped_column(String(20), default='vacant')
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
 
 
 # ── F. Guests & Bookings ──────────────────────────────────────────────────────

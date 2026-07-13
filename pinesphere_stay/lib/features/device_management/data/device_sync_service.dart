@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../audit/data/audit_service.dart';
 import '../../../../core/security/license_service.dart';
 
 enum SyncCheckinStatus { synced, pendingDeltas, remoteLock, remoteRevoke, error }
@@ -31,8 +32,20 @@ class DeviceSyncService {
     required String deviceUid,
     required String propertyId,
     required List<Map<String, dynamic>> pendingDeltas,
+    AuditService? audit,
   }) async {
     try {
+      audit?.log(
+        moduleName: 'device_sync',
+        actionType: 'sync_checkin',
+        targetEntity: 'device',
+        targetRecordId: deviceUid,
+        propertyId: propertyId,
+        newValue: {
+          'delta_count': pendingDeltas.length,
+          'device_uid': deviceUid,
+        },
+      );
       // In production, transmits POST /api/v1/devices/sync-checkin via Dio
       // Payload: { "device_uid": deviceUid, "property_id": propertyId, "deltas": pendingDeltas }
       debugPrint('Perform sync check-in for device $deviceUid with ${pendingDeltas.length} deltas.');
@@ -58,8 +71,15 @@ class DeviceSyncService {
   /// Security Protocol Section 4.3 & 8: Remote Revocation & Erase
   /// Immediately purges all local ObjectBox data (`rooms`, `bookings`, `guest profiles`)
   /// when a REVOKE_AND_ERASE command is received during sync.
-  Future<bool> executeRevokeAndEraseProtocol() async {
+  Future<bool> executeRevokeAndEraseProtocol({AuditService? audit}) async {
     try {
+      audit?.log(
+        moduleName: 'device_sync',
+        actionType: 'revoke_and_erase',
+        targetEntity: 'device',
+        targetRecordId: 'local',
+        newValue: {'action': 'wipe_all_local_data'},
+      );
       debugPrint('CRITICAL: Executing REVOKE_AND_ERASE protocol!');
       // 1. Invalidate offline license token in secure storage
       // 2. Clear all local ObjectBox box instances:

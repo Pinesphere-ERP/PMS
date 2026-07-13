@@ -48,4 +48,4 @@ final class GuestServiceProvider
   }
 }
 
-String _$guestServiceHash() => r'133b820d75331ed40ce1ebf52f9e07f1feb91812';
+String _$guestServiceHash() => r'a196534f8ad58d9e6438c87b9b7a151416e96380';

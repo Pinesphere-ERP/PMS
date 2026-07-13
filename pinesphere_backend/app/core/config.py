@@ -5,6 +5,15 @@ import os
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Pinesphere Stay API"
     VERSION: str = "1.0.0"
+
+    # Seeding is intentionally opt-in and is run with `python -m app.seeds`.
+    # It is never part of the web application's startup lifecycle.
+    ENABLE_SEEDING: bool = False
+    SEED_MODE: str = "development"
+    SEED_ADMIN_USERNAME: str | None = None
+    SEED_ADMIN_EMAIL: str | None = None
+    SEED_ADMIN_PASSWORD: str | None = None
+    SEED_ADMIN_NAME: str = "System Administrator"
     
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://neondb_owner:npg_TpsoV0gdryS5@ep-wild-bird-atptd648.c-9.us-east-1.aws.neon.tech/neondb?ssl=require")
@@ -16,6 +25,14 @@ class Settings(BaseSettings):
         if isinstance(v, str) and v.startswith("postgres"):
             return v.replace("sslmode=require", "ssl=require")
         return v
+
+    @field_validator("SEED_MODE")
+    @classmethod
+    def validate_seed_mode(cls, value: str) -> str:
+        mode = value.lower()
+        if mode not in {"development", "demo", "production"}:
+            raise ValueError("SEED_MODE must be development, demo, or production")
+        return mode
     
     # Security
     SECRET_KEY: str = "supersecretkey-change-in-production"

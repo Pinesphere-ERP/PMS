@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../audit/data/audit_service.dart';
 import '../../data/subscription_repository.dart';
 
 part 'subscription_provider.g.dart';
@@ -69,6 +70,13 @@ class SubscriptionNotifier extends _$SubscriptionNotifier {
     if (state.info == null) return;
     final newValue = !state.info!.autoRenew;
     try {
+      ref.read(auditServiceProvider).log(
+        moduleName: 'subscription',
+        actionType: 'toggle_auto_renew',
+        targetEntity: 'subscription',
+        targetRecordId: state.info!.licenseKey,
+        newValue: {'auto_renew': newValue},
+      );
       final repository = ref.read(subscriptionRepositoryProvider);
       final success = await repository.toggleAutoRenew(newValue);
       if (success && state.info != null) {
@@ -85,6 +93,16 @@ class SubscriptionNotifier extends _$SubscriptionNotifier {
     if (state.info == null) return false;
     state = state.copyWith(isRenewing: true);
     try {
+      ref.read(auditServiceProvider).log(
+        moduleName: 'subscription',
+        actionType: 'renew',
+        targetEntity: 'subscription',
+        targetRecordId: state.info!.licenseKey,
+        newValue: {
+          'previous_renewal_date': state.info!.renewalDate.toIso8601String(),
+          'new_renewal_date': state.info!.renewalDate.add(const Duration(days: 365)).toIso8601String(),
+        },
+      );
       final repository = ref.read(subscriptionRepositoryProvider);
       final success = await repository.renewSubscription();
       if (success && state.info != null) {
@@ -127,6 +145,13 @@ class SubscriptionNotifier extends _$SubscriptionNotifier {
 
   void disableSubscription() {
     if (state.info != null) {
+      ref.read(auditServiceProvider).log(
+        moduleName: 'subscription',
+        actionType: 'disable_subscription',
+        targetEntity: 'subscription',
+        targetRecordId: state.info!.licenseKey,
+        newValue: {'status': 'disabled'},
+      );
       state = state.copyWith(
         info: state.info!.copyWith(
           status: 'disabled',

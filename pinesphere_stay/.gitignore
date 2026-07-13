@@ -33,6 +33,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Generated files
+*.g.dart
+*.freezed.dart
+objectbox-model.json
+objectbox.g.dart
+    
 # Symbolication related
 app.*.symbols
 

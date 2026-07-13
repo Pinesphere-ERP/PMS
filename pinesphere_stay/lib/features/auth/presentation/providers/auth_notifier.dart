@@ -61,6 +61,14 @@ class AuthNotifier extends _$AuthNotifier {
         email: email,
         role: role,
       );
+      ref.read(auditServiceProvider).log(
+        moduleName: 'auth',
+        actionType: 'login_success',
+        targetEntity: 'user',
+        targetRecordId: user.id,
+        userId: user.id,
+        newValue: {'email': email, 'role': role.name, 'auth_type': 'mock_bypass'},
+      );
       state = AuthState.authenticated(user);
       return;
     }
@@ -143,7 +151,7 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<bool> tryBiometricLogin() async {
-    final repository = ref.read(authRepositoryProvider);
+    final repository = ref.read(userRepositoryProvider);
     final cachedUser = await repository.getCachedUser();
     
     if (cachedUser != null) {

@@ -161,12 +161,12 @@ class CheckOutService {
     } on DioException catch (e) {
       AppLogger.w('getPendingCheckOuts network failed, falling back to ObjectBox', e);
       return _checkoutBox.query(
-        CheckOutEntity_.propertyId.equals(propertyId) & CheckOutEntity_.checkoutStatus.equals('pending'),
+        CheckOutEntity_.propertyId.equals(propertyId).and(CheckOutEntity_.checkoutStatus.equals('pending')),
       ).build().find();
     } catch (e) {
       AppLogger.e('getPendingCheckOuts unexpected error', e);
       return _checkoutBox.query(
-        CheckOutEntity_.propertyId.equals(propertyId) & CheckOutEntity_.checkoutStatus.equals('pending'),
+        CheckOutEntity_.propertyId.equals(propertyId).and(CheckOutEntity_.checkoutStatus.equals('pending')),
       ).build().find();
     }
   }

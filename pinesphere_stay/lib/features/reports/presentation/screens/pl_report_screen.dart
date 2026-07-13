@@ -17,8 +17,8 @@ final plReportProvider = FutureProvider.autoDispose<PLReportDto>((ref) async {
   if (propertyId.isEmpty) throw Exception('No property ID');
 
   final now = DateTime.now();
-  final startDate = DateTime(now.year, 1, 1).toIso8601String();
-  final endDate = now.toIso8601String();
+  final startDate = DateFormat('yyyy-MM-dd').format(DateTime(now.year, 1, 1));
+  final endDate = DateFormat('yyyy-MM-dd').format(now);
 
   return ref.watch(reportsRepositoryProvider).getPLReport(
     propertyId: propertyId,

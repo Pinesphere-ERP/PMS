@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 from app.infra.database import get_db
 from app.infra.models import (
-    Subscription, Property, Owner, SubscriptionTransaction, Invoice
+    Subscription, Property, Owner, SubscriptionTransaction, Invoice, SubscriptionPlan
 )
 
 router = APIRouter()
@@ -19,6 +19,76 @@ def _days_remaining(expiry: date) -> int:
 def _fmt_amount(amount: float) -> str:
     return f"${amount:,.2f}"
 
+
+# ── List all subscriptions ─────────────────────────────────────────────────────
+
+@router.get("/plans")
+async def get_subscription_plans(db: AsyncSession = Depends(get_db)):
+    q = select(SubscriptionPlan).order_by(SubscriptionPlan.amount.asc())
+    result = await db.execute(q)
+    rows = result.scalars().all()
+    
+    data = []
+    for plan in rows:
+        data.append({
+            "id": str(plan.plan_id),
+            "name": plan.name,
+            "features": plan.features,
+            "amount": str(plan.amount),
+            "duration": plan.duration_months,
+            "status": plan.status
+        })
+    return {"data": data}
+
+@router.post("/plans")
+async def create_subscription_plan(payload: dict, db: AsyncSession = Depends(get_db)):
+    plan = SubscriptionPlan(
+        name=payload.get("name"),
+        features=payload.get("features"),
+        amount=payload.get("amount"),
+        duration_months=payload.get("duration", 1)
+    )
+    db.add(plan)
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Could not create plan. Name might be a duplicate.")
+    return {"message": "Plan created successfully", "id": str(plan.plan_id)}
+
+@router.put("/plans/{plan_id}")
+async def update_subscription_plan(plan_id: str, payload: dict, db: AsyncSession = Depends(get_db)):
+    q = select(SubscriptionPlan).where(SubscriptionPlan.plan_id == plan_id)
+    result = await db.execute(q)
+    plan = result.scalars().first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+        
+    if "name" in payload:
+        plan.name = payload["name"]
+    if "features" in payload:
+        plan.features = payload["features"]
+    if "amount" in payload:
+        plan.amount = payload["amount"]
+    if "duration" in payload:
+        plan.duration_months = payload["duration"]
+    if "status" in payload:
+        plan.status = payload["status"]
+        
+    await db.commit()
+    return {"message": "Plan updated successfully"}
+
+@router.delete("/plans/{plan_id}")
+async def delete_subscription_plan(plan_id: str, db: AsyncSession = Depends(get_db)):
+    q = select(SubscriptionPlan).where(SubscriptionPlan.plan_id == plan_id)
+    result = await db.execute(q)
+    plan = result.scalars().first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+        
+    await db.delete(plan)
+    await db.commit()
+    return {"message": "Plan deleted successfully"}
 
 # ── List all subscriptions ─────────────────────────────────────────────────────
 

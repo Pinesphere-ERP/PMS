@@ -8,12 +8,15 @@ from app.api import api_router
 
 from contextlib import asynccontextmanager
 from sqlalchemy import select
-from app.infra.database import engine, AsyncSessionLocal
+from app.infra.database import engine, AsyncSessionLocal, Base
 from app.infra.models import Role, User
 import uuid
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        
     roles_data = [
         {"role_code": "SUPER_ADMIN", "role_name": "Super Admin"},
         {"role_code": "OWNER", "role_name": "Owner"},

@@ -457,6 +457,17 @@ class Payment(Base, TimestampMixin, SyncMixin):
 
 # ── J. Admin Subscriptions & Billing ─────────────────────────────────────────
 
+class SubscriptionPlan(Base, TimestampMixin):
+    """Available subscription plans on the platform."""
+    __tablename__ = "subscription_plans"
+    __table_args__ = {'extend_existing': True}
+    plan_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    features: Mapped[Optional[str]] = mapped_column(Text)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    duration_months: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(20), default="Active")
+
 class Subscription(Base, TimestampMixin):
     """Admin-level property subscription (platform plan)."""
     __tablename__ = "subscriptions"

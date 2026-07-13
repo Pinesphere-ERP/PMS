@@ -43,5 +43,30 @@ export const subscriptionService = {
     return fetchAPI(`/subscriptions/${propertyId}/license`, {
       method: 'POST'
     });
+  },
+
+  // ── Subscription Plans ──
+  getSubscriptionPlans: () => {
+    return fetchAPI('/subscriptions/plans');
+  },
+  
+  createSubscriptionPlan: (data) => {
+    return fetchAPI('/subscriptions/plans', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+  
+  updateSubscriptionPlan: (planId, data) => {
+    return fetchAPI(`/subscriptions/plans/${planId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+  
+  deleteSubscriptionPlan: (planId) => {
+    return fetchAPI(`/subscriptions/plans/${planId}`, {
+      method: 'DELETE'
+    });
   }
 };

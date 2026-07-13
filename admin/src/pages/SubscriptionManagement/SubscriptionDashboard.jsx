@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Loader2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { 
   PieChart, 
   Pie, 
@@ -44,6 +45,7 @@ export default function SubscriptionDashboard() {
     barData: [],
     recentActivities: []
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,7 +97,12 @@ export default function SubscriptionDashboard() {
         </div>
         <div className="flex space-x-2">
           <button className="saas-button-secondary">Download Report</button>
-          <button className="saas-button-primary">Generate Invoices</button>
+          <button 
+            className="saas-button-primary"
+            onClick={() => navigate('/subscriptions/plans')}
+          >
+            Manage Subscription Plans
+          </button>
         </div>
       </div>
 

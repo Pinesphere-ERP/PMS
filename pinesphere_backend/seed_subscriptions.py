@@ -41,6 +41,7 @@ async def seed_data():
                     email=f"sub{idx}@example.com",
                 )
                 db.add(owner)
+                await db.flush()
                 
                 # Create Business
                 business_id = uuid.uuid4()
@@ -50,6 +51,7 @@ async def seed_data():
                     business_name=f"Business {scenario['name']}"
                 )
                 db.add(business)
+                await db.flush()
 
                 # Create Property
                 property_id = uuid.uuid4()
@@ -62,6 +64,7 @@ async def seed_data():
                     onboarding_status="completed"
                 )
                 db.add(prop)
+                await db.flush()
 
                 # Create Subscription
                 sub_id = uuid.uuid4()
@@ -79,6 +82,7 @@ async def seed_data():
                     license_id=f"PSL-MOCK-{idx}"
                 )
                 db.add(sub)
+                await db.flush()
 
                 # Add some invoices and transactions to simulate revenue
                 amount = plan_prices[scenario["plan"]]
@@ -93,6 +97,7 @@ async def seed_data():
                     status="Paid"
                 )
                 db.add(inv)
+                await db.flush()
                 
                 tx = SubscriptionTransaction(
                     id=uuid.uuid4(),
@@ -105,6 +110,7 @@ async def seed_data():
                 )
                 tx.created_at = datetime.now() - timedelta(days=abs(scenario.get("start_offset", -30)))
                 db.add(tx)
+                await db.flush()
 
                 # Generate a past invoice for historical data (for the bar chart)
                 for month_offset in range(1, 6):
@@ -119,6 +125,7 @@ async def seed_data():
                         status="Paid"
                     )
                     db.add(past_inv)
+                await db.flush()
 
             await db.commit()
             print("Successfully seeded subscriptions mock data.")

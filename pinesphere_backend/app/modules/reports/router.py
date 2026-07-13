@@ -2,8 +2,12 @@ import uuid
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
+from app.core.dependencies import get_current_user
+from app.infra.models import User, Role
 
 from app.infra.database import get_db
 from app.modules.reports import service
@@ -21,7 +25,21 @@ from app.modules.reports.schemas import (
     ScheduledReportListResponse,
 )
 
-router = APIRouter()
+async def require_property_access(
+    property_id: uuid.UUID = Query(...),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
+    role = role_res.scalars().first()
+    
+    if role and role.role_code == "SUPER_ADMIN":
+        return
+        
+    if user.property_id != property_id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this property's reports")
+
+router = APIRouter(dependencies=[Depends(require_property_access)])
 
 
 # ── KPI Snapshots ──────────────────────────────────────────────

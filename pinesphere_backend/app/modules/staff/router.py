@@ -12,41 +12,67 @@ router = APIRouter(
     tags=["Staff Management"]
 )
 
-# Dummy dependency for current user, assuming auth is handled elsewhere
-def get_current_user_id() -> uuid.UUID:
-    return uuid.uuid4() # Mock user ID for now
+from sqlalchemy.future import select
+from app.core.dependencies import get_current_user
+from app.infra.models import User, Role
+
+async def check_tenant(property_id: uuid.UUID, current_user: User, db: AsyncSession):
+    if not property_id:
+        return
+    role_res = await db.execute(select(Role).filter(Role.id == current_user.role_id))
+    role = role_res.scalars().first()
+    if role and role.role_code == "SUPER_ADMIN":
+        return
+    if current_user.property_id != property_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+async def check_staff_tenant(staff_id: uuid.UUID, current_user: User, db: AsyncSession):
+    role_res = await db.execute(select(Role).filter(Role.id == current_user.role_id))
+    role = role_res.scalars().first()
+    if role and role.role_code == "SUPER_ADMIN":
+        return
+    staff_res = await db.execute(select(User).filter(User.id == staff_id))
+    staff = staff_res.scalars().first()
+    if not staff or staff.property_id != current_user.property_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
 @router.post("/onboard", response_model=schemas.StaffResponse, status_code=status.HTTP_201_CREATED)
-async def onboard_staff(staff_in: schemas.StaffCreate, db: AsyncSession = Depends(get_db), current_user_id: uuid.UUID = Depends(get_current_user_id)):
+async def onboard_staff(staff_in: schemas.StaffCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await check_tenant(staff_in.property_id, current_user, db)
     service = StaffService(db)
-    return await service.create_staff(staff_in, current_user_id)
+    return await service.create_staff(staff_in, current_user.id)
 
 @router.get("/property/{property_id}", response_model=List[schemas.StaffResponse])
-async def get_staff_by_property(property_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_staff_by_property(property_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await check_tenant(property_id, current_user, db)
     service = StaffService(db)
     return await service.get_staff_by_property(property_id)
 
 @router.post("/attendance/punch", response_model=schemas.StaffAttendanceResponse)
-async def punch_attendance(attendance_in: schemas.StaffAttendanceCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user_id: uuid.UUID = Depends(get_current_user_id)):
+async def punch_attendance(attendance_in: schemas.StaffAttendanceCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await check_tenant(attendance_in.property_id, current_user, db)
     service = StaffService(db)
-    return await service.mark_attendance(attendance_in, staff_id, marker_id=current_user_id)
+    return await service.mark_attendance(attendance_in, staff_id, marker_id=current_user.id)
 
 @router.post("/leave/apply", response_model=schemas.StaffLeaveResponse, status_code=status.HTTP_201_CREATED)
-async def apply_leave(leave_in: schemas.StaffLeaveCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def apply_leave(leave_in: schemas.StaffLeaveCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await check_staff_tenant(staff_id, current_user, db)
     service = StaffService(db)
     return await service.apply_leave(leave_in, staff_id)
 
 @router.put("/leave/{leave_id}/approve", response_model=schemas.StaffLeaveResponse)
-async def approve_leave(leave_id: uuid.UUID, status: str, rejection_reason: str = None, db: AsyncSession = Depends(get_db), current_user_id: uuid.UUID = Depends(get_current_user_id)):
+async def approve_leave(leave_id: uuid.UUID, status: str, rejection_reason: str = None, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     service = StaffService(db)
-    return await service.approve_leave(leave_id, current_user_id, status, rejection_reason)
+    return await service.approve_leave(leave_id, current_user.id, status, rejection_reason)
 
 @router.post("/salary/generate", response_model=schemas.StaffSalaryResponse, status_code=status.HTTP_201_CREATED)
-async def generate_salary(salary_in: schemas.StaffSalaryCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user_id: uuid.UUID = Depends(get_current_user_id)):
+async def generate_salary(salary_in: schemas.StaffSalaryCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await check_staff_tenant(staff_id, current_user, db)
     service = StaffService(db)
-    return await service.generate_salary(salary_in, staff_id, generator_id=current_user_id)
+    return await service.generate_salary(salary_in, staff_id, generator_id=current_user.id)
 
 @router.post("/task/assign", response_model=schemas.StaffTaskResponse, status_code=status.HTTP_201_CREATED)
-async def assign_task(task_in: schemas.StaffTaskCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user_id: uuid.UUID = Depends(get_current_user_id)):
+async def assign_task(task_in: schemas.StaffTaskCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await check_tenant(task_in.property_id, current_user, db)
     service = StaffService(db)
-    return await service.assign_task(task_in, staff_id, assigner_id=current_user_id)
+    return await service.assign_task(task_in, staff_id, assigner_id=current_user.id)

@@ -6,10 +6,21 @@ from datetime import date, timedelta
 
 from app.infra.database import get_db
 from app.infra.models import (
-    Subscription, Property, Owner, SubscriptionTransaction, Invoice
+    Subscription, Property, Owner, SubscriptionTransaction, Invoice, User, Role
 )
+from app.core.dependencies import get_current_user
 
 router = APIRouter()
+
+async def require_super_admin(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
+    role = role_res.scalars().first()
+    if not role or role.role_code != "SUPER_ADMIN":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    return user
 
 PLAN_PRICE = {"Basic": 199.0, "Professional": 499.0, "Enterprise": 999.0}
 
@@ -325,7 +336,7 @@ async def get_renewal_data(db: AsyncSession = Depends(get_db)):
 # ── Toggle status ────────────────────────────────────────────────────────────
 
 @router.post("/{property_id}/status")
-async def toggle_subscription_status(property_id: str, payload: dict, db: AsyncSession = Depends(get_db)):
+async def toggle_subscription_status(property_id: str, payload: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_super_admin)):
     action = payload.get("action")
     q = select(Subscription).where(Subscription.property_id == property_id)
     result = await db.execute(q)
@@ -340,7 +351,7 @@ async def toggle_subscription_status(property_id: str, payload: dict, db: AsyncS
 # ── Update plan ──────────────────────────────────────────────────────────────
 
 @router.put("/{property_id}/plan")
-async def update_plan(property_id: str, payload: dict, db: AsyncSession = Depends(get_db)):
+async def update_plan(property_id: str, payload: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_super_admin)):
     new_plan = payload.get("plan")
     q = select(Subscription).where(Subscription.property_id == property_id)
     result = await db.execute(q)
@@ -355,7 +366,7 @@ async def update_plan(property_id: str, payload: dict, db: AsyncSession = Depend
 # ── Generate license ──────────────────────────────────────────────────────────
 
 @router.post("/{property_id}/license")
-async def generate_license(property_id: str, db: AsyncSession = Depends(get_db)):
+async def generate_license(property_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_super_admin)):
     import secrets
     q = select(Subscription).where(Subscription.property_id == property_id)
     result = await db.execute(q)

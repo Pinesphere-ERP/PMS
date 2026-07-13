@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_client.dart';
@@ -226,28 +227,55 @@ class PmsNotifier extends Notifier<PmsState> {
       final response = await dio.get('/properties/rooms');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        final loadedRooms = data.map((json) => RoomModel(
-          id: json['id'],
-          roomNumber: json['room_number'],
-          type: json['type'],
-          price: (json['price'] as num).toDouble(),
-          seasonPrice: 40.0,
-          weekendPrice: 20.0,
-          holidayPrice: 60.0,
-          extraBedPrice: 15.0,
-          amenities: const [
-            {'name': 'Food / Buffet Included', 'price': 30.0},
-            {'name': 'Portable Bluetooth Speaker', 'price': 15.0},
-            {'name': 'Smart TV Access', 'price': 10.0},
-            {'name': 'Projector Setup', 'price': 25.0},
-          ],
-          status: (json['status'] as String?)?.isNotEmpty == true 
-              ? '${json['status'][0].toUpperCase()}${json['status'].substring(1).toLowerCase()}' 
-              : 'Vacant',
-          resortId: json['resort_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['resort_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : json['resort_id']),
-          images: List<String>.from(json['images'] ?? []),
-          description: json['description'] ?? '',
-        )).toList();
+        final loadedRooms = data.map((json) {
+          final double baseRent = (json['price'] as num).toDouble();
+          String descText = json['description'] ?? '';
+          double season = baseRent * 0.3;
+          double weekend = baseRent * 0.15;
+          double holiday = baseRent * 0.4;
+          double extraBed = baseRent * 0.1;
+          List<Map<String, dynamic>> amenitiesList = [
+            {'name': 'Food / Buffet Included', 'price': 300.0},
+            {'name': 'Portable Bluetooth Speaker', 'price': 150.0},
+            {'name': 'Smart TV Access', 'price': 100.0},
+          ];
+
+          try {
+            if (descText.startsWith('{') && descText.endsWith('}')) {
+              final Map<String, dynamic> parsed = Map<String, dynamic>.from(jsonDecode(descText));
+              descText = parsed['description'] ?? '';
+              season = (parsed['season_price'] as num?)?.toDouble() ?? season;
+              weekend = (parsed['weekend_price'] as num?)?.toDouble() ?? weekend;
+              holiday = (parsed['holiday_price'] as num?)?.toDouble() ?? holiday;
+              extraBed = (parsed['extra_bed_price'] as num?)?.toDouble() ?? extraBed;
+              if (parsed['amenities'] != null) {
+                amenitiesList = (parsed['amenities'] as List<dynamic>)
+                    .map((a) => Map<String, dynamic>.from(a as Map))
+                    .toList();
+              }
+            }
+          } catch (_) {
+            // Fallback to legacy/default
+          }
+
+          return RoomModel(
+            id: json['id'],
+            roomNumber: json['room_number'],
+            type: json['type'],
+            price: baseRent,
+            seasonPrice: season,
+            weekendPrice: weekend,
+            holidayPrice: holiday,
+            extraBedPrice: extraBed,
+            amenities: amenitiesList,
+            status: (json['status'] as String?)?.isNotEmpty == true 
+                ? '${json['status'][0].toUpperCase()}${json['status'].substring(1).toLowerCase()}' 
+                : 'Vacant',
+            resortId: json['resort_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['resort_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : json['resort_id']),
+            images: List<String>.from(json['images'] ?? []),
+            description: descText,
+          );
+        }).toList();
         
         state = state.copyWith(rooms: loadedRooms);
       }
@@ -269,7 +297,7 @@ class PmsNotifier extends Notifier<PmsState> {
             id: resortId,
             name: json['name'] ?? '',
             image: json['image'] ?? 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-            location: json['city'] == 'Unknown' ? 'Kodaikanal, Tamil Nadu' : json['city'] ?? '',
+            location: json['city'] ?? 'Unknown',
             description: json['description'] ?? '',
           );
         }).toList();
@@ -527,7 +555,14 @@ class PmsNotifier extends Notifier<PmsState> {
         'resort_id': room.resortId == 'resort-1' 
             ? '33333333-3333-3333-3333-333333333333' 
             : (room.resortId == 'resort-2' ? '44444444-4444-4444-4444-444444444444' : room.resortId),
-        'description': room.description,
+        'description': jsonEncode({
+          'description': room.description,
+          'season_price': room.seasonPrice,
+          'weekend_price': room.weekendPrice,
+          'holiday_price': room.holidayPrice,
+          'extra_bed_price': room.extraBedPrice,
+          'amenities': room.amenities,
+        }),
         'image_url': room.images.isNotEmpty ? room.images.first : '',
       });
       

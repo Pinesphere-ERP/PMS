@@ -42,7 +42,7 @@ final class HousekeepingNotifierProvider
 }
 
 String _$housekeepingNotifierHash() =>
-    r'596c605cbb56e7ccf878e9f49f54500ea4b0d894';
+    r'079740a1a3df5c2823bbb09e518798e30bcadbaa';
 
 abstract class _$HousekeepingNotifier extends $Notifier<HousekeepingState> {
   HousekeepingState build();

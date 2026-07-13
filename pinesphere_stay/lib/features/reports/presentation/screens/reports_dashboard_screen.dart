@@ -492,7 +492,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => context.push('/pl-report'),
               icon: const Icon(Icons.receipt_long, size: 18),
               label: const Text('View Full P&L Report'),
               style: ElevatedButton.styleFrom(
@@ -628,7 +628,11 @@ class ReportsDashboardScreen extends ConsumerWidget {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('PDF Export coming soon!')),
+                  );
+                },
                 icon: const Icon(Icons.picture_as_pdf, size: 20),
                 label: const Text('Export PDF'),
                 style: ElevatedButton.styleFrom(
@@ -641,7 +645,11 @@ class ReportsDashboardScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Excel Export coming soon!')),
+                  );
+                },
                 icon: const Icon(Icons.table_chart, size: 20),
                 label: const Text('Export Excel'),
                 style: ElevatedButton.styleFrom(

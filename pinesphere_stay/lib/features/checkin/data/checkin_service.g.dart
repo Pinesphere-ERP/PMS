@@ -48,4 +48,4 @@ final class CheckInServiceProvider
   }
 }
 
-String _$checkInServiceHash() => r'b182f0ce7a54d6be5e67ca3c1252eaaab096a99d';
+String _$checkInServiceHash() => r'0fcefd658d46433507bcce4539713a931d2a533c';

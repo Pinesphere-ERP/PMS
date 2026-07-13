@@ -1,92 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../rooms/presentation/providers/pms_provider.dart';
 
-class TodayDeparture {
-  final String bookingId;
-  final String guestName;
-  final String mobileNumber;
-  final String roomNumber;
-  final String cottageType;
-  final String checkInDate;
-  final String checkOutDate;
-  final String checkOutTime;
-  final String guestsCount;
-  final String totalBill;
-  final String amountDue;
-  final String paymentStatus;
-  final String securityDeposit;
-  final String extraCharges;
-  final String invoiceStatus;
-  final String checkoutStatus;
-  final String keyReturned;
-  final String idReturned;
-  final String housekeepingStatus;
-  final String cottageAvailability;
-  final String feedbackSubmitted;
-  final String remarks;
-
-  TodayDeparture({
-    required this.bookingId,
-    required this.guestName,
-    required this.mobileNumber,
-    required this.roomNumber,
-    required this.cottageType,
-    required this.checkInDate,
-    required this.checkOutDate,
-    required this.checkOutTime,
-    required this.guestsCount,
-    required this.totalBill,
-    required this.amountDue,
-    required this.paymentStatus,
-    required this.securityDeposit,
-    required this.extraCharges,
-    required this.invoiceStatus,
-    required this.checkoutStatus,
-    required this.keyReturned,
-    required this.idReturned,
-    required this.housekeepingStatus,
-    required this.cottageAvailability,
-    required this.feedbackSubmitted,
-    required this.remarks,
-  });
-}
-
-class TodaysDeparturesScreen extends StatefulWidget {
+class TodaysDeparturesScreen extends ConsumerStatefulWidget {
   const TodaysDeparturesScreen({super.key});
 
   @override
-  State<TodaysDeparturesScreen> createState() => _TodaysDeparturesScreenState();
+  ConsumerState<TodaysDeparturesScreen> createState() => _TodaysDeparturesScreenState();
 }
 
-class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
-  final List<TodayDeparture> _departures = [
-    TodayDeparture(
-      bookingId: 'BKG-10101', guestName: 'James Smith', mobileNumber: '+1 555-0991', roomNumber: '302', cottageType: 'Deluxe Suite',
-      checkInDate: 'Oct 20, 2024', checkOutDate: 'Oct 24, 2024', checkOutTime: '11:00 AM', guestsCount: '2',
-      totalBill: '\$480.00', amountDue: '\$0.00', paymentStatus: 'Paid', securityDeposit: 'Refunded', extraCharges: 'None',
-      invoiceStatus: 'Generated', checkoutStatus: 'Checked Out', keyReturned: 'Yes', idReturned: 'Yes',
-      housekeepingStatus: 'Cleaning Started', cottageAvailability: 'Cleaning', feedbackSubmitted: 'Yes', remarks: 'Great stay',
-    ),
-    TodayDeparture(
-      bookingId: 'BKG-10105', guestName: 'Maria Garcia', mobileNumber: '+44 7700 900011', roomNumber: '105', cottageType: 'Twin Room',
-      checkInDate: 'Oct 22, 2024', checkOutDate: 'Oct 24, 2024', checkOutTime: '10:30 AM', guestsCount: '1',
-      totalBill: '\$170.00', amountDue: '\$20.00', paymentStatus: 'Partial', securityDeposit: 'Refund Pending', extraCharges: 'Room Service',
-      invoiceStatus: 'Pending', checkoutStatus: 'Pending', keyReturned: 'No', idReturned: 'No',
-      housekeepingStatus: 'Pending', cottageAvailability: 'Occupied', feedbackSubmitted: 'No', remarks: 'Needs early checkout',
-    ),
-    TodayDeparture(
-      bookingId: 'BKG-10112', guestName: 'David Chen', mobileNumber: '+61 400 123 789', roomNumber: '212', cottageType: 'Standard King',
-      checkInDate: 'Oct 19, 2024', checkOutDate: 'Oct 24, 2024', checkOutTime: '12:00 PM', guestsCount: '3',
-      totalBill: '\$475.00', amountDue: '\$0.00', paymentStatus: 'Paid', securityDeposit: 'Refund Pending', extraCharges: 'Laundry',
-      invoiceStatus: 'Generated', checkoutStatus: 'Pending', keyReturned: 'No', idReturned: 'Yes',
-      housekeepingStatus: 'Pending', cottageAvailability: 'Occupied', feedbackSubmitted: 'No', remarks: '-',
-    ),
-  ];
-
+class _TodaysDeparturesScreenState extends ConsumerState<TodaysDeparturesScreen> {
   @override
   Widget build(BuildContext context) {
+    final pmsState = ref.watch(pmsProvider);
+    final now = DateTime.now();
+    
+    // Filter bookings where checkOutDate is today OR status is 'Active' and checkOutDate <= today
+    final departures = pmsState.bookings.where((booking) {
+      if (DateUtils.isSameDay(booking.checkOutDate, now)) return true;
+      if (booking.status == 'Active' && booking.checkOutDate.isBefore(now)) return true;
+      return false;
+    }).toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -113,16 +52,34 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _departures.length,
-                  itemBuilder: (context, index) {
-                    final departure = _departures[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: _buildDepartureCard(departure),
-                    );
-                  },
-                ),
+                child: departures.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.flight_takeoff, size: 64, color: AppColors.outline),
+                            SizedBox(height: 16),
+                            Text(
+                              'No departures today',
+                              style: TextStyle(
+                                color: AppColors.outline,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: departures.length,
+                        itemBuilder: (context, index) {
+                          final booking = departures[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: _buildDepartureCard(booking),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -131,7 +88,12 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
     );
   }
 
-  Widget _buildDepartureCard(TodayDeparture departure) {
+  Widget _buildDepartureCard(BookingModel departure) {
+    final isCheckedOut = departure.status == 'Completed';
+    final checkoutStatus = isCheckedOut ? 'Checked Out' : 'Pending';
+    final amountDue = departure.totalSum - departure.depositPaid;
+    final isOverdue = departure.checkOutDate.isBefore(DateTime.now()) && !DateUtils.isSameDay(departure.checkOutDate, DateTime.now());
+    
     return BentoCard(
       onTap: () => _showDepartureDetails(departure),
       padding: const EdgeInsets.all(16),
@@ -140,12 +102,16 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: departure.checkoutStatus == 'Checked Out' ? AppColors.surfaceContainerHighest : AppColors.secondaryContainer,
+              color: isCheckedOut 
+                  ? AppColors.surfaceVariant 
+                  : (isOverdue ? AppColors.errorContainer : AppColors.secondaryContainer),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.flight_takeoff,
-              color: departure.checkoutStatus == 'Checked Out' ? AppColors.onSurfaceVariant : AppColors.onSecondaryContainer,
+              color: isCheckedOut 
+                  ? AppColors.onSurfaceVariant 
+                  : (isOverdue ? AppColors.error : AppColors.onSecondaryContainer),
             ),
           ),
           const SizedBox(width: 16),
@@ -162,7 +128,7 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Room: ${departure.roomNumber} | ID: ${departure.bookingId}',
+                  'Room: ${departure.roomNumber} | ID: ${departure.id}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -172,8 +138,9 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    _buildStatusChip(departure.checkoutStatus),
-                    _buildStatusChip(departure.paymentStatus),
+                    if (isOverdue && !isCheckedOut) _buildStatusChip('Overdue', isError: true),
+                    _buildStatusChip(checkoutStatus),
+                    if (amountDue > 0) _buildStatusChip('Due: \$${amountDue.toStringAsFixed(0)}', isError: true),
                   ],
                 ),
               ],
@@ -183,9 +150,9 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                departure.checkOutTime,
+                DateFormat('hh:mm a').format(departure.checkOutDate),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.primary,
+                  color: isOverdue ? AppColors.error : AppColors.secondary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -203,7 +170,12 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
     );
   }
 
-  void _showDepartureDetails(TodayDeparture departure) {
+  void _showDepartureDetails(BookingModel departure) {
+    final amountDue = departure.totalSum - departure.depositPaid;
+    final paymentStatus = departure.isPaid ? 'Paid' : (departure.depositPaid > 0 ? 'Partial' : 'Pending');
+    final checkoutStatus = departure.status == 'Completed' ? 'Checked Out' : 'Pending';
+    final extraCharges = departure.damageBill + departure.laundryBill + departure.miniBarBill + departure.restaurantBill;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -235,49 +207,65 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        _buildStatusChip(departure.checkoutStatus),
+                        _buildStatusChip(checkoutStatus),
                       ],
                     ),
                     const SizedBox(height: 24),
                     _buildDetailRow(Icons.person, 'Guest Name', departure.guestName),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.phone, 'Mobile Number', departure.mobileNumber),
+                    _buildDetailRow(Icons.phone, 'Mobile Number', departure.guestPhone),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.meeting_room, 'Room / Cottage', '${departure.roomNumber} (${departure.cottageType})'),
+                    _buildDetailRow(Icons.meeting_room, 'Room', departure.roomNumber),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.tag, 'Booking ID', departure.bookingId),
+                    _buildDetailRow(Icons.tag, 'Booking ID', departure.id),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.login, 'Check-in Date', departure.checkInDate),
+                    _buildDetailRow(Icons.calendar_today, 'Check-in Date', DateFormat('MMM dd, yyyy').format(departure.checkInDate)),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.logout, 'Check-out Date', departure.checkOutDate),
+                    _buildDetailRow(Icons.event_busy, 'Check-out Date', DateFormat('MMM dd, yyyy').format(departure.checkOutDate)),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.access_time, 'Check-out Time', departure.checkOutTime),
+                    _buildDetailRow(Icons.access_time, 'Check-out Time', DateFormat('hh:mm a').format(departure.checkOutDate)),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.group, 'Number of Guests', departure.guestsCount),
+                    _buildDetailRow(Icons.group, 'Number of Guests', '1'),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.monetization_on, 'Total Bill', departure.totalBill),
+                    Text(
+                      'Billing Details',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.money_off, 'Amount Due', departure.amountDue, isAlert: departure.amountDue != '\$0.00'),
+                    _buildDetailRow(Icons.receipt_long, 'Total Bill', '\$${departure.totalSum.toStringAsFixed(2)}'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.payment, 'Payment Status', departure.paymentStatus),
+                    _buildDetailRow(Icons.monetization_on, 'Amount Due', '\$${amountDue.toStringAsFixed(2)}', isAlert: amountDue > 0),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.account_balance_wallet, 'Security Deposit', departure.securityDeposit),
+                    _buildDetailRow(Icons.payment, 'Payment Status', paymentStatus),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.receipt, 'Extra Charges', departure.extraCharges),
+                    _buildDetailRow(Icons.security, 'Security Deposit', '\$${departure.depositPaid.toStringAsFixed(2)}'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.receipt_long, 'Invoice Status', departure.invoiceStatus),
+                    _buildDetailRow(Icons.add_shopping_cart, 'Extra Charges', '\$${extraCharges.toStringAsFixed(2)}'),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.description, 'Invoice Status', departure.isPaid ? 'Generated' : 'Pending'),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.vpn_key, 'Key Returned', departure.keyReturned),
+                    Text(
+                      'Checkout Checklist',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.badge, 'ID Returned', departure.idReturned),
+                    _buildDetailRow(Icons.vpn_key, 'Key Returned', 'Pending'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.cleaning_services, 'Housekeeping', departure.housekeepingStatus),
+                    _buildDetailRow(Icons.badge, 'ID Returned', 'Pending'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.event_available, 'Cottage Availability', departure.cottageAvailability),
+                    _buildDetailRow(Icons.cleaning_services, 'Housekeeping', 'Pending'),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.hotel, 'Room Availability', departure.status == 'Completed' ? 'Cleaning' : 'Occupied'),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.feedback, 'Feedback Submitted', departure.feedbackSubmitted),
+                    _buildDetailRow(Icons.feedback, 'Feedback Submitted', 'No'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.notes, 'Remarks', departure.remarks),
+                    _buildDetailRow(Icons.notes, 'Remarks', '-'),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -289,44 +277,17 @@ class _TodaysDeparturesScreenState extends State<TodaysDeparturesScreen> {
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    Color bgColor;
-    Color textColor;
-
-    switch (status.toLowerCase()) {
-      case 'checked out':
-      case 'paid':
-      case 'refunded':
-      case 'generated':
-        bgColor = AppColors.secondaryContainer;
-        textColor = AppColors.onSecondaryContainer;
-        break;
-      case 'pending':
-      case 'partial':
-      case 'refund pending':
-      case 'cleaning started':
-        bgColor = AppColors.errorContainer;
-        textColor = AppColors.onErrorContainer;
-        break;
-      case 'occupied':
-        bgColor = AppColors.primaryContainer;
-        textColor = AppColors.onPrimaryContainer;
-        break;
-      default:
-        bgColor = AppColors.surfaceVariant;
-        textColor = AppColors.onSurfaceVariant;
-    }
-
+  Widget _buildStatusChip(String status, {bool isError = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: isError ? AppColors.errorContainer : AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         status,
         style: TextStyle(
-          color: textColor,
+          color: isError ? AppColors.error : AppColors.onSurfaceVariant,
           fontWeight: FontWeight.w600,
           fontSize: 11,
         ),

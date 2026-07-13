@@ -1,89 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../rooms/presentation/providers/pms_provider.dart';
 
-class TodayArrival {
-  final String bookingId;
-  final String guestName;
-  final String mobileNumber;
-  final String roomNumber;
-  final String cottageType;
-  final String checkInTime;
-  final String guestsCount;
-  final String nights;
-  final String bookingSource;
-  final String paymentStatus;
-  final String amountDue;
-  final String bookingStatus;
-  final String specialRequests;
-  final String idVerification;
-  final String assignedStaff;
-  final String cottageReady;
-  final String arrivalStatus;
-  final String parkingRequired;
-  final String vehicleNumber;
-
-  TodayArrival({
-    required this.bookingId,
-    required this.guestName,
-    required this.mobileNumber,
-    required this.roomNumber,
-    required this.cottageType,
-    required this.checkInTime,
-    required this.guestsCount,
-    required this.nights,
-    required this.bookingSource,
-    required this.paymentStatus,
-    required this.amountDue,
-    required this.bookingStatus,
-    required this.specialRequests,
-    required this.idVerification,
-    required this.assignedStaff,
-    required this.cottageReady,
-    required this.arrivalStatus,
-    required this.parkingRequired,
-    required this.vehicleNumber,
-  });
-}
-
-class TodaysArrivalsScreen extends StatefulWidget {
+class TodaysArrivalsScreen extends ConsumerStatefulWidget {
   const TodaysArrivalsScreen({super.key});
 
   @override
-  State<TodaysArrivalsScreen> createState() => _TodaysArrivalsScreenState();
+  ConsumerState<TodaysArrivalsScreen> createState() => _TodaysArrivalsScreenState();
 }
 
-class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
-  final List<TodayArrival> _arrivals = [
-    TodayArrival(
-      bookingId: 'BKG-10294', guestName: 'John Doe', mobileNumber: '+1 555-0198', roomNumber: '302', cottageType: 'Deluxe Suite',
-      checkInTime: '14:00', guestsCount: '2', nights: '3', bookingSource: 'Website', paymentStatus: 'Paid', amountDue: '\$0.00',
-      bookingStatus: 'Confirmed', specialRequests: 'Honeymoon setup', idVerification: 'Completed', assignedStaff: 'Sarah (Housekeeping)',
-      cottageReady: 'Ready', arrivalStatus: 'Not Arrived', parkingRequired: 'Yes', vehicleNumber: 'ABC-1234',
-    ),
-    TodayArrival(
-      bookingId: 'BKG-10295', guestName: 'Alice Smith', mobileNumber: '+44 7700 900077', roomNumber: '105', cottageType: 'Twin Room',
-      checkInTime: '15:30', guestsCount: '1', nights: '1', bookingSource: 'Booking.com', paymentStatus: 'Pending', amountDue: '\$85.00',
-      bookingStatus: 'Confirmed', specialRequests: 'None', idVerification: 'Pending', assignedStaff: 'Mike',
-      cottageReady: 'Cleaning', arrivalStatus: 'Not Arrived', parkingRequired: 'No', vehicleNumber: '-',
-    ),
-    TodayArrival(
-      bookingId: 'BKG-10296', guestName: 'Bob Johnson', mobileNumber: '+1 555-0102', roomNumber: '212', cottageType: 'Standard King',
-      checkInTime: '13:00', guestsCount: '2 (1 child)', nights: '2', bookingSource: 'Airbnb', paymentStatus: 'Partial', amountDue: '\$45.00',
-      bookingStatus: 'Confirmed', specialRequests: 'Extra bed', idVerification: 'Completed', assignedStaff: 'Sarah',
-      cottageReady: 'Maintenance', arrivalStatus: 'Arrived', parkingRequired: 'Yes', vehicleNumber: 'XYZ-9876',
-    ),
-    TodayArrival(
-      bookingId: 'BKG-10297', guestName: 'Emma Davis', mobileNumber: '+61 400 123 456', roomNumber: '401', cottageType: 'Penthouse',
-      checkInTime: '16:00', guestsCount: '4', nights: '5', bookingSource: 'Walk-in', paymentStatus: 'Paid', amountDue: '\$0.00',
-      bookingStatus: 'Confirmed', specialRequests: 'None', idVerification: 'Completed', assignedStaff: 'Jane (Manager)',
-      cottageReady: 'Ready', arrivalStatus: 'Checked In', parkingRequired: 'Yes', vehicleNumber: 'DEF-5678',
-    ),
-  ];
-
+class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
   @override
   Widget build(BuildContext context) {
+    final pmsState = ref.watch(pmsProvider);
+    final now = DateTime.now();
+    
+    // Filter bookings where checkInDate is today
+    final arrivals = pmsState.bookings.where((booking) {
+      return DateUtils.isSameDay(booking.checkInDate, now);
+    }).toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -110,16 +50,34 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _arrivals.length,
-                  itemBuilder: (context, index) {
-                    final arrival = _arrivals[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: _buildArrivalCard(arrival),
-                    );
-                  },
-                ),
+                child: arrivals.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.event_available, size: 64, color: AppColors.outline),
+                            SizedBox(height: 16),
+                            Text(
+                              'No arrivals today',
+                              style: TextStyle(
+                                color: AppColors.outline,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: arrivals.length,
+                        itemBuilder: (context, index) {
+                          final booking = arrivals[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: _buildArrivalCard(booking),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -128,7 +86,11 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
     );
   }
 
-  Widget _buildArrivalCard(TodayArrival arrival) {
+  Widget _buildArrivalCard(BookingModel arrival) {
+    final isCheckedIn = arrival.status == 'Active';
+    final arrivalStatus = isCheckedIn ? 'Checked In' : (arrival.status == 'Upcoming' ? 'Not Arrived' : arrival.status);
+    final checkInTimeStr = DateFormat('hh:mm a').format(arrival.checkInDate);
+    
     return BentoCard(
       onTap: () => _showArrivalDetails(arrival),
       padding: const EdgeInsets.all(16),
@@ -137,12 +99,12 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: arrival.arrivalStatus == 'Checked In' ? AppColors.primaryContainer : AppColors.surfaceContainerHigh,
+              color: isCheckedIn ? AppColors.primaryContainer : AppColors.surfaceContainerHigh,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.luggage,
-              color: arrival.arrivalStatus == 'Checked In' ? AppColors.onPrimaryContainer : AppColors.onSurfaceVariant,
+              color: isCheckedIn ? AppColors.onPrimaryContainer : AppColors.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 16),
@@ -159,7 +121,7 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Room: ${arrival.roomNumber} | ID: ${arrival.bookingId}',
+                  'Room: ${arrival.roomNumber} | ID: ${arrival.id}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -169,8 +131,8 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    _buildStatusChip(arrival.cottageReady),
-                    _buildStatusChip(arrival.arrivalStatus),
+                    _buildStatusChip('Ready'), // Cottage Ready is assumed Ready
+                    _buildStatusChip(arrivalStatus),
                   ],
                 ),
               ],
@@ -180,7 +142,7 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                arrival.checkInTime,
+                checkInTimeStr,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
@@ -200,7 +162,15 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
     );
   }
 
-  void _showArrivalDetails(TodayArrival arrival) {
+  void _showArrivalDetails(BookingModel arrival) {
+    final isCheckedIn = arrival.status == 'Active';
+    final arrivalStatus = isCheckedIn ? 'Checked In' : (arrival.status == 'Upcoming' ? 'Not Arrived' : arrival.status);
+    final checkInTimeStr = DateFormat('hh:mm a').format(arrival.checkInDate);
+    final paymentStatus = arrival.isPaid ? 'Paid' : (arrival.depositPaid > 0 ? 'Partial' : 'Pending');
+    final amountDue = arrival.totalSum - arrival.depositPaid;
+    final amountDueStr = '\$${amountDue.toStringAsFixed(2)}';
+    final nights = arrival.checkOutDate.difference(arrival.checkInDate).inDays.toString();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -232,43 +202,43 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        _buildStatusChip(arrival.arrivalStatus),
+                        _buildStatusChip(arrivalStatus),
                       ],
                     ),
                     const SizedBox(height: 24),
                     _buildDetailRow(Icons.person, 'Guest Name', arrival.guestName),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.phone, 'Mobile Number', arrival.mobileNumber),
+                    _buildDetailRow(Icons.phone, 'Mobile Number', arrival.guestPhone),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.meeting_room, 'Room / Cottage', '${arrival.roomNumber} (${arrival.cottageType})'),
+                    _buildDetailRow(Icons.meeting_room, 'Room', arrival.roomNumber),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.tag, 'Booking ID', arrival.bookingId),
+                    _buildDetailRow(Icons.tag, 'Booking ID', arrival.id),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.access_time, 'Check-in Time', arrival.checkInTime),
+                    _buildDetailRow(Icons.access_time, 'Check-in Time', checkInTimeStr),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.group, 'Number of Guests', arrival.guestsCount),
+                    _buildDetailRow(Icons.group, 'Number of Guests', '1'), // Defaulting to 1
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.bedtime, 'Nights', arrival.nights),
+                    _buildDetailRow(Icons.bedtime, 'Nights', nights),
                     const SizedBox(height: 16),
                     _buildDetailRow(Icons.source, 'Booking Source', arrival.bookingSource),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.payment, 'Payment Status', arrival.paymentStatus),
+                    _buildDetailRow(Icons.payment, 'Payment Status', paymentStatus),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.monetization_on, 'Amount Due', arrival.amountDue, isAlert: arrival.amountDue != '\$0.00'),
+                    _buildDetailRow(Icons.monetization_on, 'Amount Due', amountDueStr, isAlert: amountDue > 0),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.verified, 'Booking Status', arrival.bookingStatus),
+                    _buildDetailRow(Icons.verified, 'Booking Status', arrival.status),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.assignment_ind, 'ID Verification', arrival.idVerification),
+                    _buildDetailRow(Icons.assignment_ind, 'ID Verification', 'Pending'),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.star, 'Special Requests', arrival.specialRequests),
+                    _buildDetailRow(Icons.star, 'Special Requests', 'None'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.cleaning_services, 'Cottage Ready', arrival.cottageReady),
+                    _buildDetailRow(Icons.cleaning_services, 'Cottage Ready', 'Ready'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.support_agent, 'Assigned Staff', arrival.assignedStaff),
+                    _buildDetailRow(Icons.support_agent, 'Assigned Staff', '-'),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.local_parking, 'Parking Required', arrival.parkingRequired),
+                    _buildDetailRow(Icons.local_parking, 'Parking Required', 'No'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.directions_car, 'Vehicle Number', arrival.vehicleNumber),
+                    _buildDetailRow(Icons.directions_car, 'Vehicle Number', '-'),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -302,6 +272,7 @@ class _TodaysArrivalsScreenState extends State<TodaysArrivalsScreen> {
         break;
       case 'maintenance':
       case 'arrived':
+      case 'active':
         bgColor = AppColors.primaryContainer;
         textColor = AppColors.onPrimaryContainer;
         break;

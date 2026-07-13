@@ -108,8 +108,8 @@ export default function MyDevicesPanel() {
           </div>
         )}
 
-        {filteredDevices.map(dev => (
-          <div key={dev.id || Math.random()} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+        {filteredDevices.map((dev, idx) => (
+          <div key={dev.id || idx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
             <div className="p-5 border-b border-gray-100 bg-gray-50/30">
               <div className="flex justify-between items-start">
                 <div className="flex items-center">

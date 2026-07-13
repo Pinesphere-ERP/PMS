@@ -55,7 +55,7 @@ final class KpiAggregationServiceProvider
 }
 
 String _$kpiAggregationServiceHash() =>
-    r'c479c08f2dc6e08fe09a1298580e728e176a50e8';
+    r'9c9f6f7a452fa2a57dab22daea1d2a907c0f131d';
 
 /// Stream provider: emits today's KPI snapshot (or null) reactively.
 /// Bind to ObjectBox so the UI re-renders on every local mutation.

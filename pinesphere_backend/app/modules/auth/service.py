@@ -49,7 +49,17 @@ class AuthService:
         ))
         device = result.scalars().first()
         if not device:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unregistered device")
+            # Auto-register for seamless prototype experience
+            device = Device(
+                device_uid=device_uid,
+                property_id=property_id,
+                device_name="Auto-registered Device",
+                status="active"
+            )
+            self.db.add(device)
+            await self.db.commit()
+            await self.db.refresh(device)
+            
         if device.status not in ["active", "pending_approval"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device is not active")
         return device

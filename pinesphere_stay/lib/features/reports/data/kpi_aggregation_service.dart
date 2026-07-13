@@ -1,3 +1,4 @@
+import '../../../main.dart';
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -8,7 +9,9 @@ part 'kpi_aggregation_service.g.dart';
 
 @Riverpod(keepAlive: true)
 KpiAggregationService kpiAggregationService(Ref ref) {
-  return KpiAggregationService();
+  final service = KpiAggregationService();
+  service.initialize(objectBox.store);
+  return service;
 }
 
 class KpiAggregationService {

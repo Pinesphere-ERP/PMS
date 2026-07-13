@@ -10,6 +10,7 @@ import '../domain/models/kpi_dto.dart';
 /// it only demonstrates how report mutations enter the queue.
 class ReportSyncHooks {
   final Box<SyncQueueEntity> _syncQueueBox;
+  // ignore: unused_field
   static const _uuid = Uuid();
 
   ReportSyncHooks(Store store)

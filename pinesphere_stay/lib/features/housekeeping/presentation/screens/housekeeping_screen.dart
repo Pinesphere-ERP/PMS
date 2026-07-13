@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/housekeeping_provider.dart';
 
 class HousekeepingScreen extends ConsumerStatefulWidget {
@@ -17,7 +18,13 @@ class _HousekeepingScreenState extends ConsumerState<HousekeepingScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   int _selectedTabIndex = 0;
-  final String _propertyId = '1234';
+  String get _propertyId {
+    final state = ref.read(authProvider);
+    return state.maybeWhen(
+      authenticated: (user) => user.propertyId ?? '',
+      orElse: () => '',
+    );
+  }
 
   String _taskStatusFilter = 'All';
   String _ticketStatusFilter = 'All';

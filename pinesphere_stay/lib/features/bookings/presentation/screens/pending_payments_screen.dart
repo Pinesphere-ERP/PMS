@@ -1,94 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../rooms/presentation/providers/pms_provider.dart';
 
-class PendingPayment {
-  final String roomNo;
-  final String bookingId;
-  final String guestName;
-  final String mobileNumber;
-  final DateTime checkInDate;
-  final DateTime checkOutDate;
-  final double totalBillAmount;
-  final double amountPaid;
-  final double balanceDue;
-  final String paymentStatus; // Pending, Partial
-  final String paymentMethod;
-  final DateTime dueDate;
-
-  PendingPayment({
-    required this.roomNo,
-    required this.bookingId,
-    required this.guestName,
-    required this.mobileNumber,
-    required this.checkInDate,
-    required this.checkOutDate,
-    required this.totalBillAmount,
-    required this.amountPaid,
-    required this.balanceDue,
-    required this.paymentStatus,
-    required this.paymentMethod,
-    required this.dueDate,
-  });
-}
-
-class PendingPaymentsScreen extends StatefulWidget {
+class PendingPaymentsScreen extends ConsumerStatefulWidget {
   const PendingPaymentsScreen({super.key});
 
   @override
-  State<PendingPaymentsScreen> createState() => _PendingPaymentsScreenState();
+  ConsumerState<PendingPaymentsScreen> createState() => _PendingPaymentsScreenState();
 }
 
-class _PendingPaymentsScreenState extends State<PendingPaymentsScreen> {
-  final List<PendingPayment> _payments = [
-    PendingPayment(
-      roomNo: '101',
-      bookingId: 'BK-202607-01',
-      guestName: 'John Doe',
-      mobileNumber: '+1 234 567 8900',
-      checkInDate: DateTime.now().subtract(const Duration(days: 2)),
-      checkOutDate: DateTime.now().add(const Duration(days: 1)),
-      totalBillAmount: 500.0,
-      amountPaid: 100.0,
-      balanceDue: 400.0,
-      paymentStatus: 'Partial',
-      paymentMethod: 'Credit Card',
-      dueDate: DateTime.now().add(const Duration(days: 1)),
-    ),
-    PendingPayment(
-      roomNo: 'Cottage 3',
-      bookingId: 'BK-202607-05',
-      guestName: 'Jane Smith',
-      mobileNumber: '+44 7700 900077',
-      checkInDate: DateTime.now().subtract(const Duration(days: 1)),
-      checkOutDate: DateTime.now().add(const Duration(days: 3)),
-      totalBillAmount: 1200.0,
-      amountPaid: 0.0,
-      balanceDue: 1200.0,
-      paymentStatus: 'Pending',
-      paymentMethod: 'Bank Transfer',
-      dueDate: DateTime.now().add(const Duration(days: 3)),
-    ),
-    PendingPayment(
-      roomNo: '205',
-      bookingId: 'BK-202607-08',
-      guestName: 'Robert Johnson',
-      mobileNumber: '+91 98765 43210',
-      checkInDate: DateTime.now().subtract(const Duration(days: 5)),
-      checkOutDate: DateTime.now().subtract(const Duration(days: 1)), // Checkout past due
-      totalBillAmount: 850.0,
-      amountPaid: 400.0,
-      balanceDue: 450.0,
-      paymentStatus: 'Partial',
-      paymentMethod: 'Cash',
-      dueDate: DateTime.now().subtract(const Duration(days: 1)), // Overdue
-    ),
-  ];
-
+class _PendingPaymentsScreenState extends ConsumerState<PendingPaymentsScreen> {
   @override
   Widget build(BuildContext context) {
+    final pmsState = ref.watch(pmsProvider);
+
+    // Filter bookings where isPaid == false (has outstanding payment)
+    final payments = pmsState.bookings.where((booking) {
+      return !booking.isPaid && (booking.totalSum - booking.depositPaid) > 0;
+    }).toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -108,23 +42,41 @@ class _PendingPaymentsScreenState extends State<PendingPaymentsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Action Required',
+                'Outstanding Dues',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _payments.length,
-                  itemBuilder: (context, index) {
-                    final payment = _payments[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: _buildPaymentCard(payment),
-                    );
-                  },
-                ),
+                child: payments.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 64, color: AppColors.outline),
+                            SizedBox(height: 16),
+                            Text(
+                              'No pending payments',
+                              style: TextStyle(
+                                color: AppColors.outline,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: payments.length,
+                        itemBuilder: (context, index) {
+                          final payment = payments[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: _buildPaymentCard(payment),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -133,57 +85,84 @@ class _PendingPaymentsScreenState extends State<PendingPaymentsScreen> {
     );
   }
 
-  Widget _buildPaymentCard(PendingPayment payment) {
-    final currencyFormatter = NumberFormat.currency(symbol: '\$');
-    final isOverdue = payment.dueDate.isBefore(DateTime.now());
+  Widget _buildPaymentCard(BookingModel payment) {
+    final amountDue = payment.totalSum - payment.depositPaid;
+    final isOverdue = payment.checkOutDate.isBefore(DateTime.now()) && !DateUtils.isSameDay(payment.checkOutDate, DateTime.now());
+    final paymentStatus = payment.depositPaid > 0 ? 'Partial' : 'Pending';
 
     return BentoCard(
-      onTap: () => _showPaymentDetails(payment, currencyFormatter),
+      onTap: () => _showPaymentDetails(payment),
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.errorContainer,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.receipt_long, color: AppColors.error),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  payment.guestName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.onSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Room: ${payment.roomNo} | ID: ${payment.bookingId}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long,
+                      color: AppColors.onPrimaryContainer,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        payment.guestName,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Room: ${payment.roomNumber} | ID: ${payment.id}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              _buildStatusBadge(paymentStatus, isOverdue: isOverdue),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildAmountColumn('Total Bill', '\$${payment.totalSum.toStringAsFixed(2)}', isHighlight: false),
+              _buildAmountColumn('Paid', '\$${payment.depositPaid.toStringAsFixed(2)}', isHighlight: false),
+              _buildAmountColumn('Balance Due', '\$${amountDue.toStringAsFixed(2)}', isHighlight: true),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 14, color: AppColors.outline),
+              const SizedBox(width: 6),
               Text(
-                currencyFormatter.format(payment.balanceDue),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.error,
-                  fontWeight: FontWeight.bold,
+                'Due: ${DateFormat('MMM dd, yyyy').format(payment.checkOutDate)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: isOverdue ? AppColors.error : AppColors.onSurfaceVariant,
+                  fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
-              const SizedBox(height: 4),
-              _buildStatusChip(payment.paymentStatus, isOverdue: isOverdue),
+              const Spacer(),
+              const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.outline),
             ],
           ),
         ],
@@ -191,7 +170,49 @@ class _PendingPaymentsScreenState extends State<PendingPaymentsScreen> {
     );
   }
 
-  void _showPaymentDetails(PendingPayment payment, NumberFormat formatter) {
+  Widget _buildAmountColumn(String label, String amount, {required bool isHighlight}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          amount,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: isHighlight ? AppColors.error : AppColors.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusBadge(String status, {bool isOverdue = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isOverdue ? AppColors.errorContainer : AppColors.secondaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        isOverdue ? 'Overdue' : status,
+        style: TextStyle(
+          color: isOverdue ? AppColors.error : AppColors.onSecondaryContainer,
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
+  void _showPaymentDetails(BookingModel payment) {
+    final amountDue = payment.totalSum - payment.depositPaid;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -202,8 +223,8 @@ class _PendingPaymentsScreenState extends State<PendingPaymentsScreen> {
       builder: (context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.65,
-          maxChildSize: 0.9,
+          initialChildSize: 0.85,
+          maxChildSize: 0.95,
           minChildSize: 0.5,
           builder: (context, scrollController) {
             return SingleChildScrollView(
@@ -217,37 +238,85 @@ class _PendingPaymentsScreenState extends State<PendingPaymentsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Payment Details',
+                          'Payment Collection',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        _buildStatusChip(payment.paymentStatus),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Collect Payment',
+                            style: TextStyle(
+                              color: AppColors.onPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
+                    _buildSectionHeader('Guest Information'),
                     _buildDetailRow(Icons.person, 'Guest Name', payment.guestName),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.phone, 'Mobile Number', payment.mobileNumber),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.meeting_room, 'Room / Cottage', payment.roomNo),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.tag, 'Booking ID', payment.bookingId),
+                    _buildDetailRow(Icons.phone, 'Mobile Number', payment.guestPhone),
+                    _buildDetailRow(Icons.meeting_room, 'Room', payment.roomNumber),
+                    _buildDetailRow(Icons.tag, 'Booking ID', payment.id),
+                    
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.login, 'Check-in Date', DateFormat('MMM d, y').format(payment.checkInDate)),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.logout, 'Check-out Date', DateFormat('MMM d, y').format(payment.checkOutDate)),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.event_busy, 'Due Date', DateFormat('MMM d, y').format(payment.dueDate)),
+                    _buildSectionHeader('Stay Details'),
+                    _buildDetailRow(Icons.calendar_today, 'Check-in', DateFormat('MMM dd, yyyy').format(payment.checkInDate)),
+                    _buildDetailRow(Icons.event_busy, 'Check-out', DateFormat('MMM dd, yyyy').format(payment.checkOutDate)),
+                    
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.monetization_on, 'Total Bill', formatter.format(payment.totalBillAmount)),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.payment, 'Amount Paid', formatter.format(payment.amountPaid)),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.account_balance_wallet, 'Balance Due', formatter.format(payment.balanceDue), isAlert: true),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.credit_card, 'Payment Method', payment.paymentMethod),
+                    _buildSectionHeader('Payment Summary'),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.outlineVariant),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total Bill Amount', style: TextStyle(color: AppColors.onSurface)),
+                              Text('\$${payment.totalSum.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.onSurface)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Amount Paid', style: TextStyle(color: AppColors.onSurfaceVariant)),
+                              Text('\$${payment.depositPaid.toStringAsFixed(2)}', style: TextStyle(color: AppColors.onSurfaceVariant)),
+                            ],
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12.0),
+                            child: Divider(),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Balance Due', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.error)),
+                              Text('\$${amountDue.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.error)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildDetailRow(Icons.calendar_month, 'Due Date', DateFormat('MMM dd, yyyy').format(payment.checkOutDate), isAlert: payment.checkOutDate.isBefore(DateTime.now())),
+                    _buildDetailRow(Icons.history, 'Previous Payment', payment.depositPaid > 0 ? 'Cash' : '-'),
+                    
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -259,75 +328,49 @@ class _PendingPaymentsScreenState extends State<PendingPaymentsScreen> {
     );
   }
 
-  Widget _buildStatusChip(String status, {bool isOverdue = false}) {
-    Color bgColor;
-    Color textColor;
-    String displayStatus = status;
-
-    if (isOverdue) {
-      bgColor = AppColors.errorContainer;
-      textColor = AppColors.onErrorContainer;
-      displayStatus = 'Overdue';
-    } else {
-      switch (status.toLowerCase()) {
-        case 'pending':
-          bgColor = AppColors.errorContainer;
-          textColor = AppColors.onErrorContainer;
-          break;
-        case 'partial':
-          bgColor = AppColors.secondaryContainer;
-          textColor = AppColors.onSecondaryContainer;
-          break;
-        default:
-          bgColor = AppColors.surfaceVariant;
-          textColor = AppColors.onSurfaceVariant;
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: Text(
-        displayStatus,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          color: AppColors.onSurface,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 
   Widget _buildDetailRow(IconData icon, String label, String value, {bool isAlert = false}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: isAlert ? AppColors.error : AppColors.outline),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: isAlert ? AppColors.error : AppColors.outline),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isAlert ? AppColors.error : AppColors.onSurface,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: isAlert ? AppColors.error : AppColors.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

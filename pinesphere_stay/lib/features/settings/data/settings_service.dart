@@ -1,3 +1,4 @@
+import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
@@ -11,9 +12,11 @@ part 'settings_service.g.dart';
 
 @Riverpod(keepAlive: true)
 SettingsService settingsService(Ref ref) {
-  return SettingsService(
+  final service = SettingsService(
     dio: ref.watch(dioClientProvider),
   );
+  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  return service;
 }
 
 class SettingsService {

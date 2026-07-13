@@ -56,7 +56,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
 
   void _handleLogin() {
     if (_pin == '1234') {
-      ref.read(authProvider.notifier).login('${_selectedRole.name}@pinesphere.com', _pin);
+      ref.read(authProvider.notifier).unlockPin();
     } else {
       _shakeController.forward(from: 0).then((_) {
         setState(() => _pin = '');
@@ -154,12 +154,22 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
           },
         ),
         const SizedBox(height: 12),
-        Text(
-          'Welcome back, Kavinila',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.primary,
-              ),
-          textAlign: TextAlign.center,
+        Consumer(
+          builder: (context, ref, child) {
+            final authState = ref.watch(authProvider);
+            final userName = authState.maybeWhen(
+              locked: (user) => user.name,
+              authenticated: (user) => user.name,
+              orElse: () => 'User',
+            );
+            return Text(
+              'Welcome back, $userName',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.primary,
+                  ),
+              textAlign: TextAlign.center,
+            );
+          },
         ),
         const SizedBox(height: 4),
         Text(
@@ -202,6 +212,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
                     width: 2,
                   ),
                 ),
+                // ignore: deprecated_member_use
                 transform: Matrix4.identity()..scale(isFilled ? 1.1 : 1.0),
                 transformAlignment: Alignment.center,
               );

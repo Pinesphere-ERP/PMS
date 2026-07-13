@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
+import '../providers/dashboard_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -31,9 +32,9 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _buildQuickActions(context),
                   const SizedBox(height: 24),
-                  _buildKPIsGrid(context),
+                  _buildKPIsGrid(context, ref),
                   const SizedBox(height: 24),
-                  _buildRecentActivity(context),
+                  // _buildRecentActivity(context), // TODO: Wire to Audit logs
                   const SizedBox(height: 32), // bottom padding for nav
                 ],
               ),
@@ -163,7 +164,9 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildKPIsGrid(BuildContext context) {
+  Widget _buildKPIsGrid(BuildContext context, WidgetRef ref) {
+    final dashboardState = ref.watch(dashboardProvider);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -184,14 +187,14 @@ class DashboardScreen extends ConsumerWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildKPICard(context, 'Todays arrival', '4', AppColors.primary, Icons.luggage, onTap: () => context.push('/todays-arrivals')),
-            _buildKPICard(context, 'Todays departures', '6', AppColors.onSurface, Icons.flight_takeoff, onTap: () => context.push('/todays-departures')),
-            _buildKPICard(context, 'Occupied Rooms', '12', AppColors.primary, Icons.hotel, onTap: () => context.push('/occupied-rooms')),
-            _buildKPICard(context, 'Vacant Rooms', '8', AppColors.outline, Icons.vpn_key, onTap: () => context.push('/vacant-rooms')),
-            _buildKPICard(context, 'Pending Checkouts', '3', AppColors.secondary, Icons.hourglass_bottom, onTap: () => context.push('/pending-checkouts')),
-            _buildKPICard(context, 'House Keeping', '4', AppColors.error, Icons.cleaning_services, onTap: () => context.push('/housekeeping')),
-            _buildKPICard(context, 'Pending payments', '2', AppColors.error, Icons.receipt_long, onTap: () => context.push('/pending-payments')),
-            _buildKPICard(context, 'Revenue today', '\$4,250', AppColors.primaryContainer, Icons.monetization_on, onTap: () => context.push('/todays-revenue')),
+            _buildKPICard(context, 'Todays arrival', '${dashboardState.todaysArrivals}', AppColors.primary, Icons.luggage, onTap: () => context.push('/todays-arrivals')),
+            _buildKPICard(context, 'Todays departures', '${dashboardState.todaysDepartures}', AppColors.onSurface, Icons.flight_takeoff, onTap: () => context.push('/todays-departures')),
+            _buildKPICard(context, 'Occupied Rooms', '${dashboardState.occupiedRooms}', AppColors.primary, Icons.hotel, onTap: () => context.push('/occupied-rooms')),
+            _buildKPICard(context, 'Vacant Rooms', '${dashboardState.vacantRooms}', AppColors.outline, Icons.vpn_key, onTap: () => context.push('/vacant-rooms')),
+            _buildKPICard(context, 'Pending Checkouts', '${dashboardState.pendingCheckouts}', AppColors.secondary, Icons.hourglass_bottom, onTap: () => context.push('/pending-checkouts')),
+            _buildKPICard(context, 'House Keeping', '${dashboardState.housekeepingCount}', AppColors.error, Icons.cleaning_services, onTap: () => context.push('/housekeeping')),
+            _buildKPICard(context, 'Pending payments', '${dashboardState.pendingPaymentsCount}', AppColors.error, Icons.receipt_long, onTap: () => context.push('/pending-payments')),
+            _buildKPICard(context, 'Revenue today', '\$${dashboardState.revenueToday.toStringAsFixed(0)}', AppColors.primaryContainer, Icons.monetization_on, onTap: () => context.push('/todays-revenue')),
           ],
         ),
       ],
@@ -230,139 +233,6 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildRecentActivity(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 4.0),
-              child: Text(
-                'Recent Activity',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.onSurface,
-                    ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                context.go('/reports');
-              },
-              child: Text(
-                'View All',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.primary),
-              ),
-            ),
-          ],
-        ),
-        BentoCard(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Stack(
-            children: [
-              Positioned(
-                left: 16, // center of 32px icon
-                top: 32,
-                bottom: 32,
-                child: Container(
-                  width: 1,
-                  color: AppColors.outlineVariant,
-                ),
-              ),
-              Column(
-                children: [
-                  _buildActivityItem(
-                    context,
-                    icon: Icons.logout,
-                    iconColor: AppColors.onSecondaryContainer,
-                    iconBg: AppColors.secondaryContainer,
-                    title: const TextSpan(children: [
-                      TextSpan(text: 'Room 102', style: TextStyle(fontWeight: FontWeight.w600)),
-                      TextSpan(text: ' checked out'),
-                    ]),
-                    timeInfo: '15 mins ago • By Alex',
-                  ),
-                  const SizedBox(height: 24),
-                  _buildActivityItem(
-                    context,
-                    icon: Icons.cleaning_services,
-                    iconColor: AppColors.onTertiaryContainer, // Reusing mapping
-                    iconBg: AppColors.tertiaryContainer,
-                    title: const TextSpan(children: [
-                      TextSpan(text: 'Room 205', style: TextStyle(fontWeight: FontWeight.w600)),
-                      TextSpan(text: ' cleaning started'),
-                    ]),
-                    timeInfo: '42 mins ago • Housekeeping',
-                  ),
-                  const SizedBox(height: 24),
-                  _buildActivityItem(
-                    context,
-                    icon: Icons.login,
-                    iconColor: AppColors.onPrimaryFixed,
-                    iconBg: AppColors.primaryFixed,
-                    title: const TextSpan(children: [
-                      TextSpan(text: 'John Doe', style: TextStyle(fontWeight: FontWeight.w600)),
-                      TextSpan(text: ' checked in (301)'),
-                    ]),
-                    timeInfo: '1 hour ago • By Sarah',
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActivityItem(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBg,
-    required TextSpan title,
-    required String timeInfo,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: iconBg,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 18),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RichText(
-                text: TextSpan(
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.onSurface,
-                      ),
-                  children: title.children,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                timeInfo,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

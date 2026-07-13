@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { propertyService } from '../../services/propertyService';
 import { 
@@ -32,11 +33,25 @@ export default function AddPropertyWizard() {
 
   // Form State
   const [formData, setFormData] = useState({
-    owner_name: '', owner_designation: '', owner_mobile: '', owner_email: '', owner_pan: '',
+    owner_user_id: '', owner_name: '', owner_designation: '', owner_mobile: '', owner_email: '', owner_pan: '',
     business_type: '', business_name: '', business_reg_number: '', business_gst: '', business_pan: '',
     property_name: '', property_type: '', star_category: '', year_established: '', total_floors: '', total_rooms: '', description: '',
     address: '', city: '', state: '', country: '', pincode: ''
   });
+
+  const [availableUsers, setAvailableUsers] = useState([]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const res = await fetchAPI('/users?unassigned_only=true');
+        setAvailableUsers(Array.isArray(res) ? res : res.data || []);
+      } catch (err) {
+        console.error('Failed to load users', err);
+      }
+    };
+    loadUsers();
+  }, []);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -59,8 +74,8 @@ export default function AddPropertyWizard() {
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   const handleSubmit = async () => {
-    if (!formData.owner_name) {
-      alert("Please provide the Owner's Full Name (Step 1).");
+    if (!formData.owner_user_id && !formData.owner_name) {
+      alert("Please select a User or provide the Owner's Full Name (Step 1).");
       return;
     }
     if (!formData.owner_mobile) {
@@ -143,7 +158,28 @@ export default function AddPropertyWizard() {
         {currentStep === 1 && (
           <div className="space-y-6 animate-slide-in-right">
             <div><h2 className="text-lg font-semibold text-gray-900">Owner Registration</h2><p className="text-sm text-gray-500">Primary contact details for the owner.</p></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm text-blue-700">
+                    Select an existing User from the dropdown to automatically link them as the property owner. 
+                    Or fill out the details manually to create a standalone owner record.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mb-6 border-b pb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Existing User (Recommended)</label>
+              <select name="owner_user_id" value={formData.owner_user_id} onChange={handleChange} className="saas-input bg-white w-full">
+                <option value="">-- Manual Entry --</option>
+                {availableUsers.map(user => (
+                  <option key={user.id} value={user.id}>{user.name} ({user.mobile_number || user.email})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${formData.owner_user_id ? 'opacity-50 pointer-events-none' : ''}`}>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label><input type="text" name="owner_name" value={formData.owner_name} onChange={handleChange} className="saas-input" placeholder="John Doe" /></div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Designation (Optional)</label>

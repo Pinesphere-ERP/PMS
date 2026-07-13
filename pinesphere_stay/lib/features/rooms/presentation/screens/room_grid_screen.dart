@@ -424,10 +424,10 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     }).toList();
 
     // Counts
-    final vacantCount = rooms.where((r) => r.status == 'Vacant').length;
-    final occupiedCount = rooms.where((r) => r.status == 'Occupied').length;
-    final maintenanceCount = rooms.where((r) => r.status == 'Maintenance').length;
-    final cleaningCount = rooms.where((r) => r.status == 'Cleaning').length;
+    final vacantCount = rooms.where((r) => r.status.toLowerCase() == 'vacant').length;
+    final occupiedCount = rooms.where((r) => r.status.toLowerCase() == 'occupied').length;
+    final maintenanceCount = rooms.where((r) => r.status.toLowerCase() == 'maintenance').length;
+    final cleaningCount = rooms.where((r) => r.status.toLowerCase() == 'cleaning').length;
 
     return Scaffold(
       backgroundColor: AppColors.surface,

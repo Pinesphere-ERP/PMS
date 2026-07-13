@@ -1,3 +1,4 @@
+import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
@@ -12,10 +13,12 @@ part 'checkin_service.g.dart';
 
 @Riverpod(keepAlive: true)
 CheckInService checkInService(Ref ref) {
-  return CheckInService(
+  final service = CheckInService(
     dio: ref.watch(dioClientProvider),
     auditService: ref.watch(auditServiceProvider),
   );
+  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  return service;
 }
 
 class CheckInService {

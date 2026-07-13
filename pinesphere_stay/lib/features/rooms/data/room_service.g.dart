@@ -48,4 +48,4 @@ final class RoomServiceProvider
   }
 }
 
-String _$roomServiceHash() => r'f33b10a942ac16cc758ba14ad0e0e650efb8057d';
+String _$roomServiceHash() => r'7d26105ad5a8a9b3ea7c55e4c0b064faaddafa0b';

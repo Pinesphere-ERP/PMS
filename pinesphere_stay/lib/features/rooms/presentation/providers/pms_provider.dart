@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/network/dio_client.dart';
@@ -241,8 +242,10 @@ class PmsNotifier extends Notifier<PmsState> {
             {'name': 'Smart TV Access', 'price': 10.0},
             {'name': 'Projector Setup', 'price': 25.0},
           ],
-          status: json['status'],
-          resortId: json['resort_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : 'resort-2',
+          status: (json['status'] as String?)?.isNotEmpty == true 
+              ? '${json['status'][0].toUpperCase()}${json['status'].substring(1).toLowerCase()}' 
+              : 'Vacant',
+          resortId: json['resort_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['resort_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : json['resort_id']),
           images: List<String>.from(json['images'] ?? []),
           description: json['description'] ?? '',
         )).toList();
@@ -250,7 +253,7 @@ class PmsNotifier extends Notifier<PmsState> {
         state = state.copyWith(rooms: loadedRooms);
       }
     } catch (e) {
-      print('Failed to load rooms: $e');
+      debugPrint('Failed to load rooms: $e');
     }
   }
 
@@ -276,7 +279,7 @@ class PmsNotifier extends Notifier<PmsState> {
         state = state.copyWith(resorts: loadedResorts.isEmpty ? _initialState().resorts : loadedResorts);
       }
     } catch (e) {
-      print('Failed to load resorts: $e');
+      debugPrint('Failed to load resorts: $e');
     }
   }
 
@@ -298,7 +301,7 @@ class PmsNotifier extends Notifier<PmsState> {
           
           return BookingModel(
             id: json['booking_id'],
-            resortId: json['property_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : 'resort-2',
+            resortId: json['property_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['property_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : json['property_id']),
             roomId: json['room_id'],
             roomNumber: json['room_number'] ?? '',
             guestName: json['guest_name'] ?? 'Guest',
@@ -323,7 +326,7 @@ class PmsNotifier extends Notifier<PmsState> {
         state = state.copyWith(bookings: loadedBookings);
       }
     } catch (e) {
-      print('Failed to load bookings: $e');
+      debugPrint('Failed to load bookings: $e');
     }
   }
 
@@ -389,7 +392,7 @@ class PmsNotifier extends Notifier<PmsState> {
         await loadBookings();
       }
     } catch (e) {
-      print('Failed to create booking: $e');
+      debugPrint('Failed to create booking: $e');
     }
   }
 
@@ -414,7 +417,7 @@ class PmsNotifier extends Notifier<PmsState> {
         await loadBookings();
       }
     } catch (e) {
-      print('Failed to check out: $e');
+      debugPrint('Failed to check out: $e');
     }
   }
 
@@ -428,7 +431,7 @@ class PmsNotifier extends Notifier<PmsState> {
         }
       }
     } catch (e) {
-      print('Failed to update room status: $e');
+      debugPrint('Failed to update room status: $e');
     }
   }
 
@@ -446,7 +449,7 @@ class PmsNotifier extends Notifier<PmsState> {
         await loadRooms();
       }
     } catch (e) {
-      print('Failed to update room details: $e');
+      debugPrint('Failed to update room details: $e');
     }
   }
 
@@ -458,7 +461,7 @@ class PmsNotifier extends Notifier<PmsState> {
         await loadRooms();
       }
     } catch (e) {
-      print('Failed to delete room: $e');
+      debugPrint('Failed to delete room: $e');
     }
   }
 
@@ -482,7 +485,7 @@ class PmsNotifier extends Notifier<PmsState> {
               await dio.post('/properties/rooms/${room.id}/clean');
               changed = true;
             } catch (e) {
-              print('Auto-vacate backend call failed for booking ${booking.id}: $e');
+              debugPrint('Auto-vacate backend call failed for booking ${booking.id}: $e');
             }
           }
         }
@@ -511,7 +514,7 @@ class PmsNotifier extends Notifier<PmsState> {
         await loadRooms();
       }
     } catch (e) {
-      print('Failed to add room: $e');
+      debugPrint('Failed to add room: $e');
     }
   }
 
@@ -537,7 +540,7 @@ class PmsNotifier extends Notifier<PmsState> {
         await loadResorts();
       }
     } catch (e) {
-      print('Failed to create resort: $e');
+      debugPrint('Failed to create resort: $e');
     }
   }
 
@@ -592,7 +595,7 @@ class PmsNotifier extends Notifier<PmsState> {
         await loadRooms();
       }
     } catch (e) {
-      print('Failed to create resort with rooms: $e');
+      debugPrint('Failed to create resort with rooms: $e');
     }
   }
 }

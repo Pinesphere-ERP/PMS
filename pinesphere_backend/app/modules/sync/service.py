@@ -20,7 +20,10 @@ ENTITY_MAP = {
     "CheckOut": models.CheckOut,
     "Payment": models.Payment,
     "HousekeepingTask": models.HousekeepingTask,
-    "MaintenanceTicket": models.MaintenanceTicket
+    "MaintenanceTicket": models.MaintenanceTicket,
+    "User": models.User,
+    "Role": models.Role,
+    "RolePermission": models.RolePermission
 }
 
 class SyncService:

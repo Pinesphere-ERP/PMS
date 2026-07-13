@@ -1,9 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
-import 'package:pinesphere_stay/features/reports/data/kpi_aggregation_service.dart';
-import 'package:pinesphere_stay/main.dart';
-import 'package:pinesphere_stay/objectbox.g.dart';
-import 'package:pinesphere_stay/features/bookings/domain/models/booking_entity.dart';
+import 'package:pinesphere_stay/features/rooms/presentation/providers/pms_provider.dart';
+import 'package:flutter/material.dart';
 
 part 'dashboard_provider.g.dart';
 
@@ -55,66 +52,47 @@ class DashboardState {
 class DashboardNotifier extends _$DashboardNotifier {
   @override
   DashboardState build() {
-    final authState = ref.watch(authProvider);
-    final propertyId = authState.maybeWhen(
-      authenticated: (user) => user.id,
-      orElse: () => 'mock-property-123',
-    );
+    final pmsState = ref.watch(pmsProvider);
+    final now = DateTime.now();
 
-    // Watch the live stream of today's KPI Snapshot from the KPI service
-    final snapshotAsync = ref.watch(todaysKpiStreamProvider(propertyId: propertyId));
+    int arrivals = 0;
+    int departures = 0;
+    int checkouts = 0;
+    int pendingPayments = 0;
+    double revenue = 0.0;
 
-    // Get live counts from DB, falling back to sensible mocks if empty
-    int arrivals = 4;
-    int departures = 6;
-    int checkouts = 3;
-    int housekeeping = 4;
-    int pendingPayments = 2;
-
-    try {
-      final bookingBox = objectBox.store.box<BookingEntity>();
-      final count = bookingBox.count();
-      if (count > 0) {
-        // DB has data, let's query actual today's bookings
-        final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-        final arrivalsQuery = bookingBox.query(BookingEntity_.checkInDate.startsWith(todayStr)).build();
-        arrivals = arrivalsQuery.count();
-        arrivalsQuery.close();
-
-        final departuresQuery = bookingBox.query(BookingEntity_.checkOutDate.startsWith(todayStr)).build();
-        departures = departuresQuery.count();
-        departuresQuery.close();
+    for (var booking in pmsState.bookings) {
+      if (DateUtils.isSameDay(booking.checkInDate, now)) {
+        arrivals++;
       }
-    } catch (_) {
-      // Graceful fallback if database/box isn't initialized yet
+      if (DateUtils.isSameDay(booking.checkOutDate, now) || (booking.status == 'Active' && booking.checkOutDate.isBefore(now))) {
+        departures++;
+      }
+      if (booking.status == 'Active' && (booking.checkOutDate.isBefore(now) || DateUtils.isSameDay(booking.checkOutDate, now))) {
+        checkouts++;
+      }
+      if (!booking.isPaid && (booking.totalSum - booking.depositPaid) > 0) {
+        pendingPayments++;
+      }
+      if (DateUtils.isSameDay(booking.checkInDate, now) || (booking.status == 'Active' && !booking.checkInDate.isAfter(now))) {
+        // Just a simple approximation for today's revenue from active/arriving bookings
+        revenue += booking.totalSum;
+      }
     }
 
-    final kpi = snapshotAsync.value;
-    if (kpi != null) {
-      return DashboardState(
-        todaysArrivals: arrivals,
-        todaysDepartures: departures,
-        occupiedRooms: kpi.occupiedRooms > 0 ? kpi.occupiedRooms : 12,
-        vacantRooms: kpi.vacantRooms > 0 ? kpi.vacantRooms : 8,
-        pendingCheckouts: checkouts,
-        housekeepingCount: housekeeping,
-        pendingPaymentsCount: pendingPayments,
-        revenueToday: (kpi.revenueRoomRent + kpi.revenueAddons) > 0 
-            ? (kpi.revenueRoomRent + kpi.revenueAddons) 
-            : 4250.0,
-      );
-    }
+    int occupiedRooms = pmsState.rooms.where((r) => r.status.toLowerCase() == 'occupied').length;
+    int vacantRooms = pmsState.rooms.where((r) => r.status.toLowerCase() == 'vacant').length;
+    int housekeeping = pmsState.rooms.where((r) => r.status.toLowerCase() == 'cleaning' || r.status.toLowerCase() == 'maintenance').length;
 
-    // Default mock fallback values when no snapshot exists
     return DashboardState(
       todaysArrivals: arrivals,
       todaysDepartures: departures,
-      occupiedRooms: 12,
-      vacantRooms: 8,
+      occupiedRooms: occupiedRooms,
+      vacantRooms: vacantRooms,
       pendingCheckouts: checkouts,
       housekeepingCount: housekeeping,
       pendingPaymentsCount: pendingPayments,
-      revenueToday: 4250.0,
+      revenueToday: revenue,
     );
   }
 }

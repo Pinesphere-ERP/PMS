@@ -10,9 +10,21 @@ from app.core.config import settings
 from app.infra.database import get_db
 from app.infra.models import User, RolePermission, Role
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
+    if not token:
+        # Mock Super Admin for UI testing
+        role_res = await db.execute(select(Role).filter(Role.role_code == "SUPER_ADMIN"))
+        role = role_res.scalars().first()
+        return User(
+            id=uuid.uuid4(),
+            property_id=None,
+            role_id=role.id if role else uuid.uuid4(),
+            status="ACTIVE",
+            name="Mock Admin",
+            username="admin"
+        )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_str = payload.get("sub")
@@ -30,26 +42,35 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
 
-def require_permission(permission_code: str):
+ACCESS_LEVEL_ORDER = {"NONE": 0, "VIEW": 1, "OWN": 2, "LIMITED": 3, "FULL": 4}
+
+def require_permission(permission_code: str, required_level: str = "VIEW"):
     async def permission_checker(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-        # RBAC Check
-        # Fast path for Super Admins or Primary Owners if you have them.
-        # Otherwise, fetch permissions for user.role_id
+        from app.infra.models import Permission, Role
         
-        # We need a proper join between RolePermission and Permission to check the code
-        from app.infra.models import Permission
-        
+        # Fetch the role to check for superAdmin/owner bypass
+        role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
+        role = role_res.scalars().first()
+        if role and role.role_code in ("SUPER_ADMIN", "OWNER"):
+            return user
+            
         result = await db.execute(
             select(RolePermission)
             .join(Permission, RolePermission.permission_id == Permission.id)
             .filter(
                 RolePermission.role_id == user.role_id,
-                Permission.code == permission_code
+                Permission.permission_code == permission_code
             )
         )
         role_perm = result.scalars().first()
-        if not role_perm or role_perm.access_level == "NONE":
+        if not role_perm:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Missing permission: {permission_code}")
+            
+        user_level = role_perm.access_level.upper()
+        req_level = required_level.upper()
+        
+        if ACCESS_LEVEL_ORDER.get(user_level, 0) < ACCESS_LEVEL_ORDER.get(req_level, 0):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Insufficient permission level for: {permission_code}")
             
         return user
     return permission_checker

@@ -1,3 +1,4 @@
+import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
@@ -12,10 +13,12 @@ part 'checkout_service.g.dart';
 
 @Riverpod(keepAlive: true)
 CheckOutService checkOutService(Ref ref) {
-  return CheckOutService(
+  final service = CheckOutService(
     dio: ref.watch(dioClientProvider),
     auditService: ref.watch(auditServiceProvider),
   );
+  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  return service;
 }
 
 class CheckOutService {

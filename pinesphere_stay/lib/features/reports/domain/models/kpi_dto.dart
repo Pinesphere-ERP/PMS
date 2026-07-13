@@ -4,7 +4,7 @@ part 'kpi_dto.freezed.dart';
 part 'kpi_dto.g.dart';
 
 @freezed
-class KpiSnapshotDto with _$KpiSnapshotDto {
+abstract class KpiSnapshotDto with _$KpiSnapshotDto {
   const factory KpiSnapshotDto({
     required String snapshotId,
     required String propertyId,
@@ -18,12 +18,14 @@ class KpiSnapshotDto with _$KpiSnapshotDto {
     required double gstCollected,
   }) = _KpiSnapshotDto;
 
+  const KpiSnapshotDto._();
+
   factory KpiSnapshotDto.fromJson(Map<String, dynamic> json) =>
       _$KpiSnapshotDtoFromJson(json);
 }
 
 @freezed
-class MonthlyPLRowDto with _$MonthlyPLRowDto {
+abstract class MonthlyPLRowDto with _$MonthlyPLRowDto {
   const factory MonthlyPLRowDto({
     required String month,
     required double totalRoomRent,
@@ -35,12 +37,14 @@ class MonthlyPLRowDto with _$MonthlyPLRowDto {
     required double outstanding,
   }) = _MonthlyPLRowDto;
 
+  const MonthlyPLRowDto._();
+
   factory MonthlyPLRowDto.fromJson(Map<String, dynamic> json) =>
       _$MonthlyPLRowDtoFromJson(json);
 }
 
 @freezed
-class PLReportDto with _$PLReportDto {
+abstract class PLReportDto with _$PLReportDto {
   const factory PLReportDto({
     required String propertyId,
     required String periodStart,
@@ -51,12 +55,14 @@ class PLReportDto with _$PLReportDto {
     required double summaryNetProfit,
   }) = _PLReportDto;
 
+  const PLReportDto._();
+
   factory PLReportDto.fromJson(Map<String, dynamic> json) =>
       _$PLReportDtoFromJson(json);
 }
 
 @freezed
-class GSTReturnDto with _$GSTReturnDto {
+abstract class GSTReturnDto with _$GSTReturnDto {
   const factory GSTReturnDto({
     required String propertyId,
     required String periodStart,
@@ -69,12 +75,14 @@ class GSTReturnDto with _$GSTReturnDto {
     required List<Map<String, dynamic>> monthlyGst,
   }) = _GSTReturnDto;
 
+  const GSTReturnDto._();
+
   factory GSTReturnDto.fromJson(Map<String, dynamic> json) =>
       _$GSTReturnDtoFromJson(json);
 }
 
 @freezed
-class ReportTemplateDto with _$ReportTemplateDto {
+abstract class ReportTemplateDto with _$ReportTemplateDto {
   const factory ReportTemplateDto({
     required String templateId,
     String? propertyId,
@@ -83,12 +91,14 @@ class ReportTemplateDto with _$ReportTemplateDto {
     Map<String, dynamic>? configurationJson,
   }) = _ReportTemplateDto;
 
+  const ReportTemplateDto._();
+
   factory ReportTemplateDto.fromJson(Map<String, dynamic> json) =>
       _$ReportTemplateDtoFromJson(json);
 }
 
 @freezed
-class ScheduledReportDto with _$ScheduledReportDto {
+abstract class ScheduledReportDto with _$ScheduledReportDto {
   const factory ScheduledReportDto({
     required String scheduleId,
     required String templateId,
@@ -97,6 +107,8 @@ class ScheduledReportDto with _$ScheduledReportDto {
     required String frequency,
     required bool isActive,
   }) = _ScheduledReportDto;
+
+  const ScheduledReportDto._();
 
   factory ScheduledReportDto.fromJson(Map<String, dynamic> json) =>
       _$ScheduledReportDtoFromJson(json);

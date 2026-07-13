@@ -20,6 +20,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final DateFormat _dateFormat = DateFormat('MMM dd, yyyy');
+  // ignore: unused_field
   final DateFormat _timeFormat = DateFormat('hh:mm a');
 
 
@@ -181,12 +182,6 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     final checkinDate = checkout['checkin_date']?.toString() ?? checkout['checkinDate'] ?? '';
     final nights = checkout['nights_stayed']?.toString() ?? checkout['nightsStayed'] ?? '-';
     final amountDue = checkout['amount_due']?.toString() ?? checkout['totalBillAmount'] ?? '0.00';
-    final advancePaid = checkout['advance_paid']?.toString() ?? checkout['advancePaid'] ?? '0';
-    final checkinId = checkout['checkin_id']?.toString() ?? checkout['checkinId'] ?? '';
-    final bookingId = checkout['booking_id']?.toString() ?? checkout['bookingId'] ?? '';
-    final roomId = checkout['room_id']?.toString() ?? checkout['roomId'] ?? '';
-    final propertyId = checkout['property_id']?.toString() ?? checkout['propertyId'] ?? (ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '');
-    final ratePerNight = checkout['rate_per_night']?.toString() ?? checkout['ratePerNight'] ?? '0';
 
     return BentoCard(
       onTap: () => _openBillingSheet(checkout, isViewOnly),

@@ -7,7 +7,8 @@ from datetime import date, timedelta
 from typing import List, Optional
 
 from app.infra.database import get_db
-from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory
+from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User
+import uuid
 from app.modules.properties.schemas import PropertyCreateInput
 
 router = APIRouter()
@@ -27,17 +28,37 @@ def _verification_status(onboarding_status: str) -> str:
 
 @router.post("")
 async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depends(get_db)):
+    owner_name = payload.owner_name
+    owner_mobile = payload.owner_mobile
+    owner_email = payload.owner_email
+    target_user = None
+
+    if payload.owner_user_id:
+        user_stmt = select(User).where(User.id == uuid.UUID(payload.owner_user_id))
+        user_res = await db.execute(user_stmt)
+        target_user = user_res.scalar_one_or_none()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        owner_name = target_user.name
+        owner_mobile = target_user.mobile_number or payload.owner_mobile
+        owner_email = target_user.email or payload.owner_email
+
+    if not owner_name or not owner_mobile or not owner_email:
+        raise HTTPException(status_code=400, detail="Owner name, mobile, and email are required.")
+
     # Create Owner
     new_owner = Owner(
-        full_name=payload.owner_name,
-        mobile_number=payload.owner_mobile,
-        email=payload.owner_email,
+        full_name=owner_name,
+        mobile_number=owner_mobile,
+        email=owner_email,
         pan_number=payload.owner_pan,
     )
     db.add(new_owner)
     try:
         await db.flush()
     except IntegrityError:
+        # If owner with this mobile/email exists, we could fetch it instead of failing, 
+        # but for now we keep the existing behavior of raising 400.
         raise HTTPException(status_code=400, detail="An owner with this email or mobile number already exists.")
 
     # Create Business
@@ -65,6 +86,12 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         onboarding_status="draft",
     )
     db.add(new_property)
+    await db.flush()
+
+    if target_user:
+        target_user.property_id = new_property.property_id
+        target_user.is_primary_owner = True
+
     await db.commit()
 
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}

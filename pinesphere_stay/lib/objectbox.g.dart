@@ -27,6 +27,7 @@ import 'features/rooms/domain/models/room_entity.dart';
 import 'features/settings/domain/models/device_config_entity.dart';
 import 'features/settings/domain/models/property_setting_entity.dart';
 import 'features/sync/domain/models/sync_queue_entity.dart';
+import 'features/user_role_management/domain/entities.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 
@@ -1400,6 +1401,462 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(14, 71059644921444941),
+    name: 'PermissionEntity',
+    lastPropertyId: const obx_int.IdUid(5, 3742890329410476902),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 4176061183807921879),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 3509970097427349189),
+        name: 'serverId',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(16, 4541648114381877583),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 3455067974362345453),
+        name: 'permissionCode',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(17, 5123069996797688952),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 3979275053059551408),
+        name: 'moduleName',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 3742890329410476902),
+        name: 'description',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(15, 838368302646844251),
+    name: 'RoleEntity',
+    lastPropertyId: const obx_int.IdUid(7, 4865136621100359353),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 2200012056230654852),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 3913532101121510255),
+        name: 'serverId',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(18, 3643166786903528582),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 6018905029323102654),
+        name: 'propertyId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 6993526687880053664),
+        name: 'roleCode',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 6774379373854693706),
+        name: 'roleName',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 4440535251264013445),
+        name: 'isSystemRole',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 4865136621100359353),
+        name: 'description',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(16, 1252691389821472678),
+    name: 'RolePermissionEntity',
+    lastPropertyId: const obx_int.IdUid(5, 874685888840705068),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 1102118488931838222),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 3922072041799234951),
+        name: 'serverId',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(19, 28523354827410690),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 3638782146156832099),
+        name: 'roleId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 4920559609965293801),
+        name: 'permissionId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 874685888840705068),
+        name: 'accessLevel',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(17, 4269437980796306608),
+    name: 'StaffInvitationEntity',
+    lastPropertyId: const obx_int.IdUid(10, 1515145751381999967),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 6367619525692608606),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 8784326548151408663),
+        name: 'serverId',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(20, 2483341723667486327),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 443860874173420796),
+        name: 'propertyId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 4157825428618533226),
+        name: 'roleId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 4142180248101356950),
+        name: 'invitedBy',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 8515357683633764554),
+        name: 'mobileNumber',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 3949957307041706652),
+        name: 'invitationToken',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 1903774427008967683),
+        name: 'status',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 7299422566494880467),
+        name: 'expiresAt',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 1515145751381999967),
+        name: 'createdAt',
+        type: 10,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(18, 1450945726448091254),
+    name: 'UserEntity',
+    lastPropertyId: const obx_int.IdUid(17, 4021170114785075431),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 4651611470472902941),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 8639492935373509856),
+        name: 'serverId',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(21, 1665145359682019556),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 3135298304571334449),
+        name: 'propertyId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 904721115749036438),
+        name: 'roleId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 3373871692490907248),
+        name: 'name',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 2954500306080852868),
+        name: 'mobileNumber',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 4906123171621082070),
+        name: 'email',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 8972556877326387381),
+        name: 'username',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 2877720390912560467),
+        name: 'passwordHash',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 513865699858028825),
+        name: 'pinHash',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 5655365631985424358),
+        name: 'biometricEnabled',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 129252668095474713),
+        name: 'isPrimaryOwner',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 4070090060787255832),
+        name: 'status',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 8504799412111312271),
+        name: 'failedLoginAttempts',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 3419757221600442877),
+        name: 'profilePhotoUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 1565650716746468273),
+        name: 'createdBy',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(17, 4021170114785075431),
+        name: 'isPendingSync',
+        type: 1,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(19, 1554181551042830168),
+    name: 'UserSessionEntity',
+    lastPropertyId: const obx_int.IdUid(10, 2135391628861532344),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 1502560867255502510),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 5609434982472294264),
+        name: 'serverId',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(22, 5038355017038581937),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 8205715679231460578),
+        name: 'userId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 8490273026583911498),
+        name: 'deviceId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 1006494574043052677),
+        name: 'sessionToken',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 9194961810984187597),
+        name: 'isOfflineSession',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 7104381038479659842),
+        name: 'issuedAt',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 2403401634137237944),
+        name: 'expiresAt',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 2037508113141572524),
+        name: 'revokedAt',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 2135391628861532344),
+        name: 'revokedReason',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(20, 776231692923876283),
+    name: 'UserSyncLogEntity',
+    lastPropertyId: const obx_int.IdUid(9, 5007540856644959312),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 8083144215432601295),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 231481048449224792),
+        name: 'serverId',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(23, 3425536343357584582),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 3450026880671586351),
+        name: 'entityType',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 5532248479793075930),
+        name: 'entityId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 9121946467168599408),
+        name: 'operation',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 2668258806881510546),
+        name: 'payloadJson',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 4374110201888460351),
+        name: 'syncStatus',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 8880745392176552997),
+        name: 'createdAt',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 5007540856644959312),
+        name: 'syncedAt',
+        type: 10,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -1445,8 +1902,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(13, 5529333314135770933),
-    lastIndexId: const obx_int.IdUid(15, 6364991816235469336),
+    lastEntityId: const obx_int.IdUid(20, 776231692923876283),
+    lastIndexId: const obx_int.IdUid(23, 3425536343357584582),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -3122,6 +3579,591 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    PermissionEntity: obx_int.EntityDefinition<PermissionEntity>(
+      model: _entities[13],
+      toOneRelations: (PermissionEntity object) => [],
+      toManyRelations: (PermissionEntity object) => {},
+      getId: (PermissionEntity object) => object.id,
+      setId: (PermissionEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (PermissionEntity object, fb.Builder fbb) {
+        final serverIdOffset = fbb.writeString(object.serverId);
+        final permissionCodeOffset = fbb.writeString(object.permissionCode);
+        final moduleNameOffset = fbb.writeString(object.moduleName);
+        final descriptionOffset = object.description == null
+            ? null
+            : fbb.writeString(object.description!);
+        fbb.startTable(6);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, serverIdOffset);
+        fbb.addOffset(2, permissionCodeOffset);
+        fbb.addOffset(3, moduleNameOffset);
+        fbb.addOffset(4, descriptionOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final serverIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final permissionCodeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final moduleNameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final descriptionParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 12);
+        final object = PermissionEntity(
+          id: idParam,
+          serverId: serverIdParam,
+          permissionCode: permissionCodeParam,
+          moduleName: moduleNameParam,
+          description: descriptionParam,
+        );
+
+        return object;
+      },
+    ),
+    RoleEntity: obx_int.EntityDefinition<RoleEntity>(
+      model: _entities[14],
+      toOneRelations: (RoleEntity object) => [],
+      toManyRelations: (RoleEntity object) => {},
+      getId: (RoleEntity object) => object.id,
+      setId: (RoleEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (RoleEntity object, fb.Builder fbb) {
+        final serverIdOffset = fbb.writeString(object.serverId);
+        final propertyIdOffset = object.propertyId == null
+            ? null
+            : fbb.writeString(object.propertyId!);
+        final roleCodeOffset = fbb.writeString(object.roleCode);
+        final roleNameOffset = fbb.writeString(object.roleName);
+        final descriptionOffset = object.description == null
+            ? null
+            : fbb.writeString(object.description!);
+        fbb.startTable(8);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, serverIdOffset);
+        fbb.addOffset(2, propertyIdOffset);
+        fbb.addOffset(3, roleCodeOffset);
+        fbb.addOffset(4, roleNameOffset);
+        fbb.addBool(5, object.isSystemRole);
+        fbb.addOffset(6, descriptionOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final serverIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final propertyIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 8);
+        final roleCodeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final roleNameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final isSystemRoleParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          false,
+        );
+        final descriptionParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 16);
+        final object = RoleEntity(
+          id: idParam,
+          serverId: serverIdParam,
+          propertyId: propertyIdParam,
+          roleCode: roleCodeParam,
+          roleName: roleNameParam,
+          isSystemRole: isSystemRoleParam,
+          description: descriptionParam,
+        );
+
+        return object;
+      },
+    ),
+    RolePermissionEntity: obx_int.EntityDefinition<RolePermissionEntity>(
+      model: _entities[15],
+      toOneRelations: (RolePermissionEntity object) => [],
+      toManyRelations: (RolePermissionEntity object) => {},
+      getId: (RolePermissionEntity object) => object.id,
+      setId: (RolePermissionEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (RolePermissionEntity object, fb.Builder fbb) {
+        final serverIdOffset = fbb.writeString(object.serverId);
+        final roleIdOffset = fbb.writeString(object.roleId);
+        final permissionIdOffset = fbb.writeString(object.permissionId);
+        final accessLevelOffset = fbb.writeString(object.accessLevel);
+        fbb.startTable(6);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, serverIdOffset);
+        fbb.addOffset(2, roleIdOffset);
+        fbb.addOffset(3, permissionIdOffset);
+        fbb.addOffset(4, accessLevelOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final serverIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final roleIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final permissionIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final accessLevelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final object = RolePermissionEntity(
+          id: idParam,
+          serverId: serverIdParam,
+          roleId: roleIdParam,
+          permissionId: permissionIdParam,
+          accessLevel: accessLevelParam,
+        );
+
+        return object;
+      },
+    ),
+    StaffInvitationEntity: obx_int.EntityDefinition<StaffInvitationEntity>(
+      model: _entities[16],
+      toOneRelations: (StaffInvitationEntity object) => [],
+      toManyRelations: (StaffInvitationEntity object) => {},
+      getId: (StaffInvitationEntity object) => object.id,
+      setId: (StaffInvitationEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (StaffInvitationEntity object, fb.Builder fbb) {
+        final serverIdOffset = fbb.writeString(object.serverId);
+        final propertyIdOffset = fbb.writeString(object.propertyId);
+        final roleIdOffset = fbb.writeString(object.roleId);
+        final invitedByOffset = fbb.writeString(object.invitedBy);
+        final mobileNumberOffset = fbb.writeString(object.mobileNumber);
+        final invitationTokenOffset = fbb.writeString(object.invitationToken);
+        final statusOffset = fbb.writeString(object.status);
+        fbb.startTable(11);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, serverIdOffset);
+        fbb.addOffset(2, propertyIdOffset);
+        fbb.addOffset(3, roleIdOffset);
+        fbb.addOffset(4, invitedByOffset);
+        fbb.addOffset(5, mobileNumberOffset);
+        fbb.addOffset(6, invitationTokenOffset);
+        fbb.addOffset(7, statusOffset);
+        fbb.addInt64(8, object.expiresAt.millisecondsSinceEpoch);
+        fbb.addInt64(9, object.createdAt.millisecondsSinceEpoch);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final serverIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final propertyIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final roleIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final invitedByParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final mobileNumberParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final invitationTokenParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 16, '');
+        final statusParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
+        final expiresAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 20, 0),
+        );
+        final createdAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 22, 0),
+        );
+        final object = StaffInvitationEntity(
+          id: idParam,
+          serverId: serverIdParam,
+          propertyId: propertyIdParam,
+          roleId: roleIdParam,
+          invitedBy: invitedByParam,
+          mobileNumber: mobileNumberParam,
+          invitationToken: invitationTokenParam,
+          status: statusParam,
+          expiresAt: expiresAtParam,
+          createdAt: createdAtParam,
+        );
+
+        return object;
+      },
+    ),
+    UserEntity: obx_int.EntityDefinition<UserEntity>(
+      model: _entities[17],
+      toOneRelations: (UserEntity object) => [],
+      toManyRelations: (UserEntity object) => {},
+      getId: (UserEntity object) => object.id,
+      setId: (UserEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (UserEntity object, fb.Builder fbb) {
+        final serverIdOffset = fbb.writeString(object.serverId);
+        final propertyIdOffset = object.propertyId == null
+            ? null
+            : fbb.writeString(object.propertyId!);
+        final roleIdOffset = fbb.writeString(object.roleId);
+        final nameOffset = fbb.writeString(object.name);
+        final mobileNumberOffset = object.mobileNumber == null
+            ? null
+            : fbb.writeString(object.mobileNumber!);
+        final emailOffset = object.email == null
+            ? null
+            : fbb.writeString(object.email!);
+        final usernameOffset = object.username == null
+            ? null
+            : fbb.writeString(object.username!);
+        final passwordHashOffset = object.passwordHash == null
+            ? null
+            : fbb.writeString(object.passwordHash!);
+        final pinHashOffset = object.pinHash == null
+            ? null
+            : fbb.writeString(object.pinHash!);
+        final statusOffset = fbb.writeString(object.status);
+        final profilePhotoUrlOffset = object.profilePhotoUrl == null
+            ? null
+            : fbb.writeString(object.profilePhotoUrl!);
+        final createdByOffset = object.createdBy == null
+            ? null
+            : fbb.writeString(object.createdBy!);
+        fbb.startTable(18);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, serverIdOffset);
+        fbb.addOffset(2, propertyIdOffset);
+        fbb.addOffset(3, roleIdOffset);
+        fbb.addOffset(4, nameOffset);
+        fbb.addOffset(5, mobileNumberOffset);
+        fbb.addOffset(6, emailOffset);
+        fbb.addOffset(7, usernameOffset);
+        fbb.addOffset(8, passwordHashOffset);
+        fbb.addOffset(9, pinHashOffset);
+        fbb.addBool(10, object.biometricEnabled);
+        fbb.addBool(11, object.isPrimaryOwner);
+        fbb.addOffset(12, statusOffset);
+        fbb.addInt64(13, object.failedLoginAttempts);
+        fbb.addOffset(14, profilePhotoUrlOffset);
+        fbb.addOffset(15, createdByOffset);
+        fbb.addBool(16, object.isPendingSync);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final serverIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final propertyIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 8);
+        final roleIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final nameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final mobileNumberParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 14);
+        final emailParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 16);
+        final usernameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 18);
+        final passwordHashParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 20);
+        final pinHashParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 22);
+        final biometricEnabledParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          24,
+          false,
+        );
+        final isPrimaryOwnerParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          26,
+          false,
+        );
+        final statusParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 28, '');
+        final failedLoginAttemptsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          30,
+          0,
+        );
+        final profilePhotoUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 32);
+        final createdByParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 34);
+        final isPendingSyncParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          36,
+          false,
+        );
+        final object = UserEntity(
+          id: idParam,
+          serverId: serverIdParam,
+          propertyId: propertyIdParam,
+          roleId: roleIdParam,
+          name: nameParam,
+          mobileNumber: mobileNumberParam,
+          email: emailParam,
+          username: usernameParam,
+          passwordHash: passwordHashParam,
+          pinHash: pinHashParam,
+          biometricEnabled: biometricEnabledParam,
+          isPrimaryOwner: isPrimaryOwnerParam,
+          status: statusParam,
+          failedLoginAttempts: failedLoginAttemptsParam,
+          profilePhotoUrl: profilePhotoUrlParam,
+          createdBy: createdByParam,
+          isPendingSync: isPendingSyncParam,
+        );
+
+        return object;
+      },
+    ),
+    UserSessionEntity: obx_int.EntityDefinition<UserSessionEntity>(
+      model: _entities[18],
+      toOneRelations: (UserSessionEntity object) => [],
+      toManyRelations: (UserSessionEntity object) => {},
+      getId: (UserSessionEntity object) => object.id,
+      setId: (UserSessionEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (UserSessionEntity object, fb.Builder fbb) {
+        final serverIdOffset = fbb.writeString(object.serverId);
+        final userIdOffset = fbb.writeString(object.userId);
+        final deviceIdOffset = fbb.writeString(object.deviceId);
+        final sessionTokenOffset = fbb.writeString(object.sessionToken);
+        final revokedReasonOffset = object.revokedReason == null
+            ? null
+            : fbb.writeString(object.revokedReason!);
+        fbb.startTable(11);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, serverIdOffset);
+        fbb.addOffset(2, userIdOffset);
+        fbb.addOffset(3, deviceIdOffset);
+        fbb.addOffset(4, sessionTokenOffset);
+        fbb.addBool(5, object.isOfflineSession);
+        fbb.addInt64(6, object.issuedAt.millisecondsSinceEpoch);
+        fbb.addInt64(7, object.expiresAt.millisecondsSinceEpoch);
+        fbb.addInt64(8, object.revokedAt?.millisecondsSinceEpoch);
+        fbb.addOffset(9, revokedReasonOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final revokedAtValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          20,
+        );
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final serverIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final userIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final deviceIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final sessionTokenParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final isOfflineSessionParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          false,
+        );
+        final issuedAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 16, 0),
+        );
+        final expiresAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 18, 0),
+        );
+        final revokedAtParam = revokedAtValue == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(revokedAtValue);
+        final revokedReasonParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 22);
+        final object = UserSessionEntity(
+          id: idParam,
+          serverId: serverIdParam,
+          userId: userIdParam,
+          deviceId: deviceIdParam,
+          sessionToken: sessionTokenParam,
+          isOfflineSession: isOfflineSessionParam,
+          issuedAt: issuedAtParam,
+          expiresAt: expiresAtParam,
+          revokedAt: revokedAtParam,
+          revokedReason: revokedReasonParam,
+        );
+
+        return object;
+      },
+    ),
+    UserSyncLogEntity: obx_int.EntityDefinition<UserSyncLogEntity>(
+      model: _entities[19],
+      toOneRelations: (UserSyncLogEntity object) => [],
+      toManyRelations: (UserSyncLogEntity object) => {},
+      getId: (UserSyncLogEntity object) => object.id,
+      setId: (UserSyncLogEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (UserSyncLogEntity object, fb.Builder fbb) {
+        final serverIdOffset = fbb.writeString(object.serverId);
+        final entityTypeOffset = fbb.writeString(object.entityType);
+        final entityIdOffset = fbb.writeString(object.entityId);
+        final operationOffset = fbb.writeString(object.operation);
+        final payloadJsonOffset = fbb.writeString(object.payloadJson);
+        final syncStatusOffset = fbb.writeString(object.syncStatus);
+        fbb.startTable(10);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, serverIdOffset);
+        fbb.addOffset(2, entityTypeOffset);
+        fbb.addOffset(3, entityIdOffset);
+        fbb.addOffset(4, operationOffset);
+        fbb.addOffset(5, payloadJsonOffset);
+        fbb.addOffset(6, syncStatusOffset);
+        fbb.addInt64(7, object.createdAt.millisecondsSinceEpoch);
+        fbb.addInt64(8, object.syncedAt?.millisecondsSinceEpoch);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final syncedAtValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          20,
+        );
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final serverIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final entityTypeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final entityIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final operationParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final payloadJsonParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final syncStatusParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 16, '');
+        final createdAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 18, 0),
+        );
+        final syncedAtParam = syncedAtValue == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(syncedAtValue);
+        final object = UserSyncLogEntity(
+          id: idParam,
+          serverId: serverIdParam,
+          entityType: entityTypeParam,
+          entityId: entityIdParam,
+          operation: operationParam,
+          payloadJson: payloadJsonParam,
+          syncStatus: syncStatusParam,
+          createdAt: createdAtParam,
+          syncedAt: syncedAtParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -4193,5 +5235,341 @@ class KpiSnapshotEntity_ {
   /// See [KpiSnapshotEntity.lastModifiedHlc].
   static final lastModifiedHlc = obx.QueryStringProperty<KpiSnapshotEntity>(
     _entities[12].properties[12],
+  );
+}
+
+/// [PermissionEntity] entity fields to define ObjectBox queries.
+class PermissionEntity_ {
+  /// See [PermissionEntity.id].
+  static final id = obx.QueryIntegerProperty<PermissionEntity>(
+    _entities[13].properties[0],
+  );
+
+  /// See [PermissionEntity.serverId].
+  static final serverId = obx.QueryStringProperty<PermissionEntity>(
+    _entities[13].properties[1],
+  );
+
+  /// See [PermissionEntity.permissionCode].
+  static final permissionCode = obx.QueryStringProperty<PermissionEntity>(
+    _entities[13].properties[2],
+  );
+
+  /// See [PermissionEntity.moduleName].
+  static final moduleName = obx.QueryStringProperty<PermissionEntity>(
+    _entities[13].properties[3],
+  );
+
+  /// See [PermissionEntity.description].
+  static final description = obx.QueryStringProperty<PermissionEntity>(
+    _entities[13].properties[4],
+  );
+}
+
+/// [RoleEntity] entity fields to define ObjectBox queries.
+class RoleEntity_ {
+  /// See [RoleEntity.id].
+  static final id = obx.QueryIntegerProperty<RoleEntity>(
+    _entities[14].properties[0],
+  );
+
+  /// See [RoleEntity.serverId].
+  static final serverId = obx.QueryStringProperty<RoleEntity>(
+    _entities[14].properties[1],
+  );
+
+  /// See [RoleEntity.propertyId].
+  static final propertyId = obx.QueryStringProperty<RoleEntity>(
+    _entities[14].properties[2],
+  );
+
+  /// See [RoleEntity.roleCode].
+  static final roleCode = obx.QueryStringProperty<RoleEntity>(
+    _entities[14].properties[3],
+  );
+
+  /// See [RoleEntity.roleName].
+  static final roleName = obx.QueryStringProperty<RoleEntity>(
+    _entities[14].properties[4],
+  );
+
+  /// See [RoleEntity.isSystemRole].
+  static final isSystemRole = obx.QueryBooleanProperty<RoleEntity>(
+    _entities[14].properties[5],
+  );
+
+  /// See [RoleEntity.description].
+  static final description = obx.QueryStringProperty<RoleEntity>(
+    _entities[14].properties[6],
+  );
+}
+
+/// [RolePermissionEntity] entity fields to define ObjectBox queries.
+class RolePermissionEntity_ {
+  /// See [RolePermissionEntity.id].
+  static final id = obx.QueryIntegerProperty<RolePermissionEntity>(
+    _entities[15].properties[0],
+  );
+
+  /// See [RolePermissionEntity.serverId].
+  static final serverId = obx.QueryStringProperty<RolePermissionEntity>(
+    _entities[15].properties[1],
+  );
+
+  /// See [RolePermissionEntity.roleId].
+  static final roleId = obx.QueryStringProperty<RolePermissionEntity>(
+    _entities[15].properties[2],
+  );
+
+  /// See [RolePermissionEntity.permissionId].
+  static final permissionId = obx.QueryStringProperty<RolePermissionEntity>(
+    _entities[15].properties[3],
+  );
+
+  /// See [RolePermissionEntity.accessLevel].
+  static final accessLevel = obx.QueryStringProperty<RolePermissionEntity>(
+    _entities[15].properties[4],
+  );
+}
+
+/// [StaffInvitationEntity] entity fields to define ObjectBox queries.
+class StaffInvitationEntity_ {
+  /// See [StaffInvitationEntity.id].
+  static final id = obx.QueryIntegerProperty<StaffInvitationEntity>(
+    _entities[16].properties[0],
+  );
+
+  /// See [StaffInvitationEntity.serverId].
+  static final serverId = obx.QueryStringProperty<StaffInvitationEntity>(
+    _entities[16].properties[1],
+  );
+
+  /// See [StaffInvitationEntity.propertyId].
+  static final propertyId = obx.QueryStringProperty<StaffInvitationEntity>(
+    _entities[16].properties[2],
+  );
+
+  /// See [StaffInvitationEntity.roleId].
+  static final roleId = obx.QueryStringProperty<StaffInvitationEntity>(
+    _entities[16].properties[3],
+  );
+
+  /// See [StaffInvitationEntity.invitedBy].
+  static final invitedBy = obx.QueryStringProperty<StaffInvitationEntity>(
+    _entities[16].properties[4],
+  );
+
+  /// See [StaffInvitationEntity.mobileNumber].
+  static final mobileNumber = obx.QueryStringProperty<StaffInvitationEntity>(
+    _entities[16].properties[5],
+  );
+
+  /// See [StaffInvitationEntity.invitationToken].
+  static final invitationToken = obx.QueryStringProperty<StaffInvitationEntity>(
+    _entities[16].properties[6],
+  );
+
+  /// See [StaffInvitationEntity.status].
+  static final status = obx.QueryStringProperty<StaffInvitationEntity>(
+    _entities[16].properties[7],
+  );
+
+  /// See [StaffInvitationEntity.expiresAt].
+  static final expiresAt = obx.QueryDateProperty<StaffInvitationEntity>(
+    _entities[16].properties[8],
+  );
+
+  /// See [StaffInvitationEntity.createdAt].
+  static final createdAt = obx.QueryDateProperty<StaffInvitationEntity>(
+    _entities[16].properties[9],
+  );
+}
+
+/// [UserEntity] entity fields to define ObjectBox queries.
+class UserEntity_ {
+  /// See [UserEntity.id].
+  static final id = obx.QueryIntegerProperty<UserEntity>(
+    _entities[17].properties[0],
+  );
+
+  /// See [UserEntity.serverId].
+  static final serverId = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[1],
+  );
+
+  /// See [UserEntity.propertyId].
+  static final propertyId = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[2],
+  );
+
+  /// See [UserEntity.roleId].
+  static final roleId = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[3],
+  );
+
+  /// See [UserEntity.name].
+  static final name = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[4],
+  );
+
+  /// See [UserEntity.mobileNumber].
+  static final mobileNumber = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[5],
+  );
+
+  /// See [UserEntity.email].
+  static final email = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[6],
+  );
+
+  /// See [UserEntity.username].
+  static final username = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[7],
+  );
+
+  /// See [UserEntity.passwordHash].
+  static final passwordHash = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[8],
+  );
+
+  /// See [UserEntity.pinHash].
+  static final pinHash = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[9],
+  );
+
+  /// See [UserEntity.biometricEnabled].
+  static final biometricEnabled = obx.QueryBooleanProperty<UserEntity>(
+    _entities[17].properties[10],
+  );
+
+  /// See [UserEntity.isPrimaryOwner].
+  static final isPrimaryOwner = obx.QueryBooleanProperty<UserEntity>(
+    _entities[17].properties[11],
+  );
+
+  /// See [UserEntity.status].
+  static final status = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[12],
+  );
+
+  /// See [UserEntity.failedLoginAttempts].
+  static final failedLoginAttempts = obx.QueryIntegerProperty<UserEntity>(
+    _entities[17].properties[13],
+  );
+
+  /// See [UserEntity.profilePhotoUrl].
+  static final profilePhotoUrl = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[14],
+  );
+
+  /// See [UserEntity.createdBy].
+  static final createdBy = obx.QueryStringProperty<UserEntity>(
+    _entities[17].properties[15],
+  );
+
+  /// See [UserEntity.isPendingSync].
+  static final isPendingSync = obx.QueryBooleanProperty<UserEntity>(
+    _entities[17].properties[16],
+  );
+}
+
+/// [UserSessionEntity] entity fields to define ObjectBox queries.
+class UserSessionEntity_ {
+  /// See [UserSessionEntity.id].
+  static final id = obx.QueryIntegerProperty<UserSessionEntity>(
+    _entities[18].properties[0],
+  );
+
+  /// See [UserSessionEntity.serverId].
+  static final serverId = obx.QueryStringProperty<UserSessionEntity>(
+    _entities[18].properties[1],
+  );
+
+  /// See [UserSessionEntity.userId].
+  static final userId = obx.QueryStringProperty<UserSessionEntity>(
+    _entities[18].properties[2],
+  );
+
+  /// See [UserSessionEntity.deviceId].
+  static final deviceId = obx.QueryStringProperty<UserSessionEntity>(
+    _entities[18].properties[3],
+  );
+
+  /// See [UserSessionEntity.sessionToken].
+  static final sessionToken = obx.QueryStringProperty<UserSessionEntity>(
+    _entities[18].properties[4],
+  );
+
+  /// See [UserSessionEntity.isOfflineSession].
+  static final isOfflineSession = obx.QueryBooleanProperty<UserSessionEntity>(
+    _entities[18].properties[5],
+  );
+
+  /// See [UserSessionEntity.issuedAt].
+  static final issuedAt = obx.QueryDateProperty<UserSessionEntity>(
+    _entities[18].properties[6],
+  );
+
+  /// See [UserSessionEntity.expiresAt].
+  static final expiresAt = obx.QueryDateProperty<UserSessionEntity>(
+    _entities[18].properties[7],
+  );
+
+  /// See [UserSessionEntity.revokedAt].
+  static final revokedAt = obx.QueryDateProperty<UserSessionEntity>(
+    _entities[18].properties[8],
+  );
+
+  /// See [UserSessionEntity.revokedReason].
+  static final revokedReason = obx.QueryStringProperty<UserSessionEntity>(
+    _entities[18].properties[9],
+  );
+}
+
+/// [UserSyncLogEntity] entity fields to define ObjectBox queries.
+class UserSyncLogEntity_ {
+  /// See [UserSyncLogEntity.id].
+  static final id = obx.QueryIntegerProperty<UserSyncLogEntity>(
+    _entities[19].properties[0],
+  );
+
+  /// See [UserSyncLogEntity.serverId].
+  static final serverId = obx.QueryStringProperty<UserSyncLogEntity>(
+    _entities[19].properties[1],
+  );
+
+  /// See [UserSyncLogEntity.entityType].
+  static final entityType = obx.QueryStringProperty<UserSyncLogEntity>(
+    _entities[19].properties[2],
+  );
+
+  /// See [UserSyncLogEntity.entityId].
+  static final entityId = obx.QueryStringProperty<UserSyncLogEntity>(
+    _entities[19].properties[3],
+  );
+
+  /// See [UserSyncLogEntity.operation].
+  static final operation = obx.QueryStringProperty<UserSyncLogEntity>(
+    _entities[19].properties[4],
+  );
+
+  /// See [UserSyncLogEntity.payloadJson].
+  static final payloadJson = obx.QueryStringProperty<UserSyncLogEntity>(
+    _entities[19].properties[5],
+  );
+
+  /// See [UserSyncLogEntity.syncStatus].
+  static final syncStatus = obx.QueryStringProperty<UserSyncLogEntity>(
+    _entities[19].properties[6],
+  );
+
+  /// See [UserSyncLogEntity.createdAt].
+  static final createdAt = obx.QueryDateProperty<UserSyncLogEntity>(
+    _entities[19].properties[7],
+  );
+
+  /// See [UserSyncLogEntity.syncedAt].
+  static final syncedAt = obx.QueryDateProperty<UserSyncLogEntity>(
+    _entities[19].properties[8],
   );
 }

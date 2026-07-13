@@ -37,6 +37,7 @@ class Owner(Base, TimestampMixin):
     aadhaar_number: Mapped[Optional[str]] = mapped_column(String(20))
     selfie_url: Mapped[Optional[str]] = mapped_column(Text)
     password_hash: Mapped[Optional[str]] = mapped_column(Text)
+    properties: Mapped[list["Property"]] = relationship(back_populates="owner")
 
 
 class Business(Base, TimestampMixin):
@@ -71,6 +72,7 @@ class Property(Base, TimestampMixin, SyncMixin):
     whatsapp_number: Mapped[Optional[str]] = mapped_column(String(15))
     onboarding_status: Mapped[str] = mapped_column(String(20), default='draft')
     created_by_admin_id: Mapped[Optional[uuid.UUID]] = mapped_column(PGUUID(as_uuid=True))
+    owner: Mapped["Owner"] = relationship(back_populates="properties")
 
 
 # ── C. Roles & Permissions ────────────────────────────────────────────────────

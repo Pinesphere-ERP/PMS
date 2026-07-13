@@ -648,10 +648,29 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
     final guestNameCtrl = TextEditingController();
     final guestPhoneCtrl = TextEditingController();
     final guestIdCtrl = TextEditingController();
+    String selectedNationality = 'Indian'; // 'Indian' or 'Foreigner'
     String selectedIdProof = 'Aadhaar Card';
     String selectedSource = 'Walk-in';
     final depositCtrl = TextEditingController(text: '1000');
     bool isOcrScanning = false;
+
+    // Pricing Rule states
+    bool isSeason = false;
+    bool isWeekend = false;
+    bool isHoliday = false;
+    int extraBedsCount = 0;
+
+    // Selected standard amenities list
+    final List<String> selectedAmenities = [];
+
+    // Stay dates
+    DateTime checkInDate = DateTime.now();
+    DateTime checkOutDate = DateTime.now().add(const Duration(days: 2));
+
+    // Dynamic manual amenities
+    final List<Map<String, dynamic>> manualAmenities = [];
+    final bookingAmenityNameCtrl = TextEditingController();
+    final bookingAmenityPriceCtrl = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -660,8 +679,39 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final selectedRoom = vacantRooms.firstWhere((r) => r.id == selectedRoomId);
-            final selectedResort = pmsState.resorts.firstWhere((res) => res.id == selectedRoom.resortId);
+            final selectedRoom = vacantRooms.firstWhere(
+              (r) => r.id == selectedRoomId,
+              orElse: () => vacantRooms.first,
+            );
+            final selectedResort = pmsState.resorts.firstWhere(
+              (res) => res.id == selectedRoom.resortId,
+              orElse: () => ResortModel(
+                id: selectedRoom.resortId,
+                name: 'Unknown Resort',
+                image: '',
+                location: 'Unknown',
+              ),
+            );
+
+            final nights = checkOutDate.difference(checkInDate).inDays.clamp(1, 365);
+            final double basePriceSum = selectedRoom.price * nights;
+            final double weekendSum = isWeekend ? (selectedRoom.weekendPrice * nights) : 0.0;
+            final double seasonSum = isSeason ? (selectedRoom.seasonPrice * nights) : 0.0;
+            final double holidaySum = isHoliday ? (selectedRoom.holidayPrice * nights) : 0.0;
+            final double extraBedSum = selectedRoom.extraBedPrice * extraBedsCount * nights;
+
+            // Calculate standard amenities flat sum
+            final double amenitiesSum = selectedRoom.amenities
+                .where((a) => selectedAmenities.contains(a['name']))
+                .map<double>((a) => (a['price'] as num).toDouble())
+                .fold(0.0, (sum, val) => sum + val);
+
+            // Calculate manual amenities flat sum
+            final double manualAmenitiesSum = manualAmenities
+                .map<double>((a) => (a['price'] as num).toDouble())
+                .fold(0.0, (sum, val) => sum + val);
+
+            final double totalInvoice = basePriceSum + weekendSum + seasonSum + holidaySum + extraBedSum + amenitiesSum + manualAmenitiesSum;
 
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -671,184 +721,482 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 padding: const EdgeInsets.all(24),
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    const Text(
-                      'Create New Booking',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedRoomId,
-                      decoration: const InputDecoration(labelText: 'Select Room (Vacant Only)', border: OutlineInputBorder()),
-                      items: vacantRooms.map((room) {
-                        final resName = pmsState.resorts.firstWhere((res) => res.id == room.resortId).name;
-                        return DropdownMenuItem(
-                          value: room.id,
-                          child: Text('${room.roomNumber} - ${room.type} (\$${room.price}) | $resName'),
-                        );
-                      }).toList(),
-                      onChanged: (val) => setSheetState(() => selectedRoomId = val),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: selectedIdProof,
-                            decoration: InputDecoration(labelText: 'ID Proof Type', border: const OutlineInputBorder()),
-                            items: ['Aadhaar Card', 'Passport', 'Driving License', 'Voter ID'].map((proof) {
-                              return DropdownMenuItem(value: proof, child: Text(proof));
-                            }).toList(),
-                            onChanged: (val) => setSheetState(() => selectedIdProof = val ?? 'Aadhaar Card'),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Create New Booking',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.secondary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () => Navigator.pop(context),
                           ),
-                          onPressed: isOcrScanning
-                              ? null
-                              : () async {
-                                  setSheetState(() => isOcrScanning = true);
-                                  await Future.delayed(const Duration(milliseconds: 1500));
-                                  setSheetState(() {
-                                    isOcrScanning = false;
-                                    if (selectedIdProof == 'Passport') {
-                                      guestNameCtrl.text = 'Robert Downey';
-                                      guestPhoneCtrl.text = '+91 88887 77766';
-                                      guestIdCtrl.text = 'Z9876543';
-                                    } else {
-                                      guestNameCtrl.text = 'Amitabh Bachchan';
-                                      guestPhoneCtrl.text = '+91 99009 90088';
-                                      guestIdCtrl.text = '5566 7788 9900';
-                                    }
-                                  });
-                                },
-                          icon: isOcrScanning
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.camera_alt_outlined),
-                          label: Text(isOcrScanning ? 'Reading OCR...' : 'Scan ID'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: guestNameCtrl,
-                      decoration: InputDecoration(labelText: 'Guest Name', border: const OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: guestPhoneCtrl,
-                            keyboardType: TextInputType.phone,
-                            decoration: InputDecoration(labelText: 'Phone Number', border: const OutlineInputBorder()),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: guestIdCtrl,
-                            decoration: InputDecoration(labelText: 'ID Document Number', border: const OutlineInputBorder()),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: selectedSource,
-                            decoration: InputDecoration(labelText: 'Booking Source', border: const OutlineInputBorder()),
-                            items: ['Walk-in', 'Phone', 'WhatsApp', 'Online'].map((src) {
-                              return DropdownMenuItem(value: src, child: Text(src));
-                            }).toList(),
-                            onChanged: (val) => setSheetState(() => selectedSource = val ?? 'Walk-in'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: depositCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(labelText: 'Initial Deposit (\$)', border: const OutlineInputBorder()),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Guest Signature', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.outlineVariant),
+                        ],
                       ),
-                      alignment: Alignment.center,
-                      child: const Text('Draw/Sign inside box on mobile', style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: AppColors.outline)),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: () {
-                          if (guestNameCtrl.text.isEmpty || guestPhoneCtrl.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please fill out Name and Phone Number')),
-                            );
-                            return;
-                          }
-
-                          final newBooking = BookingModel(
-                            id: 'b_${DateTime.now().millisecondsSinceEpoch}',
-                            resortId: selectedResort.id,
-                            roomId: selectedRoom.id,
-                            roomNumber: selectedRoom.roomNumber,
-                            guestName: guestNameCtrl.text,
-                            guestPhone: guestPhoneCtrl.text,
-                            guestIdProof: selectedIdProof,
-                            guestIdNumber: guestIdCtrl.text,
-                            bookingSource: selectedSource,
-                            checkInDate: DateTime.now(),
-                            checkOutDate: DateTime.now().add(const Duration(days: 3)),
-                            status: 'Active',
-                            depositPaid: double.tryParse(depositCtrl.text) ?? 1000,
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: selectedRoomId,
+                        decoration: const InputDecoration(labelText: 'Select Room (Vacant Only)', border: OutlineInputBorder()),
+                        items: vacantRooms.map((room) {
+                          final resName = pmsState.resorts.firstWhere((res) => res.id == room.resortId, orElse: () => ResortModel(id: '', name: 'Unknown', image: '', location: '')).name;
+                          return DropdownMenuItem(
+                            value: room.id,
+                            child: Text('${room.roomNumber} - ${room.type} (₹${room.price}) | $resName'),
                           );
-
-                          ref.read(pmsProvider.notifier).createBooking(newBooking);
-                          Navigator.pop(context);
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Checked In ${guestNameCtrl.text} to Room ${selectedRoom.roomNumber}! Confirmation sent via WhatsApp.'),
+                        }).toList(),
+                        onChanged: (val) => setSheetState(() {
+                          selectedRoomId = val;
+                          selectedAmenities.clear(); // Reset selected amenities for new room
+                        }),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: selectedNationality,
+                              decoration: const InputDecoration(labelText: 'Guest Nationality', border: OutlineInputBorder()),
+                              items: ['Indian', 'Foreigner'].map((nat) {
+                                return DropdownMenuItem(value: nat, child: Text(nat));
+                              }).toList(),
+                              onChanged: (val) => setSheetState(() {
+                                selectedNationality = val ?? 'Indian';
+                                if (selectedNationality == 'Indian') {
+                                  selectedIdProof = 'Aadhaar Card';
+                                } else {
+                                  selectedIdProof = 'Passport';
+                                }
+                              }),
                             ),
-                          );
-                        },
-                        child: const Text('Complete Booking & Check-In'),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: selectedIdProof,
+                              decoration: const InputDecoration(labelText: 'ID Proof Type', border: OutlineInputBorder()),
+                              items: ['Aadhaar Card', 'Passport', 'Driving License', 'Voter ID'].map((proof) {
+                                return DropdownMenuItem(value: proof, child: Text(proof));
+                              }).toList(),
+                              onChanged: (val) => setSheetState(() => selectedIdProof = val ?? 'Aadhaar Card'),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: guestNameCtrl,
+                              decoration: const InputDecoration(labelText: 'Guest Name', border: OutlineInputBorder()),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.secondary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                            ),
+                            onPressed: isOcrScanning
+                                ? null
+                                : () async {
+                                    setSheetState(() => isOcrScanning = true);
+                                    await Future.delayed(const Duration(milliseconds: 1500));
+                                    setSheetState(() {
+                                      isOcrScanning = false;
+                                      if (selectedIdProof == 'Passport') {
+                                        guestNameCtrl.text = 'Robert Downey';
+                                        guestPhoneCtrl.text = '+91 88887 77766';
+                                        guestIdCtrl.text = 'Z9876543';
+                                        selectedNationality = 'Foreigner';
+                                      } else {
+                                        guestNameCtrl.text = 'Amitabh Bachchan';
+                                        guestPhoneCtrl.text = '+91 99009 90088';
+                                        guestIdCtrl.text = '5566 7788 9900';
+                                        selectedNationality = 'Indian';
+                                      }
+                                    });
+                                  },
+                            icon: isOcrScanning
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.camera_alt_outlined),
+                            label: Text(isOcrScanning ? 'OCR...' : 'Scan ID'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: guestPhoneCtrl,
+                              keyboardType: TextInputType.phone,
+                              decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: guestIdCtrl,
+                              decoration: const InputDecoration(labelText: 'ID Document Number', border: OutlineInputBorder()),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: selectedSource,
+                              decoration: const InputDecoration(labelText: 'Booking Source', border: OutlineInputBorder()),
+                              items: ['Walk-in', 'Phone', 'WhatsApp', 'Online'].map((src) {
+                                return DropdownMenuItem(value: src, child: Text(src));
+                              }).toList(),
+                              onChanged: (val) => setSheetState(() => selectedSource = val ?? 'Walk-in'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: depositCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Initial Deposit (₹)', border: OutlineInputBorder()),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // STAY DATES PICKER
+                      InkWell(
+                        onTap: () async {
+                          final pickedRange = await showDateRangePicker(
+                            context: context,
+                            initialDateRange: DateTimeRange(start: checkInDate, end: checkOutDate),
+                            firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            helpText: 'Select Stay Dates',
+                          );
+                          if (pickedRange != null) {
+                            setSheetState(() {
+                              checkInDate = pickedRange.start;
+                              checkOutDate = pickedRange.end;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.outlineVariant),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Stay Dates', style: TextStyle(fontSize: 10, color: AppColors.outline)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${checkInDate.day} ${_getMonth(checkInDate)} - ${checkOutDate.day} ${_getMonth(checkOutDate)} ($nights Nights)',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                              const Icon(Icons.date_range_outlined, size: 20, color: AppColors.primary),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // SURCHARGES / OPTIONS
+                      const Text('Surcharges & Pricing Rules', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('Season', style: TextStyle(fontSize: 12)),
+                              contentPadding: EdgeInsets.zero,
+                              value: isSeason,
+                              onChanged: (val) => setSheetState(() => isSeason = val ?? false),
+                              controlAffinity: ListTileControlAffinity.leading,
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('Weekend', style: TextStyle(fontSize: 12)),
+                              contentPadding: EdgeInsets.zero,
+                              value: isWeekend,
+                              onChanged: (val) => setSheetState(() => isWeekend = val ?? false),
+                              controlAffinity: ListTileControlAffinity.leading,
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('Holiday', style: TextStyle(fontSize: 12)),
+                              contentPadding: EdgeInsets.zero,
+                              value: isHoliday,
+                              onChanged: (val) => setSheetState(() => isHoliday = val ?? false),
+                              controlAffinity: ListTileControlAffinity.leading,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Extra Beds', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline, size: 20),
+                                onPressed: extraBedsCount > 0 ? () => setSheetState(() => extraBedsCount--) : null,
+                              ),
+                              Text('$extraBedsCount', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, size: 20),
+                                onPressed: () => setSheetState(() => extraBedsCount++),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // STANDARD AMENITIES SELECTOR
+                      if (selectedRoom.amenities.isNotEmpty) ...[
+                        const Text('Select Room Amenities', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          children: selectedRoom.amenities.map((a) {
+                            final name = a['name'] as String;
+                            final price = a['price'] as num;
+                            final isSel = selectedAmenities.contains(name);
+                            return FilterChip(
+                              label: Text('$name (₹$price)'),
+                              selected: isSel,
+                              onSelected: (val) {
+                                setSheetState(() {
+                                  if (val) {
+                                    selectedAmenities.add(name);
+                                  } else {
+                                    selectedAmenities.remove(name);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      // CUSTOM MANUAL AMENITIES
+                      const Text('Add Custom Manual Amenities', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: bookingAmenityNameCtrl,
+                              decoration: const InputDecoration(labelText: 'Amenity Name', contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 80,
+                            child: TextField(
+                              controller: bookingAmenityPriceCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Price (₹)', contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.secondary,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            ),
+                            onPressed: () {
+                              if (bookingAmenityNameCtrl.text.isEmpty || bookingAmenityPriceCtrl.text.isEmpty) return;
+                              final pr = double.tryParse(bookingAmenityPriceCtrl.text) ?? 0.0;
+                              setSheetState(() {
+                                manualAmenities.add({'name': bookingAmenityNameCtrl.text, 'price': pr});
+                                bookingAmenityNameCtrl.clear();
+                                bookingAmenityPriceCtrl.clear();
+                              });
+                            },
+                            child: const Text('Add'),
+                          ),
+                        ],
+                      ),
+                      if (manualAmenities.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: manualAmenities.map((ma) {
+                            return Chip(
+                              label: Text('${ma['name']} (₹${ma['price']})'),
+                              onDeleted: () => setSheetState(() => manualAmenities.remove(ma)),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      // BILL BREAKDOWN INVOICE CARD
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Invoice Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                            const SizedBox(height: 8),
+                            _buildSummaryBillRow('Base Rent (₹${selectedRoom.price}/night x $nights)', '₹$basePriceSum'),
+                            if (isWeekend) _buildSummaryBillRow('Weekend Surcharge (₹${selectedRoom.weekendPrice}/night x $nights)', '₹$weekendSum'),
+                            if (isSeason) _buildSummaryBillRow('Season Surcharge (₹${selectedRoom.seasonPrice}/night x $nights)', '₹$seasonSum'),
+                            if (isHoliday) _buildSummaryBillRow('Holiday Surcharge (₹${selectedRoom.holidayPrice}/night x $nights)', '₹$holidaySum'),
+                            if (extraBedsCount > 0) _buildSummaryBillRow('Extra Bed (₹${selectedRoom.extraBedPrice}/bed x $extraBedsCount x $nights)', '₹$extraBedSum'),
+                            if (amenitiesSum > 0) _buildSummaryBillRow('Selected Standard Amenities', '₹$amenitiesSum'),
+                            if (manualAmenitiesSum > 0) _buildSummaryBillRow('Custom Manual Amenities', '₹$manualAmenitiesSum'),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 6.0),
+                              child: Divider(),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Total Invoice', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                Text('₹$totalInvoice', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Guest Signature', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.outlineVariant),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text('Draw/Sign inside box on mobile', style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: AppColors.outline)),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          onPressed: () {
+                            if (guestNameCtrl.text.isEmpty || guestPhoneCtrl.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please fill out Name and Phone Number')),
+                              );
+                              return;
+                            }
+
+                            // Nationality Verification
+                            final idNumClean = guestIdCtrl.text.replaceAll(RegExp(r'\s+|-'), '');
+                            if (selectedNationality == 'Indian' || selectedIdProof == 'Aadhaar Card') {
+                              // Verify Aadhaar is exactly 12 digits
+                              final isDigitOnly = RegExp(r'^\d+$').hasMatch(idNumClean);
+                              if (idNumClean.length != 12 || !isDigitOnly) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Invalid Aadhaar Card. Aadhaar must be exactly 12 digits.'),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                                return;
+                              }
+                            } else if (selectedNationality == 'Foreigner' || selectedIdProof == 'Passport') {
+                              // Verify Passport is 6-12 alphanumeric characters
+                              final isAlphanumeric = RegExp(r'^[a-zA-Z0-9]{6,12}$').hasMatch(idNumClean);
+                              if (!isAlphanumeric) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Invalid Passport. Passport must be 6 to 12 alphanumeric characters.'),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                                return;
+                              }
+                            }
+
+                            final newBooking = BookingModel(
+                              id: 'booking_${DateTime.now().millisecondsSinceEpoch}',
+                              resortId: selectedResort.id,
+                              roomId: selectedRoom.id,
+                              roomNumber: selectedRoom.roomNumber,
+                              guestName: guestNameCtrl.text,
+                              guestPhone: guestPhoneCtrl.text,
+                              guestIdProof: selectedIdProof,
+                              guestIdNumber: guestIdCtrl.text,
+                              bookingSource: selectedSource,
+                              checkInDate: checkInDate,
+                              checkOutDate: checkOutDate,
+                              status: 'Active',
+                              depositPaid: double.tryParse(depositCtrl.text) ?? 100.0,
+                              basePriceSum: basePriceSum,
+                              weekendSurcharge: weekendSum,
+                              seasonSurcharge: seasonSum,
+                              holidaySurcharge: holidaySum,
+                              extraBedCharge: extraBedSum,
+                              amenitiesCharge: amenitiesSum + manualAmenitiesSum,
+                              totalSum: totalInvoice,
+                            );
+
+                            ref.read(pmsProvider.notifier).createBooking(newBooking);
+                            Navigator.pop(context); // Close sheet
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Room ${selectedRoom.roomNumber} Booked Successfully for ${guestNameCtrl.text}!')),
+                            );
+                          },
+                          child: const Text('Confirm Booking & Check-In'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildSummaryBillRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.outline)),
+          Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 

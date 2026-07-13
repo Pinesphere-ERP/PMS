@@ -19,7 +19,7 @@ import '../../domain/permission_set.dart';
 part 'user_repository.g.dart';
 
 @riverpod
-UserRepository userRepository(UserRepositoryRef ref) {
+UserRepository userRepository(Ref ref) {
   final dio = ref.watch(dioClientProvider);
   final secureStorage = ref.watch(secureStorageProvider);
   return UserRepository(dio, secureStorage);

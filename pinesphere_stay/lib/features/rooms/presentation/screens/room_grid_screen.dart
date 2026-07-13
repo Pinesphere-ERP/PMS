@@ -2393,25 +2393,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                       }).toList(),
                     ),
                   ),
-                  const Divider(height: 32),
-                  if (liveRoom.status == 'Vacant')
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.book_online),
-                        label: const Text('Book Room (Check-in Guest)'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _showBookingSheet(context, liveRoom);
-                        },
-                      ),
-                    ),
+
                   if (liveRoom.status == 'Occupied')
                     SizedBox(
                       width: double.infinity,

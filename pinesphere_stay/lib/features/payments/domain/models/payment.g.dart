@@ -82,5 +82,5 @@ Map<String, dynamic> _$PaymentCreateRequestToJson(
   'bank_name': instance.bankName,
   'card_last4': instance.cardLast4,
   'remarks': instance.remarks,
-  'split_payments': instance.splitPayments,
+  'split_payments': instance.splitPayments?.map((e) => e.toJson()).toList(),
 };

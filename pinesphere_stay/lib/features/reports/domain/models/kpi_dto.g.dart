@@ -8,141 +8,143 @@ part of 'kpi_dto.dart';
 
 _KpiSnapshotDto _$KpiSnapshotDtoFromJson(Map<String, dynamic> json) =>
     _KpiSnapshotDto(
-      snapshotId: json['snapshotId'] as String,
-      propertyId: json['propertyId'] as String,
-      snapshotDate: json['snapshotDate'] as String,
-      occupiedRooms: (json['occupiedRooms'] as num).toInt(),
-      vacantRooms: (json['vacantRooms'] as num).toInt(),
-      revenueRoomRent: (json['revenueRoomRent'] as num).toDouble(),
-      revenueAddons: (json['revenueAddons'] as num).toDouble(),
-      expensesAmount: (json['expensesAmount'] as num).toDouble(),
-      outstandingPayments: (json['outstandingPayments'] as num).toDouble(),
-      gstCollected: (json['gstCollected'] as num).toDouble(),
+      snapshotId: json['snapshot_id'] as String,
+      propertyId: json['property_id'] as String,
+      snapshotDate: json['snapshot_date'] as String,
+      occupiedRooms: (json['occupied_rooms'] as num).toInt(),
+      vacantRooms: (json['vacant_rooms'] as num).toInt(),
+      revenueRoomRent: (json['revenue_room_rent'] as num).toDouble(),
+      revenueAddons: (json['revenue_addons'] as num).toDouble(),
+      expensesAmount: (json['expenses_amount'] as num).toDouble(),
+      outstandingPayments: (json['outstanding_payments'] as num).toDouble(),
+      gstCollected: (json['gst_collected'] as num).toDouble(),
     );
 
 Map<String, dynamic> _$KpiSnapshotDtoToJson(_KpiSnapshotDto instance) =>
     <String, dynamic>{
-      'snapshotId': instance.snapshotId,
-      'propertyId': instance.propertyId,
-      'snapshotDate': instance.snapshotDate,
-      'occupiedRooms': instance.occupiedRooms,
-      'vacantRooms': instance.vacantRooms,
-      'revenueRoomRent': instance.revenueRoomRent,
-      'revenueAddons': instance.revenueAddons,
-      'expensesAmount': instance.expensesAmount,
-      'outstandingPayments': instance.outstandingPayments,
-      'gstCollected': instance.gstCollected,
+      'snapshot_id': instance.snapshotId,
+      'property_id': instance.propertyId,
+      'snapshot_date': instance.snapshotDate,
+      'occupied_rooms': instance.occupiedRooms,
+      'vacant_rooms': instance.vacantRooms,
+      'revenue_room_rent': instance.revenueRoomRent,
+      'revenue_addons': instance.revenueAddons,
+      'expenses_amount': instance.expensesAmount,
+      'outstanding_payments': instance.outstandingPayments,
+      'gst_collected': instance.gstCollected,
     };
 
 _MonthlyPLRowDto _$MonthlyPLRowDtoFromJson(Map<String, dynamic> json) =>
     _MonthlyPLRowDto(
       month: json['month'] as String,
-      totalRoomRent: (json['totalRoomRent'] as num).toDouble(),
-      totalAddons: (json['totalAddons'] as num).toDouble(),
-      totalRevenue: (json['totalRevenue'] as num).toDouble(),
-      totalExpenses: (json['totalExpenses'] as num).toDouble(),
-      netProfit: (json['netProfit'] as num).toDouble(),
-      gstCollected: (json['gstCollected'] as num).toDouble(),
+      totalRoomRent: (json['total_room_rent'] as num).toDouble(),
+      totalAddons: (json['total_addons'] as num).toDouble(),
+      totalRevenue: (json['total_revenue'] as num).toDouble(),
+      totalExpenses: (json['total_expenses'] as num).toDouble(),
+      netProfit: (json['net_profit'] as num).toDouble(),
+      gstCollected: (json['gst_collected'] as num).toDouble(),
       outstanding: (json['outstanding'] as num).toDouble(),
     );
 
 Map<String, dynamic> _$MonthlyPLRowDtoToJson(_MonthlyPLRowDto instance) =>
     <String, dynamic>{
       'month': instance.month,
-      'totalRoomRent': instance.totalRoomRent,
-      'totalAddons': instance.totalAddons,
-      'totalRevenue': instance.totalRevenue,
-      'totalExpenses': instance.totalExpenses,
-      'netProfit': instance.netProfit,
-      'gstCollected': instance.gstCollected,
+      'total_room_rent': instance.totalRoomRent,
+      'total_addons': instance.totalAddons,
+      'total_revenue': instance.totalRevenue,
+      'total_expenses': instance.totalExpenses,
+      'net_profit': instance.netProfit,
+      'gst_collected': instance.gstCollected,
       'outstanding': instance.outstanding,
     };
 
 _PLReportDto _$PLReportDtoFromJson(Map<String, dynamic> json) => _PLReportDto(
-  propertyId: json['propertyId'] as String,
-  periodStart: json['periodStart'] as String,
-  periodEnd: json['periodEnd'] as String,
-  monthlyBreakdown: (json['monthlyBreakdown'] as List<dynamic>)
+  propertyId: json['property_id'] as String,
+  periodStart: json['period_start'] as String,
+  periodEnd: json['period_end'] as String,
+  monthlyBreakdown: (json['monthly_breakdown'] as List<dynamic>)
       .map((e) => MonthlyPLRowDto.fromJson(e as Map<String, dynamic>))
       .toList(),
-  summaryTotalRevenue: (json['summaryTotalRevenue'] as num).toDouble(),
-  summaryTotalExpenses: (json['summaryTotalExpenses'] as num).toDouble(),
-  summaryNetProfit: (json['summaryNetProfit'] as num).toDouble(),
+  summaryTotalRevenue: (json['summary_total_revenue'] as num).toDouble(),
+  summaryTotalExpenses: (json['summary_total_expenses'] as num).toDouble(),
+  summaryNetProfit: (json['summary_net_profit'] as num).toDouble(),
 );
 
 Map<String, dynamic> _$PLReportDtoToJson(_PLReportDto instance) =>
     <String, dynamic>{
-      'propertyId': instance.propertyId,
-      'periodStart': instance.periodStart,
-      'periodEnd': instance.periodEnd,
-      'monthlyBreakdown': instance.monthlyBreakdown,
-      'summaryTotalRevenue': instance.summaryTotalRevenue,
-      'summaryTotalExpenses': instance.summaryTotalExpenses,
-      'summaryNetProfit': instance.summaryNetProfit,
+      'property_id': instance.propertyId,
+      'period_start': instance.periodStart,
+      'period_end': instance.periodEnd,
+      'monthly_breakdown': instance.monthlyBreakdown
+          .map((e) => e.toJson())
+          .toList(),
+      'summary_total_revenue': instance.summaryTotalRevenue,
+      'summary_total_expenses': instance.summaryTotalExpenses,
+      'summary_net_profit': instance.summaryNetProfit,
     };
 
 _GSTReturnDto _$GSTReturnDtoFromJson(Map<String, dynamic> json) =>
     _GSTReturnDto(
-      propertyId: json['propertyId'] as String,
-      periodStart: json['periodStart'] as String,
-      periodEnd: json['periodEnd'] as String,
-      totalTaxableRevenue: (json['totalTaxableRevenue'] as num).toDouble(),
-      totalGstCollected: (json['totalGstCollected'] as num).toDouble(),
+      propertyId: json['property_id'] as String,
+      periodStart: json['period_start'] as String,
+      periodEnd: json['period_end'] as String,
+      totalTaxableRevenue: (json['total_taxable_revenue'] as num).toDouble(),
+      totalGstCollected: (json['total_gst_collected'] as num).toDouble(),
       cgst: (json['cgst'] as num).toDouble(),
       sgst: (json['sgst'] as num).toDouble(),
       igst: (json['igst'] as num).toDouble(),
-      monthlyGst: (json['monthlyGst'] as List<dynamic>)
+      monthlyGst: (json['monthly_gst'] as List<dynamic>)
           .map((e) => e as Map<String, dynamic>)
           .toList(),
     );
 
 Map<String, dynamic> _$GSTReturnDtoToJson(_GSTReturnDto instance) =>
     <String, dynamic>{
-      'propertyId': instance.propertyId,
-      'periodStart': instance.periodStart,
-      'periodEnd': instance.periodEnd,
-      'totalTaxableRevenue': instance.totalTaxableRevenue,
-      'totalGstCollected': instance.totalGstCollected,
+      'property_id': instance.propertyId,
+      'period_start': instance.periodStart,
+      'period_end': instance.periodEnd,
+      'total_taxable_revenue': instance.totalTaxableRevenue,
+      'total_gst_collected': instance.totalGstCollected,
       'cgst': instance.cgst,
       'sgst': instance.sgst,
       'igst': instance.igst,
-      'monthlyGst': instance.monthlyGst,
+      'monthly_gst': instance.monthlyGst,
     };
 
 _ReportTemplateDto _$ReportTemplateDtoFromJson(Map<String, dynamic> json) =>
     _ReportTemplateDto(
-      templateId: json['templateId'] as String,
-      propertyId: json['propertyId'] as String?,
-      reportName: json['reportName'] as String,
-      reportType: json['reportType'] as String,
-      configurationJson: json['configurationJson'] as Map<String, dynamic>?,
+      templateId: json['template_id'] as String,
+      propertyId: json['property_id'] as String?,
+      reportName: json['report_name'] as String,
+      reportType: json['report_type'] as String,
+      configurationJson: json['configuration_json'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$ReportTemplateDtoToJson(_ReportTemplateDto instance) =>
     <String, dynamic>{
-      'templateId': instance.templateId,
-      'propertyId': instance.propertyId,
-      'reportName': instance.reportName,
-      'reportType': instance.reportType,
-      'configurationJson': instance.configurationJson,
+      'template_id': instance.templateId,
+      'property_id': instance.propertyId,
+      'report_name': instance.reportName,
+      'report_type': instance.reportType,
+      'configuration_json': instance.configurationJson,
     };
 
 _ScheduledReportDto _$ScheduledReportDtoFromJson(Map<String, dynamic> json) =>
     _ScheduledReportDto(
-      scheduleId: json['scheduleId'] as String,
-      templateId: json['templateId'] as String,
-      recipientRole: json['recipientRole'] as String,
-      deliveryChannel: json['deliveryChannel'] as String,
+      scheduleId: json['schedule_id'] as String,
+      templateId: json['template_id'] as String,
+      recipientRole: json['recipient_role'] as String,
+      deliveryChannel: json['delivery_channel'] as String,
       frequency: json['frequency'] as String,
-      isActive: json['isActive'] as bool,
+      isActive: json['is_active'] as bool,
     );
 
 Map<String, dynamic> _$ScheduledReportDtoToJson(_ScheduledReportDto instance) =>
     <String, dynamic>{
-      'scheduleId': instance.scheduleId,
-      'templateId': instance.templateId,
-      'recipientRole': instance.recipientRole,
-      'deliveryChannel': instance.deliveryChannel,
+      'schedule_id': instance.scheduleId,
+      'template_id': instance.templateId,
+      'recipient_role': instance.recipientRole,
+      'delivery_channel': instance.deliveryChannel,
       'frequency': instance.frequency,
-      'isActive': instance.isActive,
+      'is_active': instance.isActive,
     };

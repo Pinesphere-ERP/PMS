@@ -143,7 +143,7 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<bool> tryBiometricLogin() async {
-    final repository = ref.read(authRepositoryProvider);
+    final repository = ref.read(userRepositoryProvider);
     final cachedUser = await repository.getCachedUser();
     
     if (cachedUser != null) {

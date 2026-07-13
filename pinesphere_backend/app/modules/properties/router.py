@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_
 from datetime import date, timedelta
 from typing import List, Optional
 
@@ -46,24 +46,41 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
     if not owner_name or not owner_mobile or not owner_email:
         raise HTTPException(status_code=400, detail="Owner name, mobile, and email are required.")
 
-    # Create Owner
-    new_owner = Owner(
-        full_name=owner_name,
-        mobile_number=owner_mobile,
-        email=owner_email,
-        pan_number=payload.owner_pan,
+    owner_result = await db.execute(
+        select(Owner).where(
+            or_(Owner.email == owner_email, Owner.mobile_number == owner_mobile)
+        )
     )
-    db.add(new_owner)
-    try:
-        await db.flush()
-    except IntegrityError:
-        # If owner with this mobile/email exists, we could fetch it instead of failing, 
-        # but for now we keep the existing behavior of raising 400.
-        raise HTTPException(status_code=400, detail="An owner with this email or mobile number already exists.")
+    matching_owners = owner_result.scalars().all()
+    if len(matching_owners) > 1:
+        raise HTTPException(status_code=400, detail="Owner email and mobile number belong to different owners.")
+
+    owner = matching_owners[0] if matching_owners else None
+    if owner is None:
+        owner = Owner(
+            full_name=owner_name,
+            mobile_number=owner_mobile,
+            email=owner_email,
+            pan_number=payload.owner_pan,
+        )
+        db.add(owner)
+        try:
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            owner_result = await db.execute(
+                select(Owner).where(
+                    or_(Owner.email == owner_email, Owner.mobile_number == owner_mobile)
+                )
+            )
+            matching_owners = owner_result.scalars().all()
+            if len(matching_owners) != 1:
+                raise HTTPException(status_code=400, detail="Owner email and mobile number belong to different owners.")
+            owner = matching_owners[0]
 
     # Create Business
     new_business = Business(
-        owner_id=new_owner.owner_id,
+        owner_id=owner.owner_id,
         business_name=payload.business_name,
         business_reg_number=payload.business_reg_number,
         gst_number=payload.business_gst,
@@ -75,7 +92,7 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
     # Create Property
     new_property = Property(
         business_id=new_business.business_id,
-        owner_id=new_owner.owner_id,
+        owner_id=owner.owner_id,
         property_name=payload.property_name,
         property_type=payload.property_type,
         star_category=payload.star_category,

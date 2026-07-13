@@ -3,3 +3,8 @@ pinesphere_backend/venv
 pinesphere_backend/alembic/versions/__pycache__/
 pinesphere_backend/scratch/
 pinesphere_backend/.env
+pinesphere_stay/**/*.g.dart
+pinesphere_stay/**/*.freezed.dart
+pinesphere_stay/lib/objectbox-model.json
+pinesphere_stay/**/flutter/generated_plugin_registrant.*
+pinesphere_stay/**/flutter/generated_plugins.cmake

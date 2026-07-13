@@ -293,12 +293,38 @@ class PmsNotifier extends Notifier<PmsState> {
         final loadedResorts = data.map((json) {
           final id = json['id'];
           final resortId = id == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (id == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : id);
+          
+          String descText = json['description'] ?? '';
+          String locVal = json['city'] ?? 'Unknown';
+          String imgVal = json['image'] ?? 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80';
+
+          try {
+            if (descText.startsWith('{') && descText.endsWith('}')) {
+              final Map<String, dynamic> parsed = Map<String, dynamic>.from(jsonDecode(descText));
+              descText = parsed['description'] ?? '';
+              locVal = parsed['location'] ?? locVal;
+              imgVal = parsed['image'] ?? imgVal;
+            }
+          } catch (_) {
+            // Fallback to legacy/default
+          }
+
+          if (locVal == 'Unknown') {
+            if (resortId == 'resort-1') locVal = 'Kodaikanal, Tamil Nadu';
+            if (resortId == 'resort-2') locVal = 'Varkala, Kerala';
+          }
+          if (resortId == 'resort-1') {
+            imgVal = 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80';
+          } else if (resortId == 'resort-2') {
+            imgVal = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80';
+          }
+
           return ResortModel(
             id: resortId,
             name: json['name'] ?? '',
-            image: json['image'] ?? 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-            location: json['city'] ?? 'Unknown',
-            description: json['description'] ?? '',
+            image: imgVal,
+            location: locVal,
+            description: descText,
           );
         }).toList();
         state = state.copyWith(resorts: loadedResorts.isEmpty ? _initialState().resorts : loadedResorts);
@@ -592,7 +618,11 @@ class PmsNotifier extends Notifier<PmsState> {
         'year_established': 2024,
         'total_floors': 3,
         'total_rooms': 10,
-        'description': resort.description,
+        'description': jsonEncode({
+          'description': resort.description,
+          'location': resort.location,
+          'image': resort.image,
+        }),
         'city': resort.location,
         'cover_image': resort.image,
       });

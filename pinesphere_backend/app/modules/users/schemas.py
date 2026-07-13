@@ -7,7 +7,6 @@ class RoleResponse(BaseModel):
     role_code: str
     role_name: str
     description: Optional[str] = None
-    level: int
 
     class Config:
         from_attributes = True

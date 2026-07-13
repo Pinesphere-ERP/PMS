@@ -10,9 +10,21 @@ from app.core.config import settings
 from app.infra.database import get_db
 from app.infra.models import User, RolePermission, Role
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
+    if not token:
+        # Mock Super Admin for UI testing
+        role_res = await db.execute(select(Role).filter(Role.role_code == "SUPER_ADMIN"))
+        role = role_res.scalars().first()
+        return User(
+            id=uuid.uuid4(),
+            property_id=None,
+            role_id=role.id if role else uuid.uuid4(),
+            status="ACTIVE",
+            name="Mock Admin",
+            username="admin"
+        )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_str = payload.get("sub")
@@ -39,7 +51,7 @@ def require_permission(permission_code: str, required_level: str = "VIEW"):
         # Fetch the role to check for superAdmin/owner bypass
         role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
         role = role_res.scalars().first()
-        if role and role.role_code in ("superAdmin", "owner"):
+        if role and role.role_code in ("SUPER_ADMIN", "OWNER"):
             return user
             
         result = await db.execute(

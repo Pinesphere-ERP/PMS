@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
 
 // Property Management (New)
@@ -24,11 +24,45 @@ import SystemSettings from './pages/SystemManagement/SystemSettings';
 // User Management
 import UserManagement from './pages/UserManagement/UserManagement';
 
+// Auth
+import Login from './pages/Login';
+
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const location = useLocation();
+
+  if (!token) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+};
+
+const PublicRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  
+  if (token) {
+    return <Navigate to="/properties" replace />;
+  }
+
+  return children;
+};
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AdminLayout />}>
+        <Route path="/login" element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } />
+        
+        <Route path="/" element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
           <Route index element={<Navigate to="/properties" replace />} />
           
           {/* Property Management */}

@@ -45,7 +45,7 @@ export default function AddPropertyWizard() {
     const loadUsers = async () => {
       try {
         const res = await fetchAPI('/users?unassigned_only=true');
-        setAvailableUsers(res.data || []);
+        setAvailableUsers(Array.isArray(res) ? res : res.data || []);
       } catch (err) {
         console.error('Failed to load users', err);
       }

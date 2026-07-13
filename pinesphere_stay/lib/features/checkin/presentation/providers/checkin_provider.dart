@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/checkin_service.dart';
+import '../../../audit/data/audit_service.dart';
 import '../../../bookings/data/booking_service.dart';
 import '../../../rooms/data/room_service.dart';
 import '../../../guests/data/guest_service.dart';
@@ -80,6 +81,23 @@ class CheckInNotifier extends _$CheckInNotifier {
 
   Future<void> performCheckIn({required Map<String, dynamic> data}) async {
     state = const CheckInState.loading();
+
+    ref.read(auditServiceProvider).log(
+      moduleName: 'checkin',
+      actionType: 'check_in',
+      targetEntity: 'check_in',
+      targetRecordId: '',
+      propertyId: data['property_id']?.toString(),
+      userId: data['staff_id']?.toString(),
+      newValue: {
+        'booking_id': data['booking_id'],
+        'room_id': data['room_id'],
+        'guest_id': data['guest_id'],
+        'deposit': data['deposit'],
+        'advance_paid': data['advance_paid'],
+      },
+    );
+
     final checkinService = ref.read(checkInServiceProvider);
     try {
       final result = await checkinService.performCheckIn(data);
@@ -91,6 +109,22 @@ class CheckInNotifier extends _$CheckInNotifier {
 
   Future<void> performWalkIn({required Map<String, dynamic> data}) async {
     state = const CheckInState.loading();
+
+    ref.read(auditServiceProvider).log(
+      moduleName: 'checkin',
+      actionType: 'walk_in',
+      targetEntity: 'check_in',
+      targetRecordId: '',
+      propertyId: data['property_id']?.toString(),
+      userId: data['staff_id']?.toString(),
+      newValue: {
+        'room_id': data['room_id'],
+        'booking_id': data['booking_id'],
+        'guest_name': data['guest_name'],
+        'advance_paid': data['advance_paid'],
+      },
+    );
+
     final checkinService = ref.read(checkInServiceProvider);
     try {
       final result = await checkinService.performWalkIn(data);
@@ -124,6 +158,15 @@ class CheckInNotifier extends _$CheckInNotifier {
 
   Future<void> cancelCheckIn(String checkinId) async {
     state = const CheckInState.loading();
+
+    ref.read(auditServiceProvider).log(
+      moduleName: 'checkin',
+      actionType: 'cancel_checkin',
+      targetEntity: 'check_in',
+      targetRecordId: checkinId,
+      newValue: {'status': 'cancelled'},
+    );
+
     final checkinService = ref.read(checkInServiceProvider);
     try {
       await checkinService.cancelCheckIn(checkinId);

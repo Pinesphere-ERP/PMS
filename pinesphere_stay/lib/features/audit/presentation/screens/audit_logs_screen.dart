@@ -10,14 +10,14 @@ class AuditLogsScreen extends ConsumerStatefulWidget {
   ConsumerState<AuditLogsScreen> createState() => _AuditLogsScreenState();
 }
 
-class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
+class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> with RouteAware {
   List<AuditLogEntity> _logs = [];
   bool _chainValid = true;
 
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadLogs());
   }
 
   void _loadLogs() {
@@ -34,6 +34,11 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
       appBar: AppBar(
         title: const Text('Audit Logs'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadLogs,
+            tooltip: 'Refresh logs',
+          ),
           IconButton(
             icon: Icon(
               _chainValid ? Icons.verified : Icons.warning,
@@ -54,28 +59,32 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
           ),
         ],
       ),
-      body: _logs.isEmpty
-          ? const Center(child: Text('No audit logs recorded yet.'))
-          : ListView.builder(
-              itemCount: _logs.length,
-              itemBuilder: (context, index) {
-                final log = _logs[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: ListTile(
-                    leading: Icon(
-                      _actionIcon(log.actionType),
-                      color: _actionColor(log.actionType),
+      body: RefreshIndicator(
+        onRefresh: () async => _loadLogs(),
+        child: _logs.isEmpty
+            ? const Center(child: Text('No audit logs recorded yet.'))
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: _logs.length,
+                itemBuilder: (context, index) {
+                  final log = _logs[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    child: ListTile(
+                      leading: Icon(
+                        _actionIcon(log.actionType),
+                        color: _actionColor(log.actionType),
+                      ),
+                      title: Text('${log.moduleName} - ${log.actionType}'),
+                      subtitle: Text(
+                        '${log.targetEntity} | ${log.timestamp.toLocal()}',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
                     ),
-                    title: Text('${log.moduleName} - ${log.actionType}'),
-                    subtitle: Text(
-                      '${log.targetEntity} | ${log.timestamp.toLocal()}',
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
+      ),
     );
   }
 

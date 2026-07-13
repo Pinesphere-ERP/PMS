@@ -115,6 +115,50 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 
 
+@router.put("/{property_id}", status_code=200)
+async def update_property(property_id: str, payload: PropertyCreateInput, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+        
+    stmt = select(Property).where(Property.property_id == pid)
+    result = await db.execute(stmt)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+        
+    prop.property_name = payload.property_name
+    prop.property_type = payload.property_type or prop.property_type
+    prop.description = payload.description
+    prop.city = payload.city
+    prop.cover_image = payload.cover_image
+    
+    db.add(prop)
+    await db.commit()
+    return {"message": "Property updated successfully"}
+
+
+@router.delete("/{property_id}", status_code=204)
+async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+        
+    stmt = select(Property).where(Property.property_id == pid)
+    result = await db.execute(stmt)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+        
+    await db.delete(prop)
+    await db.commit()
+    return None
+
+
 from pydantic import BaseModel
 
 class RoomCreateInput(BaseModel):

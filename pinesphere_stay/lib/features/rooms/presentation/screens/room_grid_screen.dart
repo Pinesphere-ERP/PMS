@@ -140,6 +140,135 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
     );
   }
 
+  void _showEditResortDialog(BuildContext context, ResortModel resort) {
+    final nameCtrl = TextEditingController(text: resort.name);
+    final locationCtrl = TextEditingController(text: resort.location);
+    final descriptionCtrl = TextEditingController(text: resort.description);
+    final Map<String, dynamic> dialogData = {'image': resort.image};
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Edit Resort Property'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Resort Name'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: locationCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Location / City',
+                        hintText: 'e.g. Munnar, Kerala',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionCtrl,
+                      decoration: const InputDecoration(labelText: 'Description'),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Resort Cover Photo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => _pickResortImage(setDialogState, dialogData),
+                      child: Container(
+                        width: double.infinity,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.outlineVariant, width: 1.2),
+                        ),
+                        child: dialogData['image'].toString().isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: (kIsWeb || dialogData['image'].toString().startsWith('http') || dialogData['image'].toString().startsWith('blob:'))
+                                    ? Image.network(dialogData['image'].toString(), fit: BoxFit.cover)
+                                    : Image.file(File(dialogData['image'].toString()), fit: BoxFit.cover),
+                              )
+                            : const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_a_photo_outlined, size: 24, color: AppColors.outline),
+                                  SizedBox(height: 4),
+                                  Text('Select from Gallery', style: TextStyle(fontSize: 11, color: AppColors.outline)),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  onPressed: () {
+                    if (nameCtrl.text.isEmpty || locationCtrl.text.isEmpty) return;
+
+                    final updatedResort = ResortModel(
+                      id: resort.id,
+                      name: nameCtrl.text,
+                      location: locationCtrl.text,
+                      image: dialogData['image'].toString(),
+                      description: descriptionCtrl.text,
+                    );
+
+                    ref.read(pmsProvider.notifier).updateResort(updatedResort);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Updated property ${nameCtrl.text}!')),
+                    );
+                  },
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteResortConfirmation(BuildContext context, ResortModel resort) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Property?'),
+          content: Text('Are you sure you want to delete "${resort.name}"? This action cannot be undone and will delete all associated rooms and details.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              onPressed: () {
+                ref.read(pmsProvider.notifier).deleteResort(resort.id);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Deleted property "${resort.name}"!')),
+                );
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pmsState = ref.watch(pmsProvider);
@@ -262,25 +391,72 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Expanded(
-                                child: ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                  child: (kIsWeb || resort.image.startsWith('http') || resort.image.startsWith('blob:'))
-                                      ? Image.network(
-                                          resort.image,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => Container(
-                                            color: AppColors.surfaceContainerHigh,
-                                            child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
-                                          ),
-                                        )
-                                      : Image.file(
-                                          File(resort.image),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => Container(
-                                            color: AppColors.surfaceContainerHigh,
-                                            child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
-                                          ),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                        child: (kIsWeb || resort.image.startsWith('http') || resort.image.startsWith('blob:'))
+                                            ? Image.network(
+                                                resort.image,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) => Container(
+                                                  color: AppColors.surfaceContainerHigh,
+                                                  child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
+                                                ),
+                                              )
+                                            : Image.file(
+                                                File(resort.image),
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) => Container(
+                                                  color: AppColors.surfaceContainerHigh,
+                                                  child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: PopupMenuButton<String>(
+                                        icon: const CircleAvatar(
+                                          backgroundColor: Colors.black45,
+                                          radius: 14,
+                                          child: Icon(Icons.more_vert, size: 16, color: Colors.white),
                                         ),
+                                        padding: EdgeInsets.zero,
+                                        onSelected: (val) {
+                                          if (val == 'edit') {
+                                            _showEditResortDialog(context, resort);
+                                          } else if (val == 'delete') {
+                                            _showDeleteResortConfirmation(context, resort);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'edit',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.edit_rounded, size: 16),
+                                                SizedBox(width: 8),
+                                                Text('Edit Property'),
+                                              ],
+                                            ),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.delete_rounded, size: 16, color: AppColors.error),
+                                                SizedBox(width: 8),
+                                                Text('Delete Property', style: TextStyle(color: AppColors.error)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               Padding(
@@ -454,7 +630,23 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(widget.resort.image, fit: BoxFit.cover),
+                  (kIsWeb || widget.resort.image.startsWith('http') || widget.resort.image.startsWith('blob:'))
+                      ? Image.network(
+                          widget.resort.image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: AppColors.surfaceContainerHigh,
+                            child: const Icon(Icons.broken_image, size: 48, color: AppColors.outline),
+                          ),
+                        )
+                      : Image.file(
+                          File(widget.resort.image),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: AppColors.surfaceContainerHigh,
+                            child: const Icon(Icons.broken_image, size: 48, color: AppColors.outline),
+                          ),
+                        ),
                   Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
@@ -551,7 +743,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.65,
+                  childAspectRatio: 0.55,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -787,12 +979,12 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                 style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 11),
               ),
               const SizedBox(height: 6),
-              Row(
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
                 children: [
                   _buildRuleTag('WE: +₹${room.weekendPrice.toStringAsFixed(0)}'),
-                  const SizedBox(width: 4),
                   _buildRuleTag('SE: +₹${room.seasonPrice.toStringAsFixed(0)}'),
-                  const SizedBox(width: 4),
                   _buildRuleTag('ExB: ₹${room.extraBedPrice.toStringAsFixed(0)}'),
                 ],
               ),
@@ -839,7 +1031,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    'BOOK NOW',
+                    'VIEW STATUS',
                     style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                   ),
                 ),

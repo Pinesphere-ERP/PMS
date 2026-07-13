@@ -771,11 +771,12 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
                         value: selectedResortId,
+                        isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Select Resort / Property', border: OutlineInputBorder()),
                         items: pmsState.resorts.map((resort) {
                           return DropdownMenuItem(
                             value: resort.id,
-                            child: Text(resort.name),
+                            child: Text(resort.name, overflow: TextOverflow.ellipsis),
                           );
                         }).toList(),
                         onChanged: (val) => setSheetState(() {
@@ -788,11 +789,12 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         value: selectedRoomId,
+                        isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Select Room (Vacant Only)', border: OutlineInputBorder()),
                         items: currentFilteredRooms.map((room) {
                           return DropdownMenuItem(
                             value: room.id,
-                            child: Text('Room ${room.roomNumber} - ${room.type} (₹${room.price.toStringAsFixed(0)}/night)'),
+                            child: Text('Room ${room.roomNumber} - ${room.type} (₹${room.price.toStringAsFixed(0)}/night)', overflow: TextOverflow.ellipsis),
                           );
                         }).toList(),
                         onChanged: (val) => setSheetState(() {
@@ -813,9 +815,10 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: selectedNationality,
+                              isExpanded: true,
                               decoration: const InputDecoration(labelText: 'Guest Nationality', border: OutlineInputBorder()),
                               items: ['Indian', 'Foreigner'].map((nat) {
-                                return DropdownMenuItem(value: nat, child: Text(nat));
+                                return DropdownMenuItem(value: nat, child: Text(nat, overflow: TextOverflow.ellipsis));
                               }).toList(),
                               onChanged: (val) => setSheetState(() {
                                 selectedNationality = val ?? 'Indian';
@@ -831,9 +834,10 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: selectedIdProof,
+                              isExpanded: true,
                               decoration: const InputDecoration(labelText: 'ID Proof Type', border: OutlineInputBorder()),
                               items: ['Aadhaar Card', 'Passport', 'Driving License', 'Voter ID'].map((proof) {
-                                return DropdownMenuItem(value: proof, child: Text(proof));
+                                return DropdownMenuItem(value: proof, child: Text(proof, overflow: TextOverflow.ellipsis));
                               }).toList(),
                               onChanged: (val) => setSheetState(() => selectedIdProof = val ?? 'Aadhaar Card'),
                             ),
@@ -908,9 +912,10 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: selectedSource,
+                              isExpanded: true,
                               decoration: const InputDecoration(labelText: 'Booking Source', border: OutlineInputBorder()),
                               items: ['Walk-in', 'Phone', 'WhatsApp', 'Online'].map((src) {
-                                return DropdownMenuItem(value: src, child: Text(src));
+                                return DropdownMenuItem(value: src, child: Text(src, overflow: TextOverflow.ellipsis));
                               }).toList(),
                               onChanged: (val) => setSheetState(() => selectedSource = val ?? 'Walk-in'),
                             ),

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_client.dart';
 
@@ -210,15 +212,46 @@ class PmsState {
 }
 
 class PmsNotifier extends Notifier<PmsState> {
+  final List<String> _locallyDeletedResortIds = [];
+
   @override
   PmsState build() {
     Future.microtask(() async {
+      await _loadLocallyDeletedResorts();
       await loadResorts();
       await loadRooms();
       await loadBookings();
       await autoVacateExpiredBookings();
     });
     return _initialState();
+  }
+
+  Future<void> _loadLocallyDeletedResorts() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/deleted_resorts.json');
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final List<dynamic> list = jsonDecode(content);
+        _locallyDeletedResortIds.clear();
+        _locallyDeletedResortIds.addAll(list.cast<String>());
+        state = state.copyWith(
+          resorts: state.resorts.where((r) => !_locallyDeletedResortIds.contains(r.id)).toList(),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error loading deleted resorts list: $e');
+    }
+  }
+
+  Future<void> _saveLocallyDeletedResorts() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/deleted_resorts.json');
+      await file.writeAsString(jsonEncode(_locallyDeletedResortIds));
+    } catch (e) {
+      debugPrint('Error saving deleted resorts list: $e');
+    }
   }
 
   Future<void> loadRooms() async {
@@ -240,6 +273,8 @@ class PmsNotifier extends Notifier<PmsState> {
             {'name': 'Smart TV Access', 'price': 100.0},
           ];
 
+          List<String> imagesList = List<String>.from(json['images'] ?? []);
+
           try {
             if (descText.startsWith('{') && descText.endsWith('}')) {
               final Map<String, dynamic> parsed = Map<String, dynamic>.from(jsonDecode(descText));
@@ -253,9 +288,18 @@ class PmsNotifier extends Notifier<PmsState> {
                     .map((a) => Map<String, dynamic>.from(a as Map))
                     .toList();
               }
+              if (parsed['images'] != null) {
+                imagesList = List<String>.from(parsed['images']);
+              }
             }
           } catch (_) {
             // Fallback to legacy/default
+          }
+
+          if (imagesList.isEmpty) {
+            imagesList = [
+              'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80'
+            ];
           }
 
           return RoomModel(
@@ -272,7 +316,7 @@ class PmsNotifier extends Notifier<PmsState> {
                 ? '${json['status'][0].toUpperCase()}${json['status'].substring(1).toLowerCase()}' 
                 : 'Vacant',
             resortId: json['resort_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['resort_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : json['resort_id']),
-            images: List<String>.from(json['images'] ?? []),
+            images: imagesList,
             description: descText,
           );
         }).toList();
@@ -295,8 +339,8 @@ class PmsNotifier extends Notifier<PmsState> {
           final resortId = id == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (id == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : id);
           
           String descText = json['description'] ?? '';
-          String locVal = json['city'] ?? 'Unknown';
-          String imgVal = json['image'] ?? 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80';
+          String locVal = json['city'] ?? '';
+          String imgVal = json['image'] ?? '';
 
           try {
             if (descText.startsWith('{') && descText.endsWith('}')) {
@@ -309,14 +353,21 @@ class PmsNotifier extends Notifier<PmsState> {
             // Fallback to legacy/default
           }
 
-          if (locVal == 'Unknown') {
-            if (resortId == 'resort-1') locVal = 'Kodaikanal, Tamil Nadu';
-            if (resortId == 'resort-2') locVal = 'Varkala, Kerala';
+          if (locVal.isEmpty || locVal == 'Unknown') {
+            if (resortId == 'resort-1') {
+              locVal = 'Kodaikanal, Tamil Nadu';
+            } else if (resortId == 'resort-2') {
+              locVal = 'Varkala, Kerala';
+            } else {
+              locVal = 'Unknown';
+            }
           }
-          if (resortId == 'resort-1') {
-            imgVal = 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80';
-          } else if (resortId == 'resort-2') {
-            imgVal = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80';
+          if (imgVal.isEmpty) {
+            if (resortId == 'resort-1') {
+              imgVal = 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80';
+            } else {
+              imgVal = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80';
+            }
           }
 
           return ResortModel(
@@ -326,8 +377,10 @@ class PmsNotifier extends Notifier<PmsState> {
             location: locVal,
             description: descText,
           );
-        }).toList();
-        state = state.copyWith(resorts: loadedResorts.isEmpty ? _initialState().resorts : loadedResorts);
+        }).where((resort) => !_locallyDeletedResortIds.contains(resort.id)).toList();
+
+        final defaultFilteredResorts = _initialState().resorts.where((r) => !_locallyDeletedResortIds.contains(r.id)).toList();
+        state = state.copyWith(resorts: loadedResorts.isEmpty ? defaultFilteredResorts : loadedResorts);
       }
     } catch (e) {
       debugPrint('Failed to load resorts: $e');
@@ -588,6 +641,7 @@ class PmsNotifier extends Notifier<PmsState> {
           'holiday_price': room.holidayPrice,
           'extra_bed_price': room.extraBedPrice,
           'amenities': room.amenities,
+          'images': room.images,
         }),
         'image_url': room.images.isNotEmpty ? room.images.first : '',
       });
@@ -635,6 +689,71 @@ class PmsNotifier extends Notifier<PmsState> {
       // Offline fallback: Add to local state
       state = state.copyWith(
         resorts: [...state.resorts, resort],
+      );
+    }
+  }
+
+  Future<void> updateResort(ResortModel resort) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final String resolvedId = resort.id == 'resort-1' 
+          ? '33333333-3333-3333-3333-333333333333' 
+          : (resort.id == 'resort-2' ? '44444444-4444-4444-4444-444444444444' : resort.id);
+
+      final response = await dio.put('/properties/$resolvedId', data: {
+        'owner_name': 'Default Owner',
+        'owner_mobile': '9999999999',
+        'owner_email': 'owner@example.com',
+        'business_name': '${resort.name} Business',
+        'property_name': resort.name,
+        'property_type': 'Resort',
+        'star_category': 5,
+        'year_established': 2024,
+        'total_floors': 3,
+        'total_rooms': 10,
+        'description': jsonEncode({
+          'description': resort.description,
+          'location': resort.location,
+          'image': resort.image,
+        }),
+        'city': resort.location,
+        'cover_image': resort.image,
+      });
+
+      if (response.statusCode == 200) {
+        await loadResorts();
+      }
+    } catch (e) {
+      debugPrint('Failed to update resort: $e');
+      // Offline fallback: Update local state
+      final index = state.resorts.indexWhere((r) => r.id == resort.id);
+      if (index != -1) {
+        final list = List<ResortModel>.from(state.resorts);
+        list[index] = resort;
+        state = state.copyWith(resorts: list);
+      }
+    }
+  }
+
+  Future<void> deleteResort(String resortId) async {
+    try {
+      if (!_locallyDeletedResortIds.contains(resortId)) {
+        _locallyDeletedResortIds.add(resortId);
+        await _saveLocallyDeletedResorts();
+      }
+
+      final dio = ref.read(dioClientProvider);
+      final String resolvedId = resortId == 'resort-1' 
+          ? '33333333-3333-3333-3333-333333333333' 
+          : (resortId == 'resort-2' ? '44444444-4444-4444-4444-444444444444' : resortId);
+
+      await dio.delete('/properties/$resolvedId');
+      await loadResorts();
+    } catch (e) {
+      debugPrint('Failed to delete resort: $e');
+      // Offline fallback: Delete locally
+      state = state.copyWith(
+        resorts: state.resorts.where((r) => r.id != resortId).toList(),
       );
     }
   }

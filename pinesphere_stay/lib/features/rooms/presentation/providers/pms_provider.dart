@@ -474,6 +474,19 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> updateRoomDetails(String roomId, RoomModel updatedRoom) async {
     try {
+      ref.read(auditServiceProvider).log(
+        moduleName: 'rooms',
+        actionType: 'update_room_details',
+        targetEntity: 'room',
+        targetRecordId: roomId,
+        newValue: {
+          'room_number': updatedRoom.roomNumber,
+          'type': updatedRoom.type,
+          'price': updatedRoom.price,
+          'status': updatedRoom.status,
+          'description': updatedRoom.description,
+        },
+      );
       final dio = ref.read(dioClientProvider);
       final response = await dio.put('/properties/rooms/$roomId', data: {
         'room_number': updatedRoom.roomNumber,
@@ -519,6 +532,18 @@ class PmsNotifier extends Notifier<PmsState> {
           final booking = state.bookings[bookingIndex];
           if (booking.checkOutDate.isBefore(now)) {
             try {
+              ref.read(auditServiceProvider).log(
+                moduleName: 'checkout',
+                actionType: 'auto_vacate',
+                targetEntity: 'booking',
+                targetRecordId: booking.id,
+                newValue: {
+                  'room_id': room.id,
+                  'room_number': room.roomNumber,
+                  'guest_name': booking.guestName,
+                  'scheduled_checkout': booking.checkOutDate.toIso8601String(),
+                },
+              );
               await dio.post('/bookings/${booking.id}/check-out', data: {
                 'damage_bill': 0.0,
                 'laundry_bill': 0.0,
@@ -629,6 +654,17 @@ class PmsNotifier extends Notifier<PmsState> {
       
       if (response.statusCode == 201) {
         final newResortId = response.data['property_id'];
+        ref.read(auditServiceProvider).log(
+          moduleName: 'properties',
+          actionType: 'add_resort_with_rooms',
+          targetEntity: 'property',
+          targetRecordId: newResortId?.toString() ?? '',
+          newValue: {
+            'name': resort.name,
+            'location': resort.location,
+            'num_rooms': numRooms,
+          },
+        );
         for (int i = 0; i < numRooms; i++) {
           final roomNumber = '${(state.resorts.length + 1) * 100 + i + 1}';
           final newRoom = RoomModel(

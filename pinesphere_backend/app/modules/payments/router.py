@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
@@ -33,17 +34,20 @@ def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
 def get_current_user_id() -> Optional[uuid.UUID]:
     return None # Mock user ID
 
-@router.post("/", response_model=PaymentRead, status_code=201)
+@router.post("/", status_code=501)
 async def create_payment(
     payment_data: PaymentCreate,
     service: PaymentService = Depends(get_payment_service),
     user_id: uuid.UUID = Depends(get_current_user_id)
 ):
-    try:
-        payment = await service.create_payment(payment_data, user_id)
-        return payment
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return JSONResponse(
+        status_code=501,
+        content={
+            "success": False,
+            "status": "not_implemented",
+            "message": "Payment provider integration is not configured",
+        },
+    )
 
 @router.get("/", response_model=PaymentListResponse)
 async def list_payments(
@@ -77,8 +81,17 @@ async def create_razorpay_order(
     service: PaymentService = Depends(get_payment_service)
 ):
     try:
-        return await service.create_razorpay_order(request)
+        return await service.create_razorpay_order(request.amount)
     except ValueError as e:
+        if str(e) == "Razorpay credentials not configured":
+            return JSONResponse(
+                status_code=501,
+                content={
+                    "success": False,
+                    "status": "not_implemented",
+                    "message": "Payment provider integration is not configured",
+                },
+            )
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -333,34 +346,26 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)):
 
 @router.post("/pending/{due_id}/mark-paid")
 async def mark_due_as_paid(due_id: str, db: AsyncSession = Depends(get_db)):
-    import uuid
-    try:
-        uid = uuid.UUID(due_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid due ID")
-    result = await db.execute(select(PendingDue).where(PendingDue.id == uid))
-    due = result.scalars().first()
-    if not due:
-        raise HTTPException(status_code=404, detail="Pending due not found")
-    await db.delete(due)
-    await db.commit()
-    return {"message": "Marked as paid and removed from pending dues"}
+    return JSONResponse(
+        status_code=501,
+        content={
+            "success": False,
+            "status": "not_implemented",
+            "message": "Payment provider integration is not configured",
+        },
+    )
 
 
 @router.post("/pending/{due_id}/remind")
 async def send_reminder(due_id: str, db: AsyncSession = Depends(get_db)):
-    import uuid
-    try:
-        uid = uuid.UUID(due_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid due ID")
-    result = await db.execute(select(PendingDue).where(PendingDue.id == uid))
-    due = result.scalars().first()
-    if not due:
-        raise HTTPException(status_code=404, detail="Pending due not found")
-    due.reminder_status = "Reminded"
-    await db.commit()
-    return {"message": "Reminder queued successfully"}
+    return JSONResponse(
+        status_code=501,
+        content={
+            "success": False,
+            "status": "not_implemented",
+            "message": "Payment provider integration is not configured",
+        },
+    )
 
 @router.post("/razorpay/verify")
 async def verify_razorpay_payment(
@@ -402,4 +407,11 @@ async def get_payment(
 
 @router.post("/pending/{due_id}/link")
 async def send_payment_link(due_id: str, db: AsyncSession = Depends(get_db)):
-    return {"message": "Payment link sent via WhatsApp/SMS", "link": f"https://pay.pinesphere.in/{due_id}"}
+    return JSONResponse(
+        status_code=501,
+        content={
+            "success": False,
+            "status": "not_implemented",
+            "message": "Payment provider integration is not configured",
+        },
+    )

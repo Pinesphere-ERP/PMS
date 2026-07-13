@@ -13,7 +13,12 @@ class PaymentService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_payment(self, payment_data: PaymentCreate, user_id: uuid.UUID) -> Payment:
+    async def create_payment(
+        self,
+        payment_data: PaymentCreate,
+        user_id: uuid.UUID,
+        provider_transaction_id: str,
+    ) -> Payment:
         # Validate invoice if provided
         if payment_data.invoice_id:
             invoice_result = await self.db.execute(select(Invoice).filter(Invoice.invoice_id == payment_data.invoice_id))
@@ -26,13 +31,10 @@ class PaymentService:
             if invoice.grand_total and payment_data.amount > invoice.grand_total:
                 raise ValueError("Payment amount cannot exceed invoice total")
 
-        # Create the Payment record
-        transaction_id = f"TXN-{uuid.uuid4().hex[:8].upper()}"
-        
         new_payment = Payment(
             invoice_id=payment_data.invoice_id,
             booking_id=payment_data.booking_id,
-            transaction_id=transaction_id,
+            transaction_id=provider_transaction_id,
             payment_mode=payment_data.payment_mode,
             amount=payment_data.amount,
             upi_id=payment_data.upi_id,
@@ -40,8 +42,8 @@ class PaymentService:
             card_last4=payment_data.card_last4,
             collected_by=user_id,
             remarks=payment_data.remarks,
-            status='fully_paid', # For Phase 1, assume direct success
-            synced=True # Online only for Phase 1
+            status="fully_paid",
+            synced=True,
         )
         self.db.add(new_payment)
         await self.db.flush() # To get payment_id
@@ -153,12 +155,12 @@ class PaymentService:
             split_payments=split_payments
         )
 
-        # Call existing logic but override transaction ID
-        payment = await self.create_payment(payment_data, user_id)
-        payment.transaction_id = razorpay_payment_id
-        
-        # We can also fetch the payment from Razorpay to get card/bank details, 
-        # but for Phase 1 we will just mark it as online.
+        payment = await self.create_payment(
+            payment_data,
+            user_id,
+            provider_transaction_id=razorpay_payment_id,
+        )
+
         await self.db.flush()
         await self.db.refresh(payment)
         

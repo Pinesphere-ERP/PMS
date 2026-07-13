@@ -507,18 +507,7 @@ class PendingDue(Base, TimestampMixin):
     reminder_status: Mapped[Optional[str]] = mapped_column(String(100))
 
 
-# ── K. Invoice Items (guest billing line items) ───────────────────────────────
 
-class InvoiceItem(Base, TimestampMixin):
-    __tablename__ = "invoice_items"
-    __table_args__ = {'extend_existing': True}
-    item_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoices.invoice_id"), nullable=False)
-    description: Mapped[str] = mapped_column(String(200), nullable=False)
-    category: Mapped[Optional[str]] = mapped_column(String(30))
-    quantity: Mapped[int] = mapped_column(Integer, default=1)
-    unit_price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
-    total_price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
 
 
 # ── L. Split Payments ─────────────────────────────────────────────────────────

@@ -38,7 +38,10 @@ migrate_working_dir/
 *.freezed.dart
 objectbox-model.json
 objectbox.g.dart
-    
+# Flutter generated plugin files
+*generated_plugin_registrant.cc
+*generated_plugin_registrant.h
+*generated_plugins.cmake
 # Symbolication related
 app.*.symbols
 

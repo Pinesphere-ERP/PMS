@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/audit_service.dart';
 import '../../domain/models/audit_log_entity.dart';
+import 'audit_log_detail_screen.dart';
 
 class AuditLogsScreen extends ConsumerStatefulWidget {
   const AuditLogsScreen({super.key});
@@ -70,17 +71,24 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> with RouteAwa
                   final log = _logs[index];
                   return Card(
                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: ListTile(
-                      leading: Icon(
-                        _actionIcon(log.actionType),
-                        color: _actionColor(log.actionType),
-                      ),
-                      title: Text('${log.moduleName} - ${log.actionType}'),
-                      subtitle: Text(
-                        '${log.targetEntity} | ${log.timestamp.toLocal()}',
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
+                  child: ListTile(
+                    leading: Icon(
+                      _actionIcon(log.actionType),
+                      color: _actionColor(log.actionType),
                     ),
+                    title: Text('${log.moduleName} - ${log.actionType}'),
+                    subtitle: Text(
+                      '${log.targetEntity} | ${log.timestamp.toLocal()}',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AuditLogDetailScreen(log: log),
+                        ),
+                      );
+                    },
+                  ),
                   );
                 },
               ),

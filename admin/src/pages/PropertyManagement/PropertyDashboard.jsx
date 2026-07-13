@@ -23,6 +23,11 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { propertyService } from '../../services/propertyService';
+import { utils, writeFile } from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun } from 'docx';
+import { saveAs } from 'file-saver';
 
 const fallbackKpiStats = [
   { name: 'Total Properties', value: '0', icon: Building2, color: 'text-pine-DEFAULT', bg: 'bg-pine-50' },
@@ -36,12 +41,93 @@ export default function PropertyDashboard() {
   const [selectedProp, setSelectedProp] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState('excel');
 
   // API State
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [properties, setProperties] = useState([]);
   const [kpis, setKpis] = useState([]);
+
+  const handleExport = async () => {
+    if (properties.length === 0) {
+      alert('No properties to export');
+      return;
+    }
+    
+    const data = properties.map(p => ({
+      'Prop ID': (p.id || '').substring(0,8) + '...',
+      'Property Name': p.name || p.property_name || 'N/A',
+      'Type': p.type || p.property_type || 'N/A',
+      'Stars': p.star_category || 'N/A',
+      'Built': p.year_established || 'N/A',
+      'Floors': p.floors || 0,
+      'Rooms': p.rooms || 0,
+      'City': p.city || 'N/A',
+      'Owner Name': p.owner || 'N/A',
+      'Mobile': p.mobile || 'N/A',
+      'Email': p.owner_email || 'N/A',
+      'Owner PAN': p.owner_pan || 'N/A',
+      'Business Name': p.business_name || 'N/A',
+      'Biz Type': p.business_type || 'N/A',
+      'Reg No': p.business_reg || 'N/A',
+      'GST No': p.business_gst || 'N/A',
+      'Biz PAN': p.business_pan || 'N/A',
+      'Verified': p.verificationStatus || 'Unknown',
+      'Sub Status': p.subscriptionStatus || p.status || 'Unknown'
+    }));
+
+    if (exportFormat === 'excel' || exportFormat === 'csv') {
+      const ws = utils.json_to_sheet(data);
+      const wb = utils.book_new();
+      utils.book_append_sheet(wb, ws, "Properties");
+      writeFile(wb, `properties.${exportFormat === 'excel' ? 'xlsx' : 'csv'}`);
+    } else if (exportFormat === 'pdf') {
+      const doc = new jsPDF('landscape');
+      doc.text("Properties List", 14, 15);
+      doc.autoTable({
+        head: [Object.keys(data[0])],
+        body: data.map(Object.values),
+        startY: 20,
+        styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak' },
+        headStyles: { fillColor: [20, 83, 45], textColor: 255, fontStyle: 'bold' }, // pine color
+        margin: { top: 20, left: 10, right: 10 }
+      });
+      doc.save('properties.pdf');
+    } else if (exportFormat === 'docx') {
+      const { PageOrientation } = await import('docx');
+      const table = new Table({
+        rows: [
+          new TableRow({
+            children: Object.keys(data[0]).map(key => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: key, bold: true, size: 16 })] })] })),
+          }),
+          ...data.map(row => new TableRow({
+            children: Object.values(row).map(val => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(val), size: 14 })] })] })),
+          }))
+        ]
+      });
+      
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              size: { orientation: PageOrientation.LANDSCAPE }
+            }
+          },
+          children: [
+            new Paragraph({ children: [new TextRun({ text: "Properties List", bold: true, size: 28 })] }),
+            new Paragraph({ text: "" }),
+            table
+          ]
+        }]
+      });
+      
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, "properties.docx");
+    }
+    setIsExportModalOpen(false);
+  };
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -90,13 +176,9 @@ export default function PropertyDashboard() {
           <p className="text-sm text-gray-500 mt-1">Manage onboarded properties and track verification progress.</p>
         </div>
         <div className="flex space-x-3">
-          <button className="saas-button-secondary">
+          <button className="saas-button-secondary" onClick={() => setIsExportModalOpen(true)}>
             <Download className="h-4 w-4 mr-2" />
             Export
-          </button>
-          <button className="saas-button-secondary">
-            <Upload className="h-4 w-4 mr-2" />
-            Import
           </button>
           <button onClick={() => navigate('/properties/add')} className="saas-button-primary">
             <Plus className="h-4 w-4 mr-2" />
@@ -322,6 +404,45 @@ export default function PropertyDashboard() {
           )}
         </div>
       </>
+
+      {/* Export Modal */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-lg font-semibold text-gray-900">Export Properties</h2>
+              <button onClick={() => setIsExportModalOpen(false)} className="text-gray-400 hover:text-gray-900 transition">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-500">Select the format in which you want to export the properties list.</p>
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition">
+                  <input type="radio" name="exportFormat" value="excel" checked={exportFormat === 'excel'} onChange={(e) => setExportFormat(e.target.value)} className="h-4 w-4 text-pine focus:ring-pine border-gray-300" />
+                  <span className="text-sm font-medium text-gray-700">Excel (.xlsx)</span>
+                </label>
+                <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition">
+                  <input type="radio" name="exportFormat" value="csv" checked={exportFormat === 'csv'} onChange={(e) => setExportFormat(e.target.value)} className="h-4 w-4 text-pine focus:ring-pine border-gray-300" />
+                  <span className="text-sm font-medium text-gray-700">CSV (.csv)</span>
+                </label>
+                <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition">
+                  <input type="radio" name="exportFormat" value="pdf" checked={exportFormat === 'pdf'} onChange={(e) => setExportFormat(e.target.value)} className="h-4 w-4 text-pine focus:ring-pine border-gray-300" />
+                  <span className="text-sm font-medium text-gray-700">PDF (.pdf)</span>
+                </label>
+                <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition">
+                  <input type="radio" name="exportFormat" value="docx" checked={exportFormat === 'docx'} onChange={(e) => setExportFormat(e.target.value)} className="h-4 w-4 text-pine focus:ring-pine border-gray-300" />
+                  <span className="text-sm font-medium text-gray-700">Word Document (.docx)</span>
+                </label>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-3">
+              <button onClick={() => setIsExportModalOpen(false)} className="saas-button-secondary">Cancel</button>
+              <button onClick={handleExport} className="saas-button-primary bg-pine text-white">Export Data</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

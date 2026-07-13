@@ -4,7 +4,9 @@ def main():
     login_payload = {
         "email": "admin@pinesphere.com",
         "password": "password123",
-        "device_uid": "d3b54011-e54b-448f-8244-6e4ba1ef094f"
+        "device_id": "a92c42d31221b34a",
+        "device_name": "Linux",
+        "device_fingerprint": "a92c42d31221b34a"
     }
     resp = requests.post("https://pms-bvko.onrender.com/api/v1/auth/login", json=login_payload)
     if resp.status_code != 200:

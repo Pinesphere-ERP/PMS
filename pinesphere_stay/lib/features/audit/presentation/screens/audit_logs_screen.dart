@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/audit_service.dart';
 import '../../domain/models/audit_log_entity.dart';
+import 'audit_log_detail_screen.dart';
 
 class AuditLogsScreen extends ConsumerStatefulWidget {
   const AuditLogsScreen({super.key});
@@ -10,14 +11,14 @@ class AuditLogsScreen extends ConsumerStatefulWidget {
   ConsumerState<AuditLogsScreen> createState() => _AuditLogsScreenState();
 }
 
-class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
+class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> with RouteAware {
   List<AuditLogEntity> _logs = [];
   bool _chainValid = true;
 
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadLogs());
   }
 
   void _loadLogs() {
@@ -34,6 +35,11 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
       appBar: AppBar(
         title: const Text('Audit Logs'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadLogs,
+            tooltip: 'Refresh logs',
+          ),
           IconButton(
             icon: Icon(
               _chainValid ? Icons.verified : Icons.warning,
@@ -54,14 +60,17 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
           ),
         ],
       ),
-      body: _logs.isEmpty
-          ? const Center(child: Text('No audit logs recorded yet.'))
-          : ListView.builder(
-              itemCount: _logs.length,
-              itemBuilder: (context, index) {
-                final log = _logs[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      body: RefreshIndicator(
+        onRefresh: () async => _loadLogs(),
+        child: _logs.isEmpty
+            ? const Center(child: Text('No audit logs recorded yet.'))
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: _logs.length,
+                itemBuilder: (context, index) {
+                  final log = _logs[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   child: ListTile(
                     leading: Icon(
                       _actionIcon(log.actionType),
@@ -72,10 +81,18 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
                       '${log.targetEntity} | ${log.timestamp.toLocal()}',
                     ),
                     trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AuditLogDetailScreen(log: log),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
+      ),
     );
   }
 

@@ -48,7 +48,7 @@ class _RevenueBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kpiAsync = ref.watch(todaysKpiStreamProvider(propertyId: propertyId));
-    final currencyFormatter = NumberFormat.currency(symbol: '\$');
+    final currencyFormatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
 
     return kpiAsync.when(
       data: (kpi) {

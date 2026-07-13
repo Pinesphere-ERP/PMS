@@ -61,6 +61,14 @@ class AuthNotifier extends _$AuthNotifier {
         email: email,
         role: role,
       );
+      ref.read(auditServiceProvider).log(
+        moduleName: 'auth',
+        actionType: 'login_success',
+        targetEntity: 'user',
+        targetRecordId: user.id,
+        userId: user.id,
+        newValue: {'email': email, 'role': role.name, 'auth_type': 'mock_bypass'},
+      );
       state = AuthState.authenticated(user);
       return;
     }

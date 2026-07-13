@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../audit/data/audit_service.dart';
 
 class ResortModel {
   final String id;
@@ -383,11 +384,27 @@ class PmsNotifier extends Notifier<PmsState> {
         'guest_id_number': booking.guestIdNumber,
       });
       
+      final newBookingId = response.data['booking_id'];
+
+      ref.read(auditServiceProvider).log(
+        moduleName: 'bookings',
+        actionType: 'create_booking',
+        targetEntity: 'booking',
+        targetRecordId: newBookingId?.toString() ?? '',
+        propertyId: booking.resortId == 'resort-1'
+            ? '33333333-3333-3333-3333-333333333333'
+            : '44444444-4444-4444-4444-444444444444',
+        newValue: {
+          'guest_name': booking.guestName,
+          'room_id': booking.roomId,
+          'check_in_date': booking.checkInDate.toIso8601String().substring(0, 10),
+          'check_out_date': booking.checkOutDate.toIso8601String().substring(0, 10),
+          'total_payable': booking.totalSum,
+        },
+      );
+
       if (response.statusCode == 201) {
-        // Re-check-in if needed or just reload
-        final newBookingId = response.data['booking_id'];
         await dio.post('/bookings/$newBookingId/check-in');
-        
         await loadRooms();
         await loadBookings();
       }
@@ -412,6 +429,19 @@ class PmsNotifier extends Notifier<PmsState> {
         'restaurant_bill': restaurant,
       });
       
+      ref.read(auditServiceProvider).log(
+        moduleName: 'checkout',
+        actionType: 'check_out',
+        targetEntity: 'booking',
+        targetRecordId: bookingId,
+        newValue: {
+          'damage_bill': damage,
+          'laundry_bill': laundry,
+          'minibar_bill': miniBar,
+          'restaurant_bill': restaurant,
+        },
+      );
+
       if (response.statusCode == 200) {
         await loadRooms();
         await loadBookings();
@@ -427,6 +457,13 @@ class PmsNotifier extends Notifier<PmsState> {
       if (status == 'Vacant') {
         final response = await dio.post('/properties/rooms/$roomId/clean');
         if (response.statusCode == 200) {
+          ref.read(auditServiceProvider).log(
+            moduleName: 'rooms',
+            actionType: 'update_room_status',
+            targetEntity: 'room',
+            targetRecordId: roomId,
+            newValue: {'status': status},
+          );
           await loadRooms();
         }
       }
@@ -458,6 +495,12 @@ class PmsNotifier extends Notifier<PmsState> {
       final dio = ref.read(dioClientProvider);
       final response = await dio.delete('/properties/rooms/$roomId');
       if (response.statusCode == 200) {
+        ref.read(auditServiceProvider).log(
+          moduleName: 'rooms',
+          actionType: 'delete_room',
+          targetEntity: 'room',
+          targetRecordId: roomId,
+        );
         await loadRooms();
       }
     } catch (e) {
@@ -511,6 +554,18 @@ class PmsNotifier extends Notifier<PmsState> {
       });
       
       if (response.statusCode == 201) {
+        ref.read(auditServiceProvider).log(
+          moduleName: 'rooms',
+          actionType: 'add_room',
+          targetEntity: 'room',
+          targetRecordId: response.data['room_id']?.toString() ?? '',
+          newValue: {
+            'room_number': room.roomNumber,
+            'type': room.type,
+            'price': room.price,
+            'resort_id': room.resortId,
+          },
+        );
         await loadRooms();
       }
     } catch (e) {
@@ -537,6 +592,16 @@ class PmsNotifier extends Notifier<PmsState> {
       });
       
       if (response.statusCode == 201) {
+        ref.read(auditServiceProvider).log(
+          moduleName: 'properties',
+          actionType: 'add_resort',
+          targetEntity: 'property',
+          targetRecordId: response.data['property_id']?.toString() ?? '',
+          newValue: {
+            'name': resort.name,
+            'location': resort.location,
+          },
+        );
         await loadResorts();
       }
     } catch (e) {

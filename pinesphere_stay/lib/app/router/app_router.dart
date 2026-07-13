@@ -23,6 +23,7 @@ import '../../features/device_management/presentation/screens/device_registratio
 import '../../features/device_management/presentation/screens/device_sync_status_screen.dart';
 import '../../features/checkin/presentation/screens/checkin_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
+import '../../features/reports/presentation/screens/pl_report_screen.dart';
 import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
@@ -106,6 +107,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/audit-logs',
         builder: (context, state) => const AuditLogsScreen(),
+      ),
+      GoRoute(
+        path: '/pl-report',
+        builder: (context, state) => const PLReportScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

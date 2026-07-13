@@ -33,6 +33,15 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Generated files
+*.g.dart
+*.freezed.dart
+objectbox-model.json
+objectbox.g.dart
+# Flutter generated plugin files
+*generated_plugin_registrant.cc
+*generated_plugin_registrant.h
+*generated_plugins.cmake
 # Symbolication related
 app.*.symbols
 

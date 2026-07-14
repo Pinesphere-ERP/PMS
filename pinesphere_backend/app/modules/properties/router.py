@@ -89,7 +89,6 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
     db.add(new_business)
     await db.flush()
 
-    # Create Property
     new_property = Property(
         business_id=new_business.business_id,
         owner_id=owner.owner_id,
@@ -100,6 +99,8 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         total_floors=payload.total_floors,
         total_rooms=payload.total_rooms,
         description=payload.description,
+        city=payload.city,
+        cover_image=payload.cover_image,
         onboarding_status="draft",
     )
     db.add(new_property)
@@ -114,6 +115,50 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 
 
+@router.put("/{property_id}", status_code=200)
+async def update_property(property_id: str, payload: PropertyCreateInput, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+        
+    stmt = select(Property).where(Property.property_id == pid)
+    result = await db.execute(stmt)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+        
+    prop.property_name = payload.property_name
+    prop.property_type = payload.property_type or prop.property_type
+    prop.description = payload.description
+    prop.city = payload.city
+    prop.cover_image = payload.cover_image
+    
+    db.add(prop)
+    await db.commit()
+    return {"message": "Property updated successfully"}
+
+
+@router.delete("/{property_id}", status_code=204)
+async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+        
+    stmt = select(Property).where(Property.property_id == pid)
+    result = await db.execute(stmt)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+        
+    await db.delete(prop)
+    await db.commit()
+    return None
+
+
 from pydantic import BaseModel
 
 class RoomCreateInput(BaseModel):
@@ -122,6 +167,7 @@ class RoomCreateInput(BaseModel):
     price: float
     resort_id: str
     description: Optional[str] = ""
+    image_url: Optional[str] = ""
 
 
 @router.get("/rooms")
@@ -141,7 +187,7 @@ async def get_rooms(db: AsyncSession = Depends(get_db)):
             "resort_id": str(cat.property_id),
             "description": cat.description or "",
             "images": [
-                "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
+                room.image_url or "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
         })
     return data
@@ -196,12 +242,12 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
         db.add(category)
         await db.flush()
         
-    # 2. Create the Room
     new_room = Room(
         room_category_id=category.room_category_id,
         room_number=payload.room_number,
         housekeeping_status="clean",
-        occupancy_status="vacant"
+        occupancy_status="vacant",
+        image_url=payload.image_url
     )
     db.add(new_room)
     await db.commit()
@@ -319,6 +365,7 @@ async def get_properties(db: AsyncSession = Depends(get_db)):
             "property_name": prop.property_name,
             "type": prop.property_type or "Hotel",
             "property_type": prop.property_type or "Hotel",
+            "image": prop.cover_image or "https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80",
             "star_category": prop.star_category or "N/A",
             "year_established": prop.year_established or "N/A",
             "floors": prop.total_floors or 0,
@@ -335,7 +382,7 @@ async def get_properties(db: AsyncSession = Depends(get_db)):
             "business_reg": biz.business_reg_number or "N/A",
             "business_gst": biz.gst_number or "N/A",
             "business_pan": biz.pan_number or "N/A",
-            "city": "Unknown",  # city not in current schema; extend Property model to add
+            "city": prop.city or "Unknown",
             "status": status,
             "verificationStatus": _verification_status(prop.onboarding_status),
             "subscriptionStatus": sub.status if sub else "No Subscription",

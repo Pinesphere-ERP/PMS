@@ -2,10 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-import sys
 from app.core.config import settings
 from app.api import api_router
 
+<<<<<<< HEAD
+=======
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from app.infra.database import engine, AsyncSessionLocal, Base
@@ -75,11 +76,11 @@ async def lifespan(app: FastAPI):
         
     yield
 
+>>>>>>> origin/main
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Offline-First Enterprise PMS Backend API",
-    lifespan=lifespan
 )
 
 # CORS — allow Vite dev server and any localhost port

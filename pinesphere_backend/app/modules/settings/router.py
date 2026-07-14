@@ -3,6 +3,10 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
+from app.core.dependencies import get_current_user
+from app.infra.models import User, Role
 
 from app.infra.database import get_db
 from app.modules.settings import service
@@ -19,6 +23,20 @@ from app.modules.settings.schemas import (
 )
 
 router = APIRouter()
+
+async def require_property_access(
+    property_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
+    role = role_res.scalars().first()
+    
+    if role and role.role_code == "SUPER_ADMIN":
+        return
+        
+    if user.property_id != property_id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this property's settings")
 
 
 # ── System Configuration Endpoints ─────────────────────────────
@@ -82,6 +100,7 @@ async def delete_system_config(
     "/property/{property_id}",
     response_model=PropertySettingResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_property_access)]
 )
 async def create_property_setting(
     property_id: uuid.UUID,
@@ -91,7 +110,7 @@ async def create_property_setting(
     return await service.create_property_setting(db, property_id, req)
 
 
-@router.get("/property/{property_id}", response_model=PropertySettingListResponse)
+@router.get("/property/{property_id}", response_model=PropertySettingListResponse, dependencies=[Depends(require_property_access)])
 async def list_property_settings(
     property_id: uuid.UUID,
     search: Optional[str] = Query(None, description="Search by key or description"),
@@ -100,7 +119,7 @@ async def list_property_settings(
     return await service.list_property_settings(db, property_id, search=search)
 
 
-@router.get("/property/{property_id}/{setting_id}", response_model=PropertySettingResponse)
+@router.get("/property/{property_id}/{setting_id}", response_model=PropertySettingResponse, dependencies=[Depends(require_property_access)])
 async def get_property_setting(
     property_id: uuid.UUID,
     setting_id: uuid.UUID,
@@ -109,7 +128,7 @@ async def get_property_setting(
     return await service.get_property_setting(db, property_id, setting_id)
 
 
-@router.get("/property/{property_id}/by-key/{setting_key}", response_model=Optional[PropertySettingResponse])
+@router.get("/property/{property_id}/by-key/{setting_key}", response_model=Optional[PropertySettingResponse], dependencies=[Depends(require_property_access)])
 async def get_property_setting_by_key(
     property_id: uuid.UUID,
     setting_key: str,
@@ -121,7 +140,7 @@ async def get_property_setting_by_key(
     return result
 
 
-@router.patch("/property/{property_id}/{setting_id}", response_model=PropertySettingResponse)
+@router.patch("/property/{property_id}/{setting_id}", response_model=PropertySettingResponse, dependencies=[Depends(require_property_access)])
 async def update_property_setting(
     property_id: uuid.UUID,
     setting_id: uuid.UUID,
@@ -131,7 +150,7 @@ async def update_property_setting(
     return await service.update_property_setting(db, property_id, setting_id, req)
 
 
-@router.delete("/property/{property_id}/{setting_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/property/{property_id}/{setting_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_property_access)])
 async def delete_property_setting(
     property_id: uuid.UUID,
     setting_id: uuid.UUID,
@@ -144,6 +163,7 @@ async def delete_property_setting(
     "/property/{property_id}/bulk",
     response_model=PropertySettingListResponse,
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(require_property_access)]
 )
 async def bulk_upsert_property_settings(
     property_id: uuid.UUID,

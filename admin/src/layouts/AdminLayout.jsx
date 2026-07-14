@@ -55,7 +55,7 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans text-gray-900 selection:bg-pine-light/20 selection:text-pine">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 shadow-sm`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/70 backdrop-blur-md border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 shadow-sm`}>
         <div className="h-16 flex items-center px-6 border-b border-gray-100">
           <Trees className="h-6 w-6 text-pine mr-2" />
           <span className="text-lg font-semibold text-gray-900 tracking-tight">Pinesphere</span>
@@ -187,7 +187,7 @@ export default function AdminLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Topbar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+        <header className="h-16 bg-white/70 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
           <div className="flex items-center flex-1">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2,
@@ -307,7 +308,8 @@ export default function PropertyDashboard() {
       </div>
 
       {/* Slide-over Drawer for Property Details */}
-      <>
+      {createPortal(
+        <>
         <div 
           className={`saas-drawer-overlay ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
           onClick={handleCloseDrawer} 
@@ -403,9 +405,10 @@ export default function PropertyDashboard() {
             </>
           )}
         </div>
-      </>
+      </>,
+        document.body
+      )}
 
-      {/* Export Modal */}
       {isExportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">

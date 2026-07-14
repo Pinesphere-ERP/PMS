@@ -5,8 +5,6 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.api import api_router
 
-<<<<<<< HEAD
-=======
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from app.infra.database import engine, AsyncSessionLocal, Base
@@ -71,16 +69,16 @@ async def lifespan(app: FastAPI):
                 await db.commit()
 
         # Seed Mock Data
-        from app.seed_mock import seed_mock_data
-        await seed_mock_data(db)
+        # from app.seed_mock import seed_mock_data
+        # await seed_mock_data(db)
         
     yield
 
->>>>>>> origin/main
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Offline-First Enterprise PMS Backend API",
+    lifespan=lifespan
 )
 
 # CORS — allow Vite dev server and any localhost port

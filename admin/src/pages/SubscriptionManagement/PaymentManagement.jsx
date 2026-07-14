@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Search, Filter, Download, ExternalLink, DollarSign, ArrowUpRight, 
   Clock, AlertTriangle, FileText, CheckCircle2, TrendingUp, RefreshCw, 
@@ -497,7 +498,8 @@ export default function PaymentManagement() {
       </div>
 
       {/* Payment Details Slide-over Drawer */}
-      <>
+      {createPortal(
+        <>
         <div 
           className={`saas-drawer-overlay ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
           onClick={handleCloseDrawer} 
@@ -619,7 +621,9 @@ export default function PaymentManagement() {
             </>
           )}
         </div>
-      </>
+      </>,
+        document.body
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Search, Filter, MoreVertical, X, CheckCircle2, Ban, ShieldCheck, Calendar,
   CreditCard, ChevronRight, Smartphone, RefreshCw, Plus, Minus, Power, Key,
@@ -333,7 +334,8 @@ export default function SubscriptionManagement() {
       </div>
 
       {/* Slide-over Drawer */}
-      <>
+      {createPortal(
+        <>
         <div 
           className={`saas-drawer-overlay ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
           onClick={handleCloseDrawer} 
@@ -558,7 +560,9 @@ export default function SubscriptionManagement() {
             </>
           )}
         </div>
-      </>
+      </>,
+        document.body
+      )}
     </div>
   );
 }

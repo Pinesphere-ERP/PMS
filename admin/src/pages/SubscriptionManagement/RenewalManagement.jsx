@@ -19,7 +19,8 @@ import {
   Activity,
   ArrowRight,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 import { subscriptionService } from '../../services/subscriptionService';
 
@@ -111,8 +112,8 @@ export default function RenewalManagement() {
         </div>
         <div className="flex space-x-3">
           {actions.map((act, idx) => (
-            <button key={idx} className={`saas-button-${idx === 1 ? 'primary' : 'secondary'}`}>
-              <act.icon className="h-4 w-4 mr-2" />
+            <button key={idx} disabled className={`saas-button-${idx === 1 ? 'primary' : 'secondary'} opacity-60 cursor-not-allowed`}>
+              <Lock className="h-4 w-4 mr-2" />
               {act.name}
             </button>
           ))}
@@ -130,8 +131,9 @@ export default function RenewalManagement() {
             <p className="text-xs text-red-700 mt-0.5">Grace period has ended. App access must be restricted.</p>
           </div>
         </div>
-        <button className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition shadow-sm">
-          Review & Enforce
+        
+        <button disabled className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm opacity-60 cursor-not-allowed flex items-center">
+          <Lock className="h-4 w-4 mr-2" /> Review & Enforce
         </button>
       </div>
 
@@ -212,8 +214,8 @@ export default function RenewalManagement() {
                             <div className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">Reminder: {item.reminderStatus}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <button onClick={() => handleSendReminder(item.id, item.property)} className="saas-button-secondary text-xs py-1.5 px-3">
-                              <MessageCircle className="h-3 w-3 mr-1.5" /> Remind
+                            <button disabled className="saas-button-secondary text-xs py-1.5 px-3 opacity-60 cursor-not-allowed flex items-center ml-auto">
+                              <Lock className="h-3 w-3 mr-1.5" /> Remind
                             </button>
                           </td>
                         </tr>
@@ -253,8 +255,8 @@ export default function RenewalManagement() {
                             <div className="text-[10px] text-gray-500 mt-0.5">Last: {item.lastReminder}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <button className="saas-button-primary bg-yellow-500 hover:bg-yellow-600 text-xs py-1.5 px-3">
-                              <Phone className="h-3 w-3 mr-1.5" /> Follow Up
+                            <button disabled className="saas-button-primary bg-yellow-500 text-xs py-1.5 px-3 opacity-60 cursor-not-allowed flex items-center ml-auto">
+                              <Lock className="h-3 w-3 mr-1.5" /> Follow Up
                             </button>
                           </td>
                         </tr>
@@ -301,12 +303,12 @@ export default function RenewalManagement() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right">
                             {item.status === 'Pending' ? (
-                              <button onClick={() => handleApplyEnforcement(item.id, item.property)} className="saas-button-primary bg-red-600 hover:bg-red-700 text-xs py-1.5 px-3">
-                                <Ban className="h-3 w-3 mr-1.5" /> Enforce Now
+                              <button disabled className="saas-button-primary bg-red-600 text-xs py-1.5 px-3 opacity-60 cursor-not-allowed flex items-center ml-auto">
+                                <Lock className="h-3 w-3 mr-1.5" /> Enforce Now
                               </button>
                             ) : (
-                              <button className="saas-button-secondary text-xs py-1.5 px-3">
-                                View Details
+                              <button disabled className="saas-button-secondary text-xs py-1.5 px-3 opacity-60 cursor-not-allowed flex items-center ml-auto">
+                                <Lock className="h-3 w-3 mr-1.5" /> View Details
                               </button>
                             )}
                           </td>
@@ -347,18 +349,26 @@ export default function RenewalManagement() {
                 </div>
               ))}
             </div>
-            <button className="w-full mt-4 text-xs font-semibold text-pine hover:text-pine-dark bg-pine/5 py-2 rounded-lg transition-colors">
-              View All Logs
+            <button disabled className="w-full mt-4 text-xs font-semibold text-pine bg-pine/5 py-2 rounded-lg opacity-60 cursor-not-allowed flex items-center justify-center">
+              <Lock className="h-4 w-4 mr-2" /> View All Logs
             </button>
           </div>
 
-          <div className="saas-card p-6">
+          <div className="saas-card p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex flex-col items-center justify-center z-10">
+              <div className="bg-white p-3 rounded-full shadow-sm mb-2 border border-gray-100">
+                <Lock className="h-5 w-5 text-gray-500" />
+              </div>
+              <span className="text-xs font-bold text-gray-800">Feature Locked</span>
+            </div>
             <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center">
               <CalendarDays className="h-4 w-4 mr-2 text-pine" /> Expiry Calendar
             </h3>
             <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 text-center">
               <p className="text-sm text-gray-600">Calendar visualization will load from API automatically.</p>
-              <button className="mt-4 saas-button-secondary text-xs w-full justify-center">Open Full Calendar</button>
+              <button disabled className="mt-4 saas-button-secondary text-xs w-full justify-center opacity-60 cursor-not-allowed flex items-center">
+                <Lock className="h-4 w-4 mr-2" /> Open Full Calendar
+              </button>
             </div>
           </div>
         </div>

@@ -19,7 +19,7 @@ async def push(
     service: SyncService = Depends(get_sync_service),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    # Optional: Validate that request.property_id matches current_user.property_id
+    # Optional: Validate that request.property_id matches current_user.active_property_id
     return await service.push(request)
 
 @router.post("/pull", response_model=SyncPullResponse)
@@ -28,5 +28,5 @@ async def pull(
     service: SyncService = Depends(get_sync_service),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    # Optional: Validate that request.property_id matches current_user.property_id
+    # Optional: Validate that request.property_id matches current_user.active_property_id
     return await service.pull(request)

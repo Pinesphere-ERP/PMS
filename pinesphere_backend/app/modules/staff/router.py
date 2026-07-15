@@ -23,7 +23,7 @@ async def check_tenant(property_id: uuid.UUID, current_user: User, db: AsyncSess
     role = role_res.scalars().first()
     if role and role.role_code == "SUPER_ADMIN":
         return
-    if current_user.property_id != property_id:
+    if current_user.active_property_id != property_id:
         raise HTTPException(status_code=403, detail="Forbidden")
 
 async def check_staff_tenant(staff_id: uuid.UUID, current_user: User, db: AsyncSession):
@@ -33,7 +33,7 @@ async def check_staff_tenant(staff_id: uuid.UUID, current_user: User, db: AsyncS
         return
     staff_res = await db.execute(select(User).filter(User.id == staff_id))
     staff = staff_res.scalars().first()
-    if not staff or staff.property_id != current_user.property_id:
+    if not staff or staff.property_id != current_user.active_property_id:
         raise HTTPException(status_code=403, detail="Forbidden")
 
 @router.post("/onboard", response_model=schemas.StaffResponse, status_code=status.HTTP_201_CREATED)

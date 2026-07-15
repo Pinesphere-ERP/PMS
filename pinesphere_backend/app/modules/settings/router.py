@@ -29,13 +29,13 @@ async def require_property_access(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
+    role_res = await db.execute(select(Role).filter(Role.id == user.active_role_id))
     role = role_res.scalars().first()
     
     if role and role.role_code == "SUPER_ADMIN":
         return
         
-    if user.property_id != property_id:
+    if user.active_property_id != property_id:
         raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this property's settings")
 
 

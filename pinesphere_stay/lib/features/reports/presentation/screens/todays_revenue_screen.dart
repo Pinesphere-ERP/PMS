@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/tenant_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -13,10 +14,7 @@ class TodaysRevenueScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final propertyId = authState.maybeWhen(
-      authenticated: (user) => user.id,
-      orElse: () => '',
-    );
+    final propertyId = ref.watch(tenantProvider) ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.background,

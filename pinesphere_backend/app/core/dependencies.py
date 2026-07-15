@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,11 +8,11 @@ from typing import Optional
 
 from app.core.config import settings
 from app.infra.database import get_db
-from app.infra.models import User, RolePermission, Role
+from app.infra.models import User, RolePermission, Role, UserPropertyAccess
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
+async def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
     if not token:
         # Mock Super Admin for UI testing
         role_res = await db.execute(select(Role).filter(Role.role_code == "SUPER_ADMIN"))
@@ -38,6 +38,32 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         if user.status != "ACTIVE":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
             
+        tenant_id_str = request.headers.get("x-tenant-id")
+        if not tenant_id_str:
+            user.active_property_id = user.property_id
+            user.active_role_id = user.role_id
+        else:
+            try:
+                requested_tenant = uuid.UUID(tenant_id_str)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid X-Tenant-ID format")
+            
+            if user.property_id == requested_tenant:
+                user.active_property_id = requested_tenant
+                user.active_role_id = user.role_id
+            else:
+                access_stmt = select(UserPropertyAccess).filter(
+                    UserPropertyAccess.user_id == user.id,
+                    UserPropertyAccess.property_id == requested_tenant,
+                    UserPropertyAccess.status == "ACTIVE"
+                )
+                access_res = await db.execute(access_stmt)
+                access = access_res.scalar_one_or_none()
+                if not access:
+                    raise HTTPException(status_code=403, detail="Access to this property denied")
+                user.active_property_id = requested_tenant
+                user.active_role_id = access.role_id
+                
         return user
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
@@ -49,7 +75,7 @@ def require_permission(permission_code: str, required_level: str = "VIEW"):
         from app.infra.models import Permission, Role
         
         # Fetch the role to check for superAdmin/owner bypass
-        role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
+        role_res = await db.execute(select(Role).filter(Role.id == user.active_role_id))
         role = role_res.scalars().first()
         if role and role.role_code in ("SUPER_ADMIN", "OWNER"):
             return user
@@ -58,7 +84,7 @@ def require_permission(permission_code: str, required_level: str = "VIEW"):
             select(RolePermission)
             .join(Permission, RolePermission.permission_id == Permission.id)
             .filter(
-                RolePermission.role_id == user.role_id,
+                RolePermission.role_id == user.active_role_id,
                 Permission.permission_code == permission_code
             )
         )

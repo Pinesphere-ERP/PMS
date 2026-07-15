@@ -6,6 +6,7 @@ import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/dashboard_provider.dart';
+import '../../../../core/presentation/widgets/app_drawer.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -19,6 +20,7 @@ class DashboardScreen extends ConsumerWidget {
     );
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: const AppDrawer(),
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context),

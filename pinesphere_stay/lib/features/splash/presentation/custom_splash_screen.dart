@@ -82,7 +82,7 @@ class _CustomSplashScreenState extends State<CustomSplashScreen>
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D631B),
+      backgroundColor: AppColors.primary,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),

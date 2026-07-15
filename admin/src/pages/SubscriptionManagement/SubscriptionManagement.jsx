@@ -293,11 +293,10 @@ export default function SubscriptionManagement() {
                       </span>
                       <span className="text-xs text-gray-500">{sub.billingCycle}</span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      Starts: {sub.startDate}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Ends: {sub.expiryDate} ({sub.remainingDays} days)
+                    <div className="text-xs text-gray-500 mt-2 flex flex-col gap-1">
+                      <span className="font-medium text-gray-700">Duration: {sub.startDate && sub.expiryDate ? Math.round((new Date(sub.expiryDate) - new Date(sub.startDate)) / (1000 * 60 * 60 * 24)) : 0} Days Valid</span>
+                      <span>Starts: {sub.startDate}</span>
+                      <span>Ends: {sub.expiryDate} ({sub.remainingDays} days left)</span>
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">

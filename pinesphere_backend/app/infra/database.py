@@ -41,6 +41,7 @@ engine = create_async_engine(
     pool_size=20,
     max_overflow=10,
     echo=False,
+    connect_args={"timeout": 60}  # Increase timeout for serverless DB wake-up
 )
 
 AsyncSessionLocal = async_sessionmaker(

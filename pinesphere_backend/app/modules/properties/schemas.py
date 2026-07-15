@@ -25,6 +25,7 @@ class PropertyCreateInput(BaseModel):
     total_floors: Optional[int] = None
     total_rooms: Optional[int] = None
     description: Optional[str] = None
+    cover_image: Optional[str] = None
     
     # Location Details
     address: Optional[str] = None

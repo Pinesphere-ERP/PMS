@@ -159,7 +159,7 @@ class CheckOutService {
       final response = await _dio.get('/checkout/pending', queryParameters: {'property_id': propertyId});
       final List<dynamic> dataList = response.data as List<dynamic>;
       
-      final entities = dataList.map((data) => CheckOutEntity(
+      final entities = dataList.map<CheckOutEntity>((data) => CheckOutEntity(
         uuid: data['id']?.toString() ?? data['uuid'] ?? '',
         checkinId: data['checkin_id']?.toString() ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
@@ -225,7 +225,7 @@ class CheckOutService {
       final response = await _dio.get('/checkout/today', queryParameters: {'property_id': propertyId});
       final List<dynamic> dataList = response.data as List<dynamic>;
       
-      final entities = dataList.map((data) => CheckOutEntity(
+      final entities = dataList.map<CheckOutEntity>((data) => CheckOutEntity(
         uuid: data['id']?.toString() ?? data['uuid'] ?? '',
         checkinId: data['checkin_id']?.toString() ?? '',
         bookingId: data['booking_id']?.toString() ?? '',

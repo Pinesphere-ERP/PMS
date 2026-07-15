@@ -102,7 +102,7 @@ class HousekeepingService {
       final response = await _dio.get('/housekeeping/tasks', queryParameters: queryParams);
       final List<dynamic> dataList = response.data as List<dynamic>;
       
-      final entities = dataList.map((body) => HousekeepingTaskEntity(
+      final entities = dataList.map<HousekeepingTaskEntity>((body) => HousekeepingTaskEntity(
         uuid: body['id']?.toString() ?? '',
         roomId: body['room_id']?.toString() ?? '',
         propertyId: body['property_id']?.toString() ?? '',

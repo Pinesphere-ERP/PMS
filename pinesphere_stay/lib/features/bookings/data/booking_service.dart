@@ -157,7 +157,7 @@ class BookingService {
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       // Cache data locally for offline use
-      final entities = dataList.map((data) => BookingEntity(
+      final entities = dataList.map<BookingEntity>((data) => BookingEntity(
         uuid: data['id']?.toString() ?? data['uuid'] ?? '',
         propertyId: data['property_id'] ?? '',
         roomId: data['room_id'] ?? '',
@@ -185,7 +185,6 @@ class BookingService {
         vehicleNumber: data['vehicle_number'] ?? '',
         bookingStatus: data['booking_status'] ?? 'confirmed',
         paymentStatus: data['payment_status'] ?? 'pending',
-        createdAt: data['created_at'] ?? DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: data['last_modified_hlc'] ?? DateTime.now().toUtc().toIso8601String(),
       )).toList();
       

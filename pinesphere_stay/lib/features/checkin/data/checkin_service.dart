@@ -171,7 +171,7 @@ class CheckInService {
       final response = await _dio.get('/checkin/today', queryParameters: {'property_id': propertyId});
       final List<dynamic> dataList = response.data as List<dynamic>;
       
-      final entities = dataList.map((data) => CheckInEntity(
+      final entities = dataList.map<CheckInEntity>((data) => CheckInEntity(
         uuid: data['id']?.toString() ?? data['uuid'] ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',
@@ -212,7 +212,7 @@ class CheckInService {
       final response = await _dio.get('/checkin/active', queryParameters: {'property_id': propertyId});
       final List<dynamic> dataList = response.data as List<dynamic>;
       
-      final entities = dataList.map((data) => CheckInEntity(
+      final entities = dataList.map<CheckInEntity>((data) => CheckInEntity(
         uuid: data['id']?.toString() ?? data['uuid'] ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',

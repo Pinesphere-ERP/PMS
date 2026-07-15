@@ -13,6 +13,11 @@ export const fetchAPI = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  if (options.tenantId) {
+    headers['X-Tenant-ID'] = options.tenantId;
+    delete options.tenantId;
+  }
+
   const response = await fetch(url, {
     ...options,
     headers,

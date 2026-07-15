@@ -52,17 +52,25 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
                 user.active_property_id = requested_tenant
                 user.active_role_id = user.role_id
             else:
-                access_stmt = select(UserPropertyAccess).filter(
-                    UserPropertyAccess.user_id == user.id,
-                    UserPropertyAccess.property_id == requested_tenant,
-                    UserPropertyAccess.status == "ACTIVE"
-                )
-                access_res = await db.execute(access_stmt)
-                access = access_res.scalar_one_or_none()
-                if not access:
-                    raise HTTPException(status_code=403, detail="Access to this property denied")
-                user.active_property_id = requested_tenant
-                user.active_role_id = access.role_id
+                # Check if user is a Super Admin
+                role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
+                role = role_res.scalars().first()
+                
+                if role and role.role_code == "SUPER_ADMIN":
+                    user.active_property_id = requested_tenant
+                    user.active_role_id = user.role_id
+                else:
+                    access_stmt = select(UserPropertyAccess).filter(
+                        UserPropertyAccess.user_id == user.id,
+                        UserPropertyAccess.property_id == requested_tenant,
+                        UserPropertyAccess.status == "ACTIVE"
+                    )
+                    access_res = await db.execute(access_stmt)
+                    access = access_res.scalar_one_or_none()
+                    if not access:
+                        raise HTTPException(status_code=403, detail="Access to this property denied")
+                    user.active_property_id = requested_tenant
+                    user.active_role_id = access.role_id
                 
         return user
     except jwt.PyJWTError:

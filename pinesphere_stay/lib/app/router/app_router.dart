@@ -28,6 +28,8 @@ import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
 
+import '../../features/splash/presentation/video_splash_screen.dart';
+
 part 'app_router.g.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -49,7 +51,7 @@ GoRouter appRouter(Ref ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/dashboard',
+    initialLocation: '/splash',
     debugLogDiagnostics: true,
     refreshListenable: notifier,
     redirect: (context, state) {
@@ -69,6 +71,9 @@ GoRouter appRouter(Ref ref) {
       final isGoingToLogin = state.matchedLocation == '/login';
       final isGoingToPinLogin = state.matchedLocation == '/pin-login';
 
+      final isSplash = state.matchedLocation == '/splash';
+      if (isSplash) return null;
+
       if (!isAuth && !isLocked && !isGoingToLogin) {
         return '/login';
       }
@@ -84,6 +89,10 @@ GoRouter appRouter(Ref ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const VideoSplashScreen(),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),

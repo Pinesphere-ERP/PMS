@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
-import '../../../auth/presentation/providers/auth_notifier.dart';
+
 import '../../data/kpi_aggregation_service.dart';
 
 class TodaysRevenueScreen extends ConsumerWidget {
@@ -13,7 +13,6 @@ class TodaysRevenueScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
     final propertyId = ref.watch(tenantProvider) ?? '';
 
     return Scaffold(

@@ -7,7 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/presentation/widgets/role_guard.dart';
 import '../../../../core/permissions/permission_matrix.dart';
-import '../../../auth/presentation/providers/auth_notifier.dart';
+
 import '../../data/kpi_aggregation_service.dart';
 import '../../../rooms/data/room_service.dart';
 import '../../../rooms/domain/models/room_entity.dart';
@@ -15,7 +15,6 @@ import '../../data/report_export_service.dart';
 import 'pl_report_screen.dart';
 
 final topRoomsProvider = FutureProvider.autoDispose<List<RoomEntity>>((ref) async {
-  final authState = ref.watch(authProvider);
   final propertyId = ref.watch(tenantProvider) ?? '';
   if (propertyId.isEmpty) return [];
   final rooms = await ref.read(roomServiceProvider).getRooms(propertyId);
@@ -133,7 +132,6 @@ class ReportsDashboardScreen extends ConsumerWidget {
 
   Widget _buildMetricsGrid(BuildContext context, WidgetRef ref) {
     // Use a placeholder property ID; in production, derive from auth state.
-    final authState = ref.watch(authProvider);
     final propertyId = ref.watch(tenantProvider) ?? '';
 
     if (propertyId.isEmpty) {
@@ -252,7 +250,6 @@ class ReportsDashboardScreen extends ConsumerWidget {
   // ─────────────────────────────────────────────────────────
 
   Widget _buildRevenueGraph(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
     final propertyId = ref.watch(tenantProvider) ?? '';
 
     List<double> weekRevenues = List.filled(7, 0);
@@ -352,7 +349,6 @@ class ReportsDashboardScreen extends ConsumerWidget {
   // ─────────────────────────────────────────────────────────
 
   Widget _buildOccupancyDonut(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
     final propertyId = ref.watch(tenantProvider) ?? '';
 
     int occupied = 0;

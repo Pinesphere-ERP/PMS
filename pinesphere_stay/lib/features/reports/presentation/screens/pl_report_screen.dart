@@ -5,12 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
-import '../../../auth/presentation/providers/auth_notifier.dart';
+
 import '../../data/reports_repository.dart';
 import '../../domain/models/kpi_dto.dart';
 
 final plReportProvider = FutureProvider.autoDispose<PLReportDto>((ref) async {
-  final authState = ref.watch(authProvider);
   final propertyId = ref.watch(tenantProvider) ?? '';
   if (propertyId.isEmpty) throw Exception('No property ID');
 

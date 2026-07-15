@@ -4,6 +4,7 @@ import AdminLayout from './layouts/AdminLayout';
 // Property Management (New)
 import PropertyDashboard from './pages/PropertyManagement/PropertyDashboard';
 import AddPropertyWizard from './pages/PropertyManagement/AddPropertyWizard';
+import PropertyDetails from './pages/PropertyManagement/PropertyDetails';
 import PropertyRooms from './pages/PropertyManagement/PropertyRooms';
 
 // Subscription Module (New)
@@ -70,6 +71,7 @@ function App() {
           {/* Property Management */}
           <Route path="properties" element={<PropertyDashboard />} />
           <Route path="properties/add" element={<AddPropertyWizard />} />
+          <Route path="properties/:id" element={<PropertyDetails />} />
           <Route path="properties/:id/rooms" element={<PropertyRooms />} />
 
           {/* Subscription Management */}

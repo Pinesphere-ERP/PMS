@@ -770,7 +770,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: selectedResortId,
+                        initialValue: selectedResortId,
                         isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Select Resort / Property', border: OutlineInputBorder()),
                         items: pmsState.resorts.map((resort) {
@@ -788,7 +788,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: selectedRoomId,
+                        initialValue: selectedRoomId,
                         isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Select Room (Vacant Only)', border: OutlineInputBorder()),
                         items: currentFilteredRooms.map((room) {
@@ -814,7 +814,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: selectedNationality,
+                              initialValue: selectedNationality,
                               isExpanded: true,
                               decoration: const InputDecoration(labelText: 'Guest Nationality', border: OutlineInputBorder()),
                               items: ['Indian', 'Foreigner'].map((nat) {
@@ -833,7 +833,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: selectedIdProof,
+                              initialValue: selectedIdProof,
                               isExpanded: true,
                               decoration: const InputDecoration(labelText: 'ID Proof Type', border: OutlineInputBorder()),
                               items: ['Aadhaar Card', 'Passport', 'Driving License', 'Voter ID'].map((proof) {
@@ -911,7 +911,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: selectedSource,
+                              initialValue: selectedSource,
                               isExpanded: true,
                               decoration: const InputDecoration(labelText: 'Booking Source', border: OutlineInputBorder()),
                               items: ['Walk-in', 'Phone', 'WhatsApp', 'Online'].map((src) {
@@ -1118,7 +1118,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                         ),
                         padding: const EdgeInsets.all(16),
                         child: Column(

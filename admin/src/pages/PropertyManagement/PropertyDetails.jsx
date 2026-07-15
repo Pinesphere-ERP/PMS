@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { propertyService } from '../../../services/propertyService';
+import { propertyService } from '../../services/propertyService';
 import { 
   Building2, MapPin, User, Mail, Phone, CalendarDays, 
   Bed, Layers, Activity, CheckCircle2, AlertCircle, ArrowLeft,

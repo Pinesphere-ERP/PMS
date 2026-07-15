@@ -142,11 +142,28 @@ export default function SubscriptionManagement() {
       try {
         await subscriptionService.toggleSubscriptionStatus(property.id || property.propertyId, action);
         // Refresh data or update local state
+        setSubscriptions(subscriptions.map(s => (s.id === property.id || s.propertyId === property.propertyId) ? { ...s, status: action === 'enable' ? 'Active' : 'Disabled' } : s));
       } catch (err) {
         alert(`Failed to ${action} property: ${err.message}`);
       }
+    } else if (action === 'toggle') {
+      handleToggleRequired(property);
     } else {
       console.log(`Action: ${action} on property: ${property.propertyName}`);
+    }
+  };
+
+  const handleToggleRequired = async (property) => {
+    try {
+      const newRequiredStatus = !property.subscriptionRequired;
+      await subscriptionService.toggleSubscriptionRequired(property.id || property.propertyId, newRequiredStatus);
+      setSubscriptions(subscriptions.map(s => 
+        (s.id === property.id || s.propertyId === property.propertyId) 
+          ? { ...s, subscriptionRequired: newRequiredStatus } 
+          : s
+      ));
+    } catch (err) {
+      alert(`Failed to toggle subscription requirement: ${err.message}`);
     }
   };
 
@@ -322,6 +339,16 @@ export default function SubscriptionManagement() {
                     <span className={`status-badge ${getStatusBadge(sub.status)}`}>
                       {sub.status}
                     </span>
+                    <div className="mt-2 flex items-center" onClick={(e) => e.stopPropagation()}>
+                      <label className="flex items-center cursor-pointer">
+                        <div className="relative">
+                          <input type="checkbox" className="sr-only" checked={sub.subscriptionRequired ?? true} onChange={() => handleToggleRequired(sub)} />
+                          <div className={`block w-8 h-5 rounded-full ${sub.subscriptionRequired !== false ? 'bg-pine' : 'bg-gray-300'}`}></div>
+                          <div className={`dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition transform ${sub.subscriptionRequired !== false ? 'translate-x-3' : ''}`}></div>
+                        </div>
+                        <span className="ml-2 text-xs text-gray-500 font-medium">{sub.subscriptionRequired !== false ? 'Required' : 'Off'}</span>
+                      </label>
+                    </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <ActionDropdown property={sub} onAction={handleRowAction} />

@@ -149,6 +149,7 @@ async def get_subscriptions(db: AsyncSession = Depends(get_db)):
             "totalPaid": _fmt_amount(PLAN_PRICE.get(sub.plan, 0)),
             "recentActivities": [],
             "devicesList": [],
+            "subscriptionRequired": sub.subscription_required,
         })
     return {"data": data}
 
@@ -416,6 +417,21 @@ async def toggle_subscription_status(property_id: str, payload: dict, db: AsyncS
     sub.status = "Active" if action == "enable" else "Disabled"
     await db.commit()
     return {"message": f"Subscription {action}d successfully", "status": sub.status}
+
+@router.post("/{property_id}/toggle-required")
+async def toggle_subscription_required(property_id: str, payload: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_super_admin)):
+    required = payload.get("required")
+    q = select(Subscription).where(Subscription.property_id == property_id)
+    result = await db.execute(q)
+    sub = result.scalars().first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    if required is not None:
+        sub.subscription_required = required
+    else:
+        sub.subscription_required = not sub.subscription_required
+    await db.commit()
+    return {"message": "Subscription requirement updated", "subscriptionRequired": sub.subscription_required}
 
 
 # ── Update plan ──────────────────────────────────────────────────────────────

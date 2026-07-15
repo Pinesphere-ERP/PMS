@@ -494,6 +494,7 @@ class Subscription(Base, TimestampMixin):
     license_id: Mapped[Optional[str]] = mapped_column(String(100), unique=True)
     device_limit: Mapped[int] = mapped_column(Integer, default=5)
     registered_devices: Mapped[int] = mapped_column(Integer, default=0)
+    subscription_required: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class SubscriptionTransaction(Base, TimestampMixin):

@@ -34,20 +34,26 @@ def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
 def get_current_user_id() -> Optional[uuid.UUID]:
     return None # Mock user ID
 
-@router.post("/", status_code=501)
+@router.post("/", response_model=PaymentRead)
 async def create_payment(
     payment_data: PaymentCreate,
     service: PaymentService = Depends(get_payment_service),
-    user_id: uuid.UUID = Depends(get_current_user_id)
+    user_id: Optional[uuid.UUID] = Depends(get_current_user_id)
 ):
-    return JSONResponse(
-        status_code=501,
-        content={
-            "success": False,
-            "status": "not_implemented",
-            "message": "Payment provider integration is not configured",
-        },
-    )
+    try:
+        transaction_id = f"manual_{uuid.uuid4().hex[:10]}"
+        payment = await service.create_payment(
+            payment_data=payment_data,
+            user_id=user_id,
+            provider_transaction_id=transaction_id
+        )
+        return payment
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @router.get("/", response_model=PaymentListResponse)
 async def list_payments(
@@ -90,7 +96,11 @@ async def create_razorpay_order(
     service: PaymentService = Depends(get_payment_service)
 ):
     try:
-        return await service.create_razorpay_order(request.amount)
+        order = await service.create_razorpay_order(request.amount)
+        return RazorpayOrderResponse(
+            razorpay_order_id=order["id"],
+            amount=order["amount"]
+        )
     except ValueError as e:
         if str(e) == "Razorpay credentials not configured":
             return JSONResponse(
@@ -109,7 +119,7 @@ async def create_razorpay_order(
 async def verify_razorpay_payment(
     request: RazorpayVerifyRequest,
     service: PaymentService = Depends(get_payment_service),
-    user_id: uuid.UUID = Depends(get_current_user_id)
+    user_id: Optional[uuid.UUID] = Depends(get_current_user_id)
 ):
     try:
         payment = await service.verify_and_record_payment(

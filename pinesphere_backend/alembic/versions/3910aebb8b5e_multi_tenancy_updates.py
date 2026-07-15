@@ -38,8 +38,10 @@ def upgrade() -> None:
     )
     
     # 2. Update users unique constraints
-    op.drop_constraint('uq_users_property_mobile', 'users', type_='unique')
-    op.drop_constraint('uq_users_property_username', 'users', type_='unique')
+    op.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_users_property_mobile")
+    op.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_users_property_username")
+    op.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_mobile_number_key")
+    op.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_key")
     op.create_unique_constraint('uq_users_mobile_number', 'users', ['mobile_number'])
     op.create_unique_constraint('uq_users_username', 'users', ['username'])
     
@@ -61,11 +63,14 @@ def downgrade() -> None:
     op.drop_constraint(None, 'guests', type_='foreignkey')
     op.drop_column('guests', 'property_id')
     
-    # 2. Revert users unique constraints
-    op.drop_constraint('uq_users_username', 'users', type_='unique')
-    op.drop_constraint('uq_users_mobile_number', 'users', type_='unique')
-    op.create_unique_constraint('uq_users_property_username', 'users', ['property_id', 'username'])
-    op.create_unique_constraint('uq_users_property_mobile', 'users', ['property_id', 'mobile_number'])
+    # 2. Revert unique constraints (safe approach)
+    op.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_users_mobile_number")
+    op.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_users_username")
+    try:
+        op.create_unique_constraint('uq_users_property_mobile', 'users', ['property_id', 'mobile_number'])
+        op.create_unique_constraint('uq_users_property_username', 'users', ['property_id', 'username'])
+    except Exception:
+        pass
     
     # 1. Drop user_property_access
     op.drop_table('user_property_access')

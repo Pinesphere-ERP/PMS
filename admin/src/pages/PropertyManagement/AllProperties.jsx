@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Filter, 
@@ -17,6 +18,7 @@ import {
 import { propertyService } from '../../services/propertyService';
 
 export default function AllProperties() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +129,14 @@ export default function AllProperties() {
                         {prop.status || 'Unknown'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end space-x-2">
+                      <button 
+                        onClick={() => navigate(`/properties/${prop.id}/rooms`)}
+                        className="text-pine hover:text-pine-dark"
+                        title="View Rooms Data"
+                      >
+                        <Eye className="h-5 w-5" />
+                      </button>
                       <button className="text-gray-400 hover:text-gray-900">
                         <MoreVertical className="h-5 w-5" />
                       </button>

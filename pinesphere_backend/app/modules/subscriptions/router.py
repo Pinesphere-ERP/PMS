@@ -6,11 +6,7 @@ from datetime import date, timedelta
 
 from app.infra.database import get_db
 from app.infra.models import (
-<<<<<<< HEAD
-    Subscription, Property, Owner, SubscriptionTransaction, Invoice, User, Role
-=======
-    Subscription, Property, Owner, SubscriptionTransaction, Invoice, SubscriptionPlan
->>>>>>> origin/main
+    Subscription, Property, Owner, SubscriptionTransaction, Invoice, User, Role, SubscriptionPlan
 )
 from app.core.dependencies import get_current_user
 

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.database import get_db
 from app.infra.models import User, Role, UserSession
-from app.core.dependencies import get_current_user, require_permission
+from app.core.dependencies import assert_property_access, get_current_role, get_current_user, require_permission, require_super_admin
 from app.core.security import get_password_hash
 from app.modules.audit.logger import AuditLogger
 from app.modules.users import schemas
@@ -22,7 +22,7 @@ async def list_roles(
     result = await db.execute(stmt)
     return result.scalars().all()
 
-@router.post("/roles")
+@router.post("/roles", dependencies=[Depends(require_super_admin)])
 async def create_role(
     role_code: str,
     role_name: str,
@@ -49,14 +49,17 @@ async def list_users(
 ):
     stmt = select(User)
     
-    # Scope check
-    if current_user.property_id:
+    if property_id:
+        await assert_property_access(property_id, current_user, db)
+        stmt = stmt.where(User.property_id == property_id)
+    elif current_user.property_id:
         stmt = stmt.where(User.property_id == current_user.property_id)
-    else:
-        if property_id:
-            stmt = stmt.where(User.property_id == property_id)
-        if unassigned_only:
-            stmt = stmt.where(User.property_id.is_(None))
+    elif (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Property scope required")
+    if unassigned_only:
+        if (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")
+        stmt = stmt.where(User.property_id.is_(None))
         
     result = await db.execute(stmt)
     users = result.scalars().all()
@@ -145,8 +148,9 @@ async def update_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
-    # Scope check
-    if current_user.property_id and user.property_id != current_user.property_id:
+    if user.property_id:
+        await assert_property_access(user.property_id, current_user, db)
+    elif (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         
     old_val = {"name": user.name, "role_id": str(user.role_id), "status": user.status}
@@ -197,8 +201,9 @@ async def deactivate_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
-    # Scope check
-    if current_user.property_id and user.property_id != current_user.property_id:
+    if user.property_id:
+        await assert_property_access(user.property_id, current_user, db)
+    elif (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         
     if user.is_primary_owner:
@@ -248,8 +253,9 @@ async def reset_credential(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
-    # Scope check
-    if current_user.property_id and user.property_id != current_user.property_id:
+    if user.property_id:
+        await assert_property_access(user.property_id, current_user, db)
+    elif (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         
     new_vals = {}

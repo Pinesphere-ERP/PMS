@@ -36,7 +36,7 @@ async def _enrich_checkin_response(db: AsyncSession, checkin: CheckIn) -> CheckI
     room_number = None
     booking_reference = None
 
-    guest_stmt = select(Guest).where(Guest.guest_id == checkin.guest_id)
+    guest_stmt = select(Guest).where(Guest.guest_id == checkin.guest_id, Guest.property_id == checkin.property_id)
     guest_res = await db.execute(guest_stmt)
     guest = guest_res.scalar_one_or_none()
     if guest:
@@ -48,7 +48,7 @@ async def _enrich_checkin_response(db: AsyncSession, checkin: CheckIn) -> CheckI
     if room:
         room_number = room.room_number
 
-    booking_stmt = select(Booking).where(Booking.booking_id == checkin.booking_id)
+    booking_stmt = select(Booking).where(Booking.booking_id == checkin.booking_id, Booking.property_id == checkin.property_id)
     booking_res = await db.execute(booking_stmt)
     booking = booking_res.scalar_one_or_none()
     if booking:
@@ -80,9 +80,9 @@ async def _enrich_checkin_response(db: AsyncSession, checkin: CheckIn) -> CheckI
 
 
 async def perform_checkin(
-    db: AsyncSession, req: CheckInRequest, current_user_id: Optional[uuid.UUID] = None
+    db: AsyncSession, req: CheckInRequest, property_id: uuid.UUID, current_user_id: Optional[uuid.UUID] = None
 ) -> CheckInResponse:
-    booking_stmt = select(Booking).where(Booking.booking_id == req.booking_id)
+    booking_stmt = select(Booking).where(Booking.booking_id == req.booking_id, Booking.property_id == property_id)
     booking_res = await db.execute(booking_stmt)
     booking = booking_res.scalar_one_or_none()
     if not booking:
@@ -93,7 +93,7 @@ async def perform_checkin(
             detail=f"Booking cannot be checked in. Current status is '{booking.booking_status}'. Must be 'confirmed'."
         )
 
-    room_stmt = select(Room).where(Room.room_id == booking.room_id)
+    room_stmt = select(Room).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id).where(Room.room_id == booking.room_id, RoomCategory.property_id == property_id)
     room_res = await db.execute(room_stmt)
     room = room_res.scalar_one_or_none()
     if not room:
@@ -279,17 +279,17 @@ async def perform_walkin_checkin(
         offline_id=req.offline_id,
     )
 
-    return await perform_checkin(db, checkin_req, current_user_id)
+    return await perform_checkin(db, checkin_req, req.property_id, current_user_id)
 
 
-async def get_checkin_detail(db: AsyncSession, checkin_id: uuid.UUID) -> dict:
-    checkin_stmt = select(CheckIn).where(CheckIn.checkin_id == checkin_id)
+async def get_checkin_detail(db: AsyncSession, checkin_id: uuid.UUID, property_id: uuid.UUID) -> dict:
+    checkin_stmt = select(CheckIn).where(CheckIn.checkin_id == checkin_id, CheckIn.property_id == property_id)
     checkin_res = await db.execute(checkin_stmt)
     checkin = checkin_res.scalar_one_or_none()
     if not checkin:
         raise HTTPException(status_code=404, detail="Check-in record not found")
 
-    guest_stmt = select(Guest).where(Guest.guest_id == checkin.guest_id)
+    guest_stmt = select(Guest).where(Guest.guest_id == checkin.guest_id, Guest.property_id == property_id)
     guest_res = await db.execute(guest_stmt)
     guest = guest_res.scalar_one_or_none()
 
@@ -297,11 +297,11 @@ async def get_checkin_detail(db: AsyncSession, checkin_id: uuid.UUID) -> dict:
     room_res = await db.execute(room_stmt)
     room = room_res.scalar_one_or_none()
 
-    booking_stmt = select(Booking).where(Booking.booking_id == checkin.booking_id)
+    booking_stmt = select(Booking).where(Booking.booking_id == checkin.booking_id, Booking.property_id == property_id)
     booking_res = await db.execute(booking_stmt)
     booking = booking_res.scalar_one_or_none()
 
-    invoice_stmt = select(Invoice).where(Invoice.booking_id == checkin.booking_id)
+    invoice_stmt = select(Invoice).where(Invoice.booking_id == checkin.booking_id, Invoice.property_id == property_id)
     invoice_res = await db.execute(invoice_stmt)
     invoice = invoice_res.scalar_one_or_none()
 
@@ -420,8 +420,8 @@ async def get_active_checkins(db: AsyncSession, property_id: uuid.UUID) -> List[
     return results
 
 
-async def cancel_checkin(db: AsyncSession, checkin_id: uuid.UUID) -> CheckInResponse:
-    checkin_stmt = select(CheckIn).where(CheckIn.checkin_id == checkin_id)
+async def cancel_checkin(db: AsyncSession, checkin_id: uuid.UUID, property_id: uuid.UUID) -> CheckInResponse:
+    checkin_stmt = select(CheckIn).where(CheckIn.checkin_id == checkin_id, CheckIn.property_id == property_id)
     checkin_res = await db.execute(checkin_stmt)
     checkin = checkin_res.scalar_one_or_none()
     if not checkin:
@@ -437,14 +437,14 @@ async def cancel_checkin(db: AsyncSession, checkin_id: uuid.UUID) -> CheckInResp
     checkin.status = "cancelled"
     checkin.updated_at = now
 
-    room_stmt = select(Room).where(Room.room_id == checkin.room_id)
+    room_stmt = select(Room).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id).where(Room.room_id == checkin.room_id, RoomCategory.property_id == property_id)
     room_res = await db.execute(room_stmt)
     room = room_res.scalar_one_or_none()
     if room:
         room.occupancy_status = "vacant"
         room.housekeeping_status = "dirty"
 
-    booking_stmt = select(Booking).where(Booking.booking_id == checkin.booking_id)
+    booking_stmt = select(Booking).where(Booking.booking_id == checkin.booking_id, Booking.property_id == property_id)
     booking_res = await db.execute(booking_stmt)
     booking = booking_res.scalar_one_or_none()
     if booking:
@@ -461,7 +461,7 @@ async def cancel_checkin(db: AsyncSession, checkin_id: uuid.UUID) -> CheckInResp
         assignment.is_active = False
         assignment.unassigned_at = now
 
-    invoice_stmt = select(Invoice).where(Invoice.booking_id == checkin.booking_id)
+    invoice_stmt = select(Invoice).where(Invoice.booking_id == checkin.booking_id, Invoice.property_id == property_id)
     invoice_res = await db.execute(invoice_stmt)
     invoice = invoice_res.scalar_one_or_none()
     if invoice:

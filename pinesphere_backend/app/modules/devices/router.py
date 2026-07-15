@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
 
 from app.infra.database import get_db
+from app.core.dependencies import assert_property_access, get_current_user, require_optional_resource_property_access, require_super_admin
 from app.modules.devices.schemas import (
     DeviceRegisterRequest, DeviceActivateRequest, DeviceActivateResponse,
     DeviceActionRequest, DeviceTransferRequest, DeviceSyncCheckinRequest,
@@ -12,11 +13,11 @@ from app.modules.devices.schemas import (
     AuditLogEntryResponse, SyncLogEntryResponse
 )
 from app.modules.devices import service
-from app.infra.models import Device
+from app.infra.models import Device, User
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_optional_resource_property_access(Device, Device.id, "id"))])
 
-@router.get("/kpis")
+@router.get("/kpis", dependencies=[Depends(require_super_admin)])
 async def get_device_kpis(db: AsyncSession = Depends(get_db)):
     """Global KPI counts for device management console."""
     query = select(Device.status, func.count(Device.id)).group_by(Device.status)
@@ -32,7 +33,7 @@ async def get_device_kpis(db: AsyncSession = Depends(get_db)):
         { "name": "Failed Syncs (24h)", "value": "0", "icon": "AlertTriangle", "color": "text-red-600", "bg": "bg-red-50" },
     ]
 
-@router.get("/diagnostics")
+@router.get("/diagnostics", dependencies=[Depends(require_super_admin)])
 async def get_device_diagnostics(db: AsyncSession = Depends(get_db)):
     """Return device list enriched with sync diagnostics for the diagnostics panel."""
     devices = await service.list_devices(db)
@@ -55,9 +56,11 @@ async def get_device_diagnostics(db: AsyncSession = Depends(get_db)):
     ]
 
 @router.get("/my")
-async def get_my_devices(db: AsyncSession = Depends(get_db)):
+async def get_my_devices(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Property-scoped device list (future: filtered by auth token's property)."""
-    devices = await service.list_devices(db)
+    if not current_user.property_id:
+        return []
+    devices = await service.list_devices(db, property_id=current_user.property_id)
     return [
         {
             "id": str(d.id),
@@ -76,15 +79,16 @@ async def get_my_devices(db: AsyncSession = Depends(get_db)):
 @router.post("/register", response_model=DeviceResponse, status_code=status.HTTP_201_CREATED)
 async def register_device(
     req: DeviceRegisterRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """First-time device registration (requires internet)."""
-    return await service.register_device(db, req)
+    await assert_property_access(req.property_id, current_user, db)
+    return await service.register_device(db, req, current_user.id)
 
 @router.post("/sync-checkin", response_model=DeviceSyncCheckinResponse)
 async def sync_checkin(
     req: DeviceSyncCheckinRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Called by the Flutter app on every sync cycle; also delivers queued remote commands."""
     return await service.sync_checkin(db, req)
@@ -96,6 +100,11 @@ async def get_devices(
     db: AsyncSession = Depends(get_db)
 ):
     """List registered devices (scoped by role: global for Super Admin, property-scoped for Owner)."""
+    property_id = property_id or current_user.property_id
+    if property_id is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Property scope required")
+    await assert_property_access(property_id, current_user, db)
     return await service.list_devices(db, property_id=property_id, status_filter=status)
 
 @router.get("/{id}", response_model=DeviceDetailResponse)

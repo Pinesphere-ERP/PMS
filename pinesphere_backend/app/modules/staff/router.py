@@ -13,18 +13,11 @@ router = APIRouter(
 )
 
 from sqlalchemy.future import select
-from app.core.dependencies import get_current_user
+from app.core.dependencies import assert_property_access, get_current_user
 from app.infra.models import User, Role
 
 async def check_tenant(property_id: uuid.UUID, current_user: User, db: AsyncSession):
-    if not property_id:
-        return
-    role_res = await db.execute(select(Role).filter(Role.id == current_user.role_id))
-    role = role_res.scalars().first()
-    if role and role.role_code == "SUPER_ADMIN":
-        return
-    if current_user.property_id != property_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+    await assert_property_access(property_id, current_user, db)
 
 async def check_staff_tenant(staff_id: uuid.UUID, current_user: User, db: AsyncSession):
     role_res = await db.execute(select(Role).filter(Role.id == current_user.role_id))
@@ -33,8 +26,9 @@ async def check_staff_tenant(staff_id: uuid.UUID, current_user: User, db: AsyncS
         return
     staff_res = await db.execute(select(User).filter(User.id == staff_id))
     staff = staff_res.scalars().first()
-    if not staff or staff.property_id != current_user.property_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+    await assert_property_access(staff.property_id, current_user, db)
 
 @router.post("/onboard", response_model=schemas.StaffResponse, status_code=status.HTTP_201_CREATED)
 async def onboard_staff(staff_in: schemas.StaffCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):

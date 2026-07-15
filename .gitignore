@@ -8,3 +8,5 @@ pinesphere_stay/**/*.freezed.dart
 pinesphere_stay/lib/objectbox-model.json
 pinesphere_stay/**/flutter/generated_plugin_registrant.*
 pinesphere_stay/**/flutter/generated_plugins.cmake
+
+pinesphere_backend\venve

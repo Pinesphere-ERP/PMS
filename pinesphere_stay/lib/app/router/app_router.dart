@@ -28,7 +28,7 @@ import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
 
-import '../../features/splash/presentation/video_splash_screen.dart';
+import '../../features/splash/presentation/custom_splash_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -91,7 +91,7 @@ GoRouter appRouter(Ref ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (context, state) => const VideoSplashScreen(),
+        builder: (context, state) => const CustomSplashScreen(),
       ),
       GoRoute(
         path: '/login',

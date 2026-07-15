@@ -542,7 +542,6 @@ class DailyKPISnapshot(Base, TimestampMixin):
     __tablename__ = "daily_kpi_snapshots"
     __table_args__ = (
         UniqueConstraint("property_id", "snapshot_date", name="uq_daily_kpi_property_date"),
-        {'extend_existing': True},
     )
     snapshot_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False, index=True)

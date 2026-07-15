@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, update
+from sqlalchemy.orm import selectinload
 
 from app.infra.database import get_db
 from app.infra.models import User, Role, RolePermission, Permission, UserSession
@@ -21,10 +22,16 @@ class LoginRequest(BaseModel):
     device_name: Optional[str] = None
     device_fingerprint: Optional[str] = None
 
+class AccessibleProperty(BaseModel):
+    property_id: str
+    role_id: str
+    is_primary: bool
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    properties: List[AccessibleProperty] = []
 
 class PermissionSnapshot(BaseModel):
     permission_code: str
@@ -44,7 +51,7 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ):
     # Try finding user by email, username, or mobile
-    stmt = select(User).where(
+    stmt = select(User).options(selectinload(User.property_access)).where(
         or_(
             User.email == payload.email,
             User.username == payload.email,
@@ -123,9 +130,30 @@ async def login(
         new_value={"identifier": payload.email},
     )
 
+    accessible_properties = []
+    if user.property_id:
+        accessible_properties.append(
+            AccessibleProperty(
+                property_id=str(user.property_id),
+                role_id=str(user.role_id),
+                is_primary=True
+            )
+        )
+    
+    for access in user.property_access:
+        if access.status == "ACTIVE" and str(access.property_id) != str(user.property_id):
+            accessible_properties.append(
+                AccessibleProperty(
+                    property_id=str(access.property_id),
+                    role_id=str(access.role_id),
+                    is_primary=False
+                )
+            )
+
     return TokenResponse(
         access_token=access_token,
-        refresh_token=refresh_token
+        refresh_token=refresh_token,
+        properties=accessible_properties
     )
 
 @router.post("/offline-bootstrap", response_model=OfflineBootstrapResponse)
@@ -224,6 +252,6 @@ async def logout(
         target_entity="user",
         target_record_id=current_user.id,
         user_id=current_user.id,
-        property_id=current_user.property_id,
+        property_id=current_user.active_property_id,
     )
     return {"status": "success"}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/tenant_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -15,10 +16,7 @@ import 'pl_report_screen.dart';
 
 final topRoomsProvider = FutureProvider.autoDispose<List<RoomEntity>>((ref) async {
   final authState = ref.watch(authProvider);
-  final propertyId = authState.maybeWhen(
-    authenticated: (user) => user.id,
-    orElse: () => '',
-  );
+  final propertyId = ref.watch(tenantProvider) ?? '';
   if (propertyId.isEmpty) return [];
   final rooms = await ref.read(roomServiceProvider).getRooms(propertyId);
   rooms.sort((a, b) => b.pricePerNight.compareTo(a.pricePerNight));
@@ -136,10 +134,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
   Widget _buildMetricsGrid(BuildContext context, WidgetRef ref) {
     // Use a placeholder property ID; in production, derive from auth state.
     final authState = ref.watch(authProvider);
-    final propertyId = authState.maybeWhen(
-      authenticated: (user) => user.id,
-      orElse: () => '',
-    );
+    final propertyId = ref.watch(tenantProvider) ?? '';
 
     if (propertyId.isEmpty) {
       return _staticMetricsGrid(context);
@@ -258,10 +253,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
 
   Widget _buildRevenueGraph(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final propertyId = authState.maybeWhen(
-      authenticated: (user) => user.id,
-      orElse: () => '',
-    );
+    final propertyId = ref.watch(tenantProvider) ?? '';
 
     List<double> weekRevenues = List.filled(7, 0);
     if (propertyId.isNotEmpty) {
@@ -361,10 +353,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
 
   Widget _buildOccupancyDonut(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final propertyId = authState.maybeWhen(
-      authenticated: (user) => user.id,
-      orElse: () => '',
-    );
+    final propertyId = ref.watch(tenantProvider) ?? '';
 
     int occupied = 0;
     int vacant = 0;

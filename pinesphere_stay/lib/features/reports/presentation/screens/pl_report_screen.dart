@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/tenant_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -10,10 +11,7 @@ import '../../domain/models/kpi_dto.dart';
 
 final plReportProvider = FutureProvider.autoDispose<PLReportDto>((ref) async {
   final authState = ref.watch(authProvider);
-  final propertyId = authState.maybeWhen(
-    authenticated: (user) => user.id,
-    orElse: () => '',
-  );
+  final propertyId = ref.watch(tenantProvider) ?? '';
   if (propertyId.isEmpty) throw Exception('No property ID');
 
   final now = DateTime.now();

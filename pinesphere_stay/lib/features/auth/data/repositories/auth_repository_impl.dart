@@ -55,6 +55,11 @@ class AuthRepository {
 
       await _secureStorage.write(key: 'access_token', value: tokenResponse.accessToken);
       await _secureStorage.write(key: 'refresh_token', value: tokenResponse.refreshToken);
+      
+      final List<dynamic>? rawProperties = response.data['properties'];
+      if (rawProperties != null) {
+        await _secureStorage.write(key: 'accessible_properties', value: jsonEncode(rawProperties));
+      }
 
       // Decode JWT to get user_id and tenant_id
       final parts = tokenResponse.accessToken.split('.');

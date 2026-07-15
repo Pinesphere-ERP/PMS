@@ -50,8 +50,8 @@ async def list_users(
     stmt = select(User)
     
     # Scope check
-    if current_user.property_id:
-        stmt = stmt.where(User.property_id == current_user.property_id)
+    if current_user.active_property_id:
+        stmt = stmt.where(User.property_id == current_user.active_property_id)
     else:
         if property_id:
             stmt = stmt.where(User.property_id == property_id)
@@ -69,7 +69,7 @@ async def create_user(
     db: AsyncSession = Depends(get_db)
 ):
     # Enforce property_id scoping
-    target_property_id = current_user.property_id
+    target_property_id = current_user.active_property_id
         
     # Verify Role exists
     role_stmt = select(Role).where(Role.id == payload.role_id)
@@ -146,7 +146,7 @@ async def update_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
     # Scope check
-    if current_user.property_id and user.property_id != current_user.property_id:
+    if current_user.active_property_id and user.property_id != current_user.active_property_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         
     old_val = {"name": user.name, "role_id": str(user.role_id), "status": user.status}
@@ -198,7 +198,7 @@ async def deactivate_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
     # Scope check
-    if current_user.property_id and user.property_id != current_user.property_id:
+    if current_user.active_property_id and user.property_id != current_user.active_property_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         
     if user.is_primary_owner:
@@ -249,7 +249,7 @@ async def reset_credential(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
     # Scope check
-    if current_user.property_id and user.property_id != current_user.property_id:
+    if current_user.active_property_id and user.property_id != current_user.active_property_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         
     new_vals = {}

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/network/tenant_provider.dart';
 import '../../../../core/security/permission_engine.dart';
 import '../../../../core/presentation/widgets/access_restricted_view.dart';
 import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
@@ -95,11 +96,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   String get _propertyId {
-    final state = ref.read(authProvider);
-    return state.maybeWhen(
-      authenticated: (user) => user.propertyId ?? '',
-      orElse: () => '',
-    );
+    return ref.read(tenantProvider) ?? '';
   }
 
   void _onSearchChanged(String query) {

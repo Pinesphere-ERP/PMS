@@ -120,15 +120,8 @@ class RolePermission(Base):
 class User(Base, TimestampMixin, SyncMixin):
     __tablename__ = "users"
     __table_args__ = (
-        UniqueConstraint('property_id', 'mobile_number', name='uq_users_property_mobile'),
-        UniqueConstraint('property_id', 'username', name='uq_users_property_username'),
-        Index(
-            'uq_users_primary_owner',
-            'property_id',
-            unique=True,
-            postgresql_where=text("is_primary_owner = true AND status <> 'INACTIVE'"),
-            sqlite_where=text("is_primary_owner = 1 AND status <> 'INACTIVE'"),
-        ),
+        UniqueConstraint('mobile_number', name='uq_users_mobile_number'),
+        UniqueConstraint('username', name='uq_users_username'),
         {'extend_existing': True}
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -147,6 +140,23 @@ class User(Base, TimestampMixin, SyncMixin):
     profile_photo_url: Mapped[Optional[str]] = mapped_column(Text)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     is_pending_sync: Mapped[bool] = mapped_column(default=False)
+    
+    # Relationships
+    property_access: Mapped[list["UserPropertyAccess"]] = relationship("UserPropertyAccess", back_populates="user")
+
+class UserPropertyAccess(Base, TimestampMixin):
+    __tablename__ = "user_property_access"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'property_id', name='uq_user_property_access'),
+        {'extend_existing': True}
+    )
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
+    role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
+    
+    user: Mapped["User"] = relationship("User", back_populates="property_access")
 
 
 class Device(Base, TimestampMixin):
@@ -244,6 +254,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     __tablename__ = "rooms"
     __table_args__ = {'extend_existing': True}
     room_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     room_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_categories.room_category_id"), nullable=False)
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')
@@ -257,6 +268,7 @@ class Guest(Base, TimestampMixin, SyncMixin):
     __tablename__ = "guests"
     __table_args__ = {'extend_existing': True}
     guest_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
     mobile: Mapped[Optional[str]] = mapped_column(String(15))
     email: Mapped[Optional[str]] = mapped_column(String(150))

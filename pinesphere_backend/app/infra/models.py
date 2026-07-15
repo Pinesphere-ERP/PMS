@@ -259,7 +259,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')
     occupancy_status: Mapped[Optional[str]] = mapped_column(String(20), default='vacant')
-    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    image_url: Mapped[Optional[str]] = mapped_column(Text)
 
 
 # ── F. Guests & Bookings ──────────────────────────────────────────────────────

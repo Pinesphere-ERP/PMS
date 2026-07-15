@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
 
 class ResortModel {
@@ -287,9 +288,6 @@ class PmsNotifier extends Notifier<PmsState> {
                 amenitiesList = (parsed['amenities'] as List<dynamic>)
                     .map((a) => Map<String, dynamic>.from(a as Map))
                     .toList();
-              }
-              if (parsed['images'] != null) {
-                imagesList = List<String>.from(parsed['images']);
               }
             }
           } catch (_) {
@@ -627,6 +625,30 @@ class PmsNotifier extends Notifier<PmsState> {
   Future<void> addRoom(RoomModel room, {bool refresh = true}) async {
     try {
       final dio = ref.read(dioClientProvider);
+      
+      // Upload any local images to the backend first
+      List<String> finalImages = [];
+      for (String imagePath in room.images) {
+        if (!imagePath.startsWith('http') && imagePath.isNotEmpty) {
+          try {
+            final formData = FormData.fromMap({
+              'file': await MultipartFile.fromFile(imagePath),
+            });
+            final uploadResponse = await dio.post('/properties/upload', data: formData);
+            if (uploadResponse.statusCode == 200 || uploadResponse.statusCode == 201) {
+              finalImages.add(uploadResponse.data['url']);
+            } else {
+              finalImages.add(imagePath); // fallback
+            }
+          } catch (e) {
+            debugPrint('Image upload failed: $e');
+            finalImages.add(imagePath); // fallback
+          }
+        } else {
+          finalImages.add(imagePath);
+        }
+      }
+
       final response = await dio.post('/properties/rooms', data: {
         'room_number': room.roomNumber,
         'type': room.type,
@@ -641,9 +663,9 @@ class PmsNotifier extends Notifier<PmsState> {
           'holiday_price': room.holidayPrice,
           'extra_bed_price': room.extraBedPrice,
           'amenities': room.amenities,
-          'images': room.images,
+          'images': finalImages,
         }),
-        'image_url': room.images.isNotEmpty ? room.images.first : '',
+        'image_url': finalImages.join(','),
       });
       
       if ((response.statusCode == 200 || response.statusCode == 201) && refresh) {

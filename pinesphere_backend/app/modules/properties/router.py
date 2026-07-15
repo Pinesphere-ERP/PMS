@@ -186,11 +186,67 @@ async def get_rooms(db: AsyncSession = Depends(get_db)):
             "status": room.occupancy_status or "vacant",
             "resort_id": str(cat.property_id),
             "description": cat.description or "",
-            "images": [
-                room.image_url or "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
+             "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
+                "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
         })
     return data
+
+
+@router.get("/rooms/{room_id}")
+async def get_room_detail(room_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid
+    try:
+        r_uuid = uuid.UUID(room_id)
+    except ValueError:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Invalid room ID format")
+        
+    q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id).where(Room.room_id == r_uuid)
+    result = await db.execute(q)
+    row = result.first()
+    if not row:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Room not found")
+        
+    room, cat = row
+    images = [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
+    ]
+    return {
+        "id": str(room.room_id),
+        "room_number": room.room_number,
+        "type": cat.room_name or "Standard",
+        "price": float(cat.base_price or 1000.0),
+        "status": room.occupancy_status or "vacant",
+        "resort_id": str(cat.property_id),
+        "description": cat.description or "",
+        "images": images
+    }
+
+
+from fastapi import UploadFile, File
+import os
+import shutil
+
+@router.post("/upload", status_code=201)
+async def upload_image(file: UploadFile = File(...)):
+    import uuid
+    # Create uploads directory if not exists
+    os.makedirs("uploads", exist_ok=True)
+    
+    # Generate unique filename
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+    filename = f"{uuid.uuid4()}.{ext}"
+    filepath = os.path.join("uploads", filename)
+    
+    # Save file
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    # Return public URL path
+    # In a real app we'd use request.base_url, but for local testing:
+    return {"url": f"http://localhost:8000/api/v1/uploads/{filename}"}
 
 
 @router.post("/rooms", status_code=201)
@@ -232,9 +288,7 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
         db.add(category)
         await db.flush()
     else:
-        # Update category base price & description
-        category.base_price = payload.price
-        category.description = payload.description
+        # Increment room count, but do NOT overwrite existing price and amenities
         if category.number_of_rooms:
             category.number_of_rooms += 1
         else:
@@ -243,6 +297,7 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
         await db.flush()
         
     new_room = Room(
+        property_id=resort_uuid,
         room_category_id=category.room_category_id,
         room_number=payload.room_number,
         housekeeping_status="clean",

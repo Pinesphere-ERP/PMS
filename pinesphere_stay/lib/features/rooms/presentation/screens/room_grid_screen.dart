@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/pms_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../bookings/presentation/screens/create_booking_sheet.dart';
 
 class RoomGridScreen extends ConsumerStatefulWidget {
   const RoomGridScreen({super.key});
@@ -617,6 +619,45 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
               ),
               onPressed: () => Navigator.pop(context),
             ),
+            actions: [
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black45,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.share, color: Colors.white, size: 20),
+                ),
+                onPressed: () {
+                  final resortName = Uri.encodeComponent(widget.resort.name);
+                  final serializedRooms = rooms.map((r) {
+                    final cleanType = r.type.replaceAll('|', ' ');
+                    final allImgs = r.images.join(',');
+                    return '${r.roomNumber}|$cleanType|${r.price.toStringAsFixed(0)}|$allImgs|${r.id}';
+                  }).join(';');
+                  
+                  final encodedRooms = Uri.encodeComponent(serializedRooms);
+                  final portalUrl = 'http://localhost:3000/share/resort/${widget.resort.id}'
+                      '?name=$resortName'
+                      '&rooms=$encodedRooms';
+                      
+                  Clipboard.setData(ClipboardData(text: portalUrl));
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Resort catalog link copied to clipboard!\n${widget.resort.name} catalog ready.'),
+                      action: SnackBarAction(
+                        label: 'OK',
+                        onPressed: () {},
+                        textColor: Colors.white,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 widget.resort.name,
@@ -1031,7 +1072,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    'VIEW STATUS',
+                    'BOOK NOW',
                     style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                   ),
                 ),
@@ -2077,6 +2118,27 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   ),
                   Text('Type: ${liveRoom.type} | Price: ₹${liveRoom.price.toStringAsFixed(0)}/night', style: const TextStyle(color: AppColors.outline)),
                   const Divider(height: 24),
+                  if (liveRoom.status == 'Vacant')
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.add_home_work_outlined),
+                          label: const Text('Book Room & Check-In'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context); // Close actions sheet
+                            showCreateBookingSheet(context, ref, preselectedRoomId: liveRoom.id);
+                          },
+                        ),
+                      ),
+                    ),
                   const Text('Change Status Manually:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
                   const SizedBox(height: 10),
                   SingleChildScrollView(
@@ -2222,6 +2284,41 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                         },
                       ),
                     ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.share, size: 20),
+                      label: const Text('Share Room Details & Photos'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () {
+                        final encodedType = Uri.encodeComponent(liveRoom.type);
+                        final encodedImages = Uri.encodeComponent(liveRoom.images.join(','));
+                        final portalUrl = 'http://localhost:3000/share/room/${liveRoom.id}'
+                            '?num=${liveRoom.roomNumber}'
+                            '&type=$encodedType'
+                            '&price=${liveRoom.price.toStringAsFixed(0)}'
+                            '&images=$encodedImages';
+                        Clipboard.setData(ClipboardData(text: portalUrl));
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Room link copied to clipboard!\nRoom #${liveRoom.roomNumber} details embedded!'),
+                            action: SnackBarAction(
+                              label: 'OK',
+                              onPressed: () {},
+                              textColor: Colors.white,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
             );
@@ -2342,7 +2439,13 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     if (!isManual) const SizedBox(height: 2),
-                    if (!isManual) Text('Phone: ${booking.guestPhone} | ID: ${booking.guestIdProof} (${booking.guestIdNumber})', style: const TextStyle(fontSize: 11, color: AppColors.outline)),
+                    if (!isManual)
+                      Text(
+                        booking.guestIdProof == 'Address'
+                            ? 'Phone: ${booking.guestPhone} | Address: ${booking.guestIdNumber}'
+                            : 'Phone: ${booking.guestPhone} | ID: ${booking.guestIdProof} (${booking.guestIdNumber})',
+                        style: const TextStyle(fontSize: 11, color: AppColors.outline),
+                      ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -143,7 +143,7 @@ class DashboardScreen extends ConsumerWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildActionButton(context, Icons.add_circle_outline, 'New Booking', '/bookings')),
+            Expanded(child: _buildActionButton(context, Icons.add_circle_outline, 'New Booking', '/rooms')),
             const SizedBox(width: 12),
             Expanded(child: _buildActionButton(context, Icons.grid_view, 'Room Grid', '/rooms')),
             const SizedBox(width: 12),

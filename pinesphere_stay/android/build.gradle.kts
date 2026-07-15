@@ -25,7 +25,7 @@ tasks.register<Delete>("clean") {
 
 allprojects {
     extra.set("compileSdkVersion", 36)
-    extra.set("targetSdkVersion", 34)
+    extra.set("targetSdkVersion", 36)
     extra.set("minSdkVersion", 24)
 }
 

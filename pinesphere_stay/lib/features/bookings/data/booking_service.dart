@@ -154,7 +154,47 @@ class BookingService {
       if (status != null) queryParams['status'] = status;
       if (date != null) queryParams['date'] = date;
       final response = await _dio.get('/bookings/', queryParameters: queryParams);
-      return response.data as List<dynamic>;
+      final List<dynamic> dataList = response.data as List<dynamic>;
+      
+      // Cache data locally for offline use
+      final entities = dataList.map((data) => BookingEntity(
+        uuid: data['id']?.toString() ?? data['uuid'] ?? '',
+        propertyId: data['property_id'] ?? '',
+        roomId: data['room_id'] ?? '',
+        guestId: data['guest_id'] ?? '',
+        guestName: data['guest_name'] ?? '',
+        roomNumber: data['room_number'] ?? '',
+        roomType: data['room_type'] ?? '',
+        bookingType: data['booking_type'] ?? 'online',
+        bookingSource: data['booking_source'] ?? '',
+        checkInDate: data['check_in_date'] ?? '',
+        checkOutDate: data['check_out_date'] ?? '',
+        adults: data['adults'] ?? 1,
+        children: data['children'] ?? 0,
+        infants: data['infants'] ?? 0,
+        roomRent: (data['room_rent'] ?? 0).toDouble(),
+        deposit: (data['deposit'] ?? 0).toDouble(),
+        discount: (data['discount'] ?? 0).toDouble(),
+        taxes: (data['taxes'] ?? 0).toDouble(),
+        totalPayable: (data['total_payable'] ?? 0).toDouble(),
+        advancePaid: (data['advance_paid'] ?? 0).toDouble(),
+        pendingAmount: (data['pending_amount'] ?? 0).toDouble(),
+        extraBed: data['extra_bed'] ?? false,
+        guestPreferences: data['guest_preferences'] ?? '',
+        notes: data['notes'] ?? '',
+        vehicleNumber: data['vehicle_number'] ?? '',
+        bookingStatus: data['booking_status'] ?? 'confirmed',
+        paymentStatus: data['payment_status'] ?? 'pending',
+        createdAt: data['created_at'] ?? DateTime.now().toUtc().toIso8601String(),
+        lastModifiedHlc: data['last_modified_hlc'] ?? DateTime.now().toUtc().toIso8601String(),
+      )).toList();
+      
+      if (entities.isNotEmpty) {
+        // Upsert matching UUIDs (would need a custom merge or clear in production, for prototype we put)
+        _bookingBox.putMany(entities);
+      }
+      
+      return dataList;
     } on DioException catch (e) {
       AppLogger.w('getBookings network failed, falling back to ObjectBox', e);
       return getCachedBookings();

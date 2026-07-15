@@ -157,7 +157,43 @@ class CheckOutService {
   Future<List<dynamic>> getPendingCheckOuts(String propertyId) async {
     try {
       final response = await _dio.get('/checkout/pending', queryParameters: {'property_id': propertyId});
-      return response.data as List<dynamic>;
+      final List<dynamic> dataList = response.data as List<dynamic>;
+      
+      final entities = dataList.map((data) => CheckOutEntity(
+        uuid: data['id']?.toString() ?? data['uuid'] ?? '',
+        checkinId: data['checkin_id']?.toString() ?? '',
+        bookingId: data['booking_id']?.toString() ?? '',
+        roomId: data['room_id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString() ?? '',
+        staffId: data['staff_id']?.toString() ?? '',
+        guestName: data['guest_name']?.toString() ?? '',
+        roomNumber: data['room_number']?.toString() ?? '',
+        checkoutTime: data['checkout_time']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        roomCharges: (data['room_charges'] ?? 0).toDouble(),
+        restaurantCharges: (data['restaurant_charges'] ?? 0).toDouble(),
+        laundryCharges: (data['laundry_charges'] ?? 0).toDouble(),
+        minibarCharges: (data['minibar_charges'] ?? 0).toDouble(),
+        damageCharges: (data['damage_charges'] ?? 0).toDouble(),
+        miscellaneousCharges: (data['miscellaneous_charges'] ?? 0).toDouble(),
+        discount: (data['discount'] ?? 0).toDouble(),
+        gst: (data['gst'] ?? 0).toDouble(),
+        totalAmount: (data['total_amount'] ?? 0).toDouble(),
+        advancePaid: (data['advance_paid'] ?? 0).toDouble(),
+        remainingBalance: (data['remaining_balance'] ?? 0).toDouble(),
+        refundAmount: (data['refund_amount'] ?? 0).toDouble(),
+        paymentStatus: data['payment_status']?.toString() ?? 'pending',
+        keyReturned: data['key_returned'] ?? false,
+        idReturned: data['id_returned'] ?? false,
+        feedbackSubmitted: data['feedback_submitted'] ?? false,
+        remarks: data['remarks']?.toString() ?? '',
+        checkoutStatus: data['checkout_status']?.toString() ?? 'pending',
+        lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+      )).toList();
+      
+      if (entities.isNotEmpty) {
+        _checkoutBox.putMany(entities);
+      }
+      return dataList;
     } on DioException catch (e) {
       AppLogger.w('getPendingCheckOuts network failed, falling back to ObjectBox', e);
       return _checkoutBox.query(
@@ -187,7 +223,43 @@ class CheckOutService {
   Future<List<dynamic>> getTodaysCheckOuts(String propertyId) async {
     try {
       final response = await _dio.get('/checkout/today', queryParameters: {'property_id': propertyId});
-      return response.data as List<dynamic>;
+      final List<dynamic> dataList = response.data as List<dynamic>;
+      
+      final entities = dataList.map((data) => CheckOutEntity(
+        uuid: data['id']?.toString() ?? data['uuid'] ?? '',
+        checkinId: data['checkin_id']?.toString() ?? '',
+        bookingId: data['booking_id']?.toString() ?? '',
+        roomId: data['room_id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString() ?? '',
+        staffId: data['staff_id']?.toString() ?? '',
+        guestName: data['guest_name']?.toString() ?? '',
+        roomNumber: data['room_number']?.toString() ?? '',
+        checkoutTime: data['checkout_time']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        roomCharges: (data['room_charges'] ?? 0).toDouble(),
+        restaurantCharges: (data['restaurant_charges'] ?? 0).toDouble(),
+        laundryCharges: (data['laundry_charges'] ?? 0).toDouble(),
+        minibarCharges: (data['minibar_charges'] ?? 0).toDouble(),
+        damageCharges: (data['damage_charges'] ?? 0).toDouble(),
+        miscellaneousCharges: (data['miscellaneous_charges'] ?? 0).toDouble(),
+        discount: (data['discount'] ?? 0).toDouble(),
+        gst: (data['gst'] ?? 0).toDouble(),
+        totalAmount: (data['total_amount'] ?? 0).toDouble(),
+        advancePaid: (data['advance_paid'] ?? 0).toDouble(),
+        remainingBalance: (data['remaining_balance'] ?? 0).toDouble(),
+        refundAmount: (data['refund_amount'] ?? 0).toDouble(),
+        paymentStatus: data['payment_status']?.toString() ?? 'pending',
+        keyReturned: data['key_returned'] ?? false,
+        idReturned: data['id_returned'] ?? false,
+        feedbackSubmitted: data['feedback_submitted'] ?? false,
+        remarks: data['remarks']?.toString() ?? '',
+        checkoutStatus: data['checkout_status']?.toString() ?? 'completed',
+        lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+      )).toList();
+      
+      if (entities.isNotEmpty) {
+        _checkoutBox.putMany(entities);
+      }
+      return dataList;
     } on DioException catch (e) {
       AppLogger.w('getTodaysCheckOuts network failed, falling back to ObjectBox', e);
       return _checkoutBox.query(CheckOutEntity_.propertyId.equals(propertyId)).build().find();

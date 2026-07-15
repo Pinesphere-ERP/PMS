@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../../core/presentation/widgets/app_drawer.dart';
+import '../../../../core/network/connectivity_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -60,7 +61,16 @@ class DashboardScreen extends ConsumerWidget {
       ),
       title: Row(
         children: [
-          const Icon(Icons.signal_wifi_off, color: AppColors.primary),
+          Consumer(
+            builder: (context, ref, child) {
+              final isOnlineAsync = ref.watch(connectivityProvider);
+              final isOnline = isOnlineAsync.value ?? true;
+              return Icon(
+                isOnline ? Icons.wifi : Icons.signal_wifi_off,
+                color: isOnline ? AppColors.primary : AppColors.error,
+              );
+            },
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

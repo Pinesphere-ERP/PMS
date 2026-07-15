@@ -169,7 +169,35 @@ class CheckInService {
   Future<List<dynamic>> getTodaysCheckIns(String propertyId) async {
     try {
       final response = await _dio.get('/checkin/today', queryParameters: {'property_id': propertyId});
-      return response.data as List<dynamic>;
+      final List<dynamic> dataList = response.data as List<dynamic>;
+      
+      final entities = dataList.map((data) => CheckInEntity(
+        uuid: data['id']?.toString() ?? data['uuid'] ?? '',
+        bookingId: data['booking_id']?.toString() ?? '',
+        roomId: data['room_id']?.toString() ?? '',
+        guestId: data['guest_id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString() ?? '',
+        staffId: data['staff_id']?.toString() ?? '',
+        guestName: data['guest_name']?.toString() ?? '',
+        roomNumber: data['room_number']?.toString() ?? '',
+        roomType: data['room_type']?.toString() ?? '',
+        deposit: (data['deposit'] ?? 0).toDouble(),
+        advancePaid: (data['advance_paid'] ?? 0).toDouble(),
+        idVerified: data['id_verified'] ?? false,
+        idVerificationNotes: data['id_verification_notes']?.toString() ?? '',
+        checkedInAt: data['checked_in_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        status: data['status']?.toString() ?? 'active',
+        offlineId: data['offline_id']?.toString() ?? '',
+        specialRequests: data['special_requests']?.toString() ?? '',
+        vehicleNumber: data['vehicle_number']?.toString() ?? '',
+        parkingRequired: data['parking_required'] ?? false,
+        lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+      )).toList();
+      
+      if (entities.isNotEmpty) {
+        _checkinBox.putMany(entities);
+      }
+      return dataList;
     } on DioException catch (e) {
       AppLogger.w('getTodaysCheckIns network failed, falling back to ObjectBox', e);
       return _checkinBox.query(CheckInEntity_.propertyId.equals(propertyId)).build().find();
@@ -182,7 +210,35 @@ class CheckInService {
   Future<List<dynamic>> getActiveCheckIns(String propertyId) async {
     try {
       final response = await _dio.get('/checkin/active', queryParameters: {'property_id': propertyId});
-      return response.data as List<dynamic>;
+      final List<dynamic> dataList = response.data as List<dynamic>;
+      
+      final entities = dataList.map((data) => CheckInEntity(
+        uuid: data['id']?.toString() ?? data['uuid'] ?? '',
+        bookingId: data['booking_id']?.toString() ?? '',
+        roomId: data['room_id']?.toString() ?? '',
+        guestId: data['guest_id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString() ?? '',
+        staffId: data['staff_id']?.toString() ?? '',
+        guestName: data['guest_name']?.toString() ?? '',
+        roomNumber: data['room_number']?.toString() ?? '',
+        roomType: data['room_type']?.toString() ?? '',
+        deposit: (data['deposit'] ?? 0).toDouble(),
+        advancePaid: (data['advance_paid'] ?? 0).toDouble(),
+        idVerified: data['id_verified'] ?? false,
+        idVerificationNotes: data['id_verification_notes']?.toString() ?? '',
+        checkedInAt: data['checked_in_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        status: data['status']?.toString() ?? 'active',
+        offlineId: data['offline_id']?.toString() ?? '',
+        specialRequests: data['special_requests']?.toString() ?? '',
+        vehicleNumber: data['vehicle_number']?.toString() ?? '',
+        parkingRequired: data['parking_required'] ?? false,
+        lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+      )).toList();
+      
+      if (entities.isNotEmpty) {
+        _checkinBox.putMany(entities);
+      }
+      return dataList;
     } on DioException catch (e) {
       AppLogger.w('getActiveCheckIns network failed, falling back to ObjectBox', e);
       return _checkinBox.query(

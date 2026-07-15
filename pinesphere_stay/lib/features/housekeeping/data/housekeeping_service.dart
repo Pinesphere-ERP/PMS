@@ -100,7 +100,35 @@ class HousekeepingService {
       if (status != null) queryParams['status'] = status;
       if (staffId != null) queryParams['staff_id'] = staffId;
       final response = await _dio.get('/housekeeping/tasks', queryParameters: queryParams);
-      return response.data as List<dynamic>;
+      final List<dynamic> dataList = response.data as List<dynamic>;
+      
+      final entities = dataList.map((body) => HousekeepingTaskEntity(
+        uuid: body['id']?.toString() ?? '',
+        roomId: body['room_id']?.toString() ?? '',
+        propertyId: body['property_id']?.toString() ?? '',
+        roomNumber: body['room_number']?.toString() ?? '',
+        assignedStaffId: body['assigned_staff_id']?.toString() ?? '',
+        assignedStaffName: body['assigned_staff_name']?.toString() ?? '',
+        status: body['status']?.toString() ?? 'pending',
+        priority: body['priority']?.toString() ?? 'medium',
+        checklistStatus: body['checklist_status']?.toString() ?? '',
+        remarks: body['remarks']?.toString() ?? '',
+        beforePhoto: body['before_photo']?.toString() ?? '',
+        afterPhoto: body['after_photo']?.toString() ?? '',
+        completedAt: body['completed_at']?.toString() ?? '',
+        inspectedBy: body['inspected_by']?.toString() ?? '',
+        inspectionResult: body['inspection_result']?.toString() ?? '',
+        inspectionRemarks: body['inspection_remarks']?.toString() ?? '',
+        inspectedAt: body['inspected_at']?.toString() ?? '',
+        createdAt: body['created_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+      )).toList();
+      
+      if (entities.isNotEmpty) {
+        _taskBox.putMany(entities);
+      }
+      
+      return dataList;
     } on DioException catch (e) {
       AppLogger.w('getTasks network failed, falling back to ObjectBox', e);
       return _queryTasksLocal(propertyId, status, staffId);

@@ -6,7 +6,7 @@ export default function AppContainer({
   children,
 }: AppContainerProps) {
   return (
-    <main className="mx-auto min-h-screen max-w-md px-4 pb-28 pt-4 fade-in">
+    <main className="mx-auto min-h-screen max-w-md px-3 sm:px-4 pb-28 pt-4 fade-in">
       {children}
     </main>
   );

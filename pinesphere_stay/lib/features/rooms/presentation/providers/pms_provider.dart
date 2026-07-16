@@ -275,9 +275,12 @@ class PmsNotifier extends Notifier<PmsState> {
             {'name': 'Portable Bluetooth Speaker', 'price': 150.0},
             {'name': 'Smart TV Access', 'price': 100.0},
           ];
-
-          List<String> imagesList = List<String>.from(json['images'] ?? []);
-
+          List<String> imagesList = List<String>.from(json['images'] ?? []).map((img) {
+            if (img.startsWith('http://localhost:8000')) {
+              return img.replaceAll('http://localhost:8000', 'https://pms-bvko.onrender.com');
+            }
+            return img;
+          }).toList();
           try {
             if (descText.startsWith('{') && descText.endsWith('}')) {
               final Map<String, dynamic> parsed = Map<String, dynamic>.from(jsonDecode(descText));

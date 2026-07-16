@@ -1535,8 +1535,22 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                                               width: 60,
                                               height: 60,
                                               child: (kIsWeb || uploadedImages[index].startsWith('http') || uploadedImages[index].startsWith('blob:'))
-                                                  ? Image.network(uploadedImages[index], fit: BoxFit.cover)
-                                                  : Image.file(File(uploadedImages[index]), fit: BoxFit.cover),
+                                                  ? Image.network(
+                                                      uploadedImages[index], 
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: AppColors.surfaceContainerHigh,
+                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
+                                                      ),
+                                                    )
+                                                  : Image.file(
+                                                      File(uploadedImages[index]), 
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: AppColors.surfaceContainerHigh,
+                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
+                                                      ),
+                                                    ),
                                             ),
                                           ),
                                           Positioned(
@@ -1886,8 +1900,22 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                                               width: 60,
                                               height: 60,
                                               child: (kIsWeb || uploadedImages[index].startsWith('http') || uploadedImages[index].startsWith('blob:'))
-                                                  ? Image.network(uploadedImages[index], fit: BoxFit.cover)
-                                                  : Image.file(File(uploadedImages[index]), fit: BoxFit.cover),
+                                                  ? Image.network(
+                                                      uploadedImages[index], 
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: AppColors.surfaceContainerHigh,
+                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
+                                                      ),
+                                                    )
+                                                  : Image.file(
+                                                      File(uploadedImages[index]), 
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: AppColors.surfaceContainerHigh,
+                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
+                                                      ),
+                                                    ),
                                             ),
                                           ),
                                           Positioned(

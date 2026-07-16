@@ -81,20 +81,20 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS — allow Vite dev server and any localhost port
+# CORS - allow Vite dev server and any localhost port
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Create uploads directory if it doesn't exist
+os.makedirs("uploads", exist_ok=True)
+app.mount("/api/v1/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(api_router, prefix="/api/v1")
 

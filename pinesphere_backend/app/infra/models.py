@@ -257,7 +257,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')
     occupancy_status: Mapped[Optional[str]] = mapped_column(String(20), default='vacant')
-    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    image_url: Mapped[Optional[str]] = mapped_column(Text)
 
 
 # ── F. Guests & Bookings ──────────────────────────────────────────────────────
@@ -483,6 +483,7 @@ class Subscription(Base, TimestampMixin):
     license_id: Mapped[Optional[str]] = mapped_column(String(100), unique=True)
     device_limit: Mapped[int] = mapped_column(Integer, default=5)
     registered_devices: Mapped[int] = mapped_column(Integer, default=0)
+    subscription_required: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class SubscriptionTransaction(Base, TimestampMixin):

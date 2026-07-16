@@ -20,6 +20,14 @@ export const subscriptionService = {
     });
   },
 
+  // Toggle if a subscription is required for a property
+  toggleSubscriptionRequired: (propertyId, required) => {
+    return fetchAPI(`/subscriptions/${propertyId}/toggle-required`, {
+      method: 'POST',
+      body: JSON.stringify({ required })
+    });
+  },
+
   // Get General Subscription Dashboard Data
   getDashboardData: () => {
     return fetchAPI('/subscriptions/dashboard');

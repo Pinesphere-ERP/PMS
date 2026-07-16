@@ -9,7 +9,6 @@ from app.modules.bookings import router as bookings
 from app.modules.checkin import router as checkin
 from app.modules.checkout import router as checkout
 from app.modules.housekeeping import router as housekeeping
-from app.modules.reports import router as reports
 from app.modules.staff.router import router as staff
 from app.modules.reports.router import router as reports
 from app.modules.settings.router import router as settings

@@ -6,7 +6,7 @@ from sqlalchemy import func, and_, or_
 from datetime import date, timedelta
 from typing import List, Optional
 
-from app.infra.database import get_db
+from app.infra.database import get_db, provision_tenant_schema
 from app.core.dependencies import assert_property_access, get_current_user, require_room_access, require_super_admin
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User
 import uuid

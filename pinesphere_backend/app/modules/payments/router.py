@@ -8,7 +8,7 @@ from typing import Optional
 import uuid
 
 from app.infra.database import get_db
-from app.core.dependencies import require_super_admin
+from app.core.dependencies import get_current_user, require_super_admin
 from app.infra.models import PaymentTransaction, Invoice, PendingDue, Property, Owner, Subscription
 from .service import PaymentService
 from .schemas import PaymentCreate, PaymentRead, PaymentListResponse
@@ -32,10 +32,8 @@ router = APIRouter(dependencies=[Depends(require_super_admin)])
 def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
     return PaymentService(db)
 
-# Dummy dependency for user_id (since we don't have full auth wired in this snippet)
-# Replace with actual auth dependency later
-def get_current_user_id() -> Optional[uuid.UUID]:
-    return None # Mock user ID
+async def get_current_user_id(user=Depends(get_current_user)) -> uuid.UUID:
+    return user.id
 
 @router.post("/", status_code=501)
 async def create_payment(

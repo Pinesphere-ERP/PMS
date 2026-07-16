@@ -115,13 +115,16 @@ class SyncService:
         pull_ts = request.last_sync_timestamp.replace(tzinfo=None) # Depending on DB tz settings
 
         for entity_type, model in ENTITY_MAP.items():
-            if not hasattr(model, "updated_at") or not hasattr(model, "property_id"):
+            if not hasattr(model, "updated_at"):
                 continue
 
-            query = select(model).filter(
-                model.property_id == request.property_id,
-                model.updated_at > pull_ts
-            )
+            # For platform models (in public schema), they might still use property_id
+            # For tenant models, the session is already scoped via search_path
+            filters = [model.updated_at > pull_ts]
+            if hasattr(model, "property_id"):
+                filters.append(model.property_id == request.property_id)
+
+            query = select(model).filter(*filters)
             result = await self.db.execute(query)
             changed_rows = result.scalars().all()
 

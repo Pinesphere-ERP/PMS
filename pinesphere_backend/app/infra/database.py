@@ -4,7 +4,8 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import MetaData, func
+from sqlalchemy import MetaData, func, text
+from fastapi import Request
 
 from app.core.config import settings
 
@@ -50,7 +51,30 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
 )
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
+        # Extract tenant from request headers
+        tenant_id = request.headers.get("x-tenant-id")
+        
+        if tenant_id:
+            safe_tenant_id = str(tenant_id).replace("-", "_")
+            await session.execute(text(f"SET search_path TO property_{safe_tenant_id}, public"))
+        else:
+            await session.execute(text("SET search_path TO public"))
+            
         async with session.begin():
             yield session
+
+async def provision_tenant_schema(tenant_id: str):
+    """
+    Creates a new schema for the given tenant and initializes the tables.
+    """
+    schema_name = f"property_{str(tenant_id).replace('-', '_')}"
+    async with engine.begin() as conn:
+        # Create the schema
+        await conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
+        # Set search path for the current connection session
+        await conn.execute(text(f"SET search_path TO {schema_name}, public"))
+        # Create all tables (platform tables will go to public because of schema='public',
+        # tenant tables will go to the current search_path i.e., schema_name)
+        await conn.run_sync(Base.metadata.create_all)

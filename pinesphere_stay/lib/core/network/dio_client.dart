@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:pinesphere_stay/core/database/objectbox.dart';
+import 'package:pinesphere_stay/core/sync/queue/sync_operation.dart';
+import 'package:pinesphere_stay/main.dart';
 import 'api_interceptor.dart';
 
 part 'dio_client.g.dart';
@@ -28,72 +32,57 @@ Dio dioClient(Ref ref) {
   
   dio.interceptors.addAll([
     ApiInterceptor(storage),
-    RetryInterceptor(dio: dio),
+    OfflineOutboxInterceptor(),
     LogInterceptor(requestBody: true, responseBody: true),
   ]);
 
   return dio;
 }
 
-class RetryInterceptor extends Interceptor {
-  final Dio dio;
-  final int maxRetries;
-  final Duration retryInterval;
-
-  RetryInterceptor({
-    required this.dio,
-    this.maxRetries = 3,
-    this.retryInterval = const Duration(seconds: 2),
-  });
-
+class OfflineOutboxInterceptor extends Interceptor {
   @override
   Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
-    final requestOptions = err.requestOptions;
-    
-    final errorString = err.error?.toString() ?? '';
-    final messageString = err.message ?? '';
-    
-    // Check if we should retry: network timeouts, connection errors, socket resets, handshake exceptions
     final isNetworkError = err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.connectionError ||
-        errorString.contains('SocketException') ||
-        errorString.contains('HandshakeException') ||
-        errorString.contains('Connection reset') ||
-        messageString.contains('SocketException') ||
-        messageString.contains('HandshakeException') ||
-        messageString.contains('Connection reset');
+        err.error.toString().contains('SocketException');
 
-    final extra = Map<String, dynamic>.from(requestOptions.extra);
-    final int currentRetry = (extra['retry_count'] as int?) ?? 0;
+    final method = err.requestOptions.method.toUpperCase();
 
-    if (isNetworkError && currentRetry < maxRetries) {
-      extra['retry_count'] = currentRetry + 1;
-      requestOptions.extra = extra;
-      
-      // Exponential backoff delay
-      final delay = retryInterval * (currentRetry + 1);
-      await Future.delayed(delay);
-
+    // If it's a mutating request and the network is down, queue it!
+    if (isNetworkError && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
       try {
-        final response = await dio.request(
-          requestOptions.path,
-          data: requestOptions.data,
-          queryParameters: requestOptions.queryParameters,
-          options: Options(
-            method: requestOptions.method,
-            headers: requestOptions.headers,
-            contentType: requestOptions.contentType,
-            responseType: requestOptions.responseType,
-            extra: requestOptions.extra,
+        final box = objectBox.store.box<SyncOperation>();
+        
+        // Extract entity info if provided in extra, otherwise fallback
+        final extra = err.requestOptions.extra;
+        final entityType = extra['entity_type'] ?? 'Unknown';
+        final entityId = extra['entity_id'] ?? err.requestOptions.path;
+        final operationType = method == 'DELETE' ? 'delete' : (method == 'POST' ? 'create' : 'update');
+        
+        final payload = err.requestOptions.data != null ? jsonEncode(err.requestOptions.data) : '{}';
+
+        final syncOp = SyncOperation(
+          entityType: entityType,
+          entityId: entityId,
+          operationType: operationType,
+          payload: payload,
+          createdAt: DateTime.now(),
+        );
+
+        box.put(syncOp);
+        
+        // Resolve with a mock success response so the app thinks it worked
+        return handler.resolve(
+          Response(
+            requestOptions: err.requestOptions,
+            statusCode: 202,
+            data: {'message': 'Saved offline. Will sync later.', 'offline': true},
           ),
         );
-        return handler.resolve(response);
-      } on DioException catch (retryErr) {
-        return handler.next(retryErr);
       } catch (e) {
-        return handler.next(err);
+        // Fallback to error if DB fails
       }
     }
 

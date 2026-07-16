@@ -6,7 +6,7 @@ from sqlalchemy import func, and_, or_
 from datetime import date, timedelta
 from typing import List, Optional
 
-from app.infra.database import get_db
+from app.infra.database import get_db, provision_tenant_schema
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User
 import uuid
 from app.modules.properties.schemas import PropertyCreateInput
@@ -111,6 +111,9 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         target_user.is_primary_owner = True
 
     await db.commit()
+    
+    # Provision the tenant database schema
+    await provision_tenant_schema(str(new_property.property_id))
 
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 

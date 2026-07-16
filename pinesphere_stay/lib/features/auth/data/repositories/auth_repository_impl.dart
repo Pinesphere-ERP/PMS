@@ -94,6 +94,14 @@ class AuthRepository {
         await _secureStorage.write(key: 'tenant_id', value: propertyId);
       }
 
+      // Fetch offline bootstrap info (permissions & role details)
+      try {
+        final bootstrapResponse = await _dio.post('/auth/offline-bootstrap');
+        await _secureStorage.write(key: 'cached_permissions', value: jsonEncode(bootstrapResponse.data['permissions']));
+      } catch (e) {
+        debugPrint("Failed to fetch offline bootstrap: $e");
+      }
+
       // Wipe local database on successful login to prevent conflicts
       // We will pull the fresh state from the cloud immediately after.
       try {

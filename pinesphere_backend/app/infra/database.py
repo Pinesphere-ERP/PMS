@@ -53,16 +53,16 @@ AsyncSessionLocal = async_sessionmaker(
 
 async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        # Extract tenant from request headers
-        tenant_id = request.headers.get("x-tenant-id")
-        
-        if tenant_id:
-            safe_tenant_id = str(tenant_id).replace("-", "_")
-            await session.execute(text(f"SET search_path TO property_{safe_tenant_id}, public"))
-        else:
-            await session.execute(text("SET search_path TO public"))
-            
         async with session.begin():
+            # Extract tenant from request headers
+            tenant_id = request.headers.get("x-tenant-id")
+            
+            if tenant_id:
+                safe_tenant_id = str(tenant_id).replace("-", "_")
+                await session.execute(text(f"SET search_path TO property_{safe_tenant_id}, public"))
+            else:
+                await session.execute(text("SET search_path TO public"))
+                
             yield session
 
 async def provision_tenant_schema(tenant_id: str):

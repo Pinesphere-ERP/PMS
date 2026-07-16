@@ -69,9 +69,8 @@ async def lifespan(app: FastAPI):
                 user.role_id = super_admin_role.id
                 await db.commit()
 
-        # Seed Mock Data
-        from app.seed_mock import seed_mock_data
-        await seed_mock_data(db)
+        # Seed Mock Data removed
+
         
     yield
 

@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 
 void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? preselectedRoomId}) {
   final pmsState = ref.read(pmsProvider);
+  final pmsNotifier = ref.read(pmsProvider.notifier);
   final vacantRooms = pmsState.rooms.where((r) => r.status == 'Vacant').toList();
 
   if (vacantRooms.isEmpty && preselectedRoomId == null) {
@@ -97,9 +98,9 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (modalContext) {
         return StatefulBuilder(
-          builder: (context, setSheetState) {
+          builder: (sheetContext, setSheetState) {
             final currentFilteredRooms = getFilteredRooms(selectedResortId);
             
             final selectedRoom = selectedRoomId != null && currentFilteredRooms.any((r) => r.id == selectedRoomId)
@@ -154,15 +155,14 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
             final double totalInvoice = basePriceSum + weekendSum + seasonSum + holidaySum + extraBedSum + amenitiesSum + manualAmenitiesSum;
 
             return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+              child: Material(
+                color: AppColors.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: SingleChildScrollView(
+                    child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -175,7 +175,7 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
                           ),
                           IconButton(
                             icon: const Icon(Icons.close_rounded),
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () => Navigator.pop(sheetContext),
                           ),
                         ],
                       ),
@@ -479,19 +479,7 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text('Guest Signature', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.outlineVariant),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text('Draw/Sign inside box on mobile', style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: AppColors.outline)),
-                      ),
+
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
@@ -533,11 +521,27 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
                               totalSum: totalInvoice,
                             );
 
-                            ref.read(pmsProvider.notifier).createBooking(newBooking);
-                            Navigator.pop(context); // Close sheet
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Room ${selectedRoom.roomNumber} Booked Successfully for ${guestNameCtrl.text}!')),
+                            pmsNotifier.createBooking(newBooking);
+                            Navigator.pop(sheetContext); // Close sheet
+                            
+                            showDialog(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                title: const Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: Colors.green),
+                                    SizedBox(width: 8),
+                                    Text('Booking Successful'),
+                                  ],
+                                ),
+                                content: Text('Room ${selectedRoom.roomNumber} has been booked successfully for ${guestNameCtrl.text}!'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dialogContext),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
                             );
                           },
                           child: const Text('Confirm Booking & Check-In'),
@@ -547,7 +551,8 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
                   ),
                 ),
               ),
-            );
+            ),
+          );
           },
         );
       },

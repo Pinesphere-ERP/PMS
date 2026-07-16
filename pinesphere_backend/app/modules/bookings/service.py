@@ -21,8 +21,9 @@ async def create_guest(db: AsyncSession, req: GuestCreateRequest) -> GuestRespon
             Guest.mobile == req.mobile
         )
         dup_res = await db.execute(dup_stmt)
-        if dup_res.scalars().first():
-            raise HTTPException(status_code=409, detail="Guest with this mobile number already exists")
+        existing_guest = dup_res.scalars().first()
+        if existing_guest:
+            return GuestResponse.model_validate(existing_guest)
 
     prop_stmt = select(Property).where(Property.property_id == req.property_id)
     prop_res = await db.execute(prop_stmt)

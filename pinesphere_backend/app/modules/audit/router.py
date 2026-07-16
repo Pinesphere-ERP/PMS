@@ -4,7 +4,7 @@ from typing import Any
 import uuid
 
 from app.infra.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import assert_property_access, get_current_role, get_current_user
 from app.infra.models import User
 from .schemas import AuditLogListResponse, AuditLogResponse
 from .service import AuditService
@@ -23,6 +23,13 @@ async def list_audit_logs(
     # Require authentication (in real app, use require_permission("AUDIT_LOGS"))
     current_user: User = Depends(get_current_user)
 ) -> Any:
+    if property_id is None:
+        property_id = current_user.property_id
+    if property_id is None and (await get_current_role(current_user, service.db)).role_code != "SUPER_ADMIN":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Property scope required")
+    if property_id is not None:
+        await assert_property_access(property_id, current_user, service.db)
     skip = (page - 1) * size
     logs, total = await service.list_audit_logs(property_id=property_id, skip=skip, limit=size)
     

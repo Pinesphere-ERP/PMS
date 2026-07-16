@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,23 +8,13 @@ from typing import Optional
 
 from app.core.config import settings
 from app.infra.database import get_db
-from app.infra.models import User, RolePermission, Role, UserPropertyAccess
+from app.infra.models import Owner, Property, User, RolePermission, Role
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 async def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
     if not token:
-        # Mock Super Admin for UI testing
-        role_res = await db.execute(select(Role).filter(Role.role_code == "SUPER_ADMIN"))
-        role = role_res.scalars().first()
-        return User(
-            id=uuid.uuid4(),
-            property_id=None,
-            role_id=role.id if role else uuid.uuid4(),
-            status="ACTIVE",
-            name="Mock Admin",
-            username="admin"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_str = payload.get("sub")
@@ -73,10 +63,150 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
                     user.active_role_id = access.role_id
                 
         return user
-    except jwt.PyJWTError:
+    except (jwt.PyJWTError, ValueError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
 
 ACCESS_LEVEL_ORDER = {"NONE": 0, "VIEW": 1, "OWN": 2, "LIMITED": 3, "FULL": 4}
+
+
+async def get_current_role(user: User, db: AsyncSession) -> Role:
+    """Return the persisted role; never infer authority from a client claim."""
+    result = await db.execute(select(Role).where(Role.id == user.role_id))
+    role = result.scalars().first()
+    if not role:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role not found")
+    return role
+
+
+async def require_super_admin(
+    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> User:
+    if (await get_current_role(user, db)).role_code != "SUPER_ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")
+    return user
+
+
+async def resolve_owner_id(user: User, db: AsyncSession) -> uuid.UUID:
+    """Resolve an OWNER from immutable owner contact identifiers, not a property.
+
+    This bridges the existing schema (which has no User.owner_id) while allowing
+    a single owner account to access every Property with the matching owner_id.
+    """
+    clauses = []
+    if user.email:
+        clauses.append(Owner.email == user.email)
+    if user.mobile_number:
+        clauses.append(Owner.mobile_number == user.mobile_number)
+    if not clauses:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner identity is not linked")
+    from sqlalchemy import or_
+    owner = (await db.execute(select(Owner).where(or_(*clauses)))).scalars().first()
+    if not owner:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner identity is not linked")
+    return owner.owner_id
+
+
+async def assert_property_access(property_id: uuid.UUID, user: User, db: AsyncSession) -> None:
+    """Authorize a property selected by a path/query/body value.
+
+    The value only identifies the requested resource; authority always comes from
+    the authenticated user.  Owners are matched through Property.owner_id so one
+    owner may operate every property they own.  Staff are limited to their assigned
+    property and guests are excluded from management APIs.
+    """
+    role = await get_current_role(user, db)
+    if role.role_code == "SUPER_ADMIN":
+        return
+    if role.role_code == "GUEST":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Management access required")
+    target = (await db.execute(select(Property).where(Property.property_id == property_id))).scalars().first()
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+    if role.role_code == "OWNER":
+        if await resolve_owner_id(user, db) != target.owner_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+        return
+    if user.property_id != property_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+
+async def assert_resource_property_access(model, id_column, resource_id, user: User, db: AsyncSession):
+    try:
+        resource_id = uuid.UUID(str(resource_id))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    record = (await db.execute(select(model).where(id_column == resource_id))).scalars().first()
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    await assert_property_access(record.property_id, user, db)
+    return record
+
+
+async def require_property_access(
+    property_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> User:
+    await assert_property_access(property_id, user, db)
+    return user
+
+
+def require_resource_property_access(model, id_column, path_parameter: str):
+    """Dependency factory for property-owned records addressed only by their ID."""
+    async def checker(
+        request: Request,
+        user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ) -> User:
+        resource_id = request.path_params.get(path_parameter)
+        await assert_resource_property_access(model, id_column, resource_id, user, db)
+        return user
+    return checker
+
+
+def require_optional_resource_property_access(model, id_column, path_parameter: str):
+    """Router-level variant: enforce access only on routes carrying the ID."""
+    async def checker(
+        request: Request,
+        user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ) -> User:
+        resource_id = request.path_params.get(path_parameter)
+        if resource_id is not None:
+            await assert_resource_property_access(model, id_column, resource_id, user, db)
+        return user
+    return checker
+
+
+async def assert_room_access(room_id, user: User, db: AsyncSession):
+    """Resolve room tenancy through its category (Room has no property_id)."""
+    from app.infra.models import Room, RoomCategory
+    room = (await db.execute(select(Room).where(Room.room_id == uuid.UUID(str(room_id))))).scalars().first()
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    category = (await db.execute(select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id))).scalars().first()
+    if not category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room category not found")
+    await assert_property_access(category.property_id, user, db)
+    return room
+
+
+def require_room_access(path_parameter: str = "room_id"):
+    async def checker(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> User:
+        await assert_room_access(request.path_params.get(path_parameter), user, db)
+        return user
+    return checker
+
+
+async def require_owner_access(
+    owner_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> User:
+    role = await get_current_role(user, db)
+    if role.role_code == "SUPER_ADMIN":
+        return user
+    if role.role_code != "OWNER":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner access required")
+    if await resolve_owner_id(user, db) != owner_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    return user
 
 def require_permission(permission_code: str, required_level: str = "VIEW"):
     async def permission_checker(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):

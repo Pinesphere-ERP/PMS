@@ -8,6 +8,7 @@ from typing import Optional
 import uuid
 
 from app.infra.database import get_db
+from app.core.dependencies import require_super_admin
 from app.infra.models import PaymentTransaction, Invoice, PendingDue, Property, Owner, Subscription
 from .service import PaymentService
 from .schemas import PaymentCreate, PaymentRead, PaymentListResponse
@@ -23,7 +24,9 @@ from .service import PaymentService
 from app.infra.database import get_db
 from app.infra.models import SubscriptionTransaction, Invoice, PendingDue, Property, Owner, Subscription
 
-router = APIRouter()
+# Subscription finance is a cross-property platform administration surface.
+# It must not be exposed to property staff, owners, or guests.
+router = APIRouter(dependencies=[Depends(require_super_admin)])
 
 # Dependency for service
 def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:

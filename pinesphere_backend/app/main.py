@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.api import api_router
 
 from contextlib import asynccontextmanager
+
 from sqlalchemy import select
 from app.infra.database import engine, AsyncSessionLocal, Base
 from app.infra.models import Role, User
@@ -68,9 +69,8 @@ async def lifespan(app: FastAPI):
                 user.role_id = super_admin_role.id
                 await db.commit()
 
-        # Seed Mock Data
-        # from app.seed_mock import seed_mock_data
-        # await seed_mock_data(db)
+        # Seed Mock Data removed
+
         
     yield
 
@@ -78,7 +78,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Offline-First Enterprise PMS Backend API",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS - allow Vite dev server and any localhost port

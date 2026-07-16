@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
   cupertino_icons: any
   flutter_riverpod: any
@@ -58,10 +60,9 @@ dependencies:
   open_filex: ^4.7.0
   printing: ^5.14.3
   flutter_native_splash: ^2.4.4
+
 dev_dependencies:
   flutter_test:
-    sdk: flutter
-  integration_test:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -76,6 +77,11 @@ dev_dependencies:
   freezed: any
   json_serializable: any
   flutter_launcher_icons: ^0.14.4
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
 flutter:
 
   # The following line ensures that the Material Icons font is

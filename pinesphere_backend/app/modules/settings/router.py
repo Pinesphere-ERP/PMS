@@ -3,10 +3,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-
-from app.core.dependencies import get_current_user
-from app.infra.models import User, Role
+from app.core.dependencies import require_property_access, require_super_admin
 
 from app.infra.database import get_db
 from app.modules.settings import service
@@ -24,20 +21,6 @@ from app.modules.settings.schemas import (
 
 router = APIRouter()
 
-async def require_property_access(
-    property_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    role_res = await db.execute(select(Role).filter(Role.id == user.active_role_id))
-    role = role_res.scalars().first()
-    
-    if role and role.role_code == "SUPER_ADMIN":
-        return
-        
-    if user.active_property_id != property_id:
-        raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this property's settings")
-
 
 # ── System Configuration Endpoints ─────────────────────────────
 
@@ -45,6 +28,7 @@ async def require_property_access(
     "/system",
     response_model=SystemConfigResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_super_admin)],
 )
 async def create_system_config(
     req: SystemConfigCreateRequest,
@@ -53,7 +37,7 @@ async def create_system_config(
     return await service.create_system_config(db, req)
 
 
-@router.get("/system", response_model=SystemConfigListResponse)
+@router.get("/system", response_model=SystemConfigListResponse, dependencies=[Depends(require_super_admin)])
 async def list_system_configs(
     search: Optional[str] = Query(None, description="Search by key or description"),
     db: AsyncSession = Depends(get_db),
@@ -61,7 +45,7 @@ async def list_system_configs(
     return await service.list_system_configs(db, search=search)
 
 
-@router.get("/system/{config_id}", response_model=SystemConfigResponse)
+@router.get("/system/{config_id}", response_model=SystemConfigResponse, dependencies=[Depends(require_super_admin)])
 async def get_system_config(
     config_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -69,7 +53,7 @@ async def get_system_config(
     return await service.get_system_config(db, config_id)
 
 
-@router.get("/system/by-key/{config_key}", response_model=SystemConfigResponse)
+@router.get("/system/by-key/{config_key}", response_model=SystemConfigResponse, dependencies=[Depends(require_super_admin)])
 async def get_system_config_by_key(
     config_key: str,
     db: AsyncSession = Depends(get_db),
@@ -77,7 +61,7 @@ async def get_system_config_by_key(
     return await service.get_system_config_by_key(db, config_key)
 
 
-@router.patch("/system/{config_id}", response_model=SystemConfigResponse)
+@router.patch("/system/{config_id}", response_model=SystemConfigResponse, dependencies=[Depends(require_super_admin)])
 async def update_system_config(
     config_id: uuid.UUID,
     req: SystemConfigUpdateRequest,
@@ -86,7 +70,7 @@ async def update_system_config(
     return await service.update_system_config(db, config_id, req)
 
 
-@router.delete("/system/{config_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/system/{config_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_super_admin)])
 async def delete_system_config(
     config_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

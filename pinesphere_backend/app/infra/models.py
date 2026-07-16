@@ -144,6 +144,16 @@ class User(Base, TimestampMixin, SyncMixin):
     # Relationships
     property_access: Mapped[list["UserPropertyAccess"]] = relationship("UserPropertyAccess", back_populates="user")
 
+    @property
+    def active_property_id_resolved(self) -> Optional[uuid.UUID]:
+        """Returns the dynamically assigned active property or falls back to the default property."""
+        return getattr(self, "active_property_id", self.property_id)
+
+    @property
+    def active_role_id_resolved(self) -> uuid.UUID:
+        """Returns the dynamically assigned active role or falls back to the default role."""
+        return getattr(self, "active_role_id", self.role_id)
+
 class UserPropertyAccess(Base, TimestampMixin):
     __tablename__ = "user_property_access"
     __table_args__ = (

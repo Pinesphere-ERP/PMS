@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     SEED_ADMIN_PASSWORD: str | None = None
     SEED_ADMIN_NAME: str = "System Administrator"
     
-    # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://pinesphere:pinesphere_password@localhost:5444/pinesphere")
-    ALEMBIC_DATABASE_URL: str = os.getenv("ALEMBIC_DATABASE_URL", "postgresql+asyncpg://pinesphere:pinesphere_password@localhost:5444/pinesphere")
+    # Database (No default fallback, must be in .env)
+    DATABASE_URL: str
+    ALEMBIC_DATABASE_URL: str
     
     @field_validator("DATABASE_URL", "ALEMBIC_DATABASE_URL", mode="before")
     @classmethod
@@ -34,23 +34,33 @@ class Settings(BaseSettings):
             raise ValueError("SEED_MODE must be development, demo, or production")
         return mode
     
-    # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "supersecretkey-change-in-production")
+    # Security (No default fallback, must be in .env)
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # URLs
+    BASE_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = "http://localhost:3000"
+    
+    # CORS setup
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
+    
     # Redis
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_URL: str
     
     # MinIO
-    MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", "localhost:9000")
-    MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-    MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "minioadminpassword")
+    MINIO_ENDPOINT: str
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
     MINIO_SECURE: bool = False
 
-    # Razorpay
-    RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "")
-    RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "")
+    # Razorpay (Optional, but default None instead of empty string)
+    RAZORPAY_KEY_ID: str | None = None
+    RAZORPAY_KEY_SECRET: str | None = None
+    
+    # OCR
+    OCR_API_KEY: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

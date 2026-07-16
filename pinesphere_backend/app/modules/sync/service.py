@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timezone
+import logging
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update, insert, delete
@@ -8,6 +9,8 @@ import json
 
 from .schemas import SyncPushRequest, SyncPushResponse, SyncPullRequest, SyncPullResponse, SyncPayload
 from app.infra import models
+
+logger = logging.getLogger(__name__)
 
 # Map string entity types from the mobile app to actual SQLAlchemy models
 ENTITY_MAP = {
@@ -26,6 +29,12 @@ ENTITY_MAP = {
     "RolePermission": models.RolePermission
 }
 
+PUSH_ALLOWED_ENTITIES = {
+    "Room", "RoomCategory", "Guest", "Booking", 
+    "CheckIn", "CheckOut", "Payment", 
+    "HousekeepingTask", "MaintenanceTicket"
+}
+
 class SyncService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -35,9 +44,42 @@ class SyncService:
         conflicts = []
         failed_ids = []
 
+        active_property_id = request.property_id
+        now_utc = datetime.now(timezone.utc)
+        # Allow 5 minutes of clock skew
+        max_future_ts = now_utc + timedelta(minutes=5)
+
         for record in request.records:
+            # 1. Whitelist validation
             model = ENTITY_MAP.get(record.entity_type)
-            if not model:
+            if not model or record.entity_type not in PUSH_ALLOWED_ENTITIES:
+                logger.warning(f"Sync reject: Entity type {record.entity_type} not allowed for push")
+                failed_ids.append(record.entity_id)
+                continue
+
+            # 2. Property ownership validation
+            payload_property_id_str = record.payload.get("property_id")
+            if hasattr(model, "property_id"):
+                if not payload_property_id_str:
+                    logger.warning(f"Sync reject: Missing property_id in payload for {record.entity_type} {record.entity_id}")
+                    failed_ids.append(record.entity_id)
+                    continue
+                try:
+                    payload_property_id = uuid.UUID(str(payload_property_id_str))
+                except ValueError:
+                    logger.warning(f"Sync reject: Invalid property_id UUID for {record.entity_type} {record.entity_id}")
+                    failed_ids.append(record.entity_id)
+                    continue
+
+                if payload_property_id != active_property_id:
+                    logger.warning(f"Sync reject: Cross-property update attempt for {record.entity_type} {record.entity_id} (payload: {payload_property_id}, active: {active_property_id})")
+                    failed_ids.append(record.entity_id)
+                    continue
+
+            # 3. Timestamp validation
+            record_ts = record.updated_at.replace(tzinfo=timezone.utc) if not record.updated_at.tzinfo else record.updated_at
+            if record_ts > max_future_ts:
+                logger.warning(f"Sync reject: Future timestamp {record_ts} for {record.entity_type} {record.entity_id}")
                 failed_ids.append(record.entity_id)
                 continue
 
@@ -49,7 +91,6 @@ class SyncService:
                     pk_name = [c.name for c in model.__table__.primary_key][0]
                     pk_col = getattr(model, pk_name)
 
-                import uuid
                 try:
                     entity_uuid = uuid.UUID(record.entity_id)
                 except ValueError:
@@ -60,13 +101,11 @@ class SyncService:
 
                 if existing:
                     # LWW (Last Write Wins) Conflict Resolution
-                    # Assuming models have updated_at inherited from SyncMixin or TimestampMixin
                     if hasattr(existing, "updated_at") and existing.updated_at:
-                        # Make timezone aware for comparison
                         existing_ts = existing.updated_at.replace(tzinfo=timezone.utc) if not existing.updated_at.tzinfo else existing.updated_at
-                        record_ts = record.updated_at.replace(tzinfo=timezone.utc) if not record.updated_at.tzinfo else record.updated_at
                         
                         if existing_ts > record_ts:
+                            logger.info(f"Sync conflict: {record.entity_type} {record.entity_id} - Server TS {existing_ts} > Client TS {record_ts}")
                             conflicts.append({
                                 "entity_type": record.entity_type,
                                 "entity_id": record.entity_id,
@@ -99,10 +138,12 @@ class SyncService:
                 accepted_ids.append(record.entity_id)
 
             except Exception as e:
-                print(f"Sync error for {record.entity_type} {record.entity_id}: {str(e)}")
+                logger.error(f"Sync error for {record.entity_type} {record.entity_id}: {str(e)}")
                 failed_ids.append(record.entity_id)
 
         await self.db.commit()
+
+        logger.info(f"Sync push complete: {len(accepted_ids)} accepted, {len(conflicts)} conflicts, {len(failed_ids)} failed")
 
         return SyncPushResponse(
             accepted_ids=accepted_ids,
@@ -149,6 +190,8 @@ class SyncService:
                     updated_at=row.updated_at,
                     device_timestamp=datetime.utcnow()
                 ))
+
+        logger.info(f"Sync pull complete: Sent {len(records_to_send)} records to client")
 
         return SyncPullResponse(
             records=records_to_send,

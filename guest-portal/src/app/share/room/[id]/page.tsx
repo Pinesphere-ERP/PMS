@@ -74,8 +74,9 @@ export default function SharedRoomPage() {
     const fetchRoomDetails = async () => {
       try {
         setLoading(true);
-        // Attempt to fetch from backend
-        const res = await fetch(`http://localhost:8000/api/v1/properties/rooms/${roomId}`);
+        // Try fetching from database first
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://pms-bvko.onrender.com';
+        const res = await fetch(`${apiUrl}/api/v1/properties/rooms/${roomId}`);
         if (!res.ok) {
           throw new Error("Could not load database details, using preview template.");
         }

@@ -3,13 +3,15 @@ import os
 import aiohttp
 from typing import Dict, Any
 
+from app.core.config import settings
+
 class OCRService:
     """
     AI OCR Service for ID Scanning during Check-in.
     In production, this would call AWS Textract, Google Cloud Vision, or Azure Form Recognizer.
     """
     def __init__(self):
-        self.api_key = os.getenv("OCR_API_KEY")
+        self.api_key = settings.OCR_API_KEY
         
     async def extract_id_details(self, image_bytes: bytes) -> Dict[str, Any]:
         """

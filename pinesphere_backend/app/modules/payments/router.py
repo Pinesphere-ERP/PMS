@@ -127,14 +127,23 @@ async def verify_razorpay_payment(
         )
         return payment
     except ValueError as e:
+        if str(e) == "Razorpay credentials not configured":
+            return JSONResponse(
+                status_code=501,
+                content={
+                    "success": False,
+                    "status": "not_implemented",
+                    "message": "Payment provider integration is not configured",
+                },
+            )
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         import traceback
         error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
         raise HTTPException(status_code=500, detail=error_detail)
+
 def _fmt(amount) -> str:
     return f"${float(amount):,.2f}"
-
 
 @router.get("/transactions")
 async def get_transactions(db: AsyncSession = Depends(get_db)):

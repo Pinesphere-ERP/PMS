@@ -250,7 +250,7 @@ async def upload_image(file: UploadFile = File(...)):
         
     # Return public URL path
     # In a real app we'd use request.base_url, but for local testing:
-    return {"url": f"http://localhost:8000/api/v1/uploads/{filename}"}
+    return {"url": f"{settings.BASE_URL}/api/v1/uploads/{filename}"}
 
 
 @router.post("/rooms", status_code=201)

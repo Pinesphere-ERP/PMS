@@ -11,22 +11,12 @@ class PropertyOnboardingScreen extends StatefulWidget {
 
 class _PropertyOnboardingScreenState extends State<PropertyOnboardingScreen> {
   int _currentStep = 0;
-  final int _totalSteps = 13;
+  final int _totalSteps = 3;
   
   final List<String> _stepTitles = [
-    'Owner Registration',
-    'Business Info',
-    'Property Info',
-    'Property Location',
-    'Ownership Details',
-    'Room Configuration',
-    'Room Amenities',
-    'Hotel Amenities',
-    'Property Photos',
-    'Hotel Policies',
-    'Pricing',
-    'Inventory & Availability',
-    'Bank Details & Docs',
+    'Basic Information',
+    'Location & Inventory',
+    'Amenities & Policies',
   ];
 
   void _nextStep() {
@@ -53,19 +43,9 @@ class _PropertyOnboardingScreenState extends State<PropertyOnboardingScreen> {
 
   Widget _buildCurrentStepWidget() {
     switch (_currentStep) {
-      case 0: return const Step1OwnerRegistration();
-      case 1: return const Step2BusinessInfo();
-      case 2: return const Step3PropertyInfo();
-      case 3: return const Step4PropertyLocation();
-      case 4: return const Step5OwnershipDetails();
-      case 5: return const Step6RoomConfiguration();
-      case 6: return const Step7RoomAmenities();
-      case 7: return const Step8HotelAmenities();
-      case 8: return const Step9PropertyPhotos();
-      case 9: return const Step10HotelPolicies();
-      case 10: return const Step11Pricing();
-      case 11: return const Step12Inventory();
-      case 12: return const Step13BankDetails();
+      case 0: return const Step1BasicInfo();
+      case 1: return const Step2LocationInventory();
+      case 2: return const Step3AmenitiesPolicies();
       default: return const SizedBox.shrink();
     }
   }

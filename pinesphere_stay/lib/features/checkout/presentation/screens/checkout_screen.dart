@@ -6,6 +6,7 @@ import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/security/permission_engine.dart';
 import '../../../../core/presentation/widgets/access_restricted_view.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
 import '../providers/checkout_provider.dart';
 
@@ -132,10 +133,18 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
   Widget _buildPendingCheckoutsTab(bool isViewOnly) {
     final state = ref.watch(checkOutProvider);
     return state.when(
-      initial: () => const Center(child: Text('Select a property to view pending checkouts')),
+      initial: () => const EmptyStateWidget(
+        icon: Icons.domain,
+        title: 'Select Property',
+        message: 'Please select a property to view pending checkouts.',
+      ),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getPendingCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '')),
-      success: (_, _) => const Center(child: Text('Action completed')),
+      success: (_, _) => const EmptyStateWidget(
+        icon: Icons.check_circle,
+        title: 'Action Completed',
+        message: 'The checkout action was completed successfully.',
+      ),
       loadedPendingCheckouts: (checkouts) => _buildPendingCheckoutsList(checkouts, isViewOnly),
       loadedBilling: (_) => const SizedBox.shrink(),
       loadedTodaysCheckouts: (_) => const SizedBox.shrink(),
@@ -261,10 +270,18 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
   Widget _buildTodaysCheckoutsTab(bool isViewOnly) {
     final state = ref.watch(checkOutProvider);
     return state.when(
-      initial: () => const Center(child: Text('Select a property to view today\'s checkouts')),
+      initial: () => const EmptyStateWidget(
+        icon: Icons.domain,
+        title: 'Select Property',
+        message: 'Please select a property to view today\'s checkouts.',
+      ),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getTodaysCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '')),
-      success: (_, _) => const Center(child: Text('Action completed')),
+      success: (_, _) => const EmptyStateWidget(
+        icon: Icons.check_circle,
+        title: 'Action Completed',
+        message: 'The checkout action was completed successfully.',
+      ),
       loadedTodaysCheckouts: (checkouts) => _buildTodaysCheckoutsTable(checkouts, isViewOnly),
       loadedPendingCheckouts: (_) => const SizedBox.shrink(),
       loadedBilling: (_) => const SizedBox.shrink(),

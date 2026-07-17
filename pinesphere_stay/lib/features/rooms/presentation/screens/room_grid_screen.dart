@@ -638,9 +638,8 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   }).join(';');
                   
                   final encodedRooms = Uri.encodeComponent(serializedRooms);
-                  final portalUrl = 'http://localhost:3000/share/resort/${widget.resort.id}'
-                      '?name=$resortName'
-                      '&rooms=$encodedRooms';
+                  const portalBaseUrl = String.fromEnvironment('PORTAL_URL', defaultValue: 'https://portal.pinesphere.com');
+                  final portalUrl = '$portalBaseUrl/share/resort/${widget.resort.id}?name=$resortName&rooms=$encodedRooms';
                       
                   Clipboard.setData(ClipboardData(text: portalUrl));
                   
@@ -2325,13 +2324,8 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       onPressed: () {
-                        final encodedType = Uri.encodeComponent(liveRoom.type);
-                        final encodedImages = Uri.encodeComponent(liveRoom.images.join(','));
-                        final portalUrl = 'http://localhost:3000/share/room/${liveRoom.id}'
-                            '?num=${liveRoom.roomNumber}'
-                            '&type=$encodedType'
-                            '&price=${liveRoom.price.toStringAsFixed(0)}'
-                            '&images=$encodedImages';
+                        const portalBaseUrl = String.fromEnvironment('PORTAL_URL', defaultValue: 'https://portal.pinesphere.com');
+                        final portalUrl = '$portalBaseUrl/share/room/${liveRoom.id}?num=${liveRoom.roomNumber}&type=${Uri.encodeComponent(liveRoom.type)}&price=${liveRoom.price}&images=${Uri.encodeComponent(liveRoom.images.join(','))}';
                         Clipboard.setData(ClipboardData(text: portalUrl));
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(

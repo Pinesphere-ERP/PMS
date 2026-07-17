@@ -17,6 +17,7 @@ import '../../features/bookings/presentation/screens/todays_departures_screen.da
 import '../../features/rooms/presentation/screens/occupied_rooms_screen.dart';
 import '../../features/rooms/presentation/screens/vacant_rooms_screen.dart';
 import '../../features/housekeeping/presentation/screens/housekeeping_screen.dart';
+import '../../features/kitchen/presentation/screens/kitchen_screen.dart';
 import '../../features/bookings/presentation/screens/pending_payments_screen.dart';
 import '../../features/reports/presentation/screens/todays_revenue_screen.dart';
 import '../../features/device_management/presentation/screens/device_registration_screen.dart';
@@ -29,6 +30,8 @@ import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
 
 import '../../features/splash/presentation/custom_splash_screen.dart';
+import '../../features/portal/presentation/screens/portal_login_screen.dart';
+import '../../features/portal/presentation/screens/guest_dashboard_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -70,9 +73,23 @@ GoRouter appRouter(Ref ref) {
 
       final isGoingToLogin = state.matchedLocation == '/login';
       final isGoingToPinLogin = state.matchedLocation == '/pin-login';
-
       final isSplash = state.matchedLocation == '/splash';
+      final isPortal = state.matchedLocation.startsWith('/portal');
+      
       if (isSplash) return null;
+
+      // Allow portal routes to handle their own auth independently
+      if (isPortal) {
+        final guestToken = ref.read(guestTokenProvider);
+        final isGoingToPortalLogin = state.matchedLocation == '/portal/login';
+        if (guestToken == null && !isGoingToPortalLogin) {
+          return '/portal/login';
+        }
+        if (guestToken != null && isGoingToPortalLogin) {
+          return '/portal/dashboard';
+        }
+        return null; // Let portal routes pass
+      }
 
       if (!isAuth && !isLocked && !isGoingToLogin) {
         return '/login';
@@ -83,7 +100,14 @@ GoRouter appRouter(Ref ref) {
       }
 
       if (isAuth && (isGoingToLogin || isGoingToPinLogin)) {
-        return '/dashboard';
+        return authState.maybeWhen(
+          authenticated: (user) {
+            if (user.role.name == 'housekeeping') return '/housekeeping';
+            if (user.role.name == 'kitchen') return '/kitchen';
+            return '/dashboard';
+          },
+          orElse: () => '/dashboard',
+        );
       }
 
       return null;
@@ -120,6 +144,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/pl-report',
         builder: (context, state) => const PLReportScreen(),
+      ),
+      GoRoute(
+        path: '/portal/login',
+        builder: (context, state) => const PortalLoginScreen(),
+      ),
+      GoRoute(
+        path: '/portal/dashboard',
+        builder: (context, state) => const GuestDashboardScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -163,6 +195,10 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/housekeeping',
                 builder: (context, state) => const HousekeepingScreen(),
+              ),
+              GoRoute(
+                path: '/kitchen',
+                builder: (context, state) => const KitchenScreen(),
               ),
               GoRoute(
                 path: '/pending-payments',

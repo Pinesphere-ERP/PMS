@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 # Staff (User)
 class StaffBase(BaseModel):
@@ -24,9 +24,7 @@ class StaffResponse(StaffBase):
     failed_login_attempts: int
     is_pending_sync: bool
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Attendance
 class StaffAttendanceBase(BaseModel):
@@ -49,9 +47,7 @@ class StaffAttendanceResponse(StaffAttendanceBase):
     marked_by: Optional[uuid.UUID] = None
     sync_status: str
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Leave
 class StaffLeaveBase(BaseModel):
@@ -74,9 +70,7 @@ class StaffLeaveResponse(StaffLeaveBase):
     rejection_reason: Optional[str] = None
     sync_status: str
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Salary
 class StaffSalaryBase(BaseModel):
@@ -101,9 +95,7 @@ class StaffSalaryResponse(StaffSalaryBase):
     payment_date: Optional[datetime] = None
     generated_by: Optional[uuid.UUID] = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Performance
 class StaffPerformanceBase(BaseModel):
@@ -123,9 +115,7 @@ class StaffPerformanceResponse(StaffPerformanceBase):
     reviewed_by: uuid.UUID
     review_date: datetime
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Tasks
 class StaffTaskBase(BaseModel):
@@ -149,6 +139,4 @@ class StaffTaskResponse(StaffTaskBase):
     completion_notes: Optional[str] = None
     completion_photo_url: Optional[str] = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

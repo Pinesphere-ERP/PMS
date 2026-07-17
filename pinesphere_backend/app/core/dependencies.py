@@ -213,7 +213,7 @@ def require_permission(permission_code: str, required_level: str = "VIEW"):
         from app.infra.models import Permission, Role
         
         # Fetch the role to check for superAdmin/owner bypass
-        role_res = await db.execute(select(Role).filter(Role.id == user.active_role_id))
+        role_res = await db.execute(select(Role).filter(Role.id == user.active_role_id_resolved))
         role = role_res.scalars().first()
         if role and role.role_code in ("SUPER_ADMIN", "OWNER"):
             return user
@@ -222,7 +222,7 @@ def require_permission(permission_code: str, required_level: str = "VIEW"):
             select(RolePermission)
             .join(Permission, RolePermission.permission_id == Permission.id)
             .filter(
-                RolePermission.role_id == user.active_role_id,
+                RolePermission.role_id == user.active_role_id_resolved,
                 Permission.permission_code == permission_code
             )
         )

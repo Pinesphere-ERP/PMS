@@ -4,6 +4,7 @@ enum UserRole {
   manager,
   reception,
   housekeeping,
+  kitchen,
   accountant,
   guest;
 
@@ -14,6 +15,7 @@ enum UserRole {
       case UserRole.manager: return 'Manager';
       case UserRole.reception: return 'Reception';
       case UserRole.housekeeping: return 'Housekeeping';
+      case UserRole.kitchen: return 'Kitchen';
       case UserRole.accountant: return 'Accountant';
       case UserRole.guest: return 'Guest';
     }

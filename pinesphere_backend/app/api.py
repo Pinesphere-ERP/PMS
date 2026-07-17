@@ -16,6 +16,7 @@ from app.modules.audit.router import router as audit
 from app.modules.users.router import router as users
 
 from app.modules.guests.router import router as guests
+from app.modules.tasks.router import router as tasks
 
 api_router = APIRouter()
 api_router.include_router(auth, prefix="/auth", tags=["Authentication"])
@@ -34,3 +35,4 @@ api_router.include_router(settings, prefix="/settings", tags=["Settings & Config
 api_router.include_router(audit, prefix="/audit", tags=["Audit Logs"])
 api_router.include_router(users, prefix="/users", tags=["User Management"])
 api_router.include_router(guests, prefix="/guests", tags=["Guest Management"])
+api_router.include_router(tasks, prefix="/tasks", tags=["Shared Tasks"])

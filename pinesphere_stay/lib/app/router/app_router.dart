@@ -17,6 +17,7 @@ import '../../features/bookings/presentation/screens/todays_departures_screen.da
 import '../../features/rooms/presentation/screens/occupied_rooms_screen.dart';
 import '../../features/rooms/presentation/screens/vacant_rooms_screen.dart';
 import '../../features/housekeeping/presentation/screens/housekeeping_screen.dart';
+import '../../features/kitchen/presentation/screens/kitchen_screen.dart';
 import '../../features/bookings/presentation/screens/pending_payments_screen.dart';
 import '../../features/reports/presentation/screens/todays_revenue_screen.dart';
 import '../../features/device_management/presentation/screens/device_registration_screen.dart';
@@ -83,7 +84,14 @@ GoRouter appRouter(Ref ref) {
       }
 
       if (isAuth && (isGoingToLogin || isGoingToPinLogin)) {
-        return '/dashboard';
+        return authState.maybeWhen(
+          authenticated: (user) {
+            if (user.role.name == 'housekeeping') return '/housekeeping';
+            if (user.role.name == 'kitchen') return '/kitchen';
+            return '/dashboard';
+          },
+          orElse: () => '/dashboard',
+        );
       }
 
       return null;
@@ -163,6 +171,10 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/housekeeping',
                 builder: (context, state) => const HousekeepingScreen(),
+              ),
+              GoRoute(
+                path: '/kitchen',
+                builder: (context, state) => const KitchenScreen(),
               ),
               GoRoute(
                 path: '/pending-payments',

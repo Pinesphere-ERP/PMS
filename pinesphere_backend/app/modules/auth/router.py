@@ -112,7 +112,7 @@ async def login(
     session = UserSession(
         id=uuid.uuid4(),
         user_id=user.id,
-        device_id=device_id or uuid.uuid4(),  # fallback if no valid device_id
+        device_id=device_id,  # allow None if no valid device_id
         session_token=access_token,
         is_offline_session=False,
         expires_at=datetime.utcnow() + timedelta(days=1)

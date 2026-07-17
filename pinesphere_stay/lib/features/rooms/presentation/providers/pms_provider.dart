@@ -216,11 +216,13 @@ class PmsState {
 
 class PmsNotifier extends Notifier<PmsState> {
   final List<String> _locallyDeletedResortIds = [];
+  final List<String> _locallyDeletedRoomIds = [];
 
   @override
   PmsState build() {
     Future.microtask(() async {
       await _loadLocallyDeletedResorts();
+      await _loadLocallyDeletedRooms();
       await loadResorts();
       await loadRooms();
       await loadBookings();
@@ -254,6 +256,34 @@ class PmsNotifier extends Notifier<PmsState> {
       await file.writeAsString(jsonEncode(_locallyDeletedResortIds));
     } catch (e) {
       debugPrint('Error saving deleted resorts list: $e');
+    }
+  }
+
+  Future<void> _loadLocallyDeletedRooms() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/deleted_rooms.json');
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final List<dynamic> list = jsonDecode(content);
+        _locallyDeletedRoomIds.clear();
+        _locallyDeletedRoomIds.addAll(list.cast<String>());
+        state = state.copyWith(
+          rooms: state.rooms.where((r) => !_locallyDeletedRoomIds.contains(r.id)).toList(),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error loading deleted rooms list: $e');
+    }
+  }
+
+  Future<void> _saveLocallyDeletedRooms() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/deleted_rooms.json');
+      await file.writeAsString(jsonEncode(_locallyDeletedRoomIds));
+    } catch (e) {
+      debugPrint('Error saving deleted rooms list: $e');
     }
   }
 
@@ -322,7 +352,7 @@ class PmsNotifier extends Notifier<PmsState> {
             images: imagesList,
             description: descText,
           );
-        }).toList();
+        }).where((room) => !_locallyDeletedRoomIds.contains(room.id)).toList();
         
         state = state.copyWith(rooms: loadedRooms);
       }
@@ -669,13 +699,22 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> deleteRoom(String roomId) async {
     try {
+      if (!_locallyDeletedRoomIds.contains(roomId)) {
+        _locallyDeletedRoomIds.add(roomId);
+        await _saveLocallyDeletedRooms();
+      }
+
       final dio = ref.read(dioClientProvider);
       final response = await dio.delete('/properties/rooms/$roomId');
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 204) {
         await loadRooms();
       }
     } catch (e) {
       debugPrint('Failed to delete room: $e');
+      // Offline fallback: Delete locally
+      state = state.copyWith(
+        rooms: state.rooms.where((r) => r.id != roomId).toList(),
+      );
     }
   }
 

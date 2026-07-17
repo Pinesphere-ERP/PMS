@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:pinesphere_stay/core/files/file_storage_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -131,7 +131,7 @@ class ReportExportService {
       ),
     );
 
-    final output = await getTemporaryDirectory();
+    final output = await FileStorageService().getTemporaryPath();
     final file = File('${output.path}/PL_Report.pdf');
     await file.writeAsBytes(await pdf.save());
     await OpenFilex.open(file.path);
@@ -227,7 +227,7 @@ class ReportExportService {
       sheet.setColumnWidth(i, 18.0);
     }
 
-    final output = await getTemporaryDirectory();
+    final output = await FileStorageService().getTemporaryPath();
     final file = File('${output.path}/PL_Report.xlsx');
     final bytes = excel.save();
     if (bytes != null) {

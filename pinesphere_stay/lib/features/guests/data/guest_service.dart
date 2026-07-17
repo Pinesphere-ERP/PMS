@@ -1,10 +1,10 @@
 import '../../../main.dart';
 import 'package:dio/dio.dart';
-import 'package:objectbox/objectbox.dart';
+import 'package:pinesphere_stay/core/database/obx_annotations.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
-import '../../../objectbox.g.dart';
+import '../../../core/database/dao/guest_dao.dart';
 import '../../audit/data/audit_service.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/guest_entity.dart';
@@ -17,7 +17,7 @@ GuestService guestService(Ref ref) {
     dio: ref.watch(dioClientProvider),
   );
   service.initialize(
-    objectBox.store,
+    databaseService.guestDao,
     ref.read(syncServiceProvider),
     ref.read(auditServiceProvider),
   );
@@ -26,16 +26,14 @@ GuestService guestService(Ref ref) {
 
 class GuestService {
   final Dio _dio;
-  late final Store _store;
-  late final Box<GuestEntity> _guestBox;
+  late final IGuestDao _guestDao;
   late final SyncService _syncService;
   late final AuditService _audit;
 
   GuestService({required this._dio});
 
-  void initialize(Store store, SyncService syncService, AuditService audit) {
-    _store = store;
-    _guestBox = _store.box<GuestEntity>();
+  void initialize(IGuestDao guestDao, SyncService syncService, AuditService audit) {
+    _guestDao = guestDao;
     _syncService = syncService;
     _audit = audit;
   }
@@ -95,7 +93,7 @@ class GuestService {
         emergencyContactPhone: body['emergency_contact_phone']?.toString() ?? data['emergency_contact_phone'] ?? '',
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       );
-      _guestBox.put(entity);
+      _guestDao.put(entity);
       return body;
     } on DioException catch (e) {
       AppLogger.w('createGuest network failed, storing locally and queuing sync', e);
@@ -120,7 +118,7 @@ class GuestService {
         emergencyContactPhone: data['emergency_contact_phone'] ?? '',
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _guestBox.put(entity);
+      final localId = _guestDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'Guest',
         entityId: localId,
@@ -135,6 +133,6 @@ class GuestService {
   }
 
   Future<List<GuestEntity>> getCachedGuests() async {
-    return _guestBox.getAll();
+    return _guestDao.getAll();
   }
 }

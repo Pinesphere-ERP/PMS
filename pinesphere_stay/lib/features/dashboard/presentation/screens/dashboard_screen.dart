@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/premium_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../../core/presentation/widgets/app_drawer.dart';
 import '../../../../core/network/connectivity_provider.dart';
+import '../../../audit/data/audit_service.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -31,13 +32,13 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildGreeting(context, userName),
+                  _buildStaggeredItem(0, _buildGreeting(context, userName)),
                   const SizedBox(height: 24),
-                  _buildQuickActions(context),
+                  _buildStaggeredItem(1, _buildQuickActions(context)),
                   const SizedBox(height: 24),
-                  _buildKPIsGrid(context, ref),
+                  _buildStaggeredItem(2, _buildKPIsGrid(context, ref)),
                   const SizedBox(height: 24),
-                  // _buildRecentActivity(context), // TODO: Wire to Audit logs
+                  _buildStaggeredItem(3, _buildRecentActivity(context, ref)),
                   const SizedBox(height: 32), // bottom padding for nav
                 ],
               ),
@@ -155,7 +156,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildActionButton(BuildContext context, IconData icon, String label, String route) {
-    return BentoCard(
+    return PremiumCard(
       onTap: () {
         context.go(route);
       },
@@ -214,7 +215,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildKPICard(BuildContext context, String title, String value, Color color, IconData icon, {VoidCallback? onTap}) {
-    return BentoCard(
+    return PremiumCard(
       onTap: onTap ?? () {}, // empty tap handler to make card interactive
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -245,6 +246,89 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecentActivity(BuildContext context, WidgetRef ref) {
+    final auditService = ref.watch(auditServiceProvider);
+    final recentLogs = auditService.queryLogs(limit: 3);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4.0, bottom: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recent Activity',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.onSurface,
+                    ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/audit-logs'),
+                child: const Text('View All'),
+              ),
+            ],
+          ),
+        ),
+        if (recentLogs.isEmpty)
+          const Card(
+            elevation: 0,
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('No recent activity'),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: recentLogs.length,
+            itemBuilder: (context, index) {
+              final log = recentLogs[index];
+              return Card(
+                elevation: 0,
+                margin: const EdgeInsets.only(bottom: 8.0),
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(color: AppColors.outlineVariant),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.history, color: AppColors.primary),
+                  title: Text(log.actionType ?? 'Unknown Action'),
+                  subtitle: Text('By: ${log.userId}'),
+                  trailing: Text(
+                    DateFormat('HH:mm').format(log.timestamp),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStaggeredItem(int index, Widget child) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        // Delay effect based on index
+        final delayedValue = (value - (index * 0.1)).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: delayedValue,
+          child: Transform.translate(
+            offset: Offset(0, 20 * (1 - delayedValue)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 }

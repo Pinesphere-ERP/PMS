@@ -109,7 +109,7 @@ class _FolioScreenState extends ConsumerState<FolioScreen> {
   Widget _buildTotalSummary() {
     return Card(
       elevation: 0,
-      color: AppColors.primaryContainer.withOpacity(0.3),
+      color: AppColors.primaryContainer.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),

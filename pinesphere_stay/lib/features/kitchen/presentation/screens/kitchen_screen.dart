@@ -46,7 +46,11 @@ class KitchenScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => EmptyStateWidget(
+          icon: Icons.error_outline,
+          title: 'Error',
+          message: err.toString(),
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/settings_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -16,8 +17,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // TODO: replace with real propertyId and deviceUid from auth state
-      ref.read(settingsProvider.notifier).loadPropertySettings('demo-property-id', 'demo-device-uid');
+      final authState = ref.read(authProvider);
+      final propertyId = authState.whenOrNull(authenticated: (user) => user.propertyId) ?? 'unknown_property';
+      final deviceUid = 'device_01'; // device fingerprinting out of scope for now
+      ref.read(settingsProvider.notifier).loadPropertySettings(propertyId, deviceUid);
     });
   }
 

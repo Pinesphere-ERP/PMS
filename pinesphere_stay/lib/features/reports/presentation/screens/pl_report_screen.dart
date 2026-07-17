@@ -4,6 +4,7 @@ import '../../../../core/network/tenant_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 
 import '../../data/reports_repository.dart';
@@ -47,7 +48,11 @@ class PLReportScreen extends ConsumerWidget {
       body: reportAsync.when(
         data: (report) => _buildReportView(context, report),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        error: (error, stack) => EmptyStateWidget(
+          icon: Icons.error_outline,
+          title: 'Error',
+          message: error.toString(),
+        ),
       ),
     );
   }

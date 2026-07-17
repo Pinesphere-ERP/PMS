@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:pinesphere_stay/features/kitchen/presentation/providers/kitchen_providers.dart';
 import 'package:pinesphere_stay/features/tasks/data/models/task_model.dart';
 
@@ -20,7 +20,11 @@ class KitchenScreen extends ConsumerWidget {
       body: tasksAsync.when(
         data: (tasks) {
           if (tasks.isEmpty) {
-            return const Center(child: Text('No active orders', style: TextStyle(fontSize: 24)));
+            return const EmptyStateWidget(
+              icon: Icons.restaurant,
+              title: 'No Active Orders',
+              message: 'There are currently no active kitchen orders.',
+            );
           }
 
           // Sort tasks: pending first, then accepted, then in_progress, then ready

@@ -1,15 +1,114 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 
-class Step1OwnerRegistration extends StatelessWidget { const Step1OwnerRegistration({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 1: Owner Registration Placeholder')); }
-class Step2BusinessInfo extends StatelessWidget { const Step2BusinessInfo({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 2: Business Info Placeholder')); }
-class Step3PropertyInfo extends StatelessWidget { const Step3PropertyInfo({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 3: Property Info Placeholder')); }
-class Step4PropertyLocation extends StatelessWidget { const Step4PropertyLocation({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 4: Property Location Placeholder')); }
-class Step5OwnershipDetails extends StatelessWidget { const Step5OwnershipDetails({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 5: Ownership Details Placeholder')); }
-class Step6RoomConfiguration extends StatelessWidget { const Step6RoomConfiguration({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 6: Room Configuration Placeholder')); }
-class Step7RoomAmenities extends StatelessWidget { const Step7RoomAmenities({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 7: Room Amenities Placeholder')); }
-class Step8HotelAmenities extends StatelessWidget { const Step8HotelAmenities({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 8: Hotel Amenities Placeholder')); }
-class Step9PropertyPhotos extends StatelessWidget { const Step9PropertyPhotos({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 9: Property Photos Placeholder')); }
-class Step10HotelPolicies extends StatelessWidget { const Step10HotelPolicies({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 10: Hotel Policies Placeholder')); }
-class Step11Pricing extends StatelessWidget { const Step11Pricing({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 11: Pricing Placeholder')); }
-class Step12Inventory extends StatelessWidget { const Step12Inventory({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 12: Inventory Placeholder')); }
-class Step13BankDetails extends StatelessWidget { const Step13BankDetails({super.key}); @override Widget build(BuildContext context) => const Center(child: Text('Step 13: Bank Details Placeholder')); }
+class Step1BasicInfo extends StatelessWidget {
+  const Step1BasicInfo({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Owner & Business Info', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+        const SizedBox(height: 24),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'Owner Full Name', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person)),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'Owner Phone Number', border: OutlineInputBorder(), prefixIcon: Icon(Icons.phone)),
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'Business / Company Name', border: OutlineInputBorder(), prefixIcon: Icon(Icons.business)),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'GST Number (Optional)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.receipt)),
+        ),
+      ],
+    );
+  }
+}
+
+class Step2LocationInventory extends StatelessWidget {
+  const Step2LocationInventory({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Property Location & Rooms', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+        const SizedBox(height: 24),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'Property Name (e.g., Pinesphere Grand)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.hotel)),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          maxLines: 3,
+          decoration: const InputDecoration(labelText: 'Full Address', border: OutlineInputBorder(), prefixIcon: Icon(Icons.location_on)),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: TextFormField(decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()))),
+            const SizedBox(width: 16),
+            Expanded(child: TextFormField(decoration: const InputDecoration(labelText: 'State', border: OutlineInputBorder()))),
+          ],
+        ),
+        const SizedBox(height: 24),
+        const Text('Room Inventory', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.onBackground)),
+        const SizedBox(height: 16),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'Total Number of Rooms', border: OutlineInputBorder(), prefixIcon: Icon(Icons.meeting_room)),
+          keyboardType: TextInputType.number,
+        ),
+      ],
+    );
+  }
+}
+
+class Step3AmenitiesPolicies extends StatelessWidget {
+  const Step3AmenitiesPolicies({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Amenities & Bank Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+        const SizedBox(height: 24),
+        const Text('Select Amenities:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilterChip(label: const Text('Free WiFi'), selected: true, onSelected: (val) {}),
+            FilterChip(label: const Text('Swimming Pool'), selected: false, onSelected: (val) {}),
+            FilterChip(label: const Text('Restaurant'), selected: true, onSelected: (val) {}),
+            FilterChip(label: const Text('Gym'), selected: false, onSelected: (val) {}),
+            FilterChip(label: const Text('Parking'), selected: true, onSelected: (val) {}),
+          ],
+        ),
+        const SizedBox(height: 32),
+        const Text('Bank Details for Payouts', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.onBackground)),
+        const SizedBox(height: 16),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'Account Holder Name', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person_outline)),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'Account Number', border: OutlineInputBorder(), prefixIcon: Icon(Icons.account_balance)),
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          decoration: const InputDecoration(labelText: 'IFSC / Swift Code', border: OutlineInputBorder(), prefixIcon: Icon(Icons.code)),
+        ),
+      ],
+    );
+  }
+}

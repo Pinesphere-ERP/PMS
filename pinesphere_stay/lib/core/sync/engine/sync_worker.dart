@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:pinesphere_stay/main.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import 'package:pinesphere_stay/core/sync/queue/sync_operation.dart';
 
 @pragma('vm:entry-point')

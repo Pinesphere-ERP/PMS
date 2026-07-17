@@ -44,7 +44,7 @@ class Business(Base, TimestampMixin):
     __tablename__ = "businesses"
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     business_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("owners.owner_id"), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.owners.owner_id"), nullable=False)
     business_type: Mapped[Optional[str]] = mapped_column(String(30))
     business_name: Mapped[str] = mapped_column(String(200), nullable=False)
     business_reg_number: Mapped[Optional[str]] = mapped_column(String(50))
@@ -59,8 +59,8 @@ class Property(Base, TimestampMixin, SyncMixin):
     __tablename__ = "properties"
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     property_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("businesses.business_id"), nullable=False)
-    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("owners.owner_id"), nullable=False)
+    business_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.businesses.business_id"), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.owners.owner_id"), nullable=False)
     property_name: Mapped[str] = mapped_column(String(200), nullable=False)
     property_type: Mapped[Optional[str]] = mapped_column(String(30))
     star_category: Mapped[Optional[int]] = mapped_column(SmallInteger)
@@ -86,7 +86,7 @@ class Role(Base, TimestampMixin):
         {'extend_existing': True}
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id"))
     role_code: Mapped[str] = mapped_column(String(40), nullable=False)
     role_name: Mapped[str] = mapped_column(String(80), nullable=False)
     is_system_role: Mapped[bool] = mapped_column(default=True)
@@ -110,7 +110,7 @@ class RolePermission(Base):
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
-    permission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("permissions.id", ondelete="CASCADE"), nullable=False)
+    permission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.permissions.id", ondelete="CASCADE"), nullable=False)
     access_level: Mapped[str] = mapped_column(String(20), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
@@ -125,7 +125,7 @@ class User(Base, TimestampMixin, SyncMixin):
         {'extend_existing': True}
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id"))
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     mobile_number: Mapped[Optional[str]] = mapped_column(String(15))
@@ -162,7 +162,7 @@ class UserPropertyAccess(Base, TimestampMixin):
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     
@@ -174,7 +174,7 @@ class Device(Base, TimestampMixin):
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     device_uid: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
     primary_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     device_name: Mapped[Optional[str]] = mapped_column(String(80))
     os_type: Mapped[Optional[str]] = mapped_column(String(20), default='android')
@@ -189,7 +189,7 @@ class UserDevice(Base):
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.devices.id", ondelete="CASCADE"), nullable=False)
     is_primary_device: Mapped[bool] = mapped_column(default=True, nullable=False)
     linked_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE", nullable=False)
@@ -200,7 +200,7 @@ class UserSession(Base):
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.devices.id"), nullable=False)
     session_token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     is_offline_session: Mapped[bool] = mapped_column(default=False, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
@@ -213,7 +213,7 @@ class StaffInvitation(Base):
     __tablename__ = "staff_invitations"
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
     invited_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     mobile_number: Mapped[str] = mapped_column(String(15), nullable=False)
@@ -484,7 +484,7 @@ class Subscription(Base, TimestampMixin):
     __tablename__ = "subscriptions"
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     plan: Mapped[str] = mapped_column(String(50), nullable=False)
     billing_cycle: Mapped[str] = mapped_column(String(20), nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -503,7 +503,7 @@ class SubscriptionTransaction(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     payment_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("invoices.invoice_id"))
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     method: Mapped[Optional[str]] = mapped_column(String(50))
     status: Mapped[str] = mapped_column(String(20), default="Processing")
@@ -525,7 +525,7 @@ class PendingDue(Base, TimestampMixin):
     __tablename__ = "pending_dues"
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     plan: Mapped[str] = mapped_column(String(50), nullable=False)
     due_date: Mapped[date] = mapped_column(Date, nullable=False)
     amount_due: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)

@@ -46,13 +46,13 @@ class Settings(BaseSettings):
     # CORS setup
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
     
-    # Redis
-    REDIS_URL: str
+    # Redis (Optional until provisioned in production)
+    REDIS_URL: str | None = None
     
-    # MinIO
-    MINIO_ENDPOINT: str
-    MINIO_ACCESS_KEY: str
-    MINIO_SECRET_KEY: str
+    # MinIO (Optional until provisioned in production)
+    MINIO_ENDPOINT: str | None = None
+    MINIO_ACCESS_KEY: str | None = None
+    MINIO_SECRET_KEY: str | None = None
     MINIO_SECURE: bool = False
 
     # Razorpay (Optional, but default None instead of empty string)

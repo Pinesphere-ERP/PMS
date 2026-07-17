@@ -18,7 +18,7 @@ class StaffAttendance(Base, TimestampMixin, SyncMixin):
     
     attendance_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     staff_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     attendance_date: Mapped[date] = mapped_column(Date, nullable=False)
     check_in_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     check_out_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
@@ -36,7 +36,7 @@ class LeaveType(Base):
     __table_args__ = {'extend_existing': True}
     
     leave_type_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id"))
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     max_days_per_year: Mapped[Optional[int]] = mapped_column(Integer)
     is_paid: Mapped[bool] = mapped_column(default=True)
@@ -108,7 +108,7 @@ class StaffTask(Base, TimestampMixin, SyncMixin):
     task_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     staff_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
     assigned_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     task_title: Mapped[str] = mapped_column(String(255), nullable=False)
     task_description: Mapped[Optional[str]] = mapped_column(Text)
     related_module: Mapped[Optional[str]] = mapped_column(String(50))
@@ -141,7 +141,7 @@ class StaffSession(Base):
     
     session_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     staff_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id", ondelete="RESTRICT"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.devices.id", ondelete="RESTRICT"), nullable=False)
     login_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     logout_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     login_method: Mapped[Optional[str]] = mapped_column(String(50))

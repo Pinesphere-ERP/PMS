@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import '../../data/audit_service.dart';
 import '../../domain/models/audit_log_entity.dart';
 import 'audit_log_detail_screen.dart';
@@ -63,7 +64,11 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> with RouteAwa
       body: RefreshIndicator(
         onRefresh: () async => _loadLogs(),
         child: _logs.isEmpty
-            ? const Center(child: Text('No audit logs recorded yet.'))
+            ? const EmptyStateWidget(
+              icon: Icons.history,
+              title: 'No Audit Logs',
+              message: 'There are no recorded audit logs yet. System activity will appear here automatically.',
+            )
             : ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: _logs.length,

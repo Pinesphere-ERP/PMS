@@ -26,13 +26,15 @@ ENTITY_MAP = {
     "MaintenanceTicket": models.MaintenanceTicket,
     "User": models.User,
     "Role": models.Role,
-    "RolePermission": models.RolePermission
+    "RolePermission": models.RolePermission,
+    "Task": models.Task,
+    "TaskLog": models.TaskLog
 }
 
 PUSH_ALLOWED_ENTITIES = {
     "Room", "RoomCategory", "Guest", "Booking", 
     "CheckIn", "CheckOut", "Payment", 
-    "HousekeepingTask", "MaintenanceTicket"
+    "HousekeepingTask", "MaintenanceTicket", "Task", "TaskLog"
 }
 
 class SyncService:

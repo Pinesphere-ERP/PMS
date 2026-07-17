@@ -200,7 +200,7 @@ class UserSession(Base):
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.devices.id"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id"), nullable=False)
     session_token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     is_offline_session: Mapped[bool] = mapped_column(default=False, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
@@ -552,3 +552,43 @@ from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, Schedul
 
 # ── Settings (Module 15) ──
 from app.modules.settings.models import SystemConfiguration, PropertySetting
+
+class Task(Base, TimestampMixin, SyncMixin):
+    __tablename__ = "tasks"
+    __table_args__ = {'extend_existing': True}
+    task_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_type: Mapped[str] = mapped_column(String(50), nullable=False) # cleaning, maintenance, food
+    status: Mapped[str] = mapped_column(String(20), default='pending') # pending, accepted, in_progress, completed, closed
+    priority: Mapped[str] = mapped_column(String(20), default='normal') # normal, high, emergency
+    room_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("rooms.room_id"), nullable=True)
+    booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"), nullable=True)
+    assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    due_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    photos: Mapped[Optional[str]] = mapped_column(Text) # JSON list of URLs
+    remarks: Mapped[Optional[str]] = mapped_column(Text)
+
+class TaskLog(Base, TimestampMixin, SyncMixin):
+    __tablename__ = "task_logs"
+    __table_args__ = {'extend_existing': True}
+    log_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tasks.task_id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    old_status: Mapped[Optional[str]] = mapped_column(String(20))
+    new_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+
+class Notification(Base, TimestampMixin, SyncMixin):
+    __tablename__ = "notifications"
+    __table_args__ = {'extend_existing': True}
+    notification_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    recipient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title: Mapped[str] = mapped_column(String(150), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    channel: Mapped[str] = mapped_column(String(20), default='in_app') # in_app, whatsapp, push
+    priority: Mapped[str] = mapped_column(String(20), default='normal') # normal, high, critical
+    status: Mapped[str] = mapped_column(String(20), default='unread') # unread, read, dismissed, failed
+    read_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    payload: Mapped[Optional[dict]] = mapped_column(JSONB) # any extra data like task_id, booking_id
+

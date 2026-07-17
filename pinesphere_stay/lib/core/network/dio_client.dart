@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:pinesphere_stay/core/database/objectbox.dart';
 import 'package:pinesphere_stay/core/sync/queue/sync_operation.dart';
 import 'package:pinesphere_stay/main.dart';
 import 'api_interceptor.dart';

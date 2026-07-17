@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import '../../../../core/network/tenant_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -30,7 +31,11 @@ class TodaysRevenueScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: propertyId.isEmpty
-            ? const Center(child: Text('Please log in to view revenue.'))
+            ? const EmptyStateWidget(
+                icon: Icons.login,
+                title: 'Not Logged In',
+                message: 'Please log in to view your revenue.',
+              )
             : _RevenueBody(propertyId: propertyId),
       ),
     );
@@ -133,7 +138,11 @@ class _RevenueBody extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
+      error: (err, _) => EmptyStateWidget(
+        icon: Icons.error_outline,
+        title: 'Error',
+        message: err.toString(),
+      ),
     );
   }
 

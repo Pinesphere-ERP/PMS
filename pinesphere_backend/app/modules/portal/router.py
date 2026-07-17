@@ -6,8 +6,8 @@ from sqlalchemy.future import select
 
 from app.infra.database import get_db
 from app.infra.models import Booking, Guest, Room
-from app.core.security import create_access_token, decode_access_token
 from app.modules.portal.schemas import PortalLoginRequest, PortalTokenResponse
+from app.core.config import settings
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 
@@ -20,7 +20,7 @@ async def get_current_guest_booking(
 ) -> Booking:
     token = credentials.credentials
     try:
-        payload = decode_access_token(token)
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         if payload.get("type") != "guest_portal":
             raise HTTPException(status_code=401, detail="Invalid token type")
         booking_id_str = payload.get("sub")
@@ -80,14 +80,15 @@ async def portal_login(
     # Create a custom JWT token for the guest
     # It stores the booking_id instead of a standard user_id
     access_token_expires = timedelta(days=7)
-    access_token = create_access_token(
-        data={
-            "sub": str(booking.booking_id),
-            "type": "guest_portal",
-            "property_id": str(booking.property_id)
-        },
-        expires_delta=access_token_expires
-    )
+    from datetime import datetime, timezone
+    expire = datetime.now(timezone.utc) + access_token_expires
+    to_encode = {
+        "sub": str(booking.booking_id),
+        "type": "guest_portal",
+        "property_id": str(booking.property_id),
+        "exp": expire
+    }
+    access_token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     
     return PortalTokenResponse(
         access_token=access_token,

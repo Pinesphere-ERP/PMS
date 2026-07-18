@@ -638,9 +638,8 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   }).join(';');
                   
                   final encodedRooms = Uri.encodeComponent(serializedRooms);
-                  final portalUrl = 'http://localhost:3000/share/resort/${widget.resort.id}'
-                      '?name=$resortName'
-                      '&rooms=$encodedRooms';
+                  const portalBaseUrl = String.fromEnvironment('PORTAL_URL', defaultValue: 'https://portal.pinesphere.com');
+                  final portalUrl = '$portalBaseUrl/share/resort/${widget.resort.id}?name=$resortName&rooms=$encodedRooms';
                       
                   Clipboard.setData(ClipboardData(text: portalUrl));
                   
@@ -1535,8 +1534,22 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                                               width: 60,
                                               height: 60,
                                               child: (kIsWeb || uploadedImages[index].startsWith('http') || uploadedImages[index].startsWith('blob:'))
-                                                  ? Image.network(uploadedImages[index], fit: BoxFit.cover)
-                                                  : Image.file(File(uploadedImages[index]), fit: BoxFit.cover),
+                                                  ? Image.network(
+                                                      uploadedImages[index], 
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: AppColors.surfaceContainerHigh,
+                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
+                                                      ),
+                                                    )
+                                                  : Image.file(
+                                                      File(uploadedImages[index]), 
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: AppColors.surfaceContainerHigh,
+                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
+                                                      ),
+                                                    ),
                                             ),
                                           ),
                                           Positioned(
@@ -1886,8 +1899,22 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                                               width: 60,
                                               height: 60,
                                               child: (kIsWeb || uploadedImages[index].startsWith('http') || uploadedImages[index].startsWith('blob:'))
-                                                  ? Image.network(uploadedImages[index], fit: BoxFit.cover)
-                                                  : Image.file(File(uploadedImages[index]), fit: BoxFit.cover),
+                                                  ? Image.network(
+                                                      uploadedImages[index], 
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: AppColors.surfaceContainerHigh,
+                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
+                                                      ),
+                                                    )
+                                                  : Image.file(
+                                                      File(uploadedImages[index]), 
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: AppColors.surfaceContainerHigh,
+                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
+                                                      ),
+                                                    ),
                                             ),
                                           ),
                                           Positioned(
@@ -2297,13 +2324,8 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       onPressed: () {
-                        final encodedType = Uri.encodeComponent(liveRoom.type);
-                        final encodedImages = Uri.encodeComponent(liveRoom.images.join(','));
-                        final portalUrl = 'http://localhost:3000/share/room/${liveRoom.id}'
-                            '?num=${liveRoom.roomNumber}'
-                            '&type=$encodedType'
-                            '&price=${liveRoom.price.toStringAsFixed(0)}'
-                            '&images=$encodedImages';
+                        const portalBaseUrl = String.fromEnvironment('PORTAL_URL', defaultValue: 'https://portal.pinesphere.com');
+                        final portalUrl = '$portalBaseUrl/share/room/${liveRoom.id}?num=${liveRoom.roomNumber}&type=${Uri.encodeComponent(liveRoom.type)}&price=${liveRoom.price}&images=${Uri.encodeComponent(liveRoom.images.join(','))}';
                         Clipboard.setData(ClipboardData(text: portalUrl));
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(

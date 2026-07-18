@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:pinesphere_stay/core/files/file_storage_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../main.dart';
+import '../../../bookings/domain/models/booking_entity.dart';
 
 class ResortModel {
   final String id;
@@ -214,11 +216,13 @@ class PmsState {
 
 class PmsNotifier extends Notifier<PmsState> {
   final List<String> _locallyDeletedResortIds = [];
+  final List<String> _locallyDeletedRoomIds = [];
 
   @override
   PmsState build() {
     Future.microtask(() async {
       await _loadLocallyDeletedResorts();
+      await _loadLocallyDeletedRooms();
       await loadResorts();
       await loadRooms();
       await loadBookings();
@@ -229,8 +233,8 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> _loadLocallyDeletedResorts() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/deleted_resorts.json');
+      final dir = await FileStorageService().getApplicationDocumentsPath();
+      final file = File('$dir/deleted_resorts.json');
       if (await file.exists()) {
         final content = await file.readAsString();
         final List<dynamic> list = jsonDecode(content);
@@ -247,11 +251,39 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> _saveLocallyDeletedResorts() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/deleted_resorts.json');
+      final dir = await FileStorageService().getApplicationDocumentsPath();
+      final file = File('$dir/deleted_resorts.json');
       await file.writeAsString(jsonEncode(_locallyDeletedResortIds));
     } catch (e) {
       debugPrint('Error saving deleted resorts list: $e');
+    }
+  }
+
+  Future<void> _loadLocallyDeletedRooms() async {
+    try {
+      final dir = await FileStorageService().getApplicationDocumentsPath();
+      final file = File('$dir/deleted_rooms.json');
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final List<dynamic> list = jsonDecode(content);
+        _locallyDeletedRoomIds.clear();
+        _locallyDeletedRoomIds.addAll(list.cast<String>());
+        state = state.copyWith(
+          rooms: state.rooms.where((r) => !_locallyDeletedRoomIds.contains(r.id)).toList(),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error loading deleted rooms list: $e');
+    }
+  }
+
+  Future<void> _saveLocallyDeletedRooms() async {
+    try {
+      final dir = await FileStorageService().getApplicationDocumentsPath();
+      final file = File('$dir/deleted_rooms.json');
+      await file.writeAsString(jsonEncode(_locallyDeletedRoomIds));
+    } catch (e) {
+      debugPrint('Error saving deleted rooms list: $e');
     }
   }
 
@@ -273,9 +305,7 @@ class PmsNotifier extends Notifier<PmsState> {
             {'name': 'Portable Bluetooth Speaker', 'price': 150.0},
             {'name': 'Smart TV Access', 'price': 100.0},
           ];
-
-          List<String> imagesList = List<String>.from(json['images'] ?? []);
-
+          List<String> imagesList = List<String>.from(json['images'] ?? []).toList();
           try {
             if (descText.startsWith('{') && descText.endsWith('}')) {
               final Map<String, dynamic> parsed = Map<String, dynamic>.from(jsonDecode(descText));
@@ -302,7 +332,7 @@ class PmsNotifier extends Notifier<PmsState> {
 
           return RoomModel(
             id: json['id'],
-            roomNumber: json['room_number'],
+            roomNumber: json['room_number']?.toString() ?? '',
             type: json['type'],
             price: baseRent,
             seasonPrice: season,
@@ -317,7 +347,7 @@ class PmsNotifier extends Notifier<PmsState> {
             images: imagesList,
             description: descText,
           );
-        }).toList();
+        }).where((room) => !_locallyDeletedRoomIds.contains(room.id)).toList();
         
         state = state.copyWith(rooms: loadedRooms);
       }
@@ -392,6 +422,8 @@ class PmsNotifier extends Notifier<PmsState> {
       if (response.statusCode == 200) {
         final List<dynamic> items = response.data['items'] ?? [];
         final loadedBookings = items.map((json) {
+          final parsedCheckOutDate = json['check_out_date'] != null ? DateTime.tryParse(json['check_out_date'].toString()) ?? DateTime.now().add(const Duration(days: 1)) : DateTime.now().add(const Duration(days: 1));
+
           String statusVal = 'Upcoming';
           if (json['booking_status'] == 'checked_in') {
             statusVal = 'Active';
@@ -401,30 +433,68 @@ class PmsNotifier extends Notifier<PmsState> {
             statusVal = 'Completed';
           }
           
+          final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+          if (parsedCheckOutDate.isBefore(today) && statusVal != 'Completed') {
+            statusVal = 'Completed';
+          }
+          
           return BookingModel(
-            id: json['booking_id'],
-            resortId: json['property_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['property_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : json['property_id']),
-            roomId: json['room_id'],
-            roomNumber: json['room_number'] ?? '',
-            guestName: json['guest_name'] ?? 'Guest',
-            guestPhone: json['guest_mobile'] ?? '',
+            id: json['booking_id']?.toString() ?? 'unknown_id',
+            resortId: json['property_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['property_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : (json['property_id']?.toString() ?? 'resort-1')),
+            roomId: json['room_id']?.toString() ?? '',
+            roomNumber: json['room_number']?.toString() ?? '',
+            guestName: json['guest_name']?.toString() ?? 'Guest',
+            guestPhone: json['guest_mobile']?.toString() ?? '',
             guestIdProof: 'Aadhaar Card',
             guestIdNumber: '',
-            bookingSource: json['booking_source'] ?? 'Walk-in',
-            checkInDate: DateTime.parse(json['check_in_date']),
-            checkOutDate: DateTime.parse(json['check_out_date']),
+            bookingSource: json['booking_source']?.toString() ?? 'Walk-in',
+            checkInDate: json['check_in_date'] != null ? DateTime.tryParse(json['check_in_date'].toString()) ?? DateTime.now() : DateTime.now(),
+            checkOutDate: parsedCheckOutDate,
             status: statusVal,
-            depositPaid: (json['deposit'] as num?)?.toDouble() ?? 0.0,
-            basePriceSum: (json['room_rent'] as num?)?.toDouble() ?? 100.0,
+            depositPaid: double.tryParse(json['deposit']?.toString() ?? '0') ?? 0.0,
+            basePriceSum: double.tryParse(json['room_rent']?.toString() ?? '100.0') ?? 100.0,
             weekendSurcharge: 0.0,
             seasonSurcharge: 0.0,
             holidaySurcharge: 0.0,
             extraBedCharge: 0.0,
-            amenitiesCharge: (json['taxes'] as num?)?.toDouble() ?? 0.0,
-            totalSum: (json['total_payable'] as num?)?.toDouble() ?? 100.0,
+            amenitiesCharge: double.tryParse(json['taxes']?.toString() ?? '0') ?? 0.0,
+            totalSum: double.tryParse(json['total_payable']?.toString() ?? '100.0') ?? 100.0,
           );
         }).toList();
         
+        // Merge offline bookings from ObjectBox
+        try {
+          final offlineEntities = databaseService.bookingDao.getAll();
+          for (final entity in offlineEntities) {
+            if (!loadedBookings.any((b) => b.id == entity.uuid)) {
+              loadedBookings.add(BookingModel(
+                id: entity.uuid,
+                resortId: entity.propertyId,
+                roomId: entity.roomId,
+                roomNumber: entity.roomNumber,
+                guestName: entity.guestName,
+                guestPhone: '',
+                guestIdProof: 'Aadhaar Card',
+                guestIdNumber: '',
+                bookingSource: entity.bookingSource,
+                checkInDate: DateTime.tryParse(entity.checkInDate) ?? DateTime.now(),
+                checkOutDate: DateTime.tryParse(entity.checkOutDate) ?? DateTime.now().add(const Duration(days: 1)),
+                status: entity.bookingStatus == 'checked_in' ? 'Active' : (entity.bookingStatus == 'checked_out' || entity.bookingStatus == 'cancelled' ? 'Completed' : 'Upcoming'),
+                depositPaid: entity.deposit,
+                basePriceSum: entity.roomRent,
+                weekendSurcharge: 0.0,
+                seasonSurcharge: 0.0,
+                holidaySurcharge: 0.0,
+                extraBedCharge: 0.0,
+                amenitiesCharge: entity.taxes,
+                totalSum: entity.totalPayable,
+              ));
+            }
+          }
+        } catch (dbErr) {
+          debugPrint('Failed to merge offline bookings: $dbErr');
+        }
+
         state = state.copyWith(bookings: loadedBookings);
       }
     } catch (e) {
@@ -518,6 +588,50 @@ class PmsNotifier extends Notifier<PmsState> {
           return room;
         }).toList(),
       );
+
+      // Save to local ObjectBox DB for persistence
+      try {
+        final resolvedPropertyId = booking.resortId == 'resort-1' 
+            ? '33333333-3333-3333-3333-333333333333' 
+            : (booking.resortId == 'resort-2'
+                ? '44444444-4444-4444-4444-444444444444'
+                : booking.resortId);
+
+        final entity = BookingEntity(
+          uuid: booking.id,
+          propertyId: resolvedPropertyId,
+          roomId: booking.roomId,
+          guestId: 'offline_${DateTime.now().millisecondsSinceEpoch}', 
+          guestName: booking.guestName,
+          roomNumber: booking.roomNumber,
+          roomType: '',
+          bookingType: 'walkin',
+          bookingSource: booking.bookingSource,
+          checkInDate: booking.checkInDate.toIso8601String().substring(0, 10),
+          checkOutDate: booking.checkOutDate.toIso8601String().substring(0, 10),
+          adults: 1,
+          children: 0,
+          infants: 0,
+          roomRent: booking.totalSum - booking.depositPaid,
+          deposit: booking.depositPaid,
+          discount: 0.0,
+          taxes: booking.amenitiesCharge,
+          totalPayable: booking.totalSum,
+          advancePaid: booking.depositPaid,
+          pendingAmount: booking.totalSum - booking.depositPaid,
+          extraBed: false,
+          guestPreferences: '',
+          notes: '',
+          vehicleNumber: '',
+          bookingStatus: 'confirmed',
+          paymentStatus: 'pending',
+          lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
+        );
+        databaseService.bookingDao.put(entity);
+        debugPrint('Offline booking saved to local DB successfully');
+      } catch (dbErr) {
+        debugPrint('Failed to save offline booking to DB: $dbErr');
+      }
     }
   }
 
@@ -580,13 +694,22 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> deleteRoom(String roomId) async {
     try {
+      if (!_locallyDeletedRoomIds.contains(roomId)) {
+        _locallyDeletedRoomIds.add(roomId);
+        await _saveLocallyDeletedRooms();
+      }
+
       final dio = ref.read(dioClientProvider);
       final response = await dio.delete('/properties/rooms/$roomId');
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 204) {
         await loadRooms();
       }
     } catch (e) {
       debugPrint('Failed to delete room: $e');
+      // Offline fallback: Delete locally
+      state = state.copyWith(
+        rooms: state.rooms.where((r) => r.id != roomId).toList(),
+      );
     }
   }
 

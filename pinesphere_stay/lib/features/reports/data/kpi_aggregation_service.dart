@@ -1,8 +1,9 @@
+import 'package:pinesphere_stay/main.dart';
 import '../../../main.dart';
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import '../domain/models/kpi_snapshot_entity.dart';
 
 part 'kpi_aggregation_service.g.dart';
@@ -10,7 +11,7 @@ part 'kpi_aggregation_service.g.dart';
 @Riverpod(keepAlive: true)
 KpiAggregationService kpiAggregationService(Ref ref) {
   final service = KpiAggregationService();
-  service.initialize(objectBox.store);
+  service.initialize(databaseService.store);
   return service;
 }
 

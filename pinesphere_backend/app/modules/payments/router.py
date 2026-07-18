@@ -8,6 +8,7 @@ from typing import Optional
 import uuid
 
 from app.infra.database import get_db
+from app.core.dependencies import get_current_user, require_super_admin
 from app.infra.models import PaymentTransaction, Invoice, PendingDue, Property, Owner, Subscription
 from .service import PaymentService
 from .schemas import PaymentCreate, PaymentRead, PaymentListResponse
@@ -23,16 +24,16 @@ from .service import PaymentService
 from app.infra.database import get_db
 from app.infra.models import SubscriptionTransaction, Invoice, PendingDue, Property, Owner, Subscription
 
-router = APIRouter()
+# Subscription finance is a cross-property platform administration surface.
+# It must not be exposed to property staff, owners, or guests.
+router = APIRouter(dependencies=[Depends(require_super_admin)])
 
 # Dependency for service
 def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
     return PaymentService(db)
 
-# Dummy dependency for user_id (since we don't have full auth wired in this snippet)
-# Replace with actual auth dependency later
-def get_current_user_id() -> Optional[uuid.UUID]:
-    return None # Mock user ID
+async def get_current_user_id(user=Depends(get_current_user)) -> uuid.UUID:
+    return user.id
 
 @router.post("/", status_code=501)
 async def create_payment(
@@ -126,14 +127,23 @@ async def verify_razorpay_payment(
         )
         return payment
     except ValueError as e:
+        if str(e) == "Razorpay credentials not configured":
+            return JSONResponse(
+                status_code=501,
+                content={
+                    "success": False,
+                    "status": "not_implemented",
+                    "message": "Payment provider integration is not configured",
+                },
+            )
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         import traceback
         error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
         raise HTTPException(status_code=500, detail=error_detail)
+
 def _fmt(amount) -> str:
     return f"${float(amount):,.2f}"
-
 
 @router.get("/transactions")
 async def get_transactions(db: AsyncSession = Depends(get_db)):

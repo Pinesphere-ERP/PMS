@@ -12,6 +12,7 @@ from app.infra.models import User, Role, RolePermission, Permission, UserSession
 from app.core.dependencies import get_current_user
 from app.core.security import verify_password, create_access_token, create_refresh_token, get_password_hash
 from app.modules.audit.logger import AuditLogger
+import jwt
 
 router = APIRouter()
 
@@ -111,7 +112,7 @@ async def login(
     session = UserSession(
         id=uuid.uuid4(),
         user_id=user.id,
-        device_id=device_id or uuid.uuid4(),  # fallback if no valid device_id
+        device_id=device_id,  # allow None if no valid device_id
         session_token=access_token,
         is_offline_session=False,
         expires_at=datetime.utcnow() + timedelta(days=1)
@@ -215,6 +216,10 @@ async def refresh_token(
         user = result.scalar_one_or_none()
         if not user or user.status != "ACTIVE":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not active or not found")
+            
+        token_device_fp = payload.get("device_fp")
+        if device_fingerprint and token_device_fp and device_fingerprint != token_device_fp:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device fingerprint mismatch")
             
         new_access = create_access_token(
             user_id=str(user.id),

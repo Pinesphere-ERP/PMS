@@ -88,18 +88,19 @@ class AppScaffold extends ConsumerWidget {
                 _buildDrawerItem(context, Module.dashboard, Icons.dashboard, 'Dashboard', () => navigationShell.goBranch(0)),
                 _buildDrawerItem(context, Module.roomManagement, Icons.bed, 'Room Management', () => navigationShell.goBranch(1)),
                 _buildDrawerItem(context, Module.bookingManagement, Icons.book_online, 'Booking Management', () => navigationShell.goBranch(2)),
-                _buildDrawerItem(context, Module.checkInCheckOut, Icons.login, 'Check-in / Check-out', () {}),
-                _buildDrawerItem(context, Module.housekeeping, Icons.cleaning_services, 'Housekeeping & Maintenance', () {}),
-                _buildDrawerItem(context, Module.guestManagement, Icons.people, 'Guest Management', () {}),
+                _buildDrawerItem(context, Module.checkInCheckOut, Icons.login, 'Check-in', () => context.push('/checkin')),
+                _buildDrawerItem(context, Module.checkInCheckOut, Icons.logout, 'Check-out', () => context.push('/checkout')),
+                _buildDrawerItem(context, Module.housekeeping, Icons.cleaning_services, 'Housekeeping & Maintenance', () => context.push('/housekeeping')),
+                _buildDrawerItem(context, Module.guestManagement, Icons.people, 'Guest Management', () => _showComingSoon(context)),
                 _buildDrawerItem(context, Module.payments, Icons.payments, 'Payments', () => context.push('/payments')),
                 _buildDrawerItem(context, Module.reports, Icons.analytics, 'Reports', () => navigationShell.goBranch(3)),
                 _buildDrawerItem(context, Module.auditLogs, Icons.history, 'Audit Logs', () => context.push('/audit-logs')),
                 const Divider(),
-                _buildDrawerItem(context, Module.propertyOnboarding, Icons.business, 'Property Onboarding', () {}),
-                _buildDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts, 'User & Role Management', () {}),
-                _buildDrawerItem(context, Module.staffManagement, Icons.badge, 'Staff Management', () {}),
-                _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Device Management', () => context.go('/device-registration')),
-                _buildDrawerItem(context, Module.subscriptionManagement, Icons.subscriptions, 'Subscription Management', () {}),
+                _buildDrawerItem(context, Module.propertyOnboarding, Icons.business, 'Property Settings', () => context.push('/property-settings')),
+                _buildDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts, 'User & Role Management', () => _showComingSoon(context)),
+                _buildDrawerItem(context, Module.staffManagement, Icons.badge, 'Staff Management', () => _showComingSoon(context)),
+                _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Device Management', () => context.push('/device-registration')),
+                _buildDrawerItem(context, Module.subscriptionManagement, Icons.subscriptions, 'Subscription Management', () => _showComingSoon(context)),
                 _buildDrawerItem(context, Module.settings, Icons.settings, 'Settings', () => navigationShell.goBranch(4)),
               ],
             ),
@@ -129,6 +130,16 @@ class AppScaffold extends ConsumerWidget {
           Navigator.pop(context); // close drawer
           onTap();
         },
+      ),
+    );
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('This feature is currently in development.'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

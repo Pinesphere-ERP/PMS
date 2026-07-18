@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/presentation/widgets/premium_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../../core/presentation/widgets/app_drawer.dart';
 import '../../../../core/network/connectivity_provider.dart';
+import '../../../audit/data/audit_service.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -31,13 +33,13 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildGreeting(context, userName),
+                  _buildStaggeredItem(0, _buildGreeting(context, userName)),
                   const SizedBox(height: 24),
-                  _buildQuickActions(context),
+                  _buildStaggeredItem(1, _buildQuickActions(context)),
                   const SizedBox(height: 24),
-                  _buildKPIsGrid(context, ref),
+                  _buildStaggeredItem(2, _buildKPIsGrid(context, ref)),
                   const SizedBox(height: 24),
-                  // _buildRecentActivity(context), // TODO: Wire to Audit logs
+                  _buildStaggeredItem(3, _buildRecentActivity(context, ref)),
                   const SizedBox(height: 32), // bottom padding for nav
                 ],
               ),
@@ -113,16 +115,19 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         Text(
           'Good morning, $userName!',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.onBackground,
-              ),
+          style: GoogleFonts.outfit(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: AppColors.onBackground,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           dateString,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            color: AppColors.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -155,23 +160,48 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildActionButton(BuildContext context, IconData icon, String label, String route) {
-    return BentoCard(
-      onTap: () {
-        context.go(route);
-      },
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go(route),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 28),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.onSurface,
                 ),
-            textAlign: TextAlign.center,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -214,37 +244,151 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildKPICard(BuildContext context, String title, String value, Color color, IconData icon, {VoidCallback? onTap}) {
-    return BentoCard(
-      onTap: onTap ?? () {}, // empty tap handler to make card interactive
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Icon(icon, color: color, size: 28),
-          Column(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color, color.withValues(alpha: 0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              )
+            ],
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                value,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.onSurface,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: Colors.white, size: 24),
               ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.onSurfaceVariant,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: GoogleFonts.outfit(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildRecentActivity(BuildContext context, WidgetRef ref) {
+    final auditService = ref.watch(auditServiceProvider);
+    final recentLogs = auditService.queryLogs(limit: 3);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4.0, bottom: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recent Activity',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.onSurface,
+                    ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/audit-logs'),
+                child: const Text('View All'),
+              ),
+            ],
+          ),
+        ),
+        if (recentLogs.isEmpty)
+          const Card(
+            elevation: 0,
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('No recent activity'),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: recentLogs.length,
+            itemBuilder: (context, index) {
+              final log = recentLogs[index];
+              return Card(
+                elevation: 0,
+                margin: const EdgeInsets.only(bottom: 8.0),
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(color: AppColors.outlineVariant),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.history, color: AppColors.primary),
+                  title: Text(log.actionType ?? 'Unknown Action'),
+                  subtitle: Text('By: ${log.userId}'),
+                  trailing: Text(
+                    DateFormat('HH:mm').format(log.timestamp),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStaggeredItem(int index, Widget child) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        // Delay effect based on index
+        final delayedValue = (value - (index * 0.1)).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: delayedValue,
+          child: Transform.translate(
+            offset: Offset(0, 20 * (1 - delayedValue)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 }

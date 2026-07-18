@@ -3,7 +3,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinesphere_stay/main.dart';
 import '../domain/models/audit_log_entity.dart';
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 
 final _genesisHash = '0' * 64;
 
@@ -28,7 +28,7 @@ String _computeEntryHash({
 }
 
 final auditServiceProvider = Provider<AuditService>((ref) {
-  return AuditService(objectBox.store);
+  return AuditService(databaseService.store);
 });
 
 class AuditService {

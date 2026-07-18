@@ -1,3 +1,4 @@
+import 'package:pinesphere_stay/main.dart';
 import '../../../main.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -6,7 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import '../domain/models/sync_queue_entity.dart';
 import '../../bookings/domain/models/booking_entity.dart';
 import '../../rooms/domain/models/room_entity.dart';
@@ -22,7 +23,7 @@ SyncService syncService(Ref ref) {
     dio: ref.watch(dioClientProvider),
     secureStorage: const FlutterSecureStorage(),
   );
-  service.initialize(objectBox.store);
+  service.initialize(databaseService.store);
   return service;
 }
 

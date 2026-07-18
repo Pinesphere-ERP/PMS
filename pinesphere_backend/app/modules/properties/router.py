@@ -6,7 +6,8 @@ from sqlalchemy import func, and_, or_
 from datetime import date, timedelta
 from typing import List, Optional
 
-from app.infra.database import get_db
+from app.infra.database import get_db, provision_tenant_schema
+from app.core.dependencies import assert_property_access, get_current_user, require_room_access, require_super_admin
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User
 import uuid
 from app.modules.properties.schemas import PropertyCreateInput
@@ -26,7 +27,7 @@ def _verification_status(onboarding_status: str) -> str:
     return "Verified" if onboarding_status == "completed" else "Pending"
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_super_admin)])
 async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depends(get_db)):
     owner_name = payload.owner_name
     owner_mobile = payload.owner_mobile
@@ -111,6 +112,9 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         target_user.is_primary_owner = True
 
     await db.commit()
+    
+    # Provision the tenant database schema
+    await provision_tenant_schema(str(new_property.property_id))
 
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 
@@ -170,7 +174,7 @@ class RoomCreateInput(BaseModel):
     image_url: Optional[str] = ""
 
 
-@router.get("/rooms")
+@router.get("/rooms", dependencies=[Depends(require_super_admin)])
 async def get_rooms(db: AsyncSession = Depends(get_db)):
     # Select all rooms joined with their category
     q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
@@ -246,13 +250,14 @@ async def upload_image(file: UploadFile = File(...)):
         
     # Return public URL path
     # In a real app we'd use request.base_url, but for local testing:
-    return {"url": f"http://localhost:8000/api/v1/uploads/{filename}"}
+    return {"url": f"{settings.BASE_URL}/api/v1/uploads/{filename}"}
 
 
 @router.post("/rooms", status_code=201)
-async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_db)):
+async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     import uuid as _uuid
     resort_uuid = _uuid.UUID(payload.resort_id)
+    await assert_property_access(resort_uuid, current_user, db)
     
     # 0. Check if property/resort exists. If not, auto-create a mock property
     prop_q = select(Property).where(Property.property_id == resort_uuid)
@@ -309,7 +314,7 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
     return {"message": "Room created successfully", "room_id": str(new_room.room_id)}
 
 
-@router.post("/rooms/{room_id}/clean")
+@router.post("/rooms/{room_id}/clean", dependencies=[Depends(require_room_access())])
 async def clean_room(room_id: str, db: AsyncSession = Depends(get_db)):
     import uuid as _uuid
     try:
@@ -338,7 +343,7 @@ class RoomUpdateInput(BaseModel):
     description: Optional[str] = ""
 
 
-@router.put("/rooms/{room_id}")
+@router.put("/rooms/{room_id}", dependencies=[Depends(require_room_access())])
 async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession = Depends(get_db)):
     import uuid as _uuid
     try:
@@ -372,7 +377,7 @@ async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession =
     return {"message": "Room updated successfully"}
 
 
-@router.delete("/rooms/{room_id}")
+@router.delete("/rooms/{room_id}", dependencies=[Depends(require_room_access())])
 async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
     import uuid as _uuid
     try:
@@ -391,7 +396,7 @@ async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
     return {"message": "Room deleted successfully"}
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_super_admin)])
 async def get_properties(db: AsyncSession = Depends(get_db)):
     """List all properties joined with owner, business and latest subscription."""
     q = (
@@ -449,7 +454,7 @@ async def get_properties(db: AsyncSession = Depends(get_db)):
     return data
 
 
-@router.get("/kpis")
+@router.get("/kpis", dependencies=[Depends(require_super_admin)])
 async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     """Aggregate KPI counts for the Property Management dashboard."""
     total_q = await db.execute(select(func.count(Property.property_id)))
@@ -481,7 +486,7 @@ async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     ]
 
 
-@router.get("/dashboard")
+@router.get("/dashboard", dependencies=[Depends(require_super_admin)])
 async def get_property_dashboard(db: AsyncSession = Depends(get_db)):
     """Super Admin overview dashboard: KPIs + recent audit activity."""
     # --- KPIs ---
@@ -569,13 +574,14 @@ async def get_property_dashboard(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{property_id}")
-async def get_property_detail(property_id: str, db: AsyncSession = Depends(get_db)):
+async def get_property_detail(property_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Return a single property with owner, subscription, device info."""
     try:
         import uuid as _uuid
         pid = _uuid.UUID(property_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid property ID format")
+    await assert_property_access(pid, current_user, db)
 
     q = (
         select(Property, Owner, Business, Subscription)

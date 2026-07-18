@@ -9,12 +9,16 @@ from app.modules.bookings import router as bookings
 from app.modules.checkin import router as checkin
 from app.modules.checkout import router as checkout
 from app.modules.housekeeping import router as housekeeping
-from app.modules.reports import router as reports
 from app.modules.staff.router import router as staff
 from app.modules.reports.router import router as reports
 from app.modules.settings.router import router as settings
 from app.modules.audit.router import router as audit
 from app.modules.users.router import router as users
+
+from app.modules.guests.router import router as guests
+from app.modules.tasks.router import router as tasks
+from app.modules.notifications.router import router as notifications
+from app.modules.portal.router import router as portal
 
 api_router = APIRouter()
 api_router.include_router(auth, prefix="/auth", tags=["Authentication"])
@@ -32,3 +36,7 @@ api_router.include_router(staff)
 api_router.include_router(settings, prefix="/settings", tags=["Settings & Configuration"])
 api_router.include_router(audit, prefix="/audit", tags=["Audit Logs"])
 api_router.include_router(users, prefix="/users", tags=["User Management"])
+api_router.include_router(guests, prefix="/guests", tags=["Guest Management"])
+api_router.include_router(tasks, prefix="/tasks", tags=["Shared Tasks"])
+api_router.include_router(notifications, prefix="/notifications", tags=["Notifications"])
+api_router.include_router(portal, prefix="/portal", tags=["Guest Portal"])

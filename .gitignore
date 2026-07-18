@@ -9,4 +9,19 @@ pinesphere_stay/lib/objectbox-model.json
 pinesphere_stay/**/flutter/generated_plugin_registrant.*
 pinesphere_stay/**/flutter/generated_plugins.cmake
 
+# Local environments, caches, IDE metadata, and build outputs
+.venv/
+venv/
+**/__pycache__/
+*.pyc
+.dart_tool/
+build/
+android/build/
+.gradle/
+.idea/
+.vscode/
+.pytest_cache/
+.mypy_cache/
+node_modules/
+
 pinesphere_backend\venve

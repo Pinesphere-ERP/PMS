@@ -11,7 +11,7 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/permissions/user_role.dart';
 import '../../../../core/utils/device_info.dart';
 import '../../../../main.dart';
-import '../../../../objectbox.g.dart';
+import '../../../../main.dart';
 import '../../../auth/domain/models/user_model.dart';
 import '../../domain/entities.dart';
 import '../../domain/permission_set.dart';
@@ -91,8 +91,12 @@ class UserRepository {
       await _secureStorage.write(key: 'cached_user', value: jsonEncode(userModel.toJson()));
 
       // Save user to ObjectBox
-      final userBox = objectBox.store.box<UserEntity>();
-      final existingUser = userBox.query(UserEntity_.serverId.equals(userId)).build().findFirst();
+      final userDao = databaseService.userDao;
+      var existingUser = userDao.getByServerId(userId);
+      
+      if (existingUser == null) {
+        existingUser = userDao.getByEmail(userEmail);
+      }
       
       final userEntity = UserEntity(
         id: existingUser?.id ?? 0,
@@ -105,17 +109,17 @@ class UserRepository {
         isPrimaryOwner: role == UserRole.owner,
         status: 'ACTIVE',
       );
-      userBox.put(userEntity);
+      userDao.put(userEntity);
 
       // Save permissions snapshot to ObjectBox
       final permissions = data['permissions'] as List<dynamic>;
-      final rpBox = objectBox.store.box<RolePermissionEntity>();
-      final permBox = objectBox.store.box<PermissionEntity>();
+      final rpDao = databaseService.role_permDao;
+      final permDao = databaseService.permDao;
 
       // Clear previous permissions mapping for this role
-      final existingRPs = rpBox.query(RolePermissionEntity_.roleId.equals(roleCode)).build().find();
+      final existingRPs = rpDao.getByRoleId(roleCode);
       for (final rp in existingRPs) {
-        rpBox.remove(rp.id);
+        rpDao.remove(rp.id);
       }
 
       for (final permData in permissions) {
@@ -123,14 +127,14 @@ class UserRepository {
         final accessLevel = permData['access_level'] as String;
 
         // Ensure PermissionEntity exists
-        var permEntity = permBox.query(PermissionEntity_.permissionCode.equals(code)).build().findFirst();
+        var permEntity = permDao.getByPermissionCode(code);
         if (permEntity == null) {
           permEntity = PermissionEntity(
             serverId: _uuid.v4(),
             permissionCode: code,
             moduleName: 'general',
           );
-          permBox.put(permEntity);
+          permDao.put(permEntity);
         }
 
         final rpEntity = RolePermissionEntity(
@@ -139,7 +143,7 @@ class UserRepository {
           permissionId: code, // using permission code as identifier for simplicity locally
           accessLevel: accessLevel,
         );
-        rpBox.put(rpEntity);
+        rpDao.put(rpEntity);
       }
 
       return Right(userModel);
@@ -179,8 +183,8 @@ class UserRepository {
     }
 
     final user = UserModel.fromJson(jsonDecode(cachedUserJson));
-    final rpBox = objectBox.store.box<RolePermissionEntity>();
-    final list = rpBox.query(RolePermissionEntity_.roleId.equals(user.role.name)).build().find();
+    final rpDao = databaseService.role_permDao;
+    final list = rpDao.getByRoleId(user.role.name);
 
     final mapped = list.map((rp) => {
       'permission_code': rp.permissionId,

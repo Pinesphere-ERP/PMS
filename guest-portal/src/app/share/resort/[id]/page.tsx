@@ -68,7 +68,8 @@ export default function ResortCatalogPage() {
       try {
         setLoading(true);
         // Try fetching from database first
-        const res = await fetch('http://localhost:8000/api/v1/properties/rooms');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://pms-bvko.onrender.com';
+        const res = await fetch(`${apiUrl}/api/v1/properties/rooms`);
         if (res.ok) {
           const data = await res.json();
           // Filter rooms belonging to this resort

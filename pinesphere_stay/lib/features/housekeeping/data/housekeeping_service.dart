@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/housekeeping_task_entity.dart';
 import '../domain/models/maintenance_ticket_entity.dart';
@@ -15,7 +15,7 @@ HousekeepingService housekeepingService(Ref ref) {
   final service = HousekeepingService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  service.initialize(databaseService.store, ref.read(syncServiceProvider));
   return service;
 }
 

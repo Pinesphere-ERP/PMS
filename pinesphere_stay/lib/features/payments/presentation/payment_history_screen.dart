@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../data/payment_repository.dart';
 import '../domain/models/payment.dart';
@@ -32,7 +33,11 @@ class PaymentHistoryScreen extends ConsumerWidget {
       body: paymentsAsync.when(
         data: (payments) {
           if (payments.isEmpty) {
-            return const Center(child: Text('No payments found.'));
+            return const EmptyStateWidget(
+              icon: Icons.receipt_long,
+              title: 'No Payments',
+              message: 'No payments have been recorded yet.',
+            );
           }
           return ListView.builder(
             itemCount: payments.length,
@@ -53,7 +58,11 @@ class PaymentHistoryScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => EmptyStateWidget(
+          icon: Icons.error_outline,
+          title: 'Error',
+          message: err.toString(),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/payment-collection'),

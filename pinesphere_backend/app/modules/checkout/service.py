@@ -19,9 +19,10 @@ from app.modules.checkout.schemas import (
 async def perform_checkout(
     db: AsyncSession,
     req: CheckOutRequest,
+    property_id: uuid.UUID,
     current_user_id: Optional[uuid.UUID] = None,
 ) -> CheckOutResponse:
-    ci_stmt = select(CheckIn).where(CheckIn.checkin_id == req.checkin_id)
+    ci_stmt = select(CheckIn).where(CheckIn.checkin_id == req.checkin_id, CheckIn.property_id == property_id)
     ci_res = await db.execute(ci_stmt)
     checkin = ci_res.scalar_one_or_none()
     if not checkin:
@@ -32,7 +33,7 @@ async def perform_checkout(
             detail=f"Cannot check out. Check-in status is '{checkin.status}', expected 'active'",
         )
 
-    bk_stmt = select(Booking).where(Booking.booking_id == checkin.booking_id)
+    bk_stmt = select(Booking).where(Booking.booking_id == checkin.booking_id, Booking.property_id == property_id)
     bk_res = await db.execute(bk_stmt)
     booking = bk_res.scalar_one_or_none()
     if not booking:

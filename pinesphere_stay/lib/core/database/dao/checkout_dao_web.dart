@@ -1,4 +1,4 @@
-import '../../../features/checkout/domain/entities/checkoutentity.dart';
+import '../../../features/checkout/domain/models/checkout_entity.dart';
 import 'checkout_dao.dart';
 
 class CheckoutDaoWeb implements ICheckoutDao {

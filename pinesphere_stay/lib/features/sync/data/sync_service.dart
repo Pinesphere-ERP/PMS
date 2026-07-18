@@ -1,3 +1,4 @@
+import 'package:pinesphere_stay/main.dart';
 import '../../../main.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -22,7 +23,7 @@ SyncService syncService(Ref ref) {
     dio: ref.watch(dioClientProvider),
     secureStorage: const FlutterSecureStorage(),
   );
-  service.initialize(objectBox.store);
+  service.initialize(databaseService.store);
   return service;
 }
 

@@ -1,4 +1,4 @@
-import '../../../features/sync/domain/models/syncoperation.dart';
+import '../../../core/sync/queue/sync_operation.dart';
 
 abstract class ISync_opDao {
   int put(SyncOperation entity);

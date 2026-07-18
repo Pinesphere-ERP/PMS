@@ -131,4 +131,7 @@ class DatabaseService implements IDatabaseService {
 
   @override
   IPermDao get permDao => _permDao;
+
+  @override
+  Store get store => _store;
 }

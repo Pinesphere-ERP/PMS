@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/housekeeping/domain/entities/housekeepingtaskentity.dart';
+import '../../../features/housekeeping/domain/models/housekeeping_task_entity.dart';
 import 'housekeeping_dao.dart';
 
 class HousekeepingDaoNative implements IHousekeepingDao {

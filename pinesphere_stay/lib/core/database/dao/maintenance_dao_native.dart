@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/housekeeping/domain/entities/maintenanceticketentity.dart';
+import '../../../features/housekeeping/domain/models/maintenance_ticket_entity.dart';
 import 'maintenance_dao.dart';
 
 class MaintenanceDaoNative implements IMaintenanceDao {

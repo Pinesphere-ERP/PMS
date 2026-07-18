@@ -105,7 +105,7 @@ class AuthRepository {
       // Wipe local database on successful login to prevent conflicts
       // We will pull the fresh state from the cloud immediately after.
       try {
-        final store = objectBox.store;
+        final store = databaseService.store;
         store.box<BookingEntity>().removeAll();
         store.box<RoomEntity>().removeAll();
         store.box<GuestEntity>().removeAll();

@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/sync/domain/models/syncoperation.dart';
+import '../../../core/sync/queue/sync_operation.dart';
 import 'sync_op_dao.dart';
 
 class Sync_opDaoNative implements ISync_opDao {

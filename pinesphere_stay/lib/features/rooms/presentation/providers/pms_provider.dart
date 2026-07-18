@@ -234,7 +234,7 @@ class PmsNotifier extends Notifier<PmsState> {
   Future<void> _loadLocallyDeletedResorts() async {
     try {
       final dir = await FileStorageService().getApplicationDocumentsPath();
-      final file = File('${dir.path}/deleted_resorts.json');
+      final file = File('$dir/deleted_resorts.json');
       if (await file.exists()) {
         final content = await file.readAsString();
         final List<dynamic> list = jsonDecode(content);
@@ -252,7 +252,7 @@ class PmsNotifier extends Notifier<PmsState> {
   Future<void> _saveLocallyDeletedResorts() async {
     try {
       final dir = await FileStorageService().getApplicationDocumentsPath();
-      final file = File('${dir.path}/deleted_resorts.json');
+      final file = File('$dir/deleted_resorts.json');
       await file.writeAsString(jsonEncode(_locallyDeletedResortIds));
     } catch (e) {
       debugPrint('Error saving deleted resorts list: $e');
@@ -261,8 +261,8 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> _loadLocallyDeletedRooms() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/deleted_rooms.json');
+      final dir = await FileStorageService().getApplicationDocumentsPath();
+      final file = File('$dir/deleted_rooms.json');
       if (await file.exists()) {
         final content = await file.readAsString();
         final List<dynamic> list = jsonDecode(content);
@@ -279,8 +279,8 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> _saveLocallyDeletedRooms() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/deleted_rooms.json');
+      final dir = await FileStorageService().getApplicationDocumentsPath();
+      final file = File('$dir/deleted_rooms.json');
       await file.writeAsString(jsonEncode(_locallyDeletedRoomIds));
     } catch (e) {
       debugPrint('Error saving deleted rooms list: $e');

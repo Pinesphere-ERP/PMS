@@ -15,7 +15,7 @@ HousekeepingService housekeepingService(Ref ref) {
   final service = HousekeepingService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  service.initialize(databaseService.store, ref.read(syncServiceProvider));
   return service;
 }
 

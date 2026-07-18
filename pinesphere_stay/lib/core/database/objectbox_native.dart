@@ -9,7 +9,7 @@ class ObjectBox {
   ObjectBox._create(this.store);
 
   static Future<ObjectBox> create() async {
-    final docsDir = await FileStorageService().getApplicationDocumentsPath();
+    final docsDir = await getApplicationDocumentsDirectory();
     final dbPath = p.join(docsDir.path, "pinesphere_stay_db");
     
     Store store;

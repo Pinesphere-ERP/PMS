@@ -1,4 +1,4 @@
-import '../../../features/checkin/domain/entities/checkinentity.dart';
+import '../../../features/checkin/domain/models/checkin_entity.dart';
 
 abstract class ICheckinDao {
   int put(CheckInEntity entity);

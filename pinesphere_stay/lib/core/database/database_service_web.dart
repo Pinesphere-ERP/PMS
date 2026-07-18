@@ -1,3 +1,4 @@
+import 'package:pinesphere_stay/objectbox.g.dart';
 import 'database_service.dart';
 import 'dao/guest_dao.dart';
 import 'dao/guest_dao_web.dart';
@@ -49,21 +50,21 @@ class DatabaseService implements IDatabaseService {
 
   @override
   Future<void> init() async {
-    _guestDao = GuestDaoDaoWeb();
-    _bookingDao = BookingDaoDaoWeb();
-    _roomDao = RoomDaoDaoWeb();
-    _checkinDao = CheckinDaoDaoWeb();
-    _checkoutDao = CheckoutDaoDaoWeb();
-    _housekeepingDao = HousekeepingDaoDaoWeb();
-    _maintenanceDao = MaintenanceDaoDaoWeb();
-    _settingsDao = SettingsDaoDaoWeb();
-    _kpiDao = KpiDaoDaoWeb();
-    _auditDao = AuditDaoDaoWeb();
-    _syncDao = SyncDaoDaoWeb();
-    _sync_opDao = Sync_opDaoDaoWeb();
-    _userDao = UserDaoDaoWeb();
-    _role_permDao = Role_permDaoDaoWeb();
-    _permDao = PermDaoDaoWeb();
+    _guestDao = GuestDaoWeb();
+    _bookingDao = BookingDaoWeb();
+    _roomDao = RoomDaoWeb();
+    _checkinDao = CheckinDaoWeb();
+    _checkoutDao = CheckoutDaoWeb();
+    _housekeepingDao = HousekeepingDaoWeb();
+    _maintenanceDao = MaintenanceDaoWeb();
+    _settingsDao = SettingsDaoWeb();
+    _kpiDao = KpiDaoWeb();
+    _auditDao = AuditDaoWeb();
+    _syncDao = SyncDaoWeb();
+    _sync_opDao = Sync_opDaoWeb();
+    _userDao = UserDaoWeb();
+    _role_permDao = Role_permDaoWeb();
+    _permDao = PermDaoWeb();
   }
 
   @override
@@ -110,4 +111,7 @@ class DatabaseService implements IDatabaseService {
 
   @override
   IPermDao get permDao => _permDao;
+
+  @override
+  Store get store => throw UnimplementedError('Store is not supported on web');
 }

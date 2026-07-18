@@ -1,4 +1,4 @@
-import '../../../features/rooms/domain/models/roomentity.dart';
+import '../../../features/rooms/domain/models/room_entity.dart';
 
 abstract class IRoomDao {
   int put(RoomEntity entity);

@@ -28,7 +28,7 @@ String _computeEntryHash({
 }
 
 final auditServiceProvider = Provider<AuditService>((ref) {
-  return AuditService(objectBox.store);
+  return AuditService(databaseService.store);
 });
 
 class AuditService {

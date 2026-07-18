@@ -1,4 +1,4 @@
-import '../../../features/checkout/domain/entities/checkoutentity.dart';
+import '../../../features/checkout/domain/models/checkout_entity.dart';
 
 abstract class ICheckoutDao {
   int put(CheckOutEntity entity);

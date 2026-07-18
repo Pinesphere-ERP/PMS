@@ -1,3 +1,4 @@
+import 'package:pinesphere_stay/main.dart';
 import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -15,7 +16,7 @@ SettingsService settingsService(Ref ref) {
   final service = SettingsService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  service.initialize(databaseService.store, ref.read(syncServiceProvider));
   return service;
 }
 

@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/user_role_management/domain/entities/userentity.dart';
+import '../../../features/user_role_management/domain/entities.dart';
 import 'user_dao.dart';
 
 class UserDaoNative implements IUserDao {

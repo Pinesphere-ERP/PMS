@@ -1,4 +1,4 @@
-import '../../../features/sync/domain/models/syncoperation.dart';
+import '../../../core/sync/queue/sync_operation.dart';
 import 'sync_op_dao.dart';
 
 class Sync_opDaoWeb implements ISync_opDao {

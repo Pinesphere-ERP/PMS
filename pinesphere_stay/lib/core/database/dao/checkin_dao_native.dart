@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/checkin/domain/entities/checkinentity.dart';
+import '../../../features/checkin/domain/models/checkin_entity.dart';
 import 'checkin_dao.dart';
 
 class CheckinDaoNative implements ICheckinDao {

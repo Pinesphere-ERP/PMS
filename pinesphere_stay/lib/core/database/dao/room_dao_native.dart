@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/rooms/domain/models/roomentity.dart';
+import '../../../features/rooms/domain/models/room_entity.dart';
 import 'room_dao.dart';
 
 class RoomDaoNative implements IRoomDao {

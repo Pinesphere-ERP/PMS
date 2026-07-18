@@ -6,7 +6,6 @@ class ObjectBox {
   ObjectBox._create(this.store);
 
   static Future<ObjectBox> create() async {
-    // Return dummy web implementation
-    return ObjectBox._create(Store());
+    throw UnimplementedError('ObjectBox is not supported on web');
   }
 }

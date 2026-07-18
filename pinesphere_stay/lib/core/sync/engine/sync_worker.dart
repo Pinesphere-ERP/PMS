@@ -12,7 +12,7 @@ void callbackDispatcher() {
       try {
         // Assume ObjectBox is already initialized or initialize it here
         // Note: In background isolate, ObjectBox must be initialized again if main is not running
-        final box = objectBox.store.box<SyncOperation>();
+        final box = databaseService.store.box<SyncOperation>();
         final pendingOps = box.query(SyncOperation_.status.equals('pending')).build().find();
         
         if (pendingOps.isEmpty) return Future.value(true);

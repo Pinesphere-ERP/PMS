@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/settings/domain/models/settingsentity.dart';
+import '../../../features/settings/domain/models/settings_entity.dart';
 import 'settings_dao.dart';
 
 class SettingsDaoNative implements ISettingsDao {

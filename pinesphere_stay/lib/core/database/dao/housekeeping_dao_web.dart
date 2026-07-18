@@ -1,4 +1,4 @@
-import '../../../features/housekeeping/domain/entities/housekeepingtaskentity.dart';
+import '../../../features/housekeeping/domain/models/housekeeping_task_entity.dart';
 import 'housekeeping_dao.dart';
 
 class HousekeepingDaoWeb implements IHousekeepingDao {

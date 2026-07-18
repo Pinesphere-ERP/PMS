@@ -1,4 +1,5 @@
 export 'database_service_native.dart' if (dart.library.js_interop) 'database_service_web.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import 'dao/guest_dao.dart';
 import 'dao/booking_dao.dart';
 import 'dao/room_dao.dart';
@@ -32,4 +33,5 @@ abstract class IDatabaseService {
   IUserDao get userDao;
   IRole_permDao get role_permDao;
   IPermDao get permDao;
+  Store get store;
 }

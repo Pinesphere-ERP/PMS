@@ -1,4 +1,4 @@
-import '../../../features/checkin/domain/entities/checkinentity.dart';
+import '../../../features/checkin/domain/models/checkin_entity.dart';
 import 'checkin_dao.dart';
 
 class CheckinDaoWeb implements ICheckinDao {

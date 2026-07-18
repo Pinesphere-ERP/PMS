@@ -6,7 +6,7 @@ class TaskRepository {
   late final Box<TaskModel> _taskBox;
 
   TaskRepository() {
-    _taskBox = objectBox.store.box<TaskModel>();
+    _taskBox = databaseService.store.box<TaskModel>();
   }
 
   Stream<List<TaskModel>> watchTasksByType(String taskType) {

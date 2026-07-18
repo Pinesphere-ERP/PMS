@@ -1,4 +1,4 @@
-import '../../../features/audit/domain/entities/auditlogentity.dart';
+import '../../../features/audit/domain/models/audit_log_entity.dart';
 import 'audit_dao.dart';
 
 class AuditDaoWeb implements IAuditDao {

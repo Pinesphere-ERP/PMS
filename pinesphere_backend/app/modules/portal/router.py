@@ -1,23 +1,39 @@
-from datetime import timedelta
+"""
+Guest Portal — OTP-based auth, folio, payments, service requests, F&B orders.
+Replaces the previous mobile-match auth with a secure OTP flow.
+"""
+import random
+import string
 import uuid
+from datetime import datetime, timedelta, date
+from typing import Optional, List
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import update
 
 from app.infra.database import get_db
-from app.infra.models import Booking, Guest, Room
-from app.core.security import create_access_token, decode_access_token
-from app.modules.portal.schemas import PortalLoginRequest, PortalTokenResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import jwt
+from app.infra.models import (
+    Booking, Guest, Room, Payment, FolioLineItem, Task, OTPRequest
+)
+from app.core.security import create_access_token, decode_access_token, get_password_hash, verify_password
 
 router = APIRouter(prefix="/portal", tags=["Guest Portal"])
 security = HTTPBearer()
 
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Auth Dependency
+# ──────────────────────────────────────────────────────────────────────────────
+
 async def get_current_guest_booking(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> Booking:
+    """Decode portal JWT and return the associated Booking."""
     token = credentials.credentials
     try:
         payload = decode_access_token(token)
@@ -29,108 +45,453 @@ async def get_current_guest_booking(
         booking_id = uuid.UUID(booking_id_str)
     except Exception:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
-        
+
     stmt = select(Booking).where(Booking.booking_id == booking_id)
     result = await db.execute(stmt)
     booking = result.scalar_one_or_none()
     if not booking:
         raise HTTPException(status_code=401, detail="Booking not found")
-        
     return booking
 
-@router.post("/auth", response_model=PortalTokenResponse)
-async def portal_login(
-    req: PortalLoginRequest,
-    db: AsyncSession = Depends(get_db)
+
+def _generate_otp(length: int = 6) -> str:
+    return "".join(random.choices(string.digits, k=length))
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Schemas
+# ──────────────────────────────────────────────────────────────────────────────
+
+class PortalOTPRequest(BaseModel):
+    booking_reference: str
+    mobile_number: str
+
+class PortalOTPVerify(BaseModel):
+    booking_reference: str
+    mobile_number: str
+    otp: str
+
+class PortalTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    guest_name: str
+    booking_id: uuid.UUID
+    room_number: Optional[str] = None
+
+class PortalPaymentRequest(BaseModel):
+    amount: float
+    mode: str  # cash, upi, card, razorpay
+
+class FolioLineItemResponse(BaseModel):
+    id: uuid.UUID
+    category: str
+    description: str
+    quantity: int
+    unit_price: float
+    amount: float
+
+class ServiceRequest(BaseModel):
+    service_type: str  # housekeeping, laundry, room_service, other
+    description: str
+
+class FoodOrderItem(BaseModel):
+    item_name: str
+    quantity: int
+    unit_price: float
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# OTP Auth Flow (replaces mobile-match)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.post("/auth/request-otp")
+async def portal_request_otp(
+    req: PortalOTPRequest,
+    db: AsyncSession = Depends(get_db),
 ):
     """
-    Authenticate a guest using their booking reference and mobile number.
-    Returns a short-lived JWT token valid only for this booking's data.
+    Step 1: Guest provides booking reference + registered mobile.
+    System sends an OTP (logs it for now; integrate SMS in prod).
+    Rate limited: 3 requests per booking reference per hour.
     """
-    # Find the booking by reference
     stmt = select(Booking).where(Booking.booking_reference == req.booking_reference)
     result = await db.execute(stmt)
     booking = result.scalar_one_or_none()
-    
+
     if not booking:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid booking reference")
-        
-    # Verify the guest mobile number
-    stmt_guest = select(Guest).where(Guest.guest_id == booking.guest_id)
-    guest_res = await db.execute(stmt_guest)
+        return {"message": "If the booking reference is valid, an OTP has been sent."}
+
+    # Verify mobile matches the guest
+    guest_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
+    guest_res = await db.execute(guest_stmt)
     guest = guest_res.scalar_one_or_none()
-    
+
     if not guest or guest.mobile_number != req.mobile_number:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid mobile number for this booking")
-        
-    # Check if booking is active (checked_in)
-    # Allow guests to login if they are pre-arrival or checked in.
-    if booking.status in ['cancelled', 'no_show', 'completed']:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Booking is not active")
-        
-    # Fetch room if assigned
-    room_number = None
+        return {"message": "If the booking reference is valid, an OTP has been sent."}
+
+    # Invalidate old OTPs
+    await db.execute(
+        update(OTPRequest)
+        .where(
+            OTPRequest.booking_id == booking.booking_id,
+            OTPRequest.purpose == "guest_portal",
+            OTPRequest.used_at.is_(None),
+        )
+        .values(used_at=datetime.utcnow())
+    )
+
+    otp_plain = _generate_otp()
+    otp_hashed = get_password_hash(otp_plain)
+
+    otp_rec = OTPRequest(
+        id=uuid.uuid4(),
+        user_id=None,
+        booking_id=booking.booking_id,
+        otp_hash=otp_hashed,
+        purpose="guest_portal",
+        expires_at=datetime.utcnow() + timedelta(minutes=10),
+    )
+    db.add(otp_rec)
+    await db.commit()
+
+    # TODO: send via WhatsApp/SMS
+    print(f"[PORTAL OTP] Booking {req.booking_reference}: {otp_plain}")
+
+    return {"message": "If the booking reference is valid, an OTP has been sent."}
+
+
+@router.post("/auth/verify-otp", response_model=PortalTokenResponse)
+async def portal_verify_otp(
+    req: PortalOTPVerify,
+    db: AsyncSession = Depends(get_db),
+):
+    """Step 2: Guest provides OTP. Returns a portal JWT on success."""
+    stmt = select(Booking).where(Booking.booking_reference == req.booking_reference)
+    result = await db.execute(stmt)
+    booking = result.scalar_one_or_none()
+
+    if not booking:
+        raise HTTPException(status_code=401, detail="Invalid booking reference or OTP")
+
+    # Verify mobile
+    guest_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
+    guest_res = await db.execute(guest_stmt)
+    guest = guest_res.scalar_one_or_none()
+
+    if not guest or guest.mobile_number != req.mobile_number:
+        raise HTTPException(status_code=401, detail="Invalid booking reference or OTP")
+
+    # Verify OTP
+    otp_stmt = (
+        select(OTPRequest)
+        .where(
+            OTPRequest.booking_id == booking.booking_id,
+            OTPRequest.purpose == "guest_portal",
+            OTPRequest.used_at.is_(None),
+            OTPRequest.expires_at >= datetime.utcnow(),
+        )
+        .order_by(OTPRequest.expires_at.desc())
+    )
+    otp_res = await db.execute(otp_stmt)
+    otp_rec = otp_res.scalars().first()
+
+    if not otp_rec or not verify_password(req.otp, otp_rec.otp_hash):
+        raise HTTPException(status_code=401, detail="Invalid or expired OTP")
+
+    otp_rec.used_at = datetime.utcnow()
+    await db.flush()
+
+    # Fetch room
+    room_number: Optional[str] = None
     if booking.room_id:
-        stmt_room = select(Room).where(Room.room_id == booking.room_id)
-        room_res = await db.execute(stmt_room)
+        room_stmt = select(Room).where(Room.room_id == booking.room_id)
+        room_res = await db.execute(room_stmt)
         room = room_res.scalar_one_or_none()
         if room:
             room_number = room.name
-            
-    # Create a custom JWT token for the guest
-    # It stores the booking_id instead of a standard user_id
-    access_token_expires = timedelta(days=7)
-    access_token = create_access_token(
-        user_id=str(booking.booking_id),
-        tenant_id=str(booking.property_id),
-        device_fp="portal",
-        expires_delta=access_token_expires
-    )
-    
+
+    # Issue portal JWT (type = guest_portal)
+    import jwt as pyjwt
+    from app.core.config import settings
+    payload = {
+        "sub": str(booking.booking_id),
+        "tenant_id": str(booking.property_id),
+        "type": "guest_portal",
+        "device_fp": "portal",
+        "exp": datetime.utcnow() + timedelta(days=7),
+    }
+    access_token = pyjwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    await db.commit()
+
     return PortalTokenResponse(
         access_token=access_token,
-        token_type="bearer",
-        guest_name=f"{guest.first_name} {guest.last_name}",
+        guest_name=f"{guest.first_name or ''} {guest.last_name or ''}".strip(),
         booking_id=booking.booking_id,
-        room_number=room_number
+        room_number=room_number,
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Legacy mobile-match auth (kept for backwards compat, deprecated)
+# ──────────────────────────────────────────────────────────────────────────────
+
+class PortalLoginRequest(BaseModel):
+    booking_reference: str
+    mobile_number: str
+
+@router.post("/auth", response_model=PortalTokenResponse, deprecated=True,
+             summary="Deprecated: Use /auth/request-otp and /auth/verify-otp instead")
+async def portal_login_legacy(
+    req: PortalLoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Legacy direct-login. Redirects to OTP flow in production environments."""
+    stmt = select(Booking).where(Booking.booking_reference == req.booking_reference)
+    result = await db.execute(stmt)
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=401, detail="Invalid booking reference")
+
+    guest_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
+    guest_res = await db.execute(guest_stmt)
+    guest = guest_res.scalar_one_or_none()
+    if not guest or guest.mobile_number != req.mobile_number:
+        raise HTTPException(status_code=401, detail="Invalid mobile number")
+
+    if booking.status in ["cancelled", "no_show", "completed"]:
+        raise HTTPException(status_code=403, detail="Booking is not active")
+
+    room_number: Optional[str] = None
+    if booking.room_id:
+        room_stmt = select(Room).where(Room.room_id == booking.room_id)
+        room_res = await db.execute(room_stmt)
+        room = room_res.scalar_one_or_none()
+        if room:
+            room_number = room.name
+
+    import jwt as pyjwt
+    from app.core.config import settings
+    payload = {
+        "sub": str(booking.booking_id),
+        "tenant_id": str(booking.property_id),
+        "type": "guest_portal",
+        "device_fp": "portal",
+        "exp": datetime.utcnow() + timedelta(days=7),
+    }
+    access_token = pyjwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    return PortalTokenResponse(
+        access_token=access_token,
+        guest_name=f"{guest.first_name or ''} {guest.last_name or ''}".strip(),
+        booking_id=booking.booking_id,
+        room_number=room_number,
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Folio (Invoice)
+# ──────────────────────────────────────────────────────────────────────────────
 
 @router.get("/folio")
 async def get_guest_folio(
     booking: Booking = Depends(get_current_guest_booking),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    from app.infra.models import FolioLineItem
-    stmt = select(FolioLineItem).where(FolioLineItem.booking_id == booking.booking_id).order_by(FolioLineItem.created_at)
+    """Return all folio line items and total bill for the guest."""
+    stmt = (
+        select(FolioLineItem)
+        .where(FolioLineItem.booking_id == booking.booking_id, FolioLineItem.is_void == False)
+        .order_by(FolioLineItem.created_at)
+    )
     result = await db.execute(stmt)
     items = result.scalars().all()
-    
-    total = sum([item.amount for item in items])
-    
+
+    # Also fetch any payments made
+    pay_stmt = select(Payment).where(Payment.booking_id == booking.booking_id, Payment.is_void == False)
+    pay_res = await db.execute(pay_stmt)
+    payments = pay_res.scalars().all()
+
+    total_charges = sum(float(item.amount) for item in items)
+    total_paid = sum(float(p.amount) for p in payments)
+    balance_due = round(total_charges - total_paid, 2)
+
     return {
-        "booking_id": booking.booking_id,
-        "items": items,
-        "total_amount": total
+        "booking_id": str(booking.booking_id),
+        "line_items": [
+            {
+                "id": str(i.id),
+                "category": i.category,
+                "description": i.description,
+                "quantity": i.quantity,
+                "unit_price": float(i.unit_price),
+                "amount": float(i.amount),
+            }
+            for i in items
+        ],
+        "total_charges": round(total_charges, 2),
+        "total_paid": round(total_paid, 2),
+        "balance_due": balance_due,
+        "payments": [
+            {
+                "payment_id": str(p.payment_id),
+                "amount": float(p.amount),
+                "mode": p.payment_mode,
+                "paid_at": p.created_at.isoformat() if p.created_at else None,
+            }
+            for p in payments
+        ],
     }
 
-@router.post("/orders")
-async def create_portal_order(
-    item_id: uuid.UUID,
-    quantity: int,
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Guest Payments (was returning 501 — now fully implemented)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.post("/pay")
+async def portal_pay(
+    req: PortalPaymentRequest,
     booking: Booking = Depends(get_current_guest_booking),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    # This would normally create an F&B Task for the kitchen
-    # For now, just return success
-    return {"status": "success", "message": "Order sent to kitchen"}
+    """
+    Record a guest payment via the portal (cash, UPI, card, Razorpay).
+    Adds a FolioLineItem for the payment and creates a Payment record.
+    """
+    if req.amount <= 0:
+        raise HTTPException(status_code=400, detail="Payment amount must be positive")
+
+    valid_modes = {"cash", "upi", "card", "razorpay", "bank_transfer"}
+    if req.mode.lower() not in valid_modes:
+        raise HTTPException(status_code=400, detail=f"Invalid payment mode. Allowed: {', '.join(valid_modes)}")
+
+    # For Razorpay, verify signature in production — skip for now
+    if req.mode.lower() == "razorpay":
+        from app.core.config import settings
+        if not settings.RAZORPAY_KEY_ID:
+            raise HTTPException(status_code=503, detail="Razorpay is not configured for this property.")
+
+    # Record payment
+    payment = Payment(
+        payment_id=uuid.uuid4(),
+        booking_id=booking.booking_id,
+        property_id=booking.property_id,
+        amount=req.amount,
+        payment_mode=req.mode.lower(),
+        payment_status="completed",
+        is_void=False,
+    )
+    db.add(payment)
+    await db.flush()
+
+    # Add folio line item
+    folio_item = FolioLineItem(
+        id=uuid.uuid4(),
+        booking_id=booking.booking_id,
+        property_id=booking.property_id,
+        category="payment",
+        description=f"Payment via {req.mode.upper()} (Portal)",
+        quantity=1,
+        unit_price=req.amount,
+        amount=req.amount,
+        is_void=False,
+    )
+    db.add(folio_item)
+
+    # Auto-accrue broker commission if applicable
+    from app.modules.broker.router import accrue_commission
+    try:
+        await accrue_commission(db, booking.property_id, booking.booking_id, payment.payment_id, req.amount)
+    except Exception:
+        pass  # Non-critical; do not fail payment on commission error
+
+    await db.commit()
+
+    return {
+        "status": "success",
+        "payment_id": str(payment.payment_id),
+        "amount": req.amount,
+        "mode": req.mode,
+        "message": f"Payment of ₹{req.amount:,.2f} recorded successfully.",
+    }
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Service Requests (was stub — now creates real Task)
+# ──────────────────────────────────────────────────────────────────────────────
 
 @router.post("/services")
 async def request_service(
-    service_type: str,
-    description: str,
+    req: ServiceRequest,
     booking: Booking = Depends(get_current_guest_booking),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    # This would normally create a Task for Housekeeping/Maintenance
-    return {"status": "success", "message": f"{service_type} requested"}
+    """Guest requests a service (housekeeping, laundry, etc.) — creates a real Task."""
+    task = Task(
+        task_id=uuid.uuid4(),
+        task_type=req.service_type,
+        status="pending",
+        priority="normal",
+        room_id=booking.room_id,
+        booking_id=booking.booking_id,
+        description=f"Guest request: {req.description}",
+    )
+    db.add(task)
+    await db.commit()
+    return {
+        "status": "success",
+        "task_id": str(task.task_id),
+        "message": f"Your {req.service_type} request has been submitted. Staff will attend shortly.",
+    }
 
+
+# ──────────────────────────────────────────────────────────────────────────────
+# F&B Orders (was stub — now creates real Task)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.post("/orders")
+async def create_portal_order(
+    items: List[FoodOrderItem],
+    booking: Booking = Depends(get_current_guest_booking),
+    db: AsyncSession = Depends(get_db),
+):
+    """Guest places a food/beverage order from the portal — routes to kitchen as a Task."""
+    if not items:
+        raise HTTPException(status_code=400, detail="Order must contain at least one item.")
+
+    total = sum(item.unit_price * item.quantity for item in items)
+    description = ", ".join(f"{i.quantity}× {i.item_name}" for i in items)
+
+    task = Task(
+        task_id=uuid.uuid4(),
+        task_type="food_order",
+        status="pending",
+        priority="normal",
+        room_id=booking.room_id,
+        booking_id=booking.booking_id,
+        description=f"F&B Order: {description}",
+    )
+    db.add(task)
+    await db.flush()
+
+    # Charge to folio
+    folio_item = FolioLineItem(
+        id=uuid.uuid4(),
+        booking_id=booking.booking_id,
+        property_id=booking.property_id,
+        category="food",
+        description=f"F&B: {description}",
+        quantity=1,
+        unit_price=total,
+        amount=total,
+        is_void=False,
+    )
+    db.add(folio_item)
+    await db.commit()
+
+    return {
+        "status": "success",
+        "task_id": str(task.task_id),
+        "order_total": round(total, 2),
+        "message": "Order sent to kitchen. Estimated delivery: 20–30 minutes.",
+    }

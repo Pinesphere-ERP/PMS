@@ -2,7 +2,7 @@ import '../../../main.dart';
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import '../domain/models/kpi_snapshot_entity.dart';
 
 part 'kpi_aggregation_service.g.dart';

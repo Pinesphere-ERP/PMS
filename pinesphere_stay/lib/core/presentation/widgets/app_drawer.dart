@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
 import '../../network/tenant_provider.dart';
 import '../../theme/app_colors.dart';
 
@@ -89,7 +90,7 @@ class AppDrawer extends ConsumerWidget {
             leading: const Icon(Icons.logout, color: AppColors.error),
             title: const Text('Log Out', style: TextStyle(color: AppColors.error)),
             onTap: () {
-              // TODO: Wire to auth logout
+              ref.read(authProvider.notifier).logout();
               context.go('/login');
             },
           ),

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import '../../sync/domain/models/sync_queue_entity.dart';
 import '../domain/models/kpi_dto.dart';
 

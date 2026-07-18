@@ -1,4 +1,4 @@
-import 'package:objectbox/objectbox.dart';
+import 'package:pinesphere_stay/core/database/obx_annotations.dart';
 
 @Entity()
 class CheckOutEntity {

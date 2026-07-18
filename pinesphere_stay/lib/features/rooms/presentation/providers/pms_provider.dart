@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:pinesphere_stay/core/files/file_storage_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
@@ -233,7 +233,7 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> _loadLocallyDeletedResorts() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = await FileStorageService().getApplicationDocumentsPath();
       final file = File('${dir.path}/deleted_resorts.json');
       if (await file.exists()) {
         final content = await file.readAsString();
@@ -251,7 +251,7 @@ class PmsNotifier extends Notifier<PmsState> {
 
   Future<void> _saveLocallyDeletedResorts() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = await FileStorageService().getApplicationDocumentsPath();
       final file = File('${dir.path}/deleted_resorts.json');
       await file.writeAsString(jsonEncode(_locallyDeletedResortIds));
     } catch (e) {
@@ -464,7 +464,7 @@ class PmsNotifier extends Notifier<PmsState> {
         
         // Merge offline bookings from ObjectBox
         try {
-          final offlineEntities = objectBox.store.box<BookingEntity>().getAll();
+          final offlineEntities = databaseService.bookingDao.getAll();
           for (final entity in offlineEntities) {
             if (!loadedBookings.any((b) => b.id == entity.uuid)) {
               loadedBookings.add(BookingModel(
@@ -627,7 +627,7 @@ class PmsNotifier extends Notifier<PmsState> {
           paymentStatus: 'pending',
           lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         );
-        objectBox.store.box<BookingEntity>().put(entity);
+        databaseService.bookingDao.put(entity);
         debugPrint('Offline booking saved to local DB successfully');
       } catch (dbErr) {
         debugPrint('Failed to save offline booking to DB: $dbErr');

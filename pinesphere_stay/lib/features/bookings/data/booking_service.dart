@@ -1,10 +1,10 @@
 import '../../../main.dart';
 import 'package:dio/dio.dart';
-import 'package:objectbox/objectbox.dart';
+import 'package:pinesphere_stay/core/database/obx_annotations.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import '../../audit/data/audit_service.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/booking_entity.dart';

@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import '../domain/models/sync_queue_entity.dart';
 import '../../bookings/domain/models/booking_entity.dart';
 import '../../rooms/domain/models/room_entity.dart';

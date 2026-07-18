@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
-import '../../../objectbox.g.dart';
+import 'package:pinesphere_stay/objectbox.g.dart';
 import '../../audit/data/audit_service.dart';
 import '../../rooms/domain/models/room_entity.dart';
 import '../../sync/data/sync_service.dart';

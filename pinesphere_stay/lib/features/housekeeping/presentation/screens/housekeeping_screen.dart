@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:pinesphere_stay/features/housekeeping/presentation/providers/housekeeping_providers.dart';
 import 'package:pinesphere_stay/features/tasks/data/models/task_model.dart';
 
@@ -32,7 +33,11 @@ class HousekeepingScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => EmptyStateWidget(
+          icon: Icons.error_outline,
+          title: 'Error',
+          message: err.toString(),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {

@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 from app.infra.models import Booking, Guest, Room, RoomCategory, Property
 from app.modules.audit.logger import AuditLogger
 from app.core.notifications import whatsapp
+from app.modules.pricing.engine import evaluate_price
 from app.modules.bookings.schemas import (
     GuestCreateRequest, GuestResponse,
     BookingCreateRequest, BookingUpdateRequest, BookingResponse,
@@ -107,7 +108,11 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
         rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
         rc_res = await db.execute(rc_stmt)
         rc = rc_res.scalar_one_or_none()
-        room_rent = float(rc.base_price) if rc and rc.base_price else 0
+        base_price = float(rc.base_price) if rc and rc.base_price else 0
+        
+        price_data = await evaluate_price(db, req.property_id, req.check_in_date, req.check_out_date, base_price)
+        room_rent = price_data["final_price"]
+        
     total_rent = room_rent * nights if room_rent else 0
     tax_amount = req.taxes if req.taxes is not None else total_rent * 0.12
     deposit = req.deposit or 0

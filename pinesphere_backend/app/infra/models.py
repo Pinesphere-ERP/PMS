@@ -200,7 +200,7 @@ class UserSession(Base):
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.devices.id"), nullable=False)
     session_token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     is_offline_session: Mapped[bool] = mapped_column(default=False, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
@@ -362,6 +362,7 @@ class AuditLog(Base):
         {'extend_existing': True},
     )
     log_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id"), nullable=True)
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     device_id: Mapped[Optional[str]] = mapped_column(String(100))
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)

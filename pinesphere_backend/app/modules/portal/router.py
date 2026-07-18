@@ -81,11 +81,9 @@ async def portal_login(
     # It stores the booking_id instead of a standard user_id
     access_token_expires = timedelta(days=7)
     access_token = create_access_token(
-        data={
-            "sub": str(booking.booking_id),
-            "type": "guest_portal",
-            "property_id": str(booking.property_id)
-        },
+        user_id=str(booking.booking_id),
+        tenant_id=str(booking.property_id),
+        device_fp="portal",
         expires_delta=access_token_expires
     )
     

@@ -77,6 +77,13 @@ async def create_role(role_code: str, role_name: str, db: AsyncSession = Depends
     return {"status": "success"}
 
 
+@router.get("/roles")
+async def list_roles(db: AsyncSession = Depends(get_db)):
+    stmt = select(Role)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
 @router.patch("/{user_id}", response_model=UserResponse)
 async def update_user(user_id: uuid.UUID, payload: UserUpdateRequest, current_user: User = Depends(require_permission("USERS", "FULL")), db: AsyncSession = Depends(get_db)):
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()

@@ -1,2 +1,16 @@
 Validation Error: [{'type': 'json_invalid', 'loc': ('body', 1), 'msg': 'JSON decode error', 'input': {}, 'ctx': {'error': 'Expecting property name enclosed in double quotes'}}]
 Body: {email: admin@pinesphere.com, password: password123}
+Validation Error: [{'type': 'string_too_short', 'loc': ('body', 'password'), 'msg': 'String should have at least 8 characters', 'input': 'rec2026', 'ctx': {'min_length': 8}}]
+Body: {'name': 'Rec', 'email': 'rec@gmail.com', 'mobile_number': '0987654321', 'username': 'rec', 'password': 'rec2026', 'role_id': 'ee057e8c-a1a4-48af-8de1-645d2e7837ab'}
+Validation Error: [{'type': 'string_too_short', 'loc': ('body', 'password'), 'msg': 'String should have at least 8 characters', 'input': 'rec2026', 'ctx': {'min_length': 8}}]
+Body: {'name': 'rec', 'email': 'rec@gmail.com', 'mobile_number': '0987654321', 'username': 'rec', 'password': 'rec2026', 'role_id': 'ee057e8c-a1a4-48af-8de1-645d2e7837ab'}
+Validation Error: [{'type': 'string_too_short', 'loc': ('body', 'password'), 'msg': 'String should have at least 8 characters', 'input': 'rec2026', 'ctx': {'min_length': 8}}]
+Body: {'name': 'rec', 'email': 'rec@gmail.com', 'mobile_number': '0987654321', 'username': 'rec', 'password': 'rec2026', 'role_id': 'ee057e8c-a1a4-48af-8de1-645d2e7837ab'}
+Validation Error: [{'type': 'string_too_short', 'loc': ('body', 'password'), 'msg': 'String should have at least 8 characters', 'input': 'rec2026', 'ctx': {'min_length': 8}}]
+Body: {'name': 'rec', 'email': 'rec@gmail.com', 'mobile_number': '0987654321', 'username': 'rec', 'password': 'rec2026', 'role_id': 'ee057e8c-a1a4-48af-8de1-645d2e7837ab'}
+Validation Error: [{'type': 'string_too_short', 'loc': ('body', 'password'), 'msg': 'String should have at least 8 characters', 'input': 'rec2026', 'ctx': {'min_length': 8}}]
+Body: {'name': 'rec', 'email': 'rec@gmail.com', 'mobile_number': '0987654321', 'username': 'rec', 'password': 'rec2026', 'role_id': 'ee057e8c-a1a4-48af-8de1-645d2e7837ab'}
+Validation Error: [{'type': 'string_too_short', 'loc': ('body', 'password'), 'msg': 'String should have at least 8 characters', 'input': 'rec2026', 'ctx': {'min_length': 8}}]
+Body: {'name': 'rec', 'email': 'rec@gmail.com', 'mobile_number': '1234567890', 'username': 'rec', 'password': 'rec2026', 'role_id': 'ee057e8c-a1a4-48af-8de1-645d2e7837ab'}
+Validation Error: [{'type': 'string_too_short', 'loc': ('body', 'password'), 'msg': 'String should have at least 8 characters', 'input': 'rec2026', 'ctx': {'min_length': 8}}]
+Body: {'name': 'rec', 'email': 'rec@gmail.com', 'mobile_number': '0987654321', 'username': 'rec', 'password': 'rec2026', 'role_id': 'ee057e8c-a1a4-48af-8de1-645d2e7837ab'}

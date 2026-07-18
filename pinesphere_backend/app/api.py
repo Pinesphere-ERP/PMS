@@ -26,6 +26,7 @@ from app.modules.broker.router import router as broker
 from app.modules.security.router import router as security
 from app.modules.security_guard.router import router as security_guard
 from app.modules.manager.router import router as manager
+from app.modules.accountant.router import router as accountant
 
 api_router = APIRouter()
 
@@ -65,3 +66,4 @@ api_router.include_router(security, prefix="/security", tags=["Security Manageme
 # ── Phase 10: Staff Role Modules ─────────────────────────────────────────────
 api_router.include_router(security_guard, prefix="/guard", tags=["Security Guard"])
 api_router.include_router(manager, prefix="/manager", tags=["Manager Operations"])
+api_router.include_router(accountant, prefix="/accountant", tags=["Accountant Operations"])

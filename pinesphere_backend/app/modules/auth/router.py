@@ -141,6 +141,18 @@ async def login(
     db: AsyncSession = Depends(get_db),
     x_client_platform: Optional[str] = Header(None, alias="X-Client-Platform"),
 ):
+    if payload.device_fingerprint:
+        blacklist_stmt = select(DeviceBlacklist).where(
+            DeviceBlacklist.device_uid == payload.device_fingerprint,
+            DeviceBlacklist.lifted_at.is_(None)
+        )
+        blacklist_res = await db.execute(blacklist_stmt)
+        if blacklist_res.scalars().first():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Device is blacklisted from accessing the platform."
+            )
+            
     user = await _resolve_user(db, payload.email)
 
     # ── Validate credentials ────────────────────────────────────────────────

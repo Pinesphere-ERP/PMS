@@ -92,7 +92,11 @@ class UserRepository {
 
       // Save user to ObjectBox
       final userDao = databaseService.userDao;
-      final existingUser = userDao.getByServerId(userId);
+      var existingUser = userDao.getByServerId(userId);
+      
+      if (existingUser == null) {
+        existingUser = userDao.getByEmail(userEmail);
+      }
       
       final userEntity = UserEntity(
         id: existingUser?.id ?? 0,

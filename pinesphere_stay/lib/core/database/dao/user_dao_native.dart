@@ -31,4 +31,9 @@ class UserDaoNative implements IUserDao {
   UserEntity? getByServerId(String serverId) {
     return _box.query(UserEntity_.serverId.equals(serverId)).build().findFirst();
   }
+
+  @override
+  UserEntity? getByEmail(String email) {
+    return _box.query(UserEntity_.email.equals(email)).build().findFirst();
+  }
 }

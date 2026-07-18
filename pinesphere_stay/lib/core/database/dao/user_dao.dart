@@ -6,4 +6,5 @@ abstract class IUserDao {
   UserEntity? get(int id);
   bool remove(int id);
   UserEntity? getByServerId(String serverId);
+  UserEntity? getByEmail(String email);
 }

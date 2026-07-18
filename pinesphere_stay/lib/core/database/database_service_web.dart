@@ -43,9 +43,9 @@ class DatabaseService implements IDatabaseService {
   late final IKpiDao _kpiDao;
   late final IAuditDao _auditDao;
   late final ISyncDao _syncDao;
-  late final ISync_opDao _sync_opDao;
+  late final ISyncOpDao _syncOpDao;
   late final IUserDao _userDao;
-  late final IRole_permDao _role_permDao;
+  late final IRolePermDao _rolePermDao;
   late final IPermDao _permDao;
 
   @override
@@ -61,9 +61,9 @@ class DatabaseService implements IDatabaseService {
     _kpiDao = KpiDaoWeb();
     _auditDao = AuditDaoWeb();
     _syncDao = SyncDaoWeb();
-    _sync_opDao = Sync_opDaoWeb();
+    _syncOpDao = SyncOpDaoWeb();
     _userDao = UserDaoWeb();
-    _role_permDao = Role_permDaoWeb();
+    _rolePermDao = RolePermDaoWeb();
     _permDao = PermDaoWeb();
   }
 
@@ -101,13 +101,13 @@ class DatabaseService implements IDatabaseService {
   ISyncDao get syncDao => _syncDao;
 
   @override
-  ISync_opDao get sync_opDao => _sync_opDao;
+  ISyncOpDao get syncOpDao => _syncOpDao;
 
   @override
   IUserDao get userDao => _userDao;
 
   @override
-  IRole_permDao get role_permDao => _role_permDao;
+  IRolePermDao get rolePermDao => _rolePermDao;
 
   @override
   IPermDao get permDao => _permDao;

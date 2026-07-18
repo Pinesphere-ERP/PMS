@@ -2,10 +2,10 @@ import 'package:pinesphere_stay/objectbox.g.dart';
 import '../../../features/user_role_management/domain/entities.dart';
 import 'role_perm_dao.dart';
 
-class Role_permDaoNative implements IRole_permDao {
+class RolePermDaoNative implements IRolePermDao {
   final Box<RolePermissionEntity> _box;
 
-  Role_permDaoNative(this._box);
+  RolePermDaoNative(this._box);
 
   @override
   int put(RolePermissionEntity entity) {

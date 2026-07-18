@@ -5,7 +5,7 @@ import 'package:pinesphere_stay/features/kitchen/presentation/providers/kitchen_
 import 'package:pinesphere_stay/features/tasks/data/models/task_model.dart';
 
 class KitchenScreen extends ConsumerWidget {
-  const KitchenScreen({Key? key}) : super(key: key);
+  const KitchenScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,7 +58,7 @@ class KitchenScreen extends ConsumerWidget {
 
 class _OrderCard extends ConsumerWidget {
   final TaskModel task;
-  const _OrderCard({Key? key, required this.task}) : super(key: key);
+  const _OrderCard({required this.task});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

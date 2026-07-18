@@ -1,0 +1,14 @@
+{
+  "name": "pinesphere-web",
+  "version": "1.0.0",
+  "description": "Unified Web Workspace for Pinesphere",
+  "scripts": {
+    "install-all": "npm install && npm install --prefix admin && npm install --prefix guest-portal",
+    "dev": "concurrently \"npm run dev --prefix admin\" \"npm run dev --prefix guest-portal\"",
+    "build": "npm run build --prefix admin && npm run build --prefix guest-portal",
+    "start": "concurrently \"npm run preview --prefix admin\" \"npm run start --prefix guest-portal\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

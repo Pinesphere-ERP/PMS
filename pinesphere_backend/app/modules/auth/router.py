@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, update
 
 from app.infra.database import get_db
-from app.infra.models import User, Role, RolePermission, Permission, UserSession, OTPRequest
+from app.infra.models import User, Role, RolePermission, Permission, UserSession, OTPRequest, DeviceBlacklist
 from app.core.dependencies import get_current_user
 from app.core.security import verify_password, create_access_token, create_refresh_token, get_password_hash
 from app.modules.audit.logger import AuditLogger
@@ -350,6 +350,7 @@ async def verify_otp(payload: OTPVerifyPayload, db: AsyncSession = Depends(get_d
 # POST /offline-bootstrap
 # ──────────────────────────────────────────────────────────────────────────────
 
+@router.get("/me", response_model=OfflineBootstrapResponse)
 @router.post("/offline-bootstrap", response_model=OfflineBootstrapResponse)
 async def offline_bootstrap(
     current_user: User = Depends(get_current_user),

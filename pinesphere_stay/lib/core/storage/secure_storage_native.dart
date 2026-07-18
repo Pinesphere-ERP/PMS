@@ -3,7 +3,7 @@ import 'secure_storage_service.dart';
 
 class SecureStorageService implements ISecureStorageService {
   final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
     webOptions: WebOptions(dbName: 'pinesphere_stay', publicKey: 'pinesphere'),
   );

@@ -41,4 +41,13 @@ class UserDaoWeb implements IUserDao {
       return null;
     }
   }
+
+  @override
+  UserEntity? getByEmail(String email) {
+    try {
+      return _storage.values.firstWhere((e) => e.email == email);
+    } catch (_) {
+      return null;
+    }
+  }
 }

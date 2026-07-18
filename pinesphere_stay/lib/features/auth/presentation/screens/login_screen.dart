@@ -127,7 +127,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                     'assets/logo.png',
                                     height: 72,
                                     color: Colors.white,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.business_center, size: 72, color: Colors.white),
+                                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.business_center, size: 72, color: Colors.white),
                                   ),
                                 ),
                                 const SizedBox(height: 24),

@@ -8,7 +8,7 @@ from typing import Optional
 
 from app.core.config import settings
 from app.infra.database import get_db
-from app.infra.models import Owner, Property, User, RolePermission, Role
+from app.infra.models import Owner, Property, User, RolePermission, Role, UserSession, UserPropertyAccess
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
@@ -20,11 +20,27 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
         user_id_str = payload.get("sub")
         if user_id_str is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
-        
+
+        # ── JWT Revocation Check ─────────────────────────────────────────────────
+        # Verify the specific token (by its jti) has not been revoked in the DB.
+        jti = payload.get("jti")
+        if jti:
+            session_res = await db.execute(
+                select(UserSession).where(
+                    UserSession.session_token == token,
+                    UserSession.revoked_at.is_(None),
+                )
+            )
+            session = session_res.scalars().first()
+            if session is None:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
+
         result = await db.execute(select(User).filter(User.id == uuid.UUID(user_id_str)))
         user = result.scalars().first()
         if user is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        if user.status == "LOCKED":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is locked. Please contact support.")
         if user.status != "ACTIVE":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
             

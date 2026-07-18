@@ -18,6 +18,7 @@ from app.modules.guests.router import router as guests
 from app.modules.tasks.router import router as tasks
 from app.modules.notifications.router import router as notifications
 from app.modules.portal.router import router as portal
+from app.modules.onboarding.router import router as onboarding
 
 # ── New modules (Wave 5–9 completions) ────────────────────────────────────────
 from app.modules.pricing.router import router as pricing
@@ -50,6 +51,7 @@ api_router.include_router(guests, prefix="/guests", tags=["Guest Management"])
 api_router.include_router(tasks, prefix="/tasks", tags=["Shared Tasks"])
 api_router.include_router(notifications, prefix="/notifications", tags=["Notifications"])
 api_router.include_router(portal)  # Portal has its own prefix="/portal"
+api_router.include_router(onboarding, prefix="/onboarding", tags=["Onboarding"])
 
 # ── Phase 6: Dynamic Pricing ──────────────────────────────────────────────────
 api_router.include_router(pricing, prefix="/pricing", tags=["Dynamic Pricing"])

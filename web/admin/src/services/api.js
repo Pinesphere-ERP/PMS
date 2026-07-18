@@ -5,6 +5,7 @@ export const fetchAPI = async (endpoint, options = {}) => {
   
   const headers = {
     'Content-Type': 'application/json',
+    'X-Client-Platform': 'web',
     ...options.headers,
   };
 

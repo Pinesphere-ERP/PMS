@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_notifier.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -160,6 +161,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                 _buildLoginButton(isLoading),
                                 const SizedBox(height: 20),
                                 _buildBiometricButton(),
+                                const SizedBox(height: 24),
+                                TextButton(
+                                  onPressed: () => context.push('/register'),
+                                  child: const Text('Don\'t have an account? Register as Owner', style: TextStyle(color: Colors.white70)),
+                                ),
                               ],
                             ),
                           ),

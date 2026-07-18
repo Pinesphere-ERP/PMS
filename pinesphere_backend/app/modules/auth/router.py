@@ -141,7 +141,8 @@ async def login(
     db: AsyncSession = Depends(get_db),
     x_client_platform: Optional[str] = Header(None, alias="X-Client-Platform"),
 ):
-    if payload.device_fingerprint:
+    try:
+        if payload.device_fingerprint:
         blacklist_stmt = select(DeviceBlacklist).where(
             DeviceBlacklist.device_uid == payload.device_fingerprint,
             DeviceBlacklist.lifted_at.is_(None)
@@ -238,6 +239,10 @@ async def login(
     )
     await db.commit()
     return token_response
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise e
 
 
 # ──────────────────────────────────────────────────────────────────────────────

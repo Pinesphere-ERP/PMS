@@ -201,7 +201,7 @@ class UserSession(Base):
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.devices.id"), nullable=False)
-    session_token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    session_token: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
     is_offline_session: Mapped[bool] = mapped_column(default=False, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(nullable=False)

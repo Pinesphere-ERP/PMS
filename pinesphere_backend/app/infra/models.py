@@ -252,6 +252,7 @@ class UserSyncLog(Base):
 class RoomCategory(Base, TimestampMixin):
     __tablename__ = "room_categories"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     room_category_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_name: Mapped[Optional[str]] = mapped_column(String(100))
     number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
@@ -262,6 +263,7 @@ class RoomCategory(Base, TimestampMixin):
 class Room(Base, TimestampMixin, SyncMixin):
     __tablename__ = "rooms"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_categories.room_category_id"), nullable=False)
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -275,6 +277,7 @@ class Room(Base, TimestampMixin, SyncMixin):
 class Guest(Base, TimestampMixin, SyncMixin):
     __tablename__ = "guests"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     guest_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
     mobile: Mapped[Optional[str]] = mapped_column(String(15))
@@ -284,6 +287,7 @@ class Guest(Base, TimestampMixin, SyncMixin):
 class Booking(Base, TimestampMixin, SyncMixin):
     __tablename__ = "bookings"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     booking_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     guest_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("guests.guest_id"), nullable=False)
@@ -309,6 +313,7 @@ class Booking(Base, TimestampMixin, SyncMixin):
 class CheckIn(Base, TimestampMixin, SyncMixin):
     __tablename__ = "check_ins"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     checkin_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id"), nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
@@ -325,6 +330,7 @@ class CheckIn(Base, TimestampMixin, SyncMixin):
 class CheckOut(Base, TimestampMixin, SyncMixin):
     __tablename__ = "check_outs"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     checkout_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     checkin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("check_ins.checkin_id"), nullable=False)
     booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id"), nullable=False)
@@ -394,6 +400,7 @@ class RoomAssignment(Base, TimestampMixin):
 class HousekeepingTask(Base, TimestampMixin, SyncMixin):
     __tablename__ = "housekeeping_tasks"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     task_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     assigned_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
@@ -407,6 +414,7 @@ class HousekeepingTask(Base, TimestampMixin, SyncMixin):
 class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
     __tablename__ = "maintenance_tickets"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     ticket_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     reported_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
@@ -421,6 +429,7 @@ class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
 class LostAndFound(Base, TimestampMixin):
     __tablename__ = "lost_and_found"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     item_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -435,6 +444,7 @@ class Invoice(Base, TimestampMixin):
     """Guest billing invoice (property-level, for check-out folio)."""
     __tablename__ = "invoices"
     __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     invoice_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))
     guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id"))
@@ -473,6 +483,7 @@ class SubscriptionPlan(Base, TimestampMixin):
     """Available subscription plans on the platform."""
     __tablename__ = "subscription_plans"
     __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     plan_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     features: Mapped[Optional[str]] = mapped_column(Text)

@@ -682,6 +682,32 @@ class DeviceBlacklist(Base):
     lifted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class SecurityCamera(Base, TimestampMixin):
+    """Security cameras integrated with the system."""
+    __tablename__ = "security_cameras"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    location: Mapped[str] = mapped_column(String(255), nullable=False)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="online")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Watchlist(Base, TimestampMixin):
+    """Watchlist for flagged individuals."""
+    __tablename__ = "watchlist"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=True)
+    person_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    id_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    reason: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
 # ── Q. Foreign Guest Compliance ───────────────────────────────────────────────
 
 class GuestNationalityDocument(Base, TimestampMixin):

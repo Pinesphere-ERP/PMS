@@ -11,7 +11,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 
 from app.infra.database import get_db
-from app.infra.models import SecurityIncident, DeviceBlacklist, User, Device
+from app.infra.models import SecurityIncident, DeviceBlacklist, User, Device, SecurityCamera, Watchlist
 from app.core.dependencies import get_current_user, require_super_admin, assert_property_access
 
 router = APIRouter()
@@ -32,6 +32,17 @@ class IncidentCreate(BaseModel):
 
 class BlacklistCreate(BaseModel):
     device_uid: str
+    reason: str
+
+class SecurityCameraCreate(BaseModel):
+    name: str
+    location: str
+    ip_address: Optional[str] = None
+    status: str = "online"
+
+class WatchlistCreate(BaseModel):
+    person_name: Optional[str] = None
+    id_number: Optional[str] = None
     reason: str
 
 
@@ -208,3 +219,97 @@ async def list_blacklisted_devices(db: AsyncSession = Depends(get_db)):
         }
         for e in result.scalars().all()
     ]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Security Cameras
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.post("/cameras", status_code=status.HTTP_201_CREATED)
+async def create_camera(
+    req: SecurityCameraCreate,
+    property_id: uuid.UUID = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await assert_property_access(property_id, current_user, db)
+    camera = SecurityCamera(
+        id=uuid.uuid4(),
+        property_id=property_id,
+        name=req.name,
+        location=req.location,
+        ip_address=req.ip_address,
+        status=req.status,
+    )
+    db.add(camera)
+    await db.commit()
+    return {"id": str(camera.id), "message": "Camera added."}
+
+@router.get("/cameras")
+async def list_cameras(
+    property_id: uuid.UUID = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await assert_property_access(property_id, current_user, db)
+    stmt = select(SecurityCamera).where(SecurityCamera.property_id == property_id, SecurityCamera.is_active == True)
+    result = await db.execute(stmt)
+    return [
+        {
+            "id": str(c.id),
+            "name": c.name,
+            "location": c.location,
+            "ip_address": c.ip_address,
+            "status": c.status,
+        }
+        for c in result.scalars().all()
+    ]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Watchlist
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.post("/watchlist", status_code=status.HTTP_201_CREATED)
+async def add_to_watchlist(
+    req: WatchlistCreate,
+    property_id: Optional[uuid.UUID] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if property_id:
+        await assert_property_access(property_id, current_user, db)
+    entry = Watchlist(
+        id=uuid.uuid4(),
+        property_id=property_id,
+        person_name=req.person_name,
+        id_number=req.id_number,
+        reason=req.reason,
+        created_by=current_user.id,
+    )
+    db.add(entry)
+    await db.commit()
+    return {"id": str(entry.id), "message": "Added to watchlist."}
+
+@router.get("/watchlist")
+async def get_watchlist(
+    property_id: Optional[uuid.UUID] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    stmt = select(Watchlist).where(Watchlist.is_active == True)
+    if property_id:
+        await assert_property_access(property_id, current_user, db)
+        stmt = stmt.where(Watchlist.property_id == property_id)
+    result = await db.execute(stmt)
+    return [
+        {
+            "id": str(w.id),
+            "person_name": w.person_name,
+            "id_number": w.id_number,
+            "reason": w.reason,
+            "property_id": str(w.property_id) if w.property_id else None,
+        }
+        for w in result.scalars().all()
+    ]
+

@@ -9,6 +9,7 @@ from app.infra.models import (
     Subscription, Property, Owner, SubscriptionTransaction, Invoice, User, Role, SubscriptionPlan
 )
 from app.core.dependencies import get_current_user
+from app.modules.audit.logger import AuditLogger
 
 router = APIRouter()
 
@@ -65,6 +66,16 @@ async def create_subscription_plan(payload: dict, db: AsyncSession = Depends(get
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Could not create plan. Name might be a duplicate.")
+        
+    await AuditLogger.log(
+        db,
+        module_name="Subscriptions",
+        action_type="Created",
+        target_entity="SubscriptionPlan",
+        target_record_id=plan.plan_id,
+        user_id=None
+    )
+    
     return {"message": "Plan created successfully", "id": str(plan.plan_id)}
 
 @router.put("/plans/{plan_id}")
@@ -87,6 +98,16 @@ async def update_subscription_plan(plan_id: str, payload: dict, db: AsyncSession
         plan.status = payload["status"]
         
     await db.commit()
+    
+    await AuditLogger.log(
+        db,
+        module_name="Subscriptions",
+        action_type="Updated",
+        target_entity="SubscriptionPlan",
+        target_record_id=plan.plan_id,
+        user_id=None
+    )
+    
     return {"message": "Plan updated successfully"}
 
 @router.delete("/plans/{plan_id}")
@@ -99,6 +120,16 @@ async def delete_subscription_plan(plan_id: str, db: AsyncSession = Depends(get_
         
     await db.delete(plan)
     await db.commit()
+    
+    await AuditLogger.log(
+        db,
+        module_name="Subscriptions",
+        action_type="Deleted",
+        target_entity="SubscriptionPlan",
+        target_record_id=plan.plan_id,
+        user_id=None
+    )
+    
     return {"message": "Plan deleted successfully"}
 
 # ── List all subscriptions ─────────────────────────────────────────────────────
@@ -416,6 +447,18 @@ async def toggle_subscription_status(property_id: str, payload: dict, db: AsyncS
         raise HTTPException(status_code=404, detail="Subscription not found")
     sub.status = "Active" if action == "enable" else "Disabled"
     await db.commit()
+    
+    await AuditLogger.log(
+        db,
+        property_id=sub.property_id,
+        module_name="Subscriptions",
+        action_type="Updated",
+        target_entity="Subscription",
+        target_record_id=sub.id,
+        user_id=current_user.id,
+        new_value={"status": sub.status}
+    )
+    
     return {"message": f"Subscription {action}d successfully", "status": sub.status}
 
 @router.post("/{property_id}/toggle-required")
@@ -431,6 +474,18 @@ async def toggle_subscription_required(property_id: str, payload: dict, db: Asyn
     else:
         sub.subscription_required = not sub.subscription_required
     await db.commit()
+    
+    await AuditLogger.log(
+        db,
+        property_id=sub.property_id,
+        module_name="Subscriptions",
+        action_type="Updated",
+        target_entity="Subscription",
+        target_record_id=sub.id,
+        user_id=current_user.id,
+        new_value={"subscription_required": sub.subscription_required}
+    )
+    
     return {"message": "Subscription requirement updated", "subscriptionRequired": sub.subscription_required}
 
 
@@ -446,6 +501,18 @@ async def update_plan(property_id: str, payload: dict, db: AsyncSession = Depend
         raise HTTPException(status_code=404, detail="Subscription not found")
     sub.plan = new_plan
     await db.commit()
+    
+    await AuditLogger.log(
+        db,
+        property_id=sub.property_id,
+        module_name="Subscriptions",
+        action_type="Updated",
+        target_entity="Subscription",
+        target_record_id=sub.id,
+        user_id=current_user.id,
+        new_value={"plan": sub.plan}
+    )
+    
     return {"message": "Plan updated successfully", "plan": sub.plan}
 
 
@@ -461,4 +528,16 @@ async def generate_license(property_id: str, db: AsyncSession = Depends(get_db),
         raise HTTPException(status_code=404, detail="Subscription not found")
     sub.license_id = f"PSL-{secrets.token_hex(8).upper()}"
     await db.commit()
+    
+    await AuditLogger.log(
+        db,
+        property_id=sub.property_id,
+        module_name="Subscriptions",
+        action_type="Generated",
+        target_entity="License",
+        target_record_id=sub.id,
+        user_id=current_user.id,
+        new_value={"license_id": sub.license_id}
+    )
+    
     return {"message": "License regenerated", "licenseId": sub.license_id}

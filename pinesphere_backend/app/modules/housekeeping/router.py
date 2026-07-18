@@ -165,7 +165,7 @@ async def update_lost_found_item_status(
     current_user: User = Depends(get_current_user),
 ):
     """Update lost & found item status (stored, returned, disposed)."""
-    return await service.update_lost_found_status(db, item_id, req)
+    return await service.update_lost_found_status(db, item_id, req, current_user.id)
 
 
 # ─── Dashboard ─────────────────────────────────────────────────────

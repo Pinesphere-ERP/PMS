@@ -62,10 +62,10 @@ async def update_housekeeping_task(
     task_id: uuid.UUID,
     req: HousekeepingTaskUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user_id: Optional[uuid.UUID] = None,
+    current_user: User = Depends(get_current_user),
 ):
     """Update housekeeping task fields."""
-    return await service.update_task(db, task_id, req, current_user_id)
+    return await service.update_task(db, task_id, req, current_user.id)
 
 
 @router.post("/tasks/{task_id}/inspect", response_model=HousekeepingTaskResponse, dependencies=[Depends(require_resource_property_access(HousekeepingTask, HousekeepingTask.task_id, "task_id"))])
@@ -73,11 +73,10 @@ async def inspect_housekeeping_task(
     task_id: uuid.UUID,
     req: HousekeepingTaskInspect,
     db: AsyncSession = Depends(get_db),
-    current_user_id: Optional[uuid.UUID] = None,
     current_user: User = Depends(get_current_user),
 ):
     """Inspect a completed housekeeping task (pass/fail)."""
-    return await service.inspect_task(db, task_id, req, current_user_id)
+    return await service.inspect_task(db, task_id, req, current_user.id)
 
 
 # ─── Maintenance Tickets ───────────────────────────────────────────
@@ -86,7 +85,7 @@ async def inspect_housekeeping_task(
 async def create_maintenance_ticket(
     req: MaintenanceTicketCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_id: Optional[uuid.UUID] = None,
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new maintenance ticket."""
     await assert_resource_property_access(Room, Room.room_id, req.room_id, current_user, db)
@@ -136,7 +135,7 @@ async def update_maintenance_ticket(
 async def create_lost_found_item(
     req: LostAndFoundCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_id: Optional[uuid.UUID] = None,
+    current_user: User = Depends(get_current_user),
 ):
     """Create a lost & found item."""
     await assert_resource_property_access(Room, Room.room_id, req.room_id, current_user, db)
@@ -175,6 +174,7 @@ async def update_lost_found_item_status(
 async def get_housekeeping_dashboard(
     property_id: uuid.UUID = Query(..., description="Property ID for dashboard scope"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Get housekeeping dashboard summary stats."""
     await assert_property_access(property_id, current_user, db)

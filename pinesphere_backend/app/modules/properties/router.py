@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
@@ -29,7 +29,7 @@ def _verification_status(onboarding_status: str) -> str:
 
 
 @router.post("", dependencies=[Depends(require_super_admin)])
-async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depends(get_db)):
+async def create_property(payload: PropertyCreateInput, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     owner_name = payload.owner_name
     owner_mobile = payload.owner_mobile
     owner_email = payload.owner_email
@@ -114,7 +114,7 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
 
     
     # Provision the tenant database schema
-    await provision_tenant_schema(str(new_property.property_id))
+    background_tasks.add_task(provision_tenant_schema, str(new_property.property_id))
     
     current_user_id = target_user.id if target_user else None
     

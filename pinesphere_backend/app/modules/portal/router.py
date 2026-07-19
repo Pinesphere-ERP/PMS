@@ -153,7 +153,6 @@ async def portal_request_otp(
         expires_at=datetime.utcnow() + timedelta(minutes=10),
     )
     db.add(otp_rec)
-    await db.commit()
 
     # TODO: send via WhatsApp/SMS
     print(f"[PORTAL OTP] Booking {req.booking_reference}: {otp_plain}")
@@ -223,7 +222,6 @@ async def portal_verify_otp(
     }
     access_token = pyjwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-    await db.commit()
 
     return PortalTokenResponse(
         access_token=access_token,
@@ -405,7 +403,6 @@ async def portal_pay(
     except Exception:
         pass  # Non-critical; do not fail payment on commission error
 
-    await db.commit()
 
     return {
         "status": "success",
@@ -438,7 +435,6 @@ async def request_service(
         description=f"Guest request: {req.description}",
     )
     db.add(task)
-    await db.commit()
     return {
         "status": "success",
         "task_id": str(task.task_id),
@@ -548,7 +544,6 @@ async def create_portal_order(
         is_void=False,
     )
     db.add(folio_item)
-    await db.commit()
 
     return {
         "status": "success",

@@ -50,13 +50,26 @@ async def create_user(
     current_user: User = Depends(require_permission("USERS", "FULL")),
     db: AsyncSession = Depends(get_db),
 ):
-    target_property_id = current_user.property_id
+    current_role = await get_current_role(current_user, db)
+    
+    # If super admin, allow them to specify property_id in payload. Otherwise force to caller's property
+    if current_role.role_code == "SUPER_ADMIN":
+        target_property_id = payload.property_id
+        if target_property_id:
+            await assert_property_access(target_property_id, current_user, db)
+    else:
+        target_property_id = current_user.property_id
+        if not target_property_id:
+            raise HTTPException(status_code=400, detail="Cannot create user without a property scope")
+
     role = (await db.execute(select(Role).where(Role.id == payload.role_id))).scalar_one_or_none()
     if not role:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+        
     duplicate = (await db.execute(select(User).where(User.property_id == target_property_id, User.email == payload.email))).scalar_one_or_none()
     if duplicate:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered in this property")
+        
     user = User(
         id=uuid.uuid4(), property_id=target_property_id, role_id=payload.role_id,
         name=payload.name, mobile_number=payload.mobile_number, email=payload.email,
@@ -65,8 +78,6 @@ async def create_user(
     db.add(user)
     await db.flush()
     await AuditLogger.log(db, module_name="userRoleManagement", action_type="user_create", target_entity="user", target_record_id=user.id, property_id=target_property_id, user_id=current_user.id, new_value={"name": user.name, "role": role.role_code})
-    await db.commit()
-    await db.refresh(user)
     return user
 
 
@@ -84,7 +95,6 @@ async def create_role(role_code: str, role_name: str, db: AsyncSession = Depends
         new_value={"role_code": role_code}
     )
     
-    await db.commit()
     return {"status": "success"}
 
 
@@ -118,8 +128,6 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdateRequest, current_us
         property_id=user.property_id, 
         user_id=current_user.id
     )
-    await db.commit()
-    await db.refresh(user)
     return user
 
 
@@ -144,7 +152,6 @@ async def deactivate_user(user_id: uuid.UUID, current_user: User = Depends(requi
         user_id=current_user.id
     )
     
-    await db.commit()
     return {"status": "success", "detail": "User deactivated successfully"}
 
 
@@ -171,5 +178,4 @@ async def reset_credential(user_id: uuid.UUID, password: Optional[str] = None, p
         user_id=current_user.id
     )
         
-    await db.commit()
     return {"status": "success", "detail": "Credentials reset successfully"}

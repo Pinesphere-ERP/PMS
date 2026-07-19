@@ -49,7 +49,6 @@ async def mark_notification_read(
         raise HTTPException(status_code=404, detail="Notification not found")
         
     notification.status = 'read'
-    await db.commit()
     return {"status": "success"}
 
 @router.post("/{notification_id}/dismiss", status_code=status.HTTP_200_OK)
@@ -72,5 +71,4 @@ async def dismiss_notification(
         raise HTTPException(status_code=404, detail="Notification not found")
         
     notification.status = 'dismissed'
-    await db.commit()
     return {"status": "success"}

@@ -61,7 +61,6 @@ async def create_commission_rule(
         created_by=current_user.id,
     )
     db.add(rule)
-    await db.commit()
     return {"id": str(rule.id), "message": "Commission rule created."}
 
 
@@ -300,7 +299,6 @@ async def initiate_payout(
         initiated_by=current_user.id,
     )
     db.add(payout)
-    await db.commit()
     return {"id": str(payout.id), "message": "Payout initiated.", "amount": req.amount}
 
 

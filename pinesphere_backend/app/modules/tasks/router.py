@@ -53,7 +53,6 @@ async def create_task(
     )
     db.add(log)
 
-    await db.commit()
     await db.refresh(new_task)
     return new_task
 
@@ -149,6 +148,5 @@ async def update_task_status(
 
     db.add(task)
     db.add(log)
-    await db.commit()
     await db.refresh(task)
     return task

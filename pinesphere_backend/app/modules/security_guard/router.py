@@ -75,7 +75,6 @@ async def log_visitor_entry(
         logged_by=current_user.id,
     )
     db.add(log)
-    await db.commit()
     await db.refresh(log)
     return {"id": str(log.id), "message": "Visitor entry logged."}
 
@@ -97,7 +96,6 @@ async def log_visitor_exit(
     if log.exit_at:
         raise HTTPException(status_code=409, detail="Visitor has already exited")
     log.exit_at = datetime.utcnow()
-    await db.commit()
     return {"message": "Visitor exit recorded."}
 
 
@@ -152,7 +150,6 @@ async def log_vehicle_entry(
         logged_by=current_user.id,
     )
     db.add(log)
-    await db.commit()
     return {"id": str(log.id), "message": "Vehicle entry logged."}
 
 
@@ -170,7 +167,6 @@ async def log_vehicle_exit(
     if not log:
         raise HTTPException(status_code=404, detail="Vehicle log not found")
     log.exit_at = datetime.utcnow()
-    await db.commit()
     return {"message": "Vehicle exit recorded."}
 
 
@@ -227,7 +223,6 @@ async def file_incident_report(
         photo_url=payload.photo_url,
     )
     db.add(report)
-    await db.commit()
     return {
         "id": str(report.id),
         "message": "Incident report filed. This report is immutable and cannot be edited.",

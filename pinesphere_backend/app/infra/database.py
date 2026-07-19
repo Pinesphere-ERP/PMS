@@ -42,7 +42,8 @@ engine = create_async_engine(
     pool_size=20,
     max_overflow=10,
     echo=False,
-    connect_args={"timeout": 60}  # Increase timeout for serverless DB wake-up
+    connect_args={"timeout": 60},  # Increase timeout for serverless DB wake-up
+    execution_options={"schema_translate_map": {"public": None}} if settings.DATABASE_URL.startswith("sqlite") else {}
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -57,11 +58,12 @@ async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
             # Extract tenant from request headers
             tenant_id = request.headers.get("x-tenant-id")
             
-            if tenant_id:
-                safe_tenant_id = str(tenant_id).replace("-", "_")
-                await session.execute(text(f"SET search_path TO property_{safe_tenant_id}, public"))
-            else:
-                await session.execute(text("SET search_path TO public"))
+            if not settings.DATABASE_URL.startswith("sqlite"):
+                if tenant_id:
+                    safe_tenant_id = str(tenant_id).replace("-", "_")
+                    await session.execute(text(f"SET search_path TO property_{safe_tenant_id}, public"))
+                else:
+                    await session.execute(text("SET search_path TO public"))
                 
             yield session
 
@@ -72,9 +74,13 @@ async def provision_tenant_schema(tenant_id: str):
     schema_name = f"property_{str(tenant_id).replace('-', '_')}"
     async with engine.begin() as conn:
         # Create the schema
-        await conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
-        # Set search path for the current connection session
-        await conn.execute(text(f"SET search_path TO {schema_name}, public"))
+        if not settings.DATABASE_URL.startswith("sqlite"):
+            await conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
+            # Set search path for the current connection session
+            await conn.execute(text(f"SET search_path TO {schema_name}, public"))
         # Create all tables (platform tables will go to public because of schema='public',
         # tenant tables will go to the current search_path i.e., schema_name)
-        await conn.run_sync(Base.metadata.create_all)
+        
+        # SQLite doesn't support schemas, so map 'public' to None
+        conn_opt = await conn.execution_options(schema_translate_map={"public": None})
+        await conn_opt.run_sync(Base.metadata.create_all)

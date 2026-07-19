@@ -112,7 +112,6 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
         target_user.property_id = new_property.property_id
         target_user.is_primary_owner = True
 
-    await db.commit()
     
     # Provision the tenant database schema
     await provision_tenant_schema(str(new_property.property_id))
@@ -165,7 +164,6 @@ async def update_property(property_id: str, payload: PropertyCreateInput, db: As
         target_record_id=prop.property_id
     )
     
-    await db.commit()
     return {"message": "Property updated successfully"}
 
 
@@ -195,7 +193,6 @@ async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
         target_record_id=prop.property_id
     )
     
-    await db.commit()
     return None
 
 
@@ -357,7 +354,6 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
         target_record_id=new_room.room_id
     )
     
-    await db.commit()
     return {"message": "Room created successfully", "room_id": str(new_room.room_id)}
 
 
@@ -390,7 +386,6 @@ async def clean_room(room_id: str, db: AsyncSession = Depends(get_db)):
         new_value={"status": "clean"}
     )
     
-    await db.commit()
     return {"message": "Room status marked clean & vacant"}
 
 
@@ -443,7 +438,6 @@ async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession =
         target_record_id=room.room_id
     )
     
-    await db.commit()
     return {"message": "Room updated successfully"}
 
 
@@ -473,7 +467,6 @@ async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
         target_record_id=room.room_id
     )
     
-    await db.commit()
     return {"message": "Room deleted successfully"}
 
 

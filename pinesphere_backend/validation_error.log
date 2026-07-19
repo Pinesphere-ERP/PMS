@@ -1,0 +1,2 @@
+Validation Error: [{'type': 'missing', 'loc': ('body', 'email'), 'msg': 'Field required', 'input': {'login_id': 'super@test.com', 'password': 'password123', 'device_fp': 'test_device', 'property_id': None}}]
+Body: {'login_id': 'super@test.com', 'password': 'password123', 'device_fp': 'test_device', 'property_id': None}

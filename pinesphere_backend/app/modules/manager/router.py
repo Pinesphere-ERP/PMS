@@ -172,7 +172,6 @@ async def assign_task(
         task.priority = payload.priority
     task.status = "pending"
 
-    await db.commit()
     return {"message": "Task assigned successfully.", "task_id": str(task.task_id)}
 
 

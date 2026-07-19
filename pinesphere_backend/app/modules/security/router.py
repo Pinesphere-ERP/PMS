@@ -139,7 +139,6 @@ async def create_incident(
         status="open",
     )
     db.add(incident)
-    await db.commit()
     return {"id": str(incident.id), "message": "Incident recorded."}
 
 
@@ -157,7 +156,6 @@ async def resolve_incident(
     incident.status = "resolved"
     incident.resolved_at = datetime.utcnow()
     incident.resolved_by = current_user.id
-    await db.commit()
     return {"message": "Incident resolved."}
 
 
@@ -186,7 +184,6 @@ async def blacklist_device(
         blacklisted_by=current_user.id,
     )
     db.add(entry)
-    await db.commit()
     return {"message": f"Device {req.device_uid} blacklisted."}
 
 
@@ -202,7 +199,6 @@ async def lift_blacklist(
     if not entry:
         raise HTTPException(status_code=404, detail="Blacklist entry not found")
     entry.lifted_at = datetime.utcnow()
-    await db.commit()
     return {"message": "Blacklist entry lifted."}
 
 
@@ -242,7 +238,6 @@ async def create_camera(
         status=req.status,
     )
     db.add(camera)
-    await db.commit()
     return {"id": str(camera.id), "message": "Camera added."}
 
 @router.get("/cameras")
@@ -288,7 +283,6 @@ async def add_to_watchlist(
         created_by=current_user.id,
     )
     db.add(entry)
-    await db.commit()
     return {"id": str(entry.id), "message": "Added to watchlist."}
 
 @router.get("/watchlist")

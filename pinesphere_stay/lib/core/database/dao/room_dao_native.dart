@@ -26,4 +26,12 @@ class RoomDaoNative implements IRoomDao {
   bool remove(int id) {
     return _box.remove(id);
   }
+
+  @override
+  RoomEntity? findByUuid(String uuid) {
+    final query = _box.query(RoomEntity_.uuid.equals(uuid)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
 }

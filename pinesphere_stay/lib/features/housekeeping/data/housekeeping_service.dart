@@ -3,7 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
-import 'package:pinesphere_stay/objectbox.g.dart';
+import '../../../core/database/dao/housekeeping_dao.dart';
+import '../../../core/database/dao/maintenance_dao.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/housekeeping_task_entity.dart';
 import '../domain/models/maintenance_ticket_entity.dart';
@@ -15,23 +16,21 @@ HousekeepingService housekeepingService(Ref ref) {
   final service = HousekeepingService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(databaseService.store, ref.read(syncServiceProvider));
+  service.initialize(databaseService.housekeepingDao, databaseService.maintenanceDao, ref.read(syncServiceProvider));
   return service;
 }
 
 class HousekeepingService {
   final Dio _dio;
-  late final Store _store;
-  late final Box<HousekeepingTaskEntity> _taskBox;
-  late final Box<MaintenanceTicketEntity> _ticketBox;
+  late final IHousekeepingDao _housekeepingDao;
+  late final IMaintenanceDao _maintenanceDao;
   late final SyncService _syncService;
 
-  HousekeepingService({required this._dio});
+  HousekeepingService({required Dio dio}) : _dio = dio;
 
-  void initialize(Store store, SyncService syncService) {
-    _store = store;
-    _taskBox = _store.box<HousekeepingTaskEntity>();
-    _ticketBox = _store.box<MaintenanceTicketEntity>();
+  void initialize(IHousekeepingDao housekeepingDao, IMaintenanceDao maintenanceDao, SyncService syncService) {
+    _housekeepingDao = housekeepingDao;
+    _maintenanceDao = maintenanceDao;
     _syncService = syncService;
   }
 
@@ -60,7 +59,7 @@ class HousekeepingService {
         createdAt: body['created_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       );
-      _taskBox.put(entity);
+      _housekeepingDao.put(entity);
       return body;
     } on DioException catch (e) {
       AppLogger.w('createTask network failed, storing locally and queuing sync', e);
@@ -80,7 +79,7 @@ class HousekeepingService {
         createdAt: DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _taskBox.put(entity);
+      final localId = _housekeepingDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'HousekeepingTask',
         entityId: localId,
@@ -125,16 +124,16 @@ class HousekeepingService {
       )).toList();
       
       if (entities.isNotEmpty) {
-        _taskBox.putMany(entities);
+        _housekeepingDao.putMany(entities);
       }
       
       return dataList;
     } on DioException catch (e) {
       AppLogger.w('getTasks network failed, falling back to ObjectBox', e);
-      return _queryTasksLocal(propertyId, status, staffId);
+      return _housekeepingDao.queryTasks(propertyId, status: status, staffId: staffId);
     } catch (e) {
       AppLogger.e('getTasks unexpected error', e);
-      return _queryTasksLocal(propertyId, status, staffId);
+      return _housekeepingDao.queryTasks(propertyId, status: status, staffId: staffId);
     }
   }
 
@@ -199,7 +198,7 @@ class HousekeepingService {
         photoUrl: body['photo_url']?.toString() ?? data['photo_url'] ?? '',
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       );
-      _ticketBox.put(entity);
+      _maintenanceDao.put(entity);
       return body;
     } on DioException catch (e) {
       AppLogger.w('createMaintenanceTicket network failed, storing locally and queuing sync', e);
@@ -221,7 +220,7 @@ class HousekeepingService {
         createdAt: DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _ticketBox.put(entity);
+      final localId = _maintenanceDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'MaintenanceTicket',
         entityId: localId,
@@ -244,10 +243,10 @@ class HousekeepingService {
       return response.data as List<dynamic>;
     } on DioException catch (e) {
       AppLogger.w('getMaintenanceTickets network failed, falling back to ObjectBox', e);
-      return _queryMaintenanceTicketsLocal(propertyId, status, category);
+      return _maintenanceDao.queryTickets(propertyId, status: status, category: category);
     } catch (e) {
       AppLogger.e('getMaintenanceTickets unexpected error', e);
-      return _queryMaintenanceTicketsLocal(propertyId, status, category);
+      return _maintenanceDao.queryTickets(propertyId, status: status, category: category);
     }
   }
 
@@ -281,27 +280,5 @@ class HousekeepingService {
       AppLogger.e('getDashboard unexpected error', e);
       rethrow;
     }
-  }
-
-  List<dynamic> _queryTasksLocal(String propertyId, String? status, String? staffId) {
-    var condition = HousekeepingTaskEntity_.propertyId.equals(propertyId);
-    if (status != null) {
-      condition = condition & HousekeepingTaskEntity_.status.equals(status);
-    }
-    if (staffId != null && staffId.isNotEmpty) {
-      condition = condition & HousekeepingTaskEntity_.assignedStaffId.equals(staffId);
-    }
-    return _taskBox.query(condition).build().find();
-  }
-
-  List<dynamic> _queryMaintenanceTicketsLocal(String propertyId, String? status, String? category) {
-    var condition = MaintenanceTicketEntity_.propertyId.equals(propertyId);
-    if (status != null) {
-      condition = condition & MaintenanceTicketEntity_.status.equals(status);
-    }
-    if (category != null && category.isNotEmpty) {
-      condition = condition & MaintenanceTicketEntity_.category.equals(category);
-    }
-    return _ticketBox.query(condition).build().find();
   }
 }

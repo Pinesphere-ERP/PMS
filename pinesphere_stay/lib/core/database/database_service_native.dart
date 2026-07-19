@@ -22,8 +22,8 @@ import 'dao/kpi_dao.dart';
 import 'dao/kpi_dao_native.dart';
 import 'dao/audit_dao.dart';
 import 'dao/audit_dao_native.dart';
-import 'dao/sync_dao.dart';
-import 'dao/sync_dao_native.dart';
+import 'dao/sync_queue_dao.dart';
+import 'dao/sync_queue_dao_native.dart';
 import 'dao/sync_op_dao.dart';
 import 'dao/sync_op_dao_native.dart';
 import 'dao/user_dao.dart';
@@ -39,7 +39,7 @@ import '../../../features/checkin/domain/models/checkin_entity.dart';
 import '../../../features/checkout/domain/models/checkout_entity.dart';
 import '../../../features/housekeeping/domain/models/housekeeping_task_entity.dart';
 import '../../../features/housekeeping/domain/models/maintenance_ticket_entity.dart';
-import '../../../features/settings/domain/models/settings_entity.dart';
+import '../../../features/settings/domain/models/property_setting_entity.dart';
 import '../../../features/reports/domain/models/kpi_snapshot_entity.dart';
 import '../../../features/audit/domain/models/audit_log_entity.dart';
 import '../../../features/sync/domain/models/sync_queue_entity.dart';
@@ -58,7 +58,7 @@ class DatabaseService implements IDatabaseService {
   late final ISettingsDao _settingsDao;
   late final IKpiDao _kpiDao;
   late final IAuditDao _auditDao;
-  late final ISyncDao _syncDao;
+  late final ISyncQueueDao _syncQueueDao;
   late final ISyncOpDao _syncOpDao;
   late final IUserDao _userDao;
   late final IRolePermDao _rolePermDao;
@@ -77,15 +77,24 @@ class DatabaseService implements IDatabaseService {
     _checkoutDao = CheckoutDaoNative(_store.box<CheckOutEntity>());
     _housekeepingDao = HousekeepingDaoNative(_store.box<HousekeepingTaskEntity>());
     _maintenanceDao = MaintenanceDaoNative(_store.box<MaintenanceTicketEntity>());
-    _settingsDao = SettingsDaoNative(_store.box<SettingsEntity>());
+    _settingsDao = SettingsDaoNative(_store.box<PropertySettingEntity>());
     _kpiDao = KpiDaoNative(_store.box<KpiSnapshotEntity>());
     _auditDao = AuditDaoNative(_store.box<AuditLogEntity>());
-    _syncDao = SyncDaoNative(_store.box<SyncQueueEntity>());
+    _syncQueueDao = SyncQueueDaoNative(_store.box<SyncQueueEntity>());
     _syncOpDao = SyncOpDaoNative(_store.box<SyncOperation>());
     _userDao = UserDaoNative(_store.box<UserEntity>());
     _rolePermDao = RolePermDaoNative(_store.box<RolePermissionEntity>());
     _permDao = PermDaoNative(_store.box<PermissionEntity>());
   }
+
+  @override
+  T runInTransaction<T>(T Function() action) {
+    return _store.runInTransaction(TxMode.write, action);
+  }
+
+  @override
+  // TODO: Remove store accessor after DAO migration is complete.
+  dynamic get store => _store;
 
   @override
   IGuestDao get guestDao => _guestDao;
@@ -118,7 +127,7 @@ class DatabaseService implements IDatabaseService {
   IAuditDao get auditDao => _auditDao;
 
   @override
-  ISyncDao get syncDao => _syncDao;
+  ISyncQueueDao get syncQueueDao => _syncQueueDao;
 
   @override
   ISyncOpDao get syncOpDao => _syncOpDao;
@@ -131,7 +140,4 @@ class DatabaseService implements IDatabaseService {
 
   @override
   IPermDao get permDao => _permDao;
-
-  @override
-  Store get store => _store;
 }

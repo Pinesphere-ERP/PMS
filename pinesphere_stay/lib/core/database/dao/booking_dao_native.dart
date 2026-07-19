@@ -26,4 +26,17 @@ class BookingDaoNative implements IBookingDao {
   bool remove(int id) {
     return _box.remove(id);
   }
+
+  @override
+  void putMany(List<BookingEntity> bookings) {
+    _box.putMany(bookings);
+  }
+  @override
+  BookingEntity? findByUuid(String uuid) {
+    final query = _box.query(BookingEntity_.uuid.equals(uuid)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
 }

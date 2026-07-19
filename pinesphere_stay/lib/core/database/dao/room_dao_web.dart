@@ -32,4 +32,12 @@ class RoomDaoWeb implements IRoomDao {
     }
     return false;
   }
+
+  @override
+  RoomEntity? findByUuid(String uuid) {
+    for (final entity in _storage.values) {
+      if (entity.uuid == uuid) return entity;
+    }
+    return null;
+  }
 }

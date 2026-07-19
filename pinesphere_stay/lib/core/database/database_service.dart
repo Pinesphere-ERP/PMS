@@ -1,5 +1,4 @@
 export 'database_service_native.dart' if (dart.library.js_interop) 'database_service_web.dart';
-import 'package:pinesphere_stay/objectbox.g.dart';
 import 'dao/guest_dao.dart';
 import 'dao/booking_dao.dart';
 import 'dao/room_dao.dart';
@@ -10,7 +9,7 @@ import 'dao/maintenance_dao.dart';
 import 'dao/settings_dao.dart';
 import 'dao/kpi_dao.dart';
 import 'dao/audit_dao.dart';
-import 'dao/sync_dao.dart';
+import 'dao/sync_queue_dao.dart';
 import 'dao/sync_op_dao.dart';
 import 'dao/user_dao.dart';
 import 'dao/role_perm_dao.dart';
@@ -18,6 +17,12 @@ import 'dao/perm_dao.dart';
 
 abstract class IDatabaseService {
   Future<void> init();
+  
+  /// Execute a set of DAO operations within an atomic database transaction.
+  T runInTransaction<T>(T Function() action);
+
+  // TODO: Remove store accessor after DAO migration is complete.
+  dynamic get store;
   IGuestDao get guestDao;
   IBookingDao get bookingDao;
   IRoomDao get roomDao;
@@ -28,10 +33,9 @@ abstract class IDatabaseService {
   ISettingsDao get settingsDao;
   IKpiDao get kpiDao;
   IAuditDao get auditDao;
-  ISyncDao get syncDao;
+  ISyncQueueDao get syncQueueDao;
   ISyncOpDao get syncOpDao;
   IUserDao get userDao;
   IRolePermDao get rolePermDao;
   IPermDao get permDao;
-  Store get store;
 }

@@ -10,6 +10,7 @@ class CheckOutEntity {
   String checkinId;
   String bookingId;
   String roomId;
+  @Index()
   String propertyId;
   String staffId;
   String guestName;

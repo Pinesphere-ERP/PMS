@@ -26,7 +26,7 @@ class SettingsService {
   late final Box<DeviceConfigEntity> _deviceConfigBox;
   late final SyncService _syncService;
 
-  SettingsService({required this._dio});
+  SettingsService({required Dio dio}) : _dio = dio;
 
   void initialize(Store store, SyncService syncService) {
     _store = store;

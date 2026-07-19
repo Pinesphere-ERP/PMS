@@ -67,7 +67,7 @@ async def register_owner(payload: OwnerRegistrationRequest, db: AsyncSession = D
             property_type=payload.property_type,
             star_category=payload.star_category,
             year_established=datetime.now().year,
-            status="Active" # Make active so they can log in immediately
+            onboarding_status="active" # Make active so they can log in immediately
         )
         db.add(new_property)
         await db.flush()

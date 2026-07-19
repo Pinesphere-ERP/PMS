@@ -21,6 +21,12 @@ depends_on: Union[str, Sequence[str], None] = None
 from sqlalchemy.dialects import postgresql
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if 'user_property_access' in inspector.get_table_names(schema='public') or 'user_property_access' in inspector.get_table_names():
+        print("user_property_access table already exists, skipping multi_tenancy_updates migration.")
+        return
+
     # 1. Create user_property_access table
     op.create_table('user_property_access',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),

@@ -16,6 +16,12 @@ branch_labels = None
 depends_on = None
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if 'notifications' in inspector.get_table_names(schema='public') or 'notifications' in inspector.get_table_names():
+        print("Notifications table already exists, skipping add_notifications_model migration.")
+        return
+
     op.create_table('notifications',
         sa.Column('notification_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('recipient_id', postgresql.UUID(as_uuid=True), nullable=False),

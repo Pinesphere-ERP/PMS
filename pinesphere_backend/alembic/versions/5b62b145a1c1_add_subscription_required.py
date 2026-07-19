@@ -17,6 +17,14 @@ depends_on = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if 'subscriptions' in inspector.get_table_names(schema='public'):
+        columns = [col['name'] for col in inspector.get_columns('subscriptions', schema='public')]
+        if 'subscription_required' in columns:
+            print("subscription_required column already exists, skipping.")
+            return
+
     op.add_column('subscriptions', sa.Column('subscription_required', sa.Boolean(), server_default='true', nullable=False))
 
 

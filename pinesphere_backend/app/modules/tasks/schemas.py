@@ -4,6 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 class TaskCreate(BaseModel):
+    property_id: uuid.UUID  # Required — every task must be scoped to a property
     task_type: str
     priority: str = "normal"
     room_id: Optional[str] = None
@@ -13,6 +14,7 @@ class TaskCreate(BaseModel):
 
 class TaskResponse(BaseModel):
     task_id: uuid.UUID
+    property_id: uuid.UUID
     task_type: str
     status: str
     priority: str

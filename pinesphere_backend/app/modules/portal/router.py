@@ -17,9 +17,10 @@ from sqlalchemy import update
 
 from app.infra.database import get_db
 from app.infra.models import (
-    Booking, Guest, Room, Payment, FolioLineItem, Task, OTPRequest
+    Booking, Guest, Room, Payment, FolioLineItem, Task, OTPRequest, User
 )
 from app.core.security import create_access_token, decode_access_token, get_password_hash, verify_password
+from app.core.dependencies import get_current_user
 
 router = APIRouter(prefix="/portal", tags=["Guest Portal"])
 security = HTTPBearer()
@@ -126,7 +127,7 @@ async def portal_request_otp(
     guest_res = await db.execute(guest_stmt)
     guest = guest_res.scalar_one_or_none()
 
-    if not guest or guest.mobile_number != req.mobile_number:
+    if not guest or guest.mobile != req.mobile_number:
         return {"message": "If the booking reference is valid, an OTP has been sent."}
 
     # Invalidate old OTPs
@@ -178,7 +179,7 @@ async def portal_verify_otp(
     guest_res = await db.execute(guest_stmt)
     guest = guest_res.scalar_one_or_none()
 
-    if not guest or guest.mobile_number != req.mobile_number:
+    if not guest or guest.mobile != req.mobile_number:
         raise HTTPException(status_code=401, detail="Invalid booking reference or OTP")
 
     # Verify OTP
@@ -226,7 +227,7 @@ async def portal_verify_otp(
 
     return PortalTokenResponse(
         access_token=access_token,
-        guest_name=f"{guest.first_name or ''} {guest.last_name or ''}".strip(),
+        guest_name=guest.full_name or "",
         booking_id=booking.booking_id,
         room_number=room_number,
     )
@@ -256,7 +257,7 @@ async def portal_login_legacy(
     guest_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
     guest_res = await db.execute(guest_stmt)
     guest = guest_res.scalar_one_or_none()
-    if not guest or guest.mobile_number != req.mobile_number:
+    if not guest or guest.mobile != req.mobile_number:
         raise HTTPException(status_code=401, detail="Invalid mobile number")
 
     if booking.status in ["cancelled", "no_show", "completed"]:
@@ -283,7 +284,7 @@ async def portal_login_legacy(
 
     return PortalTokenResponse(
         access_token=access_token,
-        guest_name=f"{guest.first_name or ''} {guest.last_name or ''}".strip(),
+        guest_name=guest.full_name or "",
         booking_id=booking.booking_id,
         room_number=room_number,
     )
@@ -375,11 +376,10 @@ async def portal_pay(
     payment = Payment(
         payment_id=uuid.uuid4(),
         booking_id=booking.booking_id,
-        property_id=booking.property_id,
         amount=req.amount,
         payment_mode=req.mode.lower(),
-        payment_status="completed",
-        is_void=False,
+        status="completed",
+        transaction_id=str(uuid.uuid4()),  # auto-generated reference
     )
     db.add(payment)
     await db.flush()
@@ -429,6 +429,7 @@ async def request_service(
     """Guest requests a service (housekeeping, laundry, etc.) — creates a real Task."""
     task = Task(
         task_id=uuid.uuid4(),
+        property_id=booking.property_id,  # F-02 fix: tasks must be property-scoped
         task_type=req.service_type,
         status="pending",
         priority="normal",
@@ -442,6 +443,65 @@ async def request_service(
         "status": "success",
         "task_id": str(task.task_id),
         "message": f"Your {req.service_type} request has been submitted. Staff will attend shortly.",
+    }
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Staff-Assisted Portal Reference Resend (F-15 fix — §3 §22)
+# ──────────────────────────────────────────────────────────────────────────────
+
+class ReferenceResendRequest(BaseModel):
+    booking_id: uuid.UUID
+    property_id: uuid.UUID
+
+@router.post("/staff/resend-reference")
+async def staff_resend_portal_reference(
+    req: ReferenceResendRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    F-15 fix: Receptionist-assisted portal reference lookup.
+
+    A Receptionist or Manager at the property may call this endpoint to retrieve
+    the booking_reference for a guest who has forgotten or mis-read it.
+    The endpoint verifies:
+    1. The caller has access to the property (prevents cross-property lookup).
+    2. The booking belongs to that property (prevents cross-property data leak).
+    The booking_reference is returned in the response so the Receptionist can
+    read it out to the guest over the phone, or trigger a WhatsApp send.
+    """
+    from app.core.dependencies import assert_property_access
+    await assert_property_access(req.property_id, current_user, db)
+
+    booking_stmt = select(Booking).where(
+        Booking.booking_id == req.booking_id,
+        Booking.property_id == req.property_id,  # safety: must match property
+    )
+    booking_res = await db.execute(booking_stmt)
+    booking = booking_res.scalar_one_or_none()
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found at this property")
+
+    if not booking.booking_reference:
+        raise HTTPException(
+            status_code=422,
+            detail="This booking does not have a portal reference yet. Please check-in the guest first."
+        )
+
+    guest_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
+    guest_res = await db.execute(guest_stmt)
+    guest = guest_res.scalar_one_or_none()
+
+    return {
+        "booking_reference": booking.booking_reference,
+        "guest_name": guest.full_name if guest else None,
+        "guest_mobile": guest.mobile if guest else None,
+        "message": (
+            f"Booking reference for {guest.full_name if guest else 'guest'} is "
+            f"{booking.booking_reference}. Share this with the guest to access the portal."
+        ),
     }
 
 
@@ -464,6 +524,7 @@ async def create_portal_order(
 
     task = Task(
         task_id=uuid.uuid4(),
+        property_id=booking.property_id,  # F-02 fix: tasks must be property-scoped
         task_type="food_order",
         status="pending",
         priority="normal",

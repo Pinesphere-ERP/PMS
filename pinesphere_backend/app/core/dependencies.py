@@ -24,6 +24,7 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
         # ── JWT Revocation Check ─────────────────────────────────────────────────
         # Verify the specific token (by its jti) has not been revoked in the DB.
         jti = payload.get("jti")
+        active_session = None
         if jti:
             session_res = await db.execute(
                 select(UserSession).where(
@@ -31,8 +32,8 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
                     UserSession.revoked_at.is_(None),
                 )
             )
-            session = session_res.scalars().first()
-            if session is None:
+            active_session = session_res.scalars().first()
+            if active_session is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
 
         result = await db.execute(select(User).filter(User.id == uuid.UUID(user_id_str)))
@@ -43,7 +44,71 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is locked. Please contact support.")
         if user.status != "ACTIVE":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
-            
+
+        # ── F-07: Concurrent Session Lock ────────────────────────────────────────
+        # §13.7 — only one active session is permitted per account at a time.
+        # If a second device presents a valid (non-revoked) token, lock the account
+        # and revoke ALL active sessions to force re-authentication on all devices.
+        if active_session is not None:
+            all_sessions_res = await db.execute(
+                select(UserSession).where(
+                    UserSession.user_id == user.id,
+                    UserSession.revoked_at.is_(None),
+                    UserSession.session_token != token,  # other sessions (not this one)
+                )
+            )
+            competing_sessions = all_sessions_res.scalars().all()
+            if competing_sessions:
+                # Revoke all sessions (including this one) — account is now locked
+                from datetime import datetime as _dt
+                all_res = await db.execute(
+                    select(UserSession).where(
+                        UserSession.user_id == user.id,
+                        UserSession.revoked_at.is_(None),
+                    )
+                )
+                for s in all_res.scalars().all():
+                    s.revoked_at = _dt.utcnow()
+                    s.revoked_reason = "concurrent_session_detected"
+                user.status = "LOCKED"
+                await db.flush()
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "Your account has been locked because it was accessed from multiple devices simultaneously. "
+                        "Please contact support to unlock your account (§13.7)."
+                    ),
+                )
+
+        # ── F-08: Device-Property Binding ────────────────────────────────────────
+        # §16 — a device is trusted only for the specific property it was registered
+        # against.  The device fingerprint (device_fp) is embedded in the JWT at
+        # login time.  Here we verify it is still registered to the property being
+        # accessed (resolved via X-Tenant-ID or the user's default property_id).
+        device_fp = payload.get("device_fp")
+        # Skip device check for the guest portal token and system tokens
+        if device_fp and device_fp not in ("portal", "system", None):
+            requested_property_id_str = request.headers.get("x-tenant-id") or str(user.property_id or "")
+            if requested_property_id_str:
+                try:
+                    requested_property_uuid = uuid.UUID(requested_property_id_str)
+                    from app.infra.models import Device
+                    device_res = await db.execute(
+                        select(Device).where(
+                            Device.device_uid == device_fp,
+                            Device.property_id == requested_property_uuid,
+                            Device.status == "approved",
+                        )
+                    )
+                    device_record = device_res.scalars().first()
+                    if device_record is None:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Device is not registered for this property. Re-register the device. (§16)",
+                        )
+                except ValueError:
+                    pass  # invalid UUID in header — caught below by assert_property_access
+
         tenant_id_str = request.headers.get("x-tenant-id")
         if not tenant_id_str:
             user.active_property_id = user.property_id
@@ -103,23 +168,61 @@ async def require_super_admin(
 
 
 async def resolve_owner_id(user: User, db: AsyncSession) -> uuid.UUID:
-    """Resolve an OWNER from immutable owner contact identifiers, not a property.
+    """Resolve an OWNER from immutable owner contact identifiers.
 
-    This bridges the existing schema (which has no User.owner_id) while allowing
-    a single owner account to access every Property with the matching owner_id.
+    F-06 fix: the previous OR-based query was non-deterministic when two
+    owners accidentally share an email or mobile (which the DB unique
+    constraints prevent but defensive coding does not rely on).
+    Resolution priority:
+      1. Match by BOTH email AND mobile (most specific — only one owner can match)
+      2. Match by email only (if mobile is not set on the user account)
+      3. Match by mobile only (if email is not set on the user account)
+    If multiple owners are found at any tier, the function raises 403 to
+    prevent non-deterministic cross-owner resolution.
     """
-    clauses = []
+    from sqlalchemy import and_
+
+    # Tier 1: match both identifiers (most specific)
+    if user.email and user.mobile_number:
+        result = await db.execute(
+            select(Owner).where(
+                and_(Owner.email == user.email, Owner.mobile_number == user.mobile_number)
+            )
+        )
+        owners = result.scalars().all()
+        if len(owners) == 1:
+            return owners[0].owner_id
+        if len(owners) > 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Owner identity is ambiguous (duplicate contact). Contact Super Admin."
+            )
+
+    # Tier 2: email only
     if user.email:
-        clauses.append(Owner.email == user.email)
+        result = await db.execute(select(Owner).where(Owner.email == user.email))
+        owners = result.scalars().all()
+        if len(owners) == 1:
+            return owners[0].owner_id
+        if len(owners) > 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Owner identity is ambiguous (duplicate email). Contact Super Admin."
+            )
+
+    # Tier 3: mobile only
     if user.mobile_number:
-        clauses.append(Owner.mobile_number == user.mobile_number)
-    if not clauses:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner identity is not linked")
-    from sqlalchemy import or_
-    owner = (await db.execute(select(Owner).where(or_(*clauses)))).scalars().first()
-    if not owner:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner identity is not linked")
-    return owner.owner_id
+        result = await db.execute(select(Owner).where(Owner.mobile_number == user.mobile_number))
+        owners = result.scalars().all()
+        if len(owners) == 1:
+            return owners[0].owner_id
+        if len(owners) > 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Owner identity is ambiguous (duplicate mobile). Contact Super Admin."
+            )
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner identity is not linked")
 
 
 async def assert_property_access(property_id: uuid.UUID, user: User, db: AsyncSession) -> None:

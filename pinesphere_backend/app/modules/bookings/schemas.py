@@ -61,6 +61,8 @@ class BookingCreateRequest(BaseModel):
     guest_id: uuid.UUID
     booking_type: Optional[str] = Field(None, max_length=20)
     booking_source: Optional[str] = Field(None, max_length=30)
+    # Set when booking_source == 'broker' to enable correct commission attribution
+    broker_user_id: Optional[uuid.UUID] = None
     check_in_date: date
     check_out_date: date
     adults: int = Field(default=1, ge=0)
@@ -104,6 +106,7 @@ class BookingResponse(BaseModel):
     guest_id: uuid.UUID
     booking_type: Optional[str] = None
     booking_source: Optional[str] = None
+    booking_reference: Optional[str] = None
     check_in_date: date
     check_out_date: date
     adults: int = 1

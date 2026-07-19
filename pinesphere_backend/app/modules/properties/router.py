@@ -11,6 +11,7 @@ from app.core.dependencies import assert_property_access, get_current_user, requ
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User
 import uuid
 from app.modules.properties.schemas import PropertyCreateInput
+from app.modules.audit.logger import AuditLogger
 
 router = APIRouter()
 
@@ -115,6 +116,19 @@ async def create_property(payload: PropertyCreateInput, db: AsyncSession = Depen
     
     # Provision the tenant database schema
     await provision_tenant_schema(str(new_property.property_id))
+    
+    current_user_id = target_user.id if target_user else None
+    
+    await AuditLogger.log(
+        db,
+        property_id=new_property.property_id,
+        user_id=current_user_id,
+        module_name="Properties",
+        action_type="Created",
+        target_entity="Property",
+        target_record_id=new_property.property_id,
+        new_value={"property_name": new_property.property_name}
+    )
 
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 
@@ -140,6 +154,17 @@ async def update_property(property_id: str, payload: PropertyCreateInput, db: As
     prop.cover_image = payload.cover_image
     
     db.add(prop)
+    
+    await AuditLogger.log(
+        db,
+        property_id=prop.property_id,
+        user_id=None, # user context can be added later if current_user is available
+        module_name="Properties",
+        action_type="Updated",
+        target_entity="Property",
+        target_record_id=prop.property_id
+    )
+    
     await db.commit()
     return {"message": "Property updated successfully"}
 
@@ -159,6 +184,17 @@ async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Property not found")
         
     await db.delete(prop)
+    
+    await AuditLogger.log(
+        db,
+        property_id=prop.property_id,
+        user_id=None,
+        module_name="Properties",
+        action_type="Deleted",
+        target_entity="Property",
+        target_record_id=prop.property_id
+    )
+    
     await db.commit()
     return None
 
@@ -310,6 +346,17 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
         image_url=payload.image_url
     )
     db.add(new_room)
+    
+    await AuditLogger.log(
+        db,
+        property_id=new_room.property_id,
+        user_id=current_user.id,
+        module_name="Properties",
+        action_type="Created",
+        target_entity="Room",
+        target_record_id=new_room.room_id
+    )
+    
     await db.commit()
     return {"message": "Room created successfully", "room_id": str(new_room.room_id)}
 
@@ -331,6 +378,18 @@ async def clean_room(room_id: str, db: AsyncSession = Depends(get_db)):
     room.housekeeping_status = "clean"
     room.occupancy_status = "vacant"
     db.add(room)
+    
+    await AuditLogger.log(
+        db,
+        property_id=room.property_id,
+        user_id=None,
+        module_name="Properties",
+        action_type="Updated",
+        target_entity="Room",
+        target_record_id=room.room_id,
+        new_value={"status": "clean"}
+    )
+    
     await db.commit()
     return {"message": "Room status marked clean & vacant"}
 
@@ -373,6 +432,17 @@ async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession =
     
     db.add(room)
     db.add(category)
+    
+    await AuditLogger.log(
+        db,
+        property_id=room.property_id,
+        user_id=None,
+        module_name="Properties",
+        action_type="Updated",
+        target_entity="Room",
+        target_record_id=room.room_id
+    )
+    
     await db.commit()
     return {"message": "Room updated successfully"}
 
@@ -392,6 +462,17 @@ async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Room not found")
         
     await db.delete(room)
+    
+    await AuditLogger.log(
+        db,
+        property_id=room.property_id,
+        user_id=None,
+        module_name="Properties",
+        action_type="Deleted",
+        target_entity="Room",
+        target_record_id=room.room_id
+    )
+    
     await db.commit()
     return {"message": "Room deleted successfully"}
 

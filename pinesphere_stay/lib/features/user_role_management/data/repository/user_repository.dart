@@ -11,7 +11,6 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/permissions/user_role.dart';
 import '../../../../core/utils/device_info.dart';
 import '../../../../main.dart';
-import '../../../../main.dart';
 import '../../../auth/domain/models/user_model.dart';
 import '../../domain/entities.dart';
 import '../../domain/permission_set.dart';
@@ -94,9 +93,7 @@ class UserRepository {
       final userDao = databaseService.userDao;
       var existingUser = userDao.getByServerId(userId);
       
-      if (existingUser == null) {
-        existingUser = userDao.getByEmail(userEmail);
-      }
+      existingUser ??= userDao.getByEmail(userEmail);
       
       final userEntity = UserEntity(
         id: existingUser?.id ?? 0,
@@ -113,7 +110,7 @@ class UserRepository {
 
       // Save permissions snapshot to ObjectBox
       final permissions = data['permissions'] as List<dynamic>;
-      final rpDao = databaseService.role_permDao;
+      final rpDao = databaseService.rolePermDao;
       final permDao = databaseService.permDao;
 
       // Clear previous permissions mapping for this role
@@ -183,7 +180,7 @@ class UserRepository {
     }
 
     final user = UserModel.fromJson(jsonDecode(cachedUserJson));
-    final rpDao = databaseService.role_permDao;
+    final rpDao = databaseService.rolePermDao;
     final list = rpDao.getByRoleId(user.role.name);
 
     final mapped = list.map((rp) => {

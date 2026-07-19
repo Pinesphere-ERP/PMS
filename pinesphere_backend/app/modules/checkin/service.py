@@ -11,6 +11,7 @@ from app.infra.models import (
     CheckIn, Booking, Room, RoomCategory, Guest, Invoice, InvoiceItem,
     RoomAssignment, Property
 )
+from app.modules.documents.router import create_form_c_on_checkin
 from app.modules.audit.logger import AuditLogger
 from app.modules.checkin.schemas import (
     CheckInRequest, CheckInResponse, CheckInSearchResult,
@@ -178,6 +179,20 @@ async def perform_checkin(
         is_active=True,
     )
     db.add(room_assignment)
+    
+    # Check-in gate for foreign nationals -> auto-generate Form C
+    guest_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
+    guest_res = await db.execute(guest_stmt)
+    guest_record = guest_res.scalar_one_or_none()
+    
+    if guest_record and guest_record.nationality and guest_record.nationality.lower() not in ("indian", "india"):
+        # We auto-create the Form C record with a deadline
+        await create_form_c_on_checkin(
+            db=db,
+            guest_id=guest_record.guest_id,
+            booking_id=booking.booking_id,
+            property_id=property_id
+        )
 
     await AuditLogger.log(
         db,
@@ -234,10 +249,22 @@ async def perform_walkin_checkin(
     await db.flush()
 
     nights = max((req.check_out_date - req.check_in_date).days, 1)
-    rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
-    rc_res = await db.execute(rc_stmt)
-    rc = rc_res.scalar_one_or_none()
-    room_rent_per_night = float(req.room_rent) if req.room_rent else (float(rc.base_price) if rc and rc.base_price else 0)
+    if req.room_rent:
+        room_rent_per_night = float(req.room_rent)
+    else:
+        rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+        rc_res = await db.execute(rc_stmt)
+        rc = rc_res.scalar_one_or_none()
+        base_price = float(rc.base_price) if rc and rc.base_price else 0
+        from app.modules.pricing.engine import evaluate_price
+        
+        # Ensure we pass date objects to evaluate_price
+        c_in = req.check_in_date.date() if isinstance(req.check_in_date, datetime) else req.check_in_date
+        c_out = req.check_out_date.date() if isinstance(req.check_out_date, datetime) else req.check_out_date
+        
+        price_data = await evaluate_price(db, req.property_id, c_in, c_out, base_price)
+        room_rent_per_night = price_data["final_price"]
+        
     room_rent_total = room_rent_per_night * nights
     advance = float(req.advance_paid or 0)
     deposit_val = float(req.deposit or 0)

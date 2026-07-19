@@ -1,7 +1,7 @@
 import '../../../core/sync/queue/sync_operation.dart';
 import 'sync_op_dao.dart';
 
-class Sync_opDaoWeb implements ISync_opDao {
+class SyncOpDaoWeb implements ISyncOpDao {
   final Map<int, SyncOperation> _storage = {};
   int _counter = 1;
 

@@ -5,6 +5,7 @@ import 'app_scaffold.dart';
 import '../../features/auth/presentation/providers/auth_notifier.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/pin_login_screen.dart';
+import '../../features/auth/presentation/screens/owner_registration_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
@@ -72,6 +73,7 @@ GoRouter appRouter(Ref ref) {
       );
 
       final isGoingToLogin = state.matchedLocation == '/login';
+      final isGoingToRegister = state.matchedLocation == '/register';
       final isGoingToPinLogin = state.matchedLocation == '/pin-login';
       final isSplash = state.matchedLocation == '/splash';
       final isPortal = state.matchedLocation.startsWith('/portal');
@@ -91,7 +93,7 @@ GoRouter appRouter(Ref ref) {
         return null; // Let portal routes pass
       }
 
-      if (!isAuth && !isLocked && !isGoingToLogin) {
+      if (!isAuth && !isLocked && !isGoingToLogin && !isGoingToRegister) {
         return '/login';
       }
 
@@ -120,6 +122,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const OwnerRegistrationScreen(),
       ),
       GoRoute(
         path: '/pin-login',

@@ -2,10 +2,10 @@ import 'package:pinesphere_stay/objectbox.g.dart';
 import '../../../core/sync/queue/sync_operation.dart';
 import 'sync_op_dao.dart';
 
-class Sync_opDaoNative implements ISync_opDao {
+class SyncOpDaoNative implements ISyncOpDao {
   final Box<SyncOperation> _box;
 
-  Sync_opDaoNative(this._box);
+  SyncOpDaoNative(this._box);
 
   @override
   int put(SyncOperation entity) {

@@ -413,13 +413,28 @@ async def create_lost_found(
         photo=req.photo,
     )
     db.add(item)
+    
+    await AuditLogger.log(
+        db,
+        property_id=room.property_id,
+        user_id=current_user_id,
+        module_name="housekeeping",
+        action_type="create_lost_found",
+        target_entity="lost_and_found",
+        target_record_id=item.item_id,
+        new_value={
+            "room_id": str(req.room_id),
+            "description": req.description,
+            "status": "stored",
+        },
+    )
     await db.commit()
     await db.refresh(item)
     return item
 
 
 async def update_lost_found_status(
-    db: AsyncSession, item_id: uuid.UUID, req: LostAndFoundUpdate
+    db: AsyncSession, item_id: uuid.UUID, req: LostAndFoundUpdate, current_user_id: uuid.UUID
 ) -> LostAndFound:
     item_stmt = select(LostAndFound).where(LostAndFound.item_id == item_id)
     item_res = await db.execute(item_stmt)
@@ -427,7 +442,20 @@ async def update_lost_found_status(
     if not item:
         raise HTTPException(status_code=404, detail="Lost & found item not found")
 
+    old_status = item.status
     item.status = req.status
+    
+    await AuditLogger.log(
+        db,
+        property_id=item.property_id,
+        user_id=current_user_id,
+        module_name="housekeeping",
+        action_type="update_lost_found_status",
+        target_entity="lost_and_found",
+        target_record_id=item.item_id,
+        old_value={"status": old_status},
+        new_value={"status": item.status},
+    )
     await db.commit()
     await db.refresh(item)
     return item

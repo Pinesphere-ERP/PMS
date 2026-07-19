@@ -59,9 +59,9 @@ class DatabaseService implements IDatabaseService {
   late final IKpiDao _kpiDao;
   late final IAuditDao _auditDao;
   late final ISyncDao _syncDao;
-  late final ISync_opDao _sync_opDao;
+  late final ISyncOpDao _syncOpDao;
   late final IUserDao _userDao;
-  late final IRole_permDao _role_permDao;
+  late final IRolePermDao _rolePermDao;
   late final IPermDao _permDao;
 
   @override
@@ -81,9 +81,9 @@ class DatabaseService implements IDatabaseService {
     _kpiDao = KpiDaoNative(_store.box<KpiSnapshotEntity>());
     _auditDao = AuditDaoNative(_store.box<AuditLogEntity>());
     _syncDao = SyncDaoNative(_store.box<SyncQueueEntity>());
-    _sync_opDao = Sync_opDaoNative(_store.box<SyncOperation>());
+    _syncOpDao = SyncOpDaoNative(_store.box<SyncOperation>());
     _userDao = UserDaoNative(_store.box<UserEntity>());
-    _role_permDao = Role_permDaoNative(_store.box<RolePermissionEntity>());
+    _rolePermDao = RolePermDaoNative(_store.box<RolePermissionEntity>());
     _permDao = PermDaoNative(_store.box<PermissionEntity>());
   }
 
@@ -121,13 +121,13 @@ class DatabaseService implements IDatabaseService {
   ISyncDao get syncDao => _syncDao;
 
   @override
-  ISync_opDao get sync_opDao => _sync_opDao;
+  ISyncOpDao get syncOpDao => _syncOpDao;
 
   @override
   IUserDao get userDao => _userDao;
 
   @override
-  IRole_permDao get role_permDao => _role_permDao;
+  IRolePermDao get rolePermDao => _rolePermDao;
 
   @override
   IPermDao get permDao => _permDao;

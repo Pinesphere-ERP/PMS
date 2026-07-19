@@ -72,7 +72,18 @@ async def create_user(
 
 @router.post("/roles", dependencies=[Depends(require_super_admin)])
 async def create_role(role_code: str, role_name: str, db: AsyncSession = Depends(get_db)):
-    db.add(Role(id=uuid.uuid4(), role_code=role_code, role_name=role_name, is_system_role=True, description=f"{role_name} role"))
+    new_role = Role(id=uuid.uuid4(), role_code=role_code, role_name=role_name, is_system_role=True, description=f"{role_name} role")
+    db.add(new_role)
+    
+    await AuditLogger.log(
+        db, 
+        module_name="userRoleManagement", 
+        action_type="role_create", 
+        target_entity="role", 
+        target_record_id=new_role.id,
+        new_value={"role_code": role_code}
+    )
+    
     await db.commit()
     return {"status": "success"}
 
@@ -98,6 +109,15 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdateRequest, current_us
         value = getattr(payload, field)
         if value is not None:
             setattr(user, field, value)
+    await AuditLogger.log(
+        db, 
+        module_name="userRoleManagement", 
+        action_type="user_update", 
+        target_entity="user", 
+        target_record_id=user.id, 
+        property_id=user.property_id, 
+        user_id=current_user.id
+    )
     await db.commit()
     await db.refresh(user)
     return user
@@ -113,6 +133,17 @@ async def deactivate_user(user_id: uuid.UUID, current_user: User = Depends(requi
         raise HTTPException(status_code=400, detail="Primary Owner cannot be deactivated directly")
     user.status = "INACTIVE"
     await db.execute(update(UserSession).where(UserSession.user_id == user_id, UserSession.revoked_at.is_(None)).values(revoked_at=func.now(), revoked_reason="DEACTIVATION"))
+    
+    await AuditLogger.log(
+        db, 
+        module_name="userRoleManagement", 
+        action_type="user_deactivate", 
+        target_entity="user", 
+        target_record_id=user.id, 
+        property_id=user.property_id, 
+        user_id=current_user.id
+    )
+    
     await db.commit()
     return {"status": "success", "detail": "User deactivated successfully"}
 
@@ -129,5 +160,16 @@ async def reset_credential(user_id: uuid.UUID, password: Optional[str] = None, p
         user.password_hash = get_password_hash(password)
     if pin:
         user.pin_hash = get_password_hash(pin)
+        
+    await AuditLogger.log(
+        db, 
+        module_name="userRoleManagement", 
+        action_type="credential_reset", 
+        target_entity="user", 
+        target_record_id=user.id, 
+        property_id=user.property_id, 
+        user_id=current_user.id
+    )
+        
     await db.commit()
     return {"status": "success", "detail": "Credentials reset successfully"}

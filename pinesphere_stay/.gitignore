@@ -32,6 +32,8 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+.fvm/
+.fvmrc
 
 # Generated files
 *.g.dart
@@ -55,3 +57,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# FVM Version Cache
+.fvm/flutter_sdk
+.fvm/versions

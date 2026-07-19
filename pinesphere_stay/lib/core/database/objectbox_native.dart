@@ -1,6 +1,6 @@
+import '../files/file_storage_service_native.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:pinesphere_stay/objectbox.g.dart';
 
 class ObjectBox {
@@ -10,7 +10,7 @@ class ObjectBox {
 
   static Future<ObjectBox> create() async {
     final docsDir = await FileStorageService().getApplicationDocumentsPath();
-    final dbPath = p.join(docsDir.path, "pinesphere_stay_db");
+    final dbPath = p.join(docsDir, "pinesphere_stay_db");
     
     Store store;
     try {

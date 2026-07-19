@@ -1,4 +1,4 @@
-import '../../../features/checkin/domain/entities/checkinentity.dart';
+import '../../../features/checkin/domain/models/checkin_entity.dart';
 import 'checkin_dao.dart';
 
 class CheckinDaoWeb implements ICheckinDao {
@@ -31,5 +31,22 @@ class CheckinDaoWeb implements ICheckinDao {
       return true;
     }
     return false;
+  }
+
+  @override
+  void putMany(List<CheckInEntity> checkins) {
+    for (final checkin in checkins) {
+      put(checkin);
+    }
+  }
+
+  @override
+  List<CheckInEntity> findByProperty(String propertyId) {
+    return _storage.values.where((c) => c.propertyId == propertyId).toList();
+  }
+
+  @override
+  List<CheckInEntity> findActiveByProperty(String propertyId) {
+    return _storage.values.where((c) => c.propertyId == propertyId && c.status == 'active').toList();
   }
 }

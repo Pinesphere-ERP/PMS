@@ -1,4 +1,4 @@
-import '../../../features/user_role_management/domain/entities/permissionentity.dart';
+import '../../../features/user_role_management/domain/entities.dart';
 import 'perm_dao.dart';
 
 class PermDaoWeb implements IPermDao {

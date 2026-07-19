@@ -1,6 +1,6 @@
-import '../../../features/sync/domain/models/syncoperation.dart';
+import '../../../core/sync/queue/sync_operation.dart';
 
-abstract class ISync_opDao {
+abstract class ISyncOpDao {
   int put(SyncOperation entity);
   List<SyncOperation> getAll();
   SyncOperation? get(int id);

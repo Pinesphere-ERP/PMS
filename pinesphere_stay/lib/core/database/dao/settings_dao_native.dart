@@ -1,24 +1,24 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/settings/domain/models/settingsentity.dart';
+import '../../../features/settings/domain/models/property_setting_entity.dart';
 import 'settings_dao.dart';
 
 class SettingsDaoNative implements ISettingsDao {
-  final Box<SettingsEntity> _box;
+  final Box<PropertySettingEntity> _box;
 
   SettingsDaoNative(this._box);
 
   @override
-  int put(SettingsEntity entity) {
+  int put(PropertySettingEntity entity) {
     return _box.put(entity);
   }
 
   @override
-  List<SettingsEntity> getAll() {
+  List<PropertySettingEntity> getAll() {
     return _box.getAll();
   }
 
   @override
-  SettingsEntity? get(int id) {
+  PropertySettingEntity? get(int id) {
     return _box.get(id);
   }
 

@@ -1,4 +1,4 @@
-import '../../../features/reports/domain/models/kpisnapshotentity.dart';
+import '../../../features/reports/domain/models/kpi_snapshot_entity.dart';
 
 abstract class IKpiDao {
   int put(KpiSnapshotEntity entity);

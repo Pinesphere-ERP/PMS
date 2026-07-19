@@ -17,6 +17,8 @@ import 'dao/perm_dao.dart';
 
 abstract class IDatabaseService {
   Future<void> init();
+  // TODO: Remove store accessor after DAO migration is complete.
+  dynamic get store;
   IGuestDao get guestDao;
   IBookingDao get bookingDao;
   IRoomDao get roomDao;
@@ -28,8 +30,8 @@ abstract class IDatabaseService {
   IKpiDao get kpiDao;
   IAuditDao get auditDao;
   ISyncDao get syncDao;
-  ISync_opDao get sync_opDao;
+  ISyncOpDao get syncOpDao;
   IUserDao get userDao;
-  IRole_permDao get role_permDao;
+  IRolePermDao get rolePermDao;
   IPermDao get permDao;
 }

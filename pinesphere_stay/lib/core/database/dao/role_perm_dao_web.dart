@@ -1,7 +1,7 @@
-import '../../../features/user_role_management/domain/entities/rolepermissionentity.dart';
+import '../../../features/user_role_management/domain/entities.dart';
 import 'role_perm_dao.dart';
 
-class Role_permDaoWeb implements IRole_permDao {
+class RolePermDaoWeb implements IRolePermDao {
   final Map<int, RolePermissionEntity> _storage = {};
   int _counter = 1;
 

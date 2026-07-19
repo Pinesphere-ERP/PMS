@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/user_role_management/domain/entities/permissionentity.dart';
+import '../../../features/user_role_management/domain/entities.dart';
 import 'perm_dao.dart';
 
 class PermDaoNative implements IPermDao {

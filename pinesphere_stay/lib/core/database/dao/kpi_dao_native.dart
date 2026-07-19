@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/reports/domain/models/kpisnapshotentity.dart';
+import '../../../features/reports/domain/models/kpi_snapshot_entity.dart';
 import 'kpi_dao.dart';
 
 class KpiDaoNative implements IKpiDao {

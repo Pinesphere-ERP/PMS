@@ -7,6 +7,6 @@ class ObjectBox {
 
   static Future<ObjectBox> create() async {
     // Return dummy web implementation
-    return ObjectBox._create(Store());
+    return ObjectBox._create(throw UnimplementedError());
   }
 }

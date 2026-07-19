@@ -1,12 +1,12 @@
-import '../../../features/settings/domain/models/settingsentity.dart';
+import '../../../features/settings/domain/models/property_setting_entity.dart';
 import 'settings_dao.dart';
 
 class SettingsDaoWeb implements ISettingsDao {
-  final Map<int, SettingsEntity> _storage = {};
+  final Map<int, PropertySettingEntity> _storage = {};
   int _counter = 1;
 
   @override
-  int put(SettingsEntity entity) {
+  int put(PropertySettingEntity entity) {
     if (entity.id == 0) {
       entity.id = _counter++;
     }
@@ -15,12 +15,12 @@ class SettingsDaoWeb implements ISettingsDao {
   }
 
   @override
-  List<SettingsEntity> getAll() {
+  List<PropertySettingEntity> getAll() {
     return _storage.values.toList();
   }
 
   @override
-  SettingsEntity? get(int id) {
+  PropertySettingEntity? get(int id) {
     return _storage[id];
   }
 

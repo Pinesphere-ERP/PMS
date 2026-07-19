@@ -52,7 +52,7 @@ class OfflineOutboxInterceptor extends Interceptor {
     // If it's a mutating request and the network is down, queue it!
     if (isNetworkError && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
       try {
-        final box = objectBox.store.box<SyncOperation>();
+        final box = databaseService.store.box<SyncOperation>();
         
         // Extract entity info if provided in extra, otherwise fallback
         final extra = err.requestOptions.extra;

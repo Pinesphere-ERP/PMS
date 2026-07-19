@@ -1,4 +1,4 @@
-import '../../../features/sync/domain/models/syncqueueentity.dart';
+import '../../../features/sync/domain/models/sync_queue_entity.dart';
 import 'sync_dao.dart';
 
 class SyncDaoWeb implements ISyncDao {

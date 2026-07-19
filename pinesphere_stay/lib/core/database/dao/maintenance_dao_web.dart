@@ -1,4 +1,4 @@
-import '../../../features/housekeeping/domain/entities/maintenanceticketentity.dart';
+import '../../../features/housekeeping/domain/models/maintenance_ticket_entity.dart';
 import 'maintenance_dao.dart';
 
 class MaintenanceDaoWeb implements IMaintenanceDao {
@@ -31,5 +31,19 @@ class MaintenanceDaoWeb implements IMaintenanceDao {
       return true;
     }
     return false;
+  }
+
+  @override
+  List<MaintenanceTicketEntity> queryTickets(String propertyId, {String? status, String? category}) {
+    return _storage.values.where((e) {
+      bool match = e.propertyId == propertyId;
+      if (status != null) {
+        match = match && e.status == status;
+      }
+      if (category != null && category.isNotEmpty) {
+        match = match && e.category == category;
+      }
+      return match;
+    }).toList();
   }
 }

@@ -1,4 +1,4 @@
-import '../../../features/checkout/domain/entities/checkoutentity.dart';
+import '../../../features/checkout/domain/models/checkout_entity.dart';
 import 'checkout_dao.dart';
 
 class CheckoutDaoWeb implements ICheckoutDao {
@@ -31,5 +31,22 @@ class CheckoutDaoWeb implements ICheckoutDao {
       return true;
     }
     return false;
+  }
+
+  @override
+  void putMany(List<CheckOutEntity> checkouts) {
+    for (final checkout in checkouts) {
+      put(checkout);
+    }
+  }
+
+  @override
+  List<CheckOutEntity> findByProperty(String propertyId) {
+    return _storage.values.where((c) => c.propertyId == propertyId).toList();
+  }
+
+  @override
+  List<CheckOutEntity> findPendingByProperty(String propertyId) {
+    return _storage.values.where((c) => c.propertyId == propertyId && c.checkoutStatus == 'pending').toList();
   }
 }

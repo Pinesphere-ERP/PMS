@@ -1,4 +1,4 @@
-import '../../../features/user_role_management/domain/entities/userentity.dart';
+import '../../../features/user_role_management/domain/entities.dart';
 import 'user_dao.dart';
 
 class UserDaoWeb implements IUserDao {

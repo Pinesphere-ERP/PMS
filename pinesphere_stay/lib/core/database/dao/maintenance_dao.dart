@@ -1,8 +1,9 @@
-import '../../../features/housekeeping/domain/entities/maintenanceticketentity.dart';
+import '../../../features/housekeeping/domain/models/maintenance_ticket_entity.dart';
 
 abstract class IMaintenanceDao {
   int put(MaintenanceTicketEntity entity);
   List<MaintenanceTicketEntity> getAll();
   MaintenanceTicketEntity? get(int id);
   bool remove(int id);
+  List<MaintenanceTicketEntity> queryTickets(String propertyId, {String? status, String? category});
 }

@@ -8,10 +8,12 @@ class HousekeepingTaskEntity {
   @Unique()
   String uuid;
   String roomId;
+  @Index()
   String propertyId;
   String roomNumber;
   String assignedStaffId;
   String assignedStaffName;
+  @Index()
   String status;
   String priority;
   String checklistStatus;

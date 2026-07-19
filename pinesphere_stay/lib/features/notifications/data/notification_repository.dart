@@ -16,7 +16,7 @@ class NotificationRepository {
   late final Box<NotificationModel> _notificationBox;
 
   NotificationRepository() {
-    _notificationBox = objectBox.store.box<NotificationModel>();
+    _notificationBox = databaseService.store.box<NotificationModel>();
   }
 
   Stream<List<NotificationModel>> watchUnreadNotifications() {

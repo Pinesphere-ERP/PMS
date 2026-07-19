@@ -15,7 +15,7 @@ SettingsService settingsService(Ref ref) {
   final service = SettingsService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  service.initialize(databaseService.store, ref.read(syncServiceProvider));
   return service;
 }
 
@@ -26,7 +26,7 @@ class SettingsService {
   late final Box<DeviceConfigEntity> _deviceConfigBox;
   late final SyncService _syncService;
 
-  SettingsService({required this._dio});
+  SettingsService({required Dio dio}) : _dio = dio;
 
   void initialize(Store store, SyncService syncService) {
     _store = store;

@@ -22,7 +22,7 @@ SyncService syncService(Ref ref) {
     dio: ref.watch(dioClientProvider),
     secureStorage: const FlutterSecureStorage(),
   );
-  service.initialize(objectBox.store);
+  service.initialize(databaseService.store);
   return service;
 }
 
@@ -39,7 +39,7 @@ class SyncService {
   
   bool _isSyncing = false;
 
-  SyncService({required this._dio, required this._secureStorage});
+  SyncService({required Dio dio, required FlutterSecureStorage secureStorage}) : _dio = dio, _secureStorage = secureStorage;
 
   Future<void> initialize(Store store) async {
     _store = store;

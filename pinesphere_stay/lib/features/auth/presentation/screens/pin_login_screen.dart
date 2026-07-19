@@ -130,7 +130,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
             child: Image.network(
               'https://lh3.googleusercontent.com/aida/AP1WRLsNZfpr3SqCh2qriKKtYjH3uwarOjm8WmUIl71HNz8fYek1c5NKdyXhRSPtmTbLkKFU775bH_e2t5xTAHDFce_0YZTY-D26wL-oUlvXoJHFIu7BgyA6yZFUMgK4P0KfUJbWXascFNRKodev-4l532l1SA6F-NJ8SStFQQLLv_RI-t95BeAkN2cFYlnXuR7SC9oZ2zlaWLIsmcHu_z01tIoyhkn5Mczc6MUYcROmCzq3Qo6Y3-WAZ_tpnPc',
               fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const Icon(Icons.hotel, size: 40),
+              errorBuilder: (_, __, ___) => const Icon(Icons.hotel, size: 40),
             ),
           ),
         ),

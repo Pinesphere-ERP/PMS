@@ -132,7 +132,7 @@ class ReportExportService {
     );
 
     final output = await FileStorageService().getTemporaryPath();
-    final file = File('${output.path}/PL_Report.pdf');
+    final file = File('${output}/PL_Report.pdf');
     await file.writeAsBytes(await pdf.save());
     await OpenFilex.open(file.path);
   }
@@ -228,7 +228,7 @@ class ReportExportService {
     }
 
     final output = await FileStorageService().getTemporaryPath();
-    final file = File('${output.path}/PL_Report.xlsx');
+    final file = File('${output}/Rooms_Report.xlsx');
     final bytes = excel.save();
     if (bytes != null) {
       await file.writeAsBytes(bytes);

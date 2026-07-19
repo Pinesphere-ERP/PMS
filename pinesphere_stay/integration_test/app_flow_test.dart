@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinesphere_stay/app/app.dart';
-import 'package:pinesphere_stay/core/database/objectbox.dart';
+import 'package:pinesphere_stay/core/database/database_service.dart';
 import 'package:pinesphere_stay/main.dart' as app;
 
 void main() {
@@ -11,7 +11,8 @@ void main() {
 
   testWidgets('End-to-End UI Flow: Login to Dashboard to Sync', (WidgetTester tester) async {
     // 1. Initialize DB and App
-    app.objectBox = await ObjectBox.create();
+    app.databaseService = DatabaseService();
+    await app.databaseService.init();
     await tester.pumpWidget(const ProviderScope(child: PinesphereApp()));
     
     // Wait for initial routing

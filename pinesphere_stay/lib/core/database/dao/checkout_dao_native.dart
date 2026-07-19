@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/checkout/domain/entities/checkoutentity.dart';
+import '../../../features/checkout/domain/models/checkout_entity.dart';
 import 'checkout_dao.dart';
 
 class CheckoutDaoNative implements ICheckoutDao {
@@ -25,5 +25,32 @@ class CheckoutDaoNative implements ICheckoutDao {
   @override
   bool remove(int id) {
     return _box.remove(id);
+  }
+
+  @override
+  void putMany(List<CheckOutEntity> checkouts) {
+    _box.putMany(checkouts);
+  }
+
+  @override
+  List<CheckOutEntity> findByProperty(String propertyId) {
+    final query = _box.query(CheckOutEntity_.propertyId.equals(propertyId)).build();
+    try {
+      return query.find();
+    } finally {
+      query.close();
+    }
+  }
+
+  @override
+  List<CheckOutEntity> findPendingByProperty(String propertyId) {
+    final query = _box.query(
+      CheckOutEntity_.propertyId.equals(propertyId).and(CheckOutEntity_.checkoutStatus.equals('pending')),
+    ).build();
+    try {
+      return query.find();
+    } finally {
+      query.close();
+    }
   }
 }

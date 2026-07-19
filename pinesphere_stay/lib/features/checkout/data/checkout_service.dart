@@ -3,9 +3,9 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
-import 'package:pinesphere_stay/objectbox.g.dart';
+import '../../../core/database/dao/checkout_dao.dart';
+import '../../../core/database/dao/room_dao.dart';
 import '../../audit/data/audit_service.dart';
-import '../../rooms/domain/models/room_entity.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/checkout_entity.dart';
 
@@ -17,25 +17,27 @@ CheckOutService checkOutService(Ref ref) {
     dio: ref.watch(dioClientProvider),
     auditService: ref.watch(auditServiceProvider),
   );
-  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  service.initialize(
+    databaseService.checkoutDao,
+    databaseService.roomDao,
+    ref.read(syncServiceProvider),
+  );
   return service;
 }
 
 class CheckOutService {
   final Dio _dio;
   final AuditService _audit;
-  late final Store _store;
-  late final Box<CheckOutEntity> _checkoutBox;
-  late final Box<RoomEntity> _roomBox;
+  late final ICheckoutDao _checkoutDao;
+  late final IRoomDao _roomDao;
   late final SyncService _syncService;
 
-  CheckOutService({required this._dio, required AuditService auditService})
-      : _audit = auditService;
+  CheckOutService({required Dio dio, required AuditService auditService})
+      : _dio = dio, _audit = auditService;
 
-  void initialize(Store store, SyncService syncService) {
-    _store = store;
-    _checkoutBox = _store.box<CheckOutEntity>();
-    _roomBox = _store.box<RoomEntity>();
+  void initialize(ICheckoutDao checkoutDao, IRoomDao roomDao, SyncService syncService) {
+    _checkoutDao = checkoutDao;
+    _roomDao = roomDao;
     _syncService = syncService;
   }
 
@@ -73,7 +75,7 @@ class CheckOutService {
         checkoutStatus: body['checkout_status']?.toString() ?? 'completed',
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       );
-      _checkoutBox.put(entity);
+      _checkoutDao.put(entity);
       _updateRoomToDirty(data['room_id']?.toString() ?? '');
       _audit.log(
         moduleName: 'checkout',
@@ -124,7 +126,7 @@ class CheckOutService {
         checkoutStatus: 'completed',
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _checkoutBox.put(entity);
+      final localId = _checkoutDao.put(entity);
       _updateRoomToDirty(data['room_id']?.toString() ?? '');
       _syncService.enqueueMutation(
         entityType: 'CheckOut',
@@ -190,20 +192,14 @@ class CheckOutService {
         lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       )).toList();
       
-      if (entities.isNotEmpty) {
-        _checkoutBox.putMany(entities);
-      }
+        _checkoutDao.putMany(entities);
       return dataList;
     } on DioException catch (e) {
       AppLogger.w('getPendingCheckOuts network failed, falling back to ObjectBox', e);
-      return _checkoutBox.query(
-        CheckOutEntity_.propertyId.equals(propertyId).and(CheckOutEntity_.checkoutStatus.equals('pending')),
-      ).build().find();
+      return _checkoutDao.findPendingByProperty(propertyId);
     } catch (e) {
       AppLogger.e('getPendingCheckOuts unexpected error', e);
-      return _checkoutBox.query(
-        CheckOutEntity_.propertyId.equals(propertyId).and(CheckOutEntity_.checkoutStatus.equals('pending')),
-      ).build().find();
+      return _checkoutDao.findPendingByProperty(propertyId);
     }
   }
 
@@ -256,16 +252,14 @@ class CheckOutService {
         lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       )).toList();
       
-      if (entities.isNotEmpty) {
-        _checkoutBox.putMany(entities);
-      }
+        _checkoutDao.putMany(entities);
       return dataList;
     } on DioException catch (e) {
       AppLogger.w('getTodaysCheckOuts network failed, falling back to ObjectBox', e);
-      return _checkoutBox.query(CheckOutEntity_.propertyId.equals(propertyId)).build().find();
+      return _checkoutDao.findByProperty(propertyId);
     } catch (e) {
       AppLogger.e('getTodaysCheckOuts unexpected error', e);
-      return _checkoutBox.query(CheckOutEntity_.propertyId.equals(propertyId)).build().find();
+      return _checkoutDao.findByProperty(propertyId);
     }
   }
 
@@ -283,12 +277,9 @@ class CheckOutService {
   }
 
   void _updateRoomToDirty(String roomId) {
-    final query = _roomBox.query(RoomEntity_.uuid.equals(roomId)).build();
-    final rooms = query.find();
-    query.close();
-    if (rooms.isNotEmpty) {
-      final room = rooms.first;
-      _roomBox.put(room);
+    final room = _roomDao.findByUuid(roomId);
+    if (room != null) {
+      _roomDao.put(room);
     }
   }
 }

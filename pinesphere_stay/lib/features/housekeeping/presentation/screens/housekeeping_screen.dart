@@ -5,7 +5,7 @@ import 'package:pinesphere_stay/features/housekeeping/presentation/providers/hou
 import 'package:pinesphere_stay/features/tasks/data/models/task_model.dart';
 
 class HousekeepingScreen extends ConsumerWidget {
-  const HousekeepingScreen({Key? key}) : super(key: key);
+  const HousekeepingScreen({super.key,});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,7 +69,7 @@ class HousekeepingScreen extends ConsumerWidget {
 
 class _TaskSwipeCard extends ConsumerWidget {
   final TaskModel task;
-  const _TaskSwipeCard({Key? key, required this.task}) : super(key: key);
+  const _TaskSwipeCard({required this.task});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

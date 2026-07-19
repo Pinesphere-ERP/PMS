@@ -42,29 +42,33 @@ class DatabaseService implements IDatabaseService {
   late final IKpiDao _kpiDao;
   late final IAuditDao _auditDao;
   late final ISyncDao _syncDao;
-  late final ISync_opDao _sync_opDao;
+  late final ISyncOpDao _syncOpDao;
   late final IUserDao _userDao;
-  late final IRole_permDao _role_permDao;
+  late final IRolePermDao _rolePermDao;
   late final IPermDao _permDao;
 
   @override
   Future<void> init() async {
-    _guestDao = GuestDaoDaoWeb();
-    _bookingDao = BookingDaoDaoWeb();
-    _roomDao = RoomDaoDaoWeb();
-    _checkinDao = CheckinDaoDaoWeb();
-    _checkoutDao = CheckoutDaoDaoWeb();
-    _housekeepingDao = HousekeepingDaoDaoWeb();
-    _maintenanceDao = MaintenanceDaoDaoWeb();
-    _settingsDao = SettingsDaoDaoWeb();
-    _kpiDao = KpiDaoDaoWeb();
-    _auditDao = AuditDaoDaoWeb();
-    _syncDao = SyncDaoDaoWeb();
-    _sync_opDao = Sync_opDaoDaoWeb();
-    _userDao = UserDaoDaoWeb();
-    _role_permDao = Role_permDaoDaoWeb();
-    _permDao = PermDaoDaoWeb();
+    _guestDao = GuestDaoWeb();
+    _bookingDao = BookingDaoWeb();
+    _roomDao = RoomDaoWeb();
+    _checkinDao = CheckinDaoWeb();
+    _checkoutDao = CheckoutDaoWeb();
+    _housekeepingDao = HousekeepingDaoWeb();
+    _maintenanceDao = MaintenanceDaoWeb();
+    _settingsDao = SettingsDaoWeb();
+    _kpiDao = KpiDaoWeb();
+    _auditDao = AuditDaoWeb();
+    _syncDao = SyncDaoWeb();
+    _syncOpDao = SyncOpDaoWeb();
+    _userDao = UserDaoWeb();
+    _rolePermDao = RolePermDaoWeb();
+    _permDao = PermDaoWeb();
   }
+
+  @override
+  // TODO: Remove store accessor after DAO migration is complete.
+  dynamic get store => null;
 
   @override
   IGuestDao get guestDao => _guestDao;
@@ -100,13 +104,13 @@ class DatabaseService implements IDatabaseService {
   ISyncDao get syncDao => _syncDao;
 
   @override
-  ISync_opDao get sync_opDao => _sync_opDao;
+  ISyncOpDao get syncOpDao => _syncOpDao;
 
   @override
   IUserDao get userDao => _userDao;
 
   @override
-  IRole_permDao get role_permDao => _role_permDao;
+  IRolePermDao get rolePermDao => _rolePermDao;
 
   @override
   IPermDao get permDao => _permDao;

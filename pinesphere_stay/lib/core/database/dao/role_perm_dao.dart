@@ -1,6 +1,6 @@
 import '../../../features/user_role_management/domain/entities.dart';
 
-abstract class IRole_permDao {
+abstract class IRolePermDao {
   int put(RolePermissionEntity entity);
   List<RolePermissionEntity> getAll();
   RolePermissionEntity? get(int id);

@@ -32,4 +32,31 @@ class AuditDaoWeb implements IAuditDao {
     }
     return false;
   }
+
+  @override
+  String? getLatestHash(String? propertyId) {
+    final list = _storage.values.where((e) => propertyId == null ? e.propertyId == null : e.propertyId == propertyId).toList();
+    if (list.isEmpty) return null;
+    list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return list.first.entryHash;
+  }
+
+  @override
+  List<AuditLogEntity> queryLogs({String? propertyId, String? moduleName, String? actionType, int limit = 50}) {
+    final list = _storage.values.where((e) {
+      if (propertyId != null && e.propertyId != propertyId) return false;
+      if (moduleName != null && e.moduleName != moduleName) return false;
+      if (actionType != null && e.actionType != actionType) return false;
+      return true;
+    }).toList();
+    list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return list.take(limit).toList();
+  }
+
+  @override
+  List<AuditLogEntity> getChain({String? propertyId}) {
+    final list = _storage.values.where((e) => propertyId == null ? e.propertyId == null : e.propertyId == propertyId).toList();
+    list.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return list;
+  }
 }

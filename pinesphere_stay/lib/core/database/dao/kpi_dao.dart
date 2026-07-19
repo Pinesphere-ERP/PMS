@@ -5,4 +5,7 @@ abstract class IKpiDao {
   List<KpiSnapshotEntity> getAll();
   KpiSnapshotEntity? get(int id);
   bool remove(int id);
+  KpiSnapshotEntity? findByPropertyAndDate(String propertyId, String dateKey);
+  Stream<KpiSnapshotEntity?> watchByPropertyAndDate(String propertyId, String dateKey);
+  List<KpiSnapshotEntity> getRange(String propertyId, String startKey, String endKey);
 }

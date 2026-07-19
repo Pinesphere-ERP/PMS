@@ -2,7 +2,7 @@ import '../../../main.dart';
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'package:pinesphere_stay/objectbox.g.dart';
+import '../../../core/database/dao/kpi_dao.dart';
 import '../domain/models/kpi_snapshot_entity.dart';
 
 part 'kpi_aggregation_service.g.dart';
@@ -10,15 +10,15 @@ part 'kpi_aggregation_service.g.dart';
 @Riverpod(keepAlive: true)
 KpiAggregationService kpiAggregationService(Ref ref) {
   final service = KpiAggregationService();
-  service.initialize(databaseService.store);
+  service.initialize(databaseService.kpiDao);
   return service;
 }
 
 class KpiAggregationService {
-  late Box<KpiSnapshotEntity> _box;
+  late IKpiDao _dao;
 
-  void initialize(Store store) {
-    _box = store.box<KpiSnapshotEntity>();
+  void initialize(IKpiDao kpiDao) {
+    _dao = kpiDao;
   }
 
   /// Returns the formatted date key for today in YYYY-MM-DD.
@@ -27,47 +27,19 @@ class KpiAggregationService {
 
   /// Fetch today's KPI entity from ObjectBox. Returns null if none exists.
   KpiSnapshotEntity? getTodaySnapshot(String propertyId) {
-    final dateKey = _todayKey;
-    final query = _box
-        .query(
-          KpiSnapshotEntity_.propertyId.equals(propertyId) &
-              KpiSnapshotEntity_.snapshotDate.equals(dateKey),
-        )
-        .build();
-    final result = query.findFirst();
-    query.close();
-    return result;
+    return _dao.findByPropertyAndDate(propertyId, _todayKey);
   }
 
   /// Stream that emits whenever today's KPI entity changes, enabling reactive UI.
   Stream<KpiSnapshotEntity?> watchTodaySnapshot(String propertyId) {
-    final dateKey = _todayKey;
-    final query = _box
-        .query(
-          KpiSnapshotEntity_.propertyId.equals(propertyId) &
-              KpiSnapshotEntity_.snapshotDate.equals(dateKey),
-        )
-        .watch();
-    return query.map((q) => q.findFirst());
+    return _dao.watchByPropertyAndDate(propertyId, _todayKey);
   }
 
   /// Get KPI snapshots for a date range (for charts / multi-day views).
   List<KpiSnapshotEntity> getRange(String propertyId, DateTime start, DateTime end) {
     final startKey = DateFormat('yyyy-MM-dd').format(start);
     final endKey = DateFormat('yyyy-MM-dd').format(end);
-    final query = _box
-        .query(
-          KpiSnapshotEntity_.propertyId.equals(propertyId) &
-              KpiSnapshotEntity_.snapshotDate
-                  .greaterOrEqual(startKey) &
-              KpiSnapshotEntity_.snapshotDate
-                  .lessOrEqual(endKey),
-        )
-        .order(KpiSnapshotEntity_.snapshotDate)
-        .build();
-    final results = query.find();
-    query.close();
-    return results;
+    return _dao.getRange(propertyId, startKey, endKey);
   }
 
   // ───────────────────────────────────────────────────────────
@@ -150,14 +122,7 @@ class KpiAggregationService {
     final dateKey = _todayKey;
     final hlc = DateTime.now().toUtc().toIso8601String();
 
-    final query = _box
-        .query(
-          KpiSnapshotEntity_.propertyId.equals(propertyId) &
-              KpiSnapshotEntity_.snapshotDate.equals(dateKey),
-        )
-        .build();
-    var entity = query.findFirst();
-    query.close();
+    var entity = _dao.findByPropertyAndDate(propertyId, dateKey);
 
     entity ??= KpiSnapshotEntity(
         uuid: '',
@@ -169,7 +134,7 @@ class KpiAggregationService {
 
     mutator(entity);
     entity.lastModifiedHlc = hlc;
-    _box.put(entity);
+    _dao.put(entity);
   }
 }
 

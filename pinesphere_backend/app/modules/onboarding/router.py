@@ -73,7 +73,7 @@ async def register_owner(payload: OwnerRegistrationRequest, db: AsyncSession = D
         await db.flush()
 
         # Provision Tenant Schema
-        await provision_tenant_schema(db, str(property_id))
+        await provision_tenant_schema(str(property_id))
 
         # Get or Create OWNER Role
         role_stmt = select(Role).where(Role.role_code == "OWNER")

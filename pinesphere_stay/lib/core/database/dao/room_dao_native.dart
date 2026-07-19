@@ -1,5 +1,5 @@
 import 'package:pinesphere_stay/objectbox.g.dart';
-import '../../../features/rooms/domain/models/roomentity.dart';
+import '../../../features/rooms/domain/models/room_entity.dart';
 import 'room_dao.dart';
 
 class RoomDaoNative implements IRoomDao {
@@ -25,5 +25,13 @@ class RoomDaoNative implements IRoomDao {
   @override
   bool remove(int id) {
     return _box.remove(id);
+  }
+
+  @override
+  RoomEntity? findByUuid(String uuid) {
+    final query = _box.query(RoomEntity_.uuid.equals(uuid)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
   }
 }

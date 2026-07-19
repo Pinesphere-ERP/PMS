@@ -1,4 +1,4 @@
-import '../../../features/rooms/domain/models/roomentity.dart';
+import '../../../features/rooms/domain/models/room_entity.dart';
 import 'room_dao.dart';
 
 class RoomDaoWeb implements IRoomDao {
@@ -31,5 +31,13 @@ class RoomDaoWeb implements IRoomDao {
       return true;
     }
     return false;
+  }
+
+  @override
+  RoomEntity? findByUuid(String uuid) {
+    for (final entity in _storage.values) {
+      if (entity.uuid == uuid) return entity;
+    }
+    return null;
   }
 }

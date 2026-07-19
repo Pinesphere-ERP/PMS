@@ -2,7 +2,7 @@ import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
-import 'package:pinesphere_stay/objectbox.g.dart';
+import '../../../core/database/dao/room_dao.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/room_entity.dart';
 
@@ -13,40 +13,38 @@ RoomService roomService(Ref ref) {
   final service = RoomService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(objectBox.store, ref.read(syncServiceProvider));
+  service.initialize(
+    databaseService.roomDao,
+    ref.read(syncServiceProvider),
+  );
   return service;
 }
 
 class RoomService {
   // ignore: unused_field
   final Dio _dio;
-  late final Store _store;
-  late final Box<RoomEntity> _roomBox;
+  late final IRoomDao _roomDao;
   late final SyncService _syncService;
 
-  RoomService({required this._dio});
+  RoomService({required Dio dio}) : _dio = dio;
 
-  void initialize(Store store, SyncService syncService) {
-    _store = store;
-    _roomBox = _store.box<RoomEntity>();
+  void initialize(IRoomDao roomDao, SyncService syncService) {
+    _roomDao = roomDao;
     _syncService = syncService;
   }
 
   Future<List<RoomEntity>> getRooms(String propertyId) async {
-    return _roomBox.getAll();
+    return _roomDao.getAll();
   }
 
   Future<List<RoomEntity>> getRoomGrid(String propertyId) async {
-    return _roomBox.getAll();
+    return _roomDao.getAll();
   }
 
   Future<void> updateRoomStatus(String roomId, String occupancyStatus, String housekeepingStatus) async {
-    final query = _roomBox.query(RoomEntity_.uuid.equals(roomId)).build();
-    final rooms = query.find();
-    query.close();
+    final room = _roomDao.findByUuid(roomId);
 
-    if (rooms.isNotEmpty) {
-      final room = rooms.first;
+    if (room != null) {
       final updatedRoom = RoomEntity(
         id: room.id,
         uuid: room.uuid,
@@ -56,7 +54,7 @@ class RoomService {
         pricePerNight: room.pricePerNight,
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      _roomBox.put(updatedRoom);
+      _roomDao.put(updatedRoom);
 
       _syncService.enqueueMutation(
         entityType: 'Room',

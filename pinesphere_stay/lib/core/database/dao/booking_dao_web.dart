@@ -32,4 +32,11 @@ class BookingDaoWeb implements IBookingDao {
     }
     return false;
   }
+
+  @override
+  void putMany(List<BookingEntity> bookings) {
+    for (var booking in bookings) {
+      put(booking);
+    }
+  }
 }

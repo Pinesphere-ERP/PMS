@@ -26,4 +26,9 @@ class BookingDaoNative implements IBookingDao {
   bool remove(int id) {
     return _box.remove(id);
   }
+
+  @override
+  void putMany(List<BookingEntity> bookings) {
+    _box.putMany(bookings);
+  }
 }

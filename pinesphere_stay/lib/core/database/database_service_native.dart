@@ -22,8 +22,8 @@ import 'dao/kpi_dao.dart';
 import 'dao/kpi_dao_native.dart';
 import 'dao/audit_dao.dart';
 import 'dao/audit_dao_native.dart';
-import 'dao/sync_dao.dart';
-import 'dao/sync_dao_native.dart';
+import 'dao/sync_queue_dao.dart';
+import 'dao/sync_queue_dao_native.dart';
 import 'dao/sync_op_dao.dart';
 import 'dao/sync_op_dao_native.dart';
 import 'dao/user_dao.dart';
@@ -58,7 +58,7 @@ class DatabaseService implements IDatabaseService {
   late final ISettingsDao _settingsDao;
   late final IKpiDao _kpiDao;
   late final IAuditDao _auditDao;
-  late final ISyncDao _syncDao;
+  late final ISyncQueueDao _syncQueueDao;
   late final ISyncOpDao _syncOpDao;
   late final IUserDao _userDao;
   late final IRolePermDao _rolePermDao;
@@ -80,11 +80,16 @@ class DatabaseService implements IDatabaseService {
     _settingsDao = SettingsDaoNative(_store.box<PropertySettingEntity>());
     _kpiDao = KpiDaoNative(_store.box<KpiSnapshotEntity>());
     _auditDao = AuditDaoNative(_store.box<AuditLogEntity>());
-    _syncDao = SyncDaoNative(_store.box<SyncQueueEntity>());
+    _syncQueueDao = SyncQueueDaoNative(_store.box<SyncQueueEntity>());
     _syncOpDao = SyncOpDaoNative(_store.box<SyncOperation>());
     _userDao = UserDaoNative(_store.box<UserEntity>());
     _rolePermDao = RolePermDaoNative(_store.box<RolePermissionEntity>());
     _permDao = PermDaoNative(_store.box<PermissionEntity>());
+  }
+
+  @override
+  T runInTransaction<T>(T Function() action) {
+    return _store.runInTransaction(TxMode.write, action);
   }
 
   @override
@@ -122,7 +127,7 @@ class DatabaseService implements IDatabaseService {
   IAuditDao get auditDao => _auditDao;
 
   @override
-  ISyncDao get syncDao => _syncDao;
+  ISyncQueueDao get syncQueueDao => _syncQueueDao;
 
   @override
   ISyncOpDao get syncOpDao => _syncOpDao;

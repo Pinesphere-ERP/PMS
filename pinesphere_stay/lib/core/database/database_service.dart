@@ -9,7 +9,7 @@ import 'dao/maintenance_dao.dart';
 import 'dao/settings_dao.dart';
 import 'dao/kpi_dao.dart';
 import 'dao/audit_dao.dart';
-import 'dao/sync_dao.dart';
+import 'dao/sync_queue_dao.dart';
 import 'dao/sync_op_dao.dart';
 import 'dao/user_dao.dart';
 import 'dao/role_perm_dao.dart';
@@ -17,6 +17,10 @@ import 'dao/perm_dao.dart';
 
 abstract class IDatabaseService {
   Future<void> init();
+  
+  /// Execute a set of DAO operations within an atomic database transaction.
+  T runInTransaction<T>(T Function() action);
+
   // TODO: Remove store accessor after DAO migration is complete.
   dynamic get store;
   IGuestDao get guestDao;
@@ -29,7 +33,7 @@ abstract class IDatabaseService {
   ISettingsDao get settingsDao;
   IKpiDao get kpiDao;
   IAuditDao get auditDao;
-  ISyncDao get syncDao;
+  ISyncQueueDao get syncQueueDao;
   ISyncOpDao get syncOpDao;
   IUserDao get userDao;
   IRolePermDao get rolePermDao;

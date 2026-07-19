@@ -53,4 +53,12 @@ class CheckinDaoNative implements ICheckinDao {
       query.close();
     }
   }
+  @override
+  CheckInEntity? findByUuid(String uuid) {
+    final query = _box.query(CheckInEntity_.uuid.equals(uuid)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
 }

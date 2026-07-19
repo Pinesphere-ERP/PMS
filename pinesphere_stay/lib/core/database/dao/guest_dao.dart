@@ -5,4 +5,5 @@ abstract class IGuestDao {
   List<GuestEntity> getAll();
   GuestEntity? get(int id);
   bool remove(int id);
+  GuestEntity? findByUuid(String uuid);
 }

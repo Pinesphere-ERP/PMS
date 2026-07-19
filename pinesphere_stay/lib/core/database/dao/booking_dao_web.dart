@@ -39,4 +39,13 @@ class BookingDaoWeb implements IBookingDao {
       put(booking);
     }
   }
+  @override
+  BookingEntity? findByUuid(String uuid) {
+    try {
+      return getAll().firstWhere((e) => e.uuid == uuid);
+    } catch (_) {
+      return null;
+    }
+  }
+
 }

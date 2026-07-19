@@ -49,4 +49,13 @@ class CheckinDaoWeb implements ICheckinDao {
   List<CheckInEntity> findActiveByProperty(String propertyId) {
     return _storage.values.where((c) => c.propertyId == propertyId && c.status == 'active').toList();
   }
+  @override
+  CheckInEntity? findByUuid(String uuid) {
+    try {
+      return getAll().firstWhere((e) => e.uuid == uuid);
+    } catch (_) {
+      return null;
+    }
+  }
+
 }

@@ -49,4 +49,13 @@ class CheckoutDaoWeb implements ICheckoutDao {
   List<CheckOutEntity> findPendingByProperty(String propertyId) {
     return _storage.values.where((c) => c.propertyId == propertyId && c.checkoutStatus == 'pending').toList();
   }
+  @override
+  CheckOutEntity? findByUuid(String uuid) {
+    try {
+      return getAll().firstWhere((e) => e.uuid == uuid);
+    } catch (_) {
+      return null;
+    }
+  }
+
 }

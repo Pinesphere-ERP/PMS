@@ -6,4 +6,5 @@ abstract class IBookingDao {
   List<BookingEntity> getAll();
   BookingEntity? get(int id);
   bool remove(int id);
+  BookingEntity? findByUuid(String uuid);
 }

@@ -84,7 +84,6 @@ async def register_owner(payload: OwnerRegistrationRequest, background_tasks: Ba
                 role_code="OWNER",
                 role_name="Property Owner",
                 is_system_role=True,
-                is_hotel_role=True,
                 description="Default role for Property Owners"
             )
             db.add(owner_role)

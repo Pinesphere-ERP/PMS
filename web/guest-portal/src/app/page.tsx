@@ -43,7 +43,7 @@ export default function Home() {
     }
 
     // Fetch real user data
-    fetchAPI('/auth/me')
+    fetchAPI('/portal/me')
       .then((data) => {
         if (data.name) {
           setGuestName(data.name);

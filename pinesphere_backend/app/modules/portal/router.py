@@ -17,7 +17,7 @@ from sqlalchemy import update
 
 from app.infra.database import get_db
 from app.infra.models import (
-    Booking, Guest, Room, Payment, FolioLineItem, Task, OTPRequest, User
+    Booking, Guest, Room, RoomCategory, Payment, FolioLineItem, Task, OTPRequest, User
 )
 from app.core.security import create_access_token, decode_access_token, get_password_hash, verify_password
 from app.core.dependencies import get_current_user
@@ -208,7 +208,7 @@ async def portal_verify_otp(
         room_res = await db.execute(room_stmt)
         room = room_res.scalar_one_or_none()
         if room:
-            room_number = room.name
+            room_number = room.room_number
 
     # Issue portal JWT (type = guest_portal)
     import jwt as pyjwt
@@ -229,6 +229,44 @@ async def portal_verify_otp(
         booking_id=booking.booking_id,
         room_number=room_number,
     )
+
+
+@router.get("/me")
+async def get_portal_me(
+    booking: Booking = Depends(get_current_guest_booking),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return booking and guest details for the logged-in guest portal user."""
+    guest_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
+    guest_res = await db.execute(guest_stmt)
+    guest = guest_res.scalar_one_or_none()
+    
+    room_number = None
+    room_type = None
+    if booking.room_id:
+        room_stmt = select(Room).where(Room.room_id == booking.room_id)
+        room_res = await db.execute(room_stmt)
+        room = room_res.scalar_one_or_none()
+        if room:
+            room_number = room.room_number
+            cat_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
+            cat_res = await db.execute(cat_stmt)
+            category = cat_res.scalar_one_or_none()
+            if category:
+                room_type = category.room_name
+
+    return {
+        "booking_id": str(booking.booking_id),
+        "booking_reference": booking.booking_reference,
+        "name": guest.full_name if guest else "Guest",
+        "mobile": guest.mobile if guest else None,
+        "email": guest.email if guest else None,
+        "room_number": room_number,
+        "room_type": room_type,
+        "check_in": booking.check_in_date.isoformat() if booking.check_in_date else None,
+        "check_out": booking.check_out_date.isoformat() if booking.check_out_date else None,
+        "status": booking.booking_status,
+    }
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -267,7 +305,7 @@ async def portal_login_legacy(
         room_res = await db.execute(room_stmt)
         room = room_res.scalar_one_or_none()
         if room:
-            room_number = room.name
+            room_number = room.room_number
 
     import jwt as pyjwt
     from app.core.config import settings

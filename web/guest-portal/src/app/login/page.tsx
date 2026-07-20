@@ -6,7 +6,8 @@ import { fetchAPI } from "@/services/api";
 
 export default function Login() {
   const router = useRouter();
-  const [identifier, setIdentifier] = useState("");
+  const [bookingReference, setBookingReference] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"request" | "verify">("request");
   const [loading, setLoading] = useState(false);
@@ -17,13 +18,16 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await fetchAPI("/auth/otp/request", {
+      await fetchAPI("/portal/auth/request-otp", {
         method: "POST",
-        body: JSON.stringify({ identifier }),
+        body: JSON.stringify({
+          booking_reference: bookingReference,
+          mobile_number: mobileNumber,
+        }),
       });
       setStep("verify");
     } catch (err: any) {
-      setError(err.message || "Failed to request OTP. Please check your phone number.");
+      setError(err.message || "Failed to request OTP. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -34,9 +38,13 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetchAPI("/auth/otp/verify", {
+      const res = await fetchAPI("/portal/auth/verify-otp", {
         method: "POST",
-        body: JSON.stringify({ identifier, otp }),
+        body: JSON.stringify({
+          booking_reference: bookingReference,
+          mobile_number: mobileNumber,
+          otp,
+        }),
       });
       localStorage.setItem("token", res.access_token);
       router.push("/");
@@ -54,7 +62,7 @@ export default function Login() {
           Guest Portal Login
         </h2>
         <p className="mt-2 text-center text-sm text-gray-400">
-          Enter your registered phone number to receive an OTP
+          Enter your booking reference and registered phone number to receive an OTP
         </p>
       </div>
 
@@ -69,6 +77,24 @@ export default function Login() {
           {step === "request" ? (
             <form className="space-y-6" onSubmit={handleRequestOtp}>
               <div>
+                <label htmlFor="bookingRef" className="block text-sm font-medium text-gray-300">
+                  Booking Reference
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="bookingRef"
+                    name="bookingRef"
+                    type="text"
+                    required
+                    value={bookingReference}
+                    onChange={(e) => setBookingReference(e.target.value)}
+                    placeholder="e.g. BK-12345"
+                    className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-700 text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-300">
                   Phone Number
                 </label>
@@ -78,8 +104,8 @@ export default function Login() {
                     name="phone"
                     type="text"
                     required
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
+                    value={mobileNumber}
+                    onChange={(e) => setMobileNumber(e.target.value)}
                     placeholder="+91XXXXXXXXXX"
                     className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-700 text-white"
                   />

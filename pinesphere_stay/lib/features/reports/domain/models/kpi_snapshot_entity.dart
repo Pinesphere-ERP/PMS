@@ -5,7 +5,7 @@ class KpiSnapshotEntity {
   @Id()
   int id = 0;
 
-  /// Server-assigned UUID; empty until synced
+  /// Server-assigned ID; empty until synced
   @Unique(onConflict: ConflictStrategy.replace)
   String serverId;
 

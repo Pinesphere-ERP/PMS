@@ -53,7 +53,7 @@ class SyncService {
   
   bool _isSyncing = false;
 
-  SyncService({required Dio dio, required FlutterSecureStorage secureStorage}) : _dio = dio, _secureStorage = secureStorage;
+  SyncService({required this._dio, required this._secureStorage});
 
   Future<void> initialize() async {
     _syncQueueDao = databaseService.syncQueueDao;
@@ -313,8 +313,8 @@ class SyncService {
                 serverId: entityId,
                 tenantId: payload['tenant_id']?.toString() ?? existing?.tenantId,
                 propertyId: payload['property_id']?.toString() ?? existing?.propertyId,
-                roleCode: payload['role_code']?.toString() ?? payload['name']?.toString() ?? existing?.roleCode ?? '',
-                roleName: payload['role_name']?.toString() ?? payload['name']?.toString() ?? existing?.roleName ?? '',
+                roleCode: payload['role_code']?.toString() ?? existing?.roleCode ?? '',
+                roleName: payload['role_name']?.toString() ?? existing?.roleName ?? '',
                 description: payload['description']?.toString() ?? existing?.description,
                 isSystemRole: payload['is_system'] == true || payload['is_system']?.toString() == 'true',
                 lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
@@ -327,8 +327,8 @@ class SyncService {
               final entity = PermissionEntity(
                 id: existing?.id ?? 0,
                 serverId: entityId,
-                permissionCode: payload['permission_code']?.toString() ?? payload['name']?.toString() ?? existing?.permissionCode ?? '',
-                moduleName: payload['module_name']?.toString() ?? payload['category']?.toString() ?? existing?.moduleName ?? 'general',
+                permissionCode: payload['permission_code']?.toString() ?? existing?.permissionCode ?? '',
+                moduleName: payload['module_name']?.toString() ?? existing?.moduleName ?? '',
                 description: payload['description']?.toString() ?? existing?.description,
                 lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
                 isDeleted: payload['is_deleted'] == true || payload['is_deleted']?.toString() == 'true',

@@ -33,8 +33,8 @@ class CheckOutService {
   late final IRoomDao _roomDao;
   late final SyncService _syncService;
 
-  CheckOutService({required Dio dio, required AuditService auditService})
-      : _dio = dio, _audit = auditService;
+  CheckOutService({required this._dio, required AuditService auditService})
+      : _audit = auditService;
 
   void initialize(ICheckoutDao checkoutDao, IRoomDao roomDao, SyncService syncService) {
     _checkoutDao = checkoutDao;
@@ -129,7 +129,7 @@ class CheckOutService {
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         syncStatus: 'Pending',
       );
-      final localId = _checkoutDao.put(entity);
+
       _updateRoomToDirty(data['room_id']?.toString() ?? '');
       _syncService.enqueueMutation(
         entityType: 'CheckOut',

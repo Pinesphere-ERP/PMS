@@ -110,7 +110,7 @@ export default function AddPropertyWizard() {
 
   // Dynamic Room Categories State
   const [rooms, setRooms] = useState([
-    { id: '1', name: 'Deluxe Room', category: 'Deluxe', totalRooms: 10, occupancy: 2, bedType: 'Double', size: '200 sq ft', smoking: false, bathroom: true, balcony: false, view: 'City', ac: true, description: '' }
+    { id: '1', name: '', category: 'Standard', totalRooms: 0, occupancy: 2, bedType: 'Single', size: '', smoking: false, bathroom: true, balcony: false, view: '', ac: true, description: '' }
   ]);
 
   const addRoom = () => {
@@ -162,6 +162,8 @@ export default function AddPropertyWizard() {
       if (payload.year_established) payload.year_established = parseInt(payload.year_established, 10);
       if (payload.total_floors) payload.total_floors = parseInt(payload.total_floors, 10);
       if (payload.total_rooms) payload.total_rooms = parseInt(payload.total_rooms, 10);
+      
+      payload.rooms = rooms;
       
       await propertyService.createProperty(payload);
       alert('Property created successfully!');

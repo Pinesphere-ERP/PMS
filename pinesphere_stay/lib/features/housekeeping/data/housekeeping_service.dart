@@ -29,7 +29,7 @@ class HousekeepingService {
   late final SyncService _syncService;
   late final AuditService _audit;
 
-  HousekeepingService({required Dio dio}) : _dio = dio;
+  HousekeepingService({required this._dio});
 
   void initialize(IHousekeepingDao housekeepingDao, IMaintenanceDao maintenanceDao, SyncService syncService, AuditService audit) {
     _housekeepingDao = housekeepingDao;
@@ -83,7 +83,7 @@ class HousekeepingService {
         createdAt: DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _housekeepingDao.put(entity);
+
       _syncService.enqueueMutation(
         entityType: 'HousekeepingTask',
         entityId: localUuid.toString(),
@@ -254,7 +254,7 @@ class HousekeepingService {
         createdAt: DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _maintenanceDao.put(entity);
+
       _syncService.enqueueMutation(
         entityType: 'MaintenanceTicket',
         entityId: localUuid.toString(),

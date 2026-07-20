@@ -22,7 +22,7 @@ class UserDaoWeb implements IUserDao {
 
   @override
   Stream<List<UserEntity>> watchAll() {
-    return _controller.stream;
+    return Stream.value(_storage.values.toList());
   }
 
   @override

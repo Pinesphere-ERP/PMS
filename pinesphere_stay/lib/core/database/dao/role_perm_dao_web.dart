@@ -40,6 +40,10 @@ class RolePermDaoWeb implements IRolePermDao {
 
   @override
   RolePermissionEntity? getByServerId(String serverId) {
-    return _storage.values.firstWhere((e) => e.serverId == serverId, orElse: () => null as dynamic);
+    try {
+      return _storage.values.firstWhere((e) => e.serverId == serverId);
+    } catch (_) {
+      return null;
+    }
   }
 }

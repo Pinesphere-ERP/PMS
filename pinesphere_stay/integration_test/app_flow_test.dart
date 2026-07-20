@@ -8,7 +8,7 @@ import 'package:pinesphere_stay/main.dart' as app;
 void main() {
   testWidgets('End-to-End UI Flow: Login to Dashboard to Sync', (WidgetTester tester) async {
     // 1. Initialize DB and App
-    print('Init DB');
+
     app.databaseService = DatabaseService();
     await app.databaseService.init(isTest: true);
     
@@ -19,13 +19,11 @@ void main() {
       }
     });
 
-    print('Pump Widget');
     await tester.pumpWidget(const ProviderScope(child: PinesphereApp()));
     
     // Wait for initial routing
-    print('Pump and Settle');
+
     await tester.pumpAndSettle();
-    print('Done Pump and Settle');
 
     // 2. Validate Login Screen is present
     expect(find.text('Welcome to Pinesphere'), findsOneWidget);

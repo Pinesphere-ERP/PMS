@@ -60,17 +60,25 @@ async def create_user(
     current_role = await get_current_role(current_user, db)
     
     # Determine target property
-    if current_role.role_code == "SUPER_ADMIN":
+    if current_role.role_code in ["SUPER_ADMIN", "OWNER"]:
         target_property_id = payload.property_id
         if target_property_id:
             await assert_property_access(target_property_id, current_user, db)
+        elif current_role.role_code == "OWNER":
+            raise HTTPException(status_code=400, detail="Property ID must be provided when creating a user")
     else:
         target_property_id = current_user.property_id
         if not target_property_id:
             raise HTTPException(status_code=400, detail="Cannot create user without a property scope")
 
     # Resolve the role being assigned
-    role = (await db.execute(select(Role).where(Role.id == payload.role_id))).scalar_one_or_none()
+    if payload.role_id:
+        role = (await db.execute(select(Role).where(Role.id == payload.role_id))).scalar_one_or_none()
+    elif payload.role_code:
+        role = (await db.execute(select(Role).where(Role.role_code == payload.role_code.upper()))).scalar_one_or_none()
+    else:
+        raise HTTPException(status_code=400, detail="Must provide role_id or role_code")
+        
     if not role:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
@@ -107,7 +115,7 @@ async def create_user(
     user = User(
         id=uuid.uuid4(),
         property_id=target_property_id,
-        role_id=payload.role_id,
+        role_id=role.id,
         name=payload.name,
         mobile_number=payload.mobile_number,
         email=payload.email,

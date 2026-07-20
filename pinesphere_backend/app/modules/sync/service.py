@@ -124,6 +124,18 @@ class SyncService:
                         if "id" in record.payload and pk_col.name != "id":
                             record.payload[pk_col.name] = record.payload.pop("id")
                             
+                        if record.entity_type == "User":
+                            if "role_id" in record.payload and isinstance(record.payload["role_id"], str):
+                                role_code = record.payload["role_id"].upper()
+                                from sqlalchemy import select
+                                from app.infra import models as infra_models
+                                role = (await self.db.execute(select(infra_models.Role).where(infra_models.Role.role_code == role_code))).scalar_one_or_none()
+                                if role:
+                                    record.payload["role_id"] = str(role.id)
+                            if "password" not in record.payload and "password_hash" not in record.payload:
+                                from app.core.security import get_password_hash
+                                record.payload["password_hash"] = get_password_hash("123456")
+
                         valid_cols = {c.name: c for c in model.__table__.columns}
                         filtered_payload = {}
                         for k, v in record.payload.items():

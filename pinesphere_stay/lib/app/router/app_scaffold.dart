@@ -18,10 +18,17 @@ class AppScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      drawer: _buildDrawer(context, authState, ref),
-      body: navigationShell,
+    return PopScope(
+      canPop: navigationShell.currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          navigationShell.goBranch(0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        drawer: _buildDrawer(context, authState, ref),
+        body: navigationShell,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -49,8 +56,9 @@ class AppScaffold extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDrawer(BuildContext context, AuthState authState, WidgetRef ref) {
     return Drawer(

@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from typing import List, Optional
 
 from app.infra.database import get_db, provision_tenant_schema
-from app.core.dependencies import assert_property_access, get_current_user, require_room_access, require_super_admin
+from app.core.dependencies import assert_property_access, get_current_user, require_room_access, require_super_admin, get_current_role
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User, Role
 import uuid
 from app.modules.properties.schemas import PropertyCreateInput
@@ -28,8 +28,15 @@ def _verification_status(onboarding_status: str) -> str:
     return "Verified" if onboarding_status == "completed" else "Pending"
 
 
-@router.post("", dependencies=[Depends(require_super_admin)])
-async def create_property(payload: PropertyCreateInput, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+@router.post("")
+async def create_property(payload: PropertyCreateInput, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    role = await get_current_role(current_user, db)
+    if role.role_code not in ["SUPER_ADMIN", "OWNER"]:
+        raise HTTPException(status_code=403, detail="Not allowed to create properties")
+
+    if role.role_code == "OWNER":
+        payload.owner_user_id = str(current_user.id)
+
     owner_name = payload.owner_name
     owner_mobile = payload.owner_mobile
     owner_email = payload.owner_email
@@ -609,9 +616,11 @@ async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
     return {"message": "Room deleted successfully"}
 
 
-@router.get("", dependencies=[Depends(require_super_admin)])
-async def get_properties(db: AsyncSession = Depends(get_db)):
-    """List all properties joined with owner, business and latest subscription."""
+@router.get("")
+async def get_properties(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """List properties. Super admins see all, owners see their own."""
+    role = await get_current_role(current_user, db)
+    
     q = (
         select(Property, Owner, Business, Subscription)
         .select_from(Property)
@@ -619,6 +628,20 @@ async def get_properties(db: AsyncSession = Depends(get_db)):
         .join(Business, Property.business_id == Business.business_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
     )
+    
+    if role.role_code == "OWNER":
+        # Owners only see properties they own
+        from sqlalchemy.orm import aliased
+        from app.infra.models import UserPropertyAccess
+        
+        # Check if they are the primary owner linked to the property directly
+        # Or if they have UserPropertyAccess for it
+        if current_user.property_id:
+            q = q.where(Property.property_id == current_user.property_id)
+        else:
+            q = q.join(UserPropertyAccess, UserPropertyAccess.property_id == Property.property_id)
+            q = q.where(UserPropertyAccess.user_id == current_user.id)
+
     result = await db.execute(q)
     rows = result.unique().all()
 

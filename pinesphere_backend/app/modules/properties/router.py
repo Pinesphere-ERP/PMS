@@ -96,6 +96,7 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     new_property = Property(
         business_id=new_business.business_id,
         owner_id=owner.owner_id,
+        owner_user_id=target_user.id if target_user else None,
         property_name=payload.property_name,
         property_type=payload.property_type,
         star_category=payload.star_category,

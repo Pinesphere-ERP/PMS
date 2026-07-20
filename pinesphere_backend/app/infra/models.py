@@ -61,6 +61,7 @@ class Property(Base, TimestampMixin, SyncMixin):
     property_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.businesses.business_id"), nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.owners.owner_id"), nullable=False)
+    owner_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     property_name: Mapped[str] = mapped_column(String(200), nullable=False)
     property_type: Mapped[Optional[str]] = mapped_column(String(30))
     star_category: Mapped[Optional[int]] = mapped_column(SmallInteger)

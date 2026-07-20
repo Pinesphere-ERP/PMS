@@ -21,6 +21,7 @@ from app.modules.tasks.router import router as tasks
 from app.modules.notifications.router import router as notifications
 from app.modules.portal.router import router as portal
 from app.modules.onboarding.router import router as onboarding
+from app.modules.owners.router import router as owners
 
 # ── New modules (Wave 5–9 completions) ────────────────────────────────────────
 from app.modules.pricing.router import router as pricing
@@ -49,6 +50,7 @@ api_router.include_router(dashboard, dependencies=_paywall)
 api_router.include_router(kitchen, prefix="/kitchen", tags=["Kitchen Operations"], dependencies=_paywall)
 api_router.include_router(portal)  # Portal has its own prefix="/portal"
 api_router.include_router(onboarding, prefix="/onboarding", tags=["Onboarding"])
+api_router.include_router(owners, prefix="/owners", tags=["Owner Management"])
 
 # ── Property-level operational routers (paywalled) ───────────────────────────
 api_router.include_router(bookings, prefix="/bookings", tags=["Booking Management"], dependencies=_paywall)

@@ -30,6 +30,12 @@ import UserManagement from './pages/UserManagement/UserManagement';
 // Auth
 import Login from './pages/Login';
 
+// Owner Management
+import OwnerList from './pages/OwnerManagement/OwnerList';
+
+// Create User for Property
+import CreateUserForProperty from './pages/UserManagement/CreateUserForProperty';
+
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const location = useLocation();
@@ -92,6 +98,12 @@ function App() {
           <Route path="settings/system" element={<SystemSettings />} />
           {/* User Management */}
           <Route path="users" element={<UserManagement />} />
+
+          {/* Owner Management */}
+          <Route path="owners" element={<OwnerList />} />
+
+          {/* Create User scoped to a Property (property pre-locked) */}
+          <Route path="properties/:id/users/create" element={<CreateUserForProperty />} />
         </Route>
       </Routes>
     </BrowserRouter>

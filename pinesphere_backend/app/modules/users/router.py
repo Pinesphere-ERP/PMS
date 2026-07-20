@@ -59,7 +59,7 @@ async def create_user(
 ):
     current_role = await get_current_role(current_user, db)
     
-    # If super admin, allow them to specify property_id in payload. Otherwise force to caller's property
+    # Determine target property
     if current_role.role_code == "SUPER_ADMIN":
         target_property_id = payload.property_id
         if target_property_id:
@@ -69,23 +69,59 @@ async def create_user(
         if not target_property_id:
             raise HTTPException(status_code=400, detail="Cannot create user without a property scope")
 
+    # Resolve the role being assigned
     role = (await db.execute(select(Role).where(Role.id == payload.role_id))).scalar_one_or_none()
     if not role:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
-        
-    duplicate = (await db.execute(select(User).where(User.property_id == target_property_id, User.email == payload.email))).scalar_one_or_none()
-    if duplicate:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered in this property")
+
+    # Enforce: non-SUPER_ADMIN roles MUST have a property_id
+    if role.role_code != "SUPER_ADMIN" and not target_property_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Property must be selected when creating a user with role '{role.role_name}'. Only Super Admin users can exist without a property."
+        )
+
+    # Check for duplicate email within property
+    if payload.email:
+        dup_email_stmt = select(User).where(
+            User.property_id == target_property_id,
+            User.email == payload.email
+        )
+        if target_property_id is None:
+            dup_email_stmt = select(User).where(User.email == payload.email)
+        duplicate = (await db.execute(dup_email_stmt)).scalar_one_or_none()
+        if duplicate:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered in this property")
+
+    # Check for duplicate username globally
+    if payload.username:
+        dup_username = (await db.execute(select(User).where(User.username == payload.username))).scalar_one_or_none()
+        if dup_username:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+
+    # Check for duplicate mobile globally
+    dup_mobile = (await db.execute(select(User).where(User.mobile_number == payload.mobile_number))).scalar_one_or_none()
+    if dup_mobile:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mobile number already registered")
         
     user = User(
-        id=uuid.uuid4(), property_id=target_property_id, role_id=payload.role_id,
-        name=payload.name, mobile_number=payload.mobile_number, email=payload.email,
-        password_hash=get_password_hash(payload.password), status="ACTIVE", created_by=current_user.id,
+        id=uuid.uuid4(),
+        property_id=target_property_id,
+        role_id=payload.role_id,
+        name=payload.name,
+        mobile_number=payload.mobile_number,
+        email=payload.email,
+        username=payload.username,
+        password_hash=get_password_hash(payload.password),
+        status="ACTIVE",
+        created_by=current_user.id,
     )
     db.add(user)
     await db.flush()
     await AuditLogger.log(db, module_name="userRoleManagement", action_type="user_create", target_entity="user", target_record_id=user.id, property_id=target_property_id, user_id=current_user.id, new_value={"name": user.name, "role": role.role_code})
     return user
+
+
 
 
 @router.post("/roles", dependencies=[Depends(require_super_admin)])

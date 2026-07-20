@@ -45,11 +45,15 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
         if user.status != "ACTIVE":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
 
+        # Fetch role to avoid repeated queries and for checking exemptions
+        role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
+        user_role = role_res.scalars().first()
+
         # ── F-07: Concurrent Session Lock ────────────────────────────────────────
         # §13.7 — only one active session is permitted per account at a time.
         # If a second device presents a valid (non-revoked) token, lock the account
         # and revoke ALL active sessions to force re-authentication on all devices.
-        if active_session is not None:
+        if active_session is not None and (not user_role or user_role.role_code not in ("SUPER_ADMIN", "GUEST")):
             all_sessions_res = await db.execute(
                 select(UserSession).where(
                     UserSession.user_id == user.id,
@@ -124,10 +128,7 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
                 user.active_role_id = user.role_id
             else:
                 # Check if user is a Super Admin
-                role_res = await db.execute(select(Role).filter(Role.id == user.role_id))
-                role = role_res.scalars().first()
-                
-                if role and role.role_code == "SUPER_ADMIN":
+                if user_role and user_role.role_code == "SUPER_ADMIN":
                     user.active_property_id = requested_tenant
                     user.active_role_id = user.role_id
                 else:

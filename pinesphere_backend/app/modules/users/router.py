@@ -26,10 +26,15 @@ async def _require_target_access(user: User, current_user: User, db: AsyncSessio
 async def list_users(
     property_id: Optional[uuid.UUID] = None,
     unassigned_only: bool = False,
+    role_code: Optional[str] = None,
     current_user: User = Depends(require_permission("USERS", "VIEW")),
     db: AsyncSession = Depends(get_db),
 ):
     stmt = select(User)
+    
+    if role_code:
+        stmt = stmt.join(Role).where(Role.role_code == role_code)
+
     if property_id:
         await assert_property_access(property_id, current_user, db)
         stmt = stmt.where(User.property_id == property_id)
@@ -37,10 +42,12 @@ async def list_users(
         stmt = stmt.where(User.property_id == current_user.property_id)
     elif (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Property scope required")
+        
     if unassigned_only:
         if (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")
         stmt = stmt.where(User.property_id.is_(None))
+        
     return (await db.execute(stmt)).scalars().all()
 
 

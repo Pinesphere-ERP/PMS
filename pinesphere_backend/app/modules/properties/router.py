@@ -36,11 +36,13 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     target_user = None
 
     if payload.owner_user_id:
-        user_stmt = select(User).where(User.id == uuid.UUID(payload.owner_user_id))
+        user_stmt = select(User).join(Role).where(User.id == uuid.UUID(payload.owner_user_id))
         user_res = await db.execute(user_stmt)
         target_user = user_res.scalar_one_or_none()
         if not target_user:
             raise HTTPException(status_code=404, detail="User not found")
+        if target_user.role.role_code != "OWNER":
+            raise HTTPException(status_code=400, detail="Target user must have the OWNER role")
         owner_name = target_user.name
         owner_mobile = target_user.mobile_number or payload.owner_mobile
         owner_email = target_user.email or payload.owner_email
@@ -111,12 +113,41 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     if target_user:
         target_user.property_id = new_property.property_id
         target_user.is_primary_owner = True
+        await db.flush()
+    else:
+        # Create a new user with the OWNER role
+        owner_role_stmt = select(Role).where(Role.role_code == "OWNER")
+        owner_role_res = await db.execute(owner_role_stmt)
+        owner_role = owner_role_res.scalar_one_or_none()
+        if not owner_role:
+            raise HTTPException(status_code=500, detail="OWNER role not found in system")
+        
+        # Generate a temporary password for the new owner user
+        import secrets
+        import string
+        from app.core.security import get_password_hash
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(10))
+        
+        new_user = User(
+            id=uuid.uuid4(),
+            property_id=new_property.property_id,
+            role_id=owner_role.id,
+            name=owner_name,
+            email=owner_email,
+            mobile_number=owner_mobile,
+            password_hash=get_password_hash(temp_password),
+            status="ACTIVE",
+            is_primary_owner=True
+        )
+        db.add(new_user)
+        await db.flush()
+        target_user = new_user
 
     
     # Provision the tenant database schema
     background_tasks.add_task(provision_tenant_schema, str(new_property.property_id))
     
-    current_user_id = target_user.id if target_user else None
+    current_user_id = target_user.id
     
     await AuditLogger.log(
         db,

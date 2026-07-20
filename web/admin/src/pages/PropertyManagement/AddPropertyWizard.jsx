@@ -44,7 +44,7 @@ export default function AddPropertyWizard() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const res = await fetchAPI('/users?unassigned_only=true');
+        const res = await fetchAPI('/users?unassigned_only=true&role_code=OWNER');
         setAvailableUsers(Array.isArray(res) ? res : res.data || []);
       } catch (err) {
         console.error('Failed to load users', err);

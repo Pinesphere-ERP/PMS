@@ -7,7 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/pms_provider.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../bookings/presentation/screens/create_booking_sheet.dart';
 
 class RoomGridScreen extends ConsumerStatefulWidget {
@@ -296,9 +297,10 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: CustomScrollView(
-        slivers: [
+      backgroundColor: AppColors.background,
+      body: PineBackground(
+        child: CustomScrollView(
+          slivers: [
           _buildAppBar(context),
           
           // Search Bar Sliver
@@ -379,7 +381,7 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                         final resortRooms = rooms.where((r) => r.resortId == resort.id).toList();
                         final vacantCount = resortRooms.where((r) => r.status == 'Vacant').length;
                         
-                        return BentoCard(
+                        return PineCard(
                           padding: EdgeInsets.zero,
                           onTap: () {
                             Navigator.push(
@@ -516,6 +518,7 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                 ),
         ],
       ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddResortDialog(context),
         backgroundColor: AppColors.primary,
@@ -599,9 +602,10 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     final cleaningCount = rooms.where((r) => r.status.toLowerCase() == 'cleaning').length;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: CustomScrollView(
-        slivers: [
+      backgroundColor: AppColors.background,
+      body: PineBackground(
+        child: CustomScrollView(
+          slivers: [
           // Banner Sliver AppBar
           SliverAppBar(
             expandedHeight: 180,
@@ -705,7 +709,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: BentoCard(
+              child: PineCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,7 +881,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
       );
     }
 
-    return BentoCard(
+    return PineCard(
       padding: const EdgeInsets.all(12),
       onTap: () => _showRoomActionsSheet(context, room),
       child: Stack(
@@ -2411,7 +2415,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
-              child: BentoCard(
+              child: PineCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

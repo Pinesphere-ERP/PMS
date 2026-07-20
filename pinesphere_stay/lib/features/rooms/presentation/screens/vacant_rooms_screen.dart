@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 
 class VacantRoomsScreen extends StatelessWidget {
   const VacantRoomsScreen({super.key});
@@ -58,8 +59,9 @@ class VacantRoomsScreen extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
+      body: PineBackground(
+        child: GridView.builder(
+          padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           crossAxisSpacing: 16,
@@ -69,7 +71,7 @@ class VacantRoomsScreen extends StatelessWidget {
         itemCount: vacantRooms.length,
         itemBuilder: (context, index) {
           final room = vacantRooms[index];
-          return BentoCard(
+    return PineCard(
             onTap: () => _showRoomDetails(context, room),
             padding: const EdgeInsets.all(16),
             child: FittedBox(
@@ -104,6 +106,7 @@ class VacantRoomsScreen extends StatelessWidget {
             ),
           );
         },
+      ),
       ),
     );
   }

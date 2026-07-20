@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
 
 class TodaysArrivalsScreen extends ConsumerStatefulWidget {
@@ -36,11 +37,12 @@ class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: PineBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Expected Arrivals',
@@ -83,6 +85,7 @@ class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -91,7 +94,7 @@ class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
     final arrivalStatus = isCheckedIn ? 'Checked In' : (arrival.status == 'Upcoming' ? 'Not Arrived' : arrival.status);
     final checkInTimeStr = DateFormat('hh:mm a').format(arrival.checkInDate);
     
-    return BentoCard(
+    return PineCard(
       onTap: () => _showArrivalDetails(arrival),
       padding: const EdgeInsets.all(16),
       child: Row(

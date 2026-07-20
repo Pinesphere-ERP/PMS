@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import 'package:pinesphere_stay/features/auth/presentation/providers/onboarding_notifier.dart';
 
 class OwnerRegistrationScreen extends ConsumerStatefulWidget {
@@ -69,16 +72,19 @@ class _OwnerRegistrationScreenState extends ConsumerState<OwnerRegistrationScree
       appBar: AppBar(
         title: const Text('Register as Owner'),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+      body: PineBackground(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: PineCard(
+                padding: const EdgeInsets.all(32.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                   const Text(
                     'Create Your Property',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -145,6 +151,7 @@ class _OwnerRegistrationScreenState extends ConsumerState<OwnerRegistrationScree
             ),
           ),
         ),
+      ),
       ),
     );
   }

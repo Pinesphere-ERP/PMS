@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
-
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BookingListScreen extends ConsumerStatefulWidget {
   const BookingListScreen({super.key});
@@ -39,9 +40,10 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: CustomScrollView(
-        slivers: [
+      backgroundColor: AppColors.background,
+      body: PineBackground(
+        child: CustomScrollView(
+          slivers: [
           _buildAppBar(context),
           SliverToBoxAdapter(
             child: Column(
@@ -83,8 +85,10 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                     ),
                   ),
                 ),
+            ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
+      ),
       ),
       // floatingActionButton: FloatingActionButton.extended(
       //   onPressed: () => _showCreateBookingSheet(context),
@@ -129,7 +133,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
       child: Row(
         children: [
           Expanded(
-            child: BentoCard(
+            child: PineCard(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +147,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: BentoCard(
+            child: PineCard(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +161,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: BentoCard(
+            child: PineCard(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +282,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
         sourceIcon = Icons.directions_walk_outlined;
     }
 
-    return BentoCard(
+    return PineCard(
       padding: const EdgeInsets.all(16),
       onTap: () => _showBookingDetailsSheet(context, booking),
       child: Row(

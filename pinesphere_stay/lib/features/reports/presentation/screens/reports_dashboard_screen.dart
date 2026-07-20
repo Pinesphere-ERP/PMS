@@ -4,7 +4,8 @@ import '../../../../core/network/tenant_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../core/presentation/widgets/role_guard.dart';
 import '../../../../core/permissions/permission_matrix.dart';
 
@@ -29,7 +30,8 @@ class ReportsDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      body: PineBackground(
+        child: CustomScrollView(
         slivers: [
           _buildAppBar(context),
           SliverToBoxAdapter(
@@ -60,6 +62,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
       ),
       floatingActionButton: _buildExportBar(context, ref),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -217,7 +220,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
   Widget _buildMetricCard(BuildContext context, IconData icon, Color iconColor,
       String title, String value,
       {Color? bg, Color? textColor}) {
-    return BentoCard(
+    return PineCard(
       backgroundColor: bg ?? AppColors.surfaceContainerLowest,
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -269,7 +272,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
     final maxRevenue = weekRevenues.reduce((a, b) => a > b ? a : b);
     final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-    return BentoCard(
+    return PineCard(
       child: Column(
         children: [
           Row(
@@ -365,7 +368,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
     final total = occupied + vacant;
     final occupancyRate = total > 0 ? occupied / total : 0.0;
 
-    return BentoCard(
+    return PineCard(
       child: Row(
         children: [
           SizedBox(
@@ -454,7 +457,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
   // ─────────────────────────────────────────────────────────
 
   Widget _buildPNLSection(BuildContext context, WidgetRef ref) {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

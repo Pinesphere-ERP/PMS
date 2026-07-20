@@ -7,7 +7,7 @@ from sqlalchemy import text
 import os
 
 from app.core.security import get_password_hash
-from app.infra.models import User, Role, Owner, Business, Property
+from app.infra.models import User, Role, Owner, Business, Property, Permission, RolePermission
 from app.infra.database import provision_tenant_schema
 
 async def seed_hosted():
@@ -18,22 +18,101 @@ async def seed_hosted():
 
     async with async_session() as db:
         async with db.begin():
-            # Check if role exists
-            role_result = await db.execute(text("SELECT id FROM roles WHERE role_code = 'OWNER'"))
-            role_row = role_result.first()
-            if not role_row:
-                owner_role = Role(
-                    id=uuid.uuid4(),
-                    role_code="OWNER",
-                    role_name="Property Owner",
-                    is_system_role=True,
-                    description="Default role for Property Owners"
-                )
-                db.add(owner_role)
-                await db.flush()
-                role_id = owner_role.id
-            else:
-                role_id = role_row.id
+            # 1. Seed Roles
+            roles_data = [
+                {"role_code": "OWNER", "role_name": "Property Owner", "description": "Default role for Property Owners"},
+                {"role_code": "RECEPTIONIST", "role_name": "Receptionist", "description": "Handles guest check-ins and front desk operations"},
+                {"role_code": "HOUSEKEEPING", "role_name": "Housekeeping", "description": "Manages room cleaning and status"},
+                {"role_code": "MAINTENANCE", "role_name": "Maintenance", "description": "Handles repair and maintenance tasks"},
+                {"role_code": "KITCHEN", "role_name": "Kitchen Staff", "description": "Manages dining and room service orders"},
+                {"role_code": "MANAGER", "role_name": "Property Manager", "description": "Oversees daily operations"},
+                {"role_code": "ACCOUNTANT", "role_name": "Accountant", "description": "Manages billing, invoicing, and finances"},
+                {"role_code": "SECURITY", "role_name": "Security Guard", "description": "Monitors property security and visitor logs"},
+                {"role_code": "BROKER", "role_name": "Broker", "description": "Manages guest acquisition and broker commissions"}
+            ]
+
+            roles_dict = {}
+            for r in roles_data:
+                role_result = await db.execute(text(f"SELECT id FROM roles WHERE role_code = '{r['role_code']}'"))
+                role_row = role_result.first()
+                if not role_row:
+                    new_role = Role(
+                        id=uuid.uuid4(),
+                        role_code=r["role_code"],
+                        role_name=r["role_name"],
+                        is_system_role=True,
+                        description=r["description"]
+                    )
+                    db.add(new_role)
+                    await db.flush()
+                    roles_dict[r["role_code"]] = new_role.id
+                else:
+                    roles_dict[r["role_code"]] = role_row.id
+
+            role_id = roles_dict["OWNER"]
+
+            # 2. Seed Permissions
+            permissions_data = [
+                {"code": "property.manage", "module": "Property", "desc": "Manage property details"},
+                {"code": "property.view", "module": "Property", "desc": "View property details"},
+                {"code": "bookings.manage", "module": "Bookings", "desc": "Manage bookings"},
+                {"code": "bookings.view", "module": "Bookings", "desc": "View bookings"},
+                {"code": "rooms.manage", "module": "Rooms", "desc": "Manage rooms"},
+                {"code": "rooms.view", "module": "Rooms", "desc": "View rooms"},
+                {"code": "staff.manage", "module": "Staff", "desc": "Manage staff members"},
+                {"code": "staff.view", "module": "Staff", "desc": "View staff directory"},
+                {"code": "reports.view", "module": "Reports", "desc": "View analytics and reports"},
+                {"code": "billing.manage", "module": "Billing", "desc": "Manage billing and invoices"},
+                {"code": "housekeeping.manage", "module": "Housekeeping", "desc": "Manage housekeeping tasks"},
+                {"code": "kitchen.manage", "module": "Kitchen", "desc": "Manage kitchen operations"}
+            ]
+
+            permissions_dict = {}
+            for p in permissions_data:
+                perm_result = await db.execute(text(f"SELECT id FROM permissions WHERE permission_code = '{p['code']}'"))
+                perm_row = perm_result.first()
+                if not perm_row:
+                    new_perm = Permission(
+                        id=uuid.uuid4(),
+                        permission_code=p['code'],
+                        module_name=p['module'],
+                        description=p['desc']
+                    )
+                    db.add(new_perm)
+                    await db.flush()
+                    permissions_dict[p['code']] = new_perm.id
+                else:
+                    permissions_dict[p['code']] = perm_row.id
+
+            # 3. Map Permissions to Roles
+            role_mappings = {
+                "OWNER": ["property.manage", "property.view", "bookings.manage", "bookings.view", "rooms.manage", "rooms.view", "staff.manage", "staff.view", "reports.view", "billing.manage", "housekeeping.manage", "kitchen.manage"],
+                "MANAGER": ["property.view", "bookings.manage", "bookings.view", "rooms.manage", "rooms.view", "staff.view", "reports.view", "billing.manage", "housekeeping.manage", "kitchen.manage"],
+                "RECEPTIONIST": ["property.view", "bookings.manage", "bookings.view", "rooms.view", "staff.view", "billing.manage"],
+                "HOUSEKEEPING": ["rooms.view", "housekeeping.manage"],
+                "KITCHEN": ["kitchen.manage"],
+                "ACCOUNTANT": ["property.view", "bookings.view", "reports.view", "billing.manage"],
+                "SECURITY": ["property.view", "bookings.view"],
+                "BROKER": ["bookings.view"],
+                "MAINTENANCE": ["rooms.view"]
+            }
+
+            for r_code, p_codes in role_mappings.items():
+                r_id = roles_dict[r_code]
+                for p_code in p_codes:
+                    p_id = permissions_dict[p_code]
+                    rp_result = await db.execute(text(f"SELECT id FROM role_permissions WHERE role_id = '{r_id}' AND permission_id = '{p_id}'"))
+                    rp_row = rp_result.first()
+                    if not rp_row:
+                        new_rp = RolePermission(
+                            id=uuid.uuid4(),
+                            role_id=r_id,
+                            permission_id=p_id,
+                            access_level="write" if "manage" in p_code else "read"
+                        )
+                        db.add(new_rp)
+            await db.flush()
+
 
             # Create Owner
             owner_id = uuid.uuid4()

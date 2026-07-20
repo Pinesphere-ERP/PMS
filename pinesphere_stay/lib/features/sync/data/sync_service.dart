@@ -72,7 +72,7 @@ class SyncService {
   /// Queues a local mutation to be synced to the backend
   void enqueueMutation({
     required String entityType,
-    required int entityId,
+    required String entityId,
     required String operation,
     required Map<String, dynamic> payload,
   }) {

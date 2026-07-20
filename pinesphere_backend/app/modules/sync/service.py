@@ -117,19 +117,67 @@ class SyncService:
 
                 if record.operation == "CREATE":
                     if not existing:
-                        new_instance = model(**record.payload)
+                        # Fix Payload mapping
+                        if "uuid" in record.payload:
+                            record.payload[pk_col.name] = record.payload.pop("uuid")
+                        if "id" in record.payload and pk_col.name != "id":
+                            record.payload[pk_col.name] = record.payload.pop("id")
+                            
+                        valid_cols = {c.name: c for c in model.__table__.columns}
+                        filtered_payload = {}
+                        for k, v in record.payload.items():
+                            if k in valid_cols:
+                                ctype = type(valid_cols[k].type).__name__
+                                if v and isinstance(v, str) and ctype in ('UUID', 'PGUUID'):
+                                    try: filtered_payload[k] = uuid.UUID(v)
+                                    except ValueError: filtered_payload[k] = v
+                                elif v and isinstance(v, str) and ctype in ('Date', 'DATE'):
+                                    try: filtered_payload[k] = datetime.fromisoformat(v[:10]).date()
+                                    except ValueError: filtered_payload[k] = v
+                                else:
+                                    filtered_payload[k] = v
+                        
+                        new_instance = model(**filtered_payload)
                         # Ensure PK is set
                         setattr(new_instance, pk_col.name, entity_uuid)
                         self.db.add(new_instance)
                 
                 elif record.operation == "UPDATE":
                     if existing:
+                        valid_cols = {c.name: c for c in model.__table__.columns}
                         for key, value in record.payload.items():
-                            if hasattr(existing, key) and key != pk_col.name:
-                                setattr(existing, key, value)
+                            if key in valid_cols and hasattr(existing, key) and key != pk_col.name:
+                                ctype = type(valid_cols[key].type).__name__
+                                v = value
+                                if v and isinstance(v, str) and ctype in ('UUID', 'PGUUID'):
+                                    try: v = uuid.UUID(v)
+                                    except ValueError: pass
+                                elif v and isinstance(v, str) and ctype in ('Date', 'DATE'):
+                                    try: v = datetime.fromisoformat(v[:10]).date()
+                                    except ValueError: pass
+                                setattr(existing, key, v)
                     else:
                         # Upsert if missing
-                        new_instance = model(**record.payload)
+                        if "uuid" in record.payload:
+                            record.payload[pk_col.name] = record.payload.pop("uuid")
+                        if "id" in record.payload and pk_col.name != "id":
+                            record.payload[pk_col.name] = record.payload.pop("id")
+                            
+                        valid_cols = {c.name: c for c in model.__table__.columns}
+                        filtered_payload = {}
+                        for k, v in record.payload.items():
+                            if k in valid_cols:
+                                ctype = type(valid_cols[k].type).__name__
+                                if v and isinstance(v, str) and ctype in ('UUID', 'PGUUID'):
+                                    try: filtered_payload[k] = uuid.UUID(v)
+                                    except ValueError: filtered_payload[k] = v
+                                elif v and isinstance(v, str) and ctype in ('Date', 'DATE'):
+                                    try: filtered_payload[k] = datetime.fromisoformat(v[:10]).date()
+                                    except ValueError: filtered_payload[k] = v
+                                else:
+                                    filtered_payload[k] = v
+                        
+                        new_instance = model(**filtered_payload)
                         setattr(new_instance, pk_col.name, entity_uuid)
                         self.db.add(new_instance)
 

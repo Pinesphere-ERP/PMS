@@ -1,6 +1,7 @@
 import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/database/dao/booking_dao.dart';
@@ -37,7 +38,7 @@ class BookingService {
 
   Future<Map<String, dynamic>> createBooking(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('/bookings/', data: data);
+      final response = await _dio.post('/bookings', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = BookingEntity(
         uuid: body['id']?.toString() ?? data['uuid'] ?? '',
@@ -87,7 +88,7 @@ class BookingService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('createBooking network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final localUuid = data['uuid'] ?? const Uuid().v4();
       final entity = BookingEntity(
         uuid: localUuid.toString(),
         propertyId: data['property_id'] ?? '',
@@ -121,7 +122,7 @@ class BookingService {
       final localId = _bookingDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'Booking',
-        entityId: localId,
+        entityId: localUuid.toString(),
         operation: 'CREATE',
         payload: data,
       );
@@ -151,7 +152,7 @@ class BookingService {
       final queryParams = <String, dynamic>{'property_id': propertyId};
       if (status != null) queryParams['status'] = status;
       if (date != null) queryParams['date'] = date;
-      final response = await _dio.get('/bookings/', queryParameters: queryParams);
+      final response = await _dio.get('/bookings', queryParameters: queryParams);
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       // Cache data locally for offline use
@@ -228,7 +229,7 @@ class BookingService {
       AppLogger.w('cancelBooking network failed, queuing sync', e);
       _syncService.enqueueMutation(
         entityType: 'Booking',
-        entityId: 0,
+        entityId: bookingId,
         operation: 'UPDATE',
         payload: {'id': bookingId, 'booking_status': 'cancelled'},
       );

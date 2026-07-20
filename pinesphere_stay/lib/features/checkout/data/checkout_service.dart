@@ -1,6 +1,7 @@
 import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/database/dao/checkout_dao.dart';
@@ -43,7 +44,7 @@ class CheckOutService {
 
   Future<Map<String, dynamic>> performCheckOut(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('/checkout/', data: data);
+      final response = await _dio.post('/checkout', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = CheckOutEntity(
         uuid: body['id']?.toString() ?? data['uuid'] ?? '',
@@ -95,7 +96,7 @@ class CheckOutService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('performCheckOut network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final localUuid = data['uuid'] ?? const Uuid().v4();
       final entity = CheckOutEntity(
         uuid: localUuid.toString(),
         checkinId: data['checkin_id'] ?? '',
@@ -130,7 +131,7 @@ class CheckOutService {
       _updateRoomToDirty(data['room_id']?.toString() ?? '');
       _syncService.enqueueMutation(
         entityType: 'CheckOut',
-        entityId: localId,
+        entityId: localUuid.toString(),
         operation: 'CREATE',
         payload: data,
       );

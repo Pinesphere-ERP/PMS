@@ -129,8 +129,30 @@ class SyncService {
         final response = await _dio.post('/sync/push', data: requestPayload);
         
         if (response.statusCode == 200 || response.statusCode == 201) {
-          // Mark as synced/remove from queue
-          _syncQueueDao.removeMany(pendingItems.map((e) => e.id).toList());
+          final acceptedIds = List<String>.from(response.data['accepted_ids'] ?? []);
+          final conflicts = List<dynamic>.from(response.data['conflicts'] ?? []);
+          final failedIds = List<String>.from(response.data['failed_ids'] ?? []);
+          
+          // Remove accepted and conflicted items from queue
+          final toRemoveIds = <int>[];
+          for (final item in pendingItems) {
+            final uuidStr = item.entityId.toString();
+            if (acceptedIds.contains(uuidStr)) {
+              toRemoveIds.add(item.id);
+            } else if (conflicts.any((c) => c['entity_id'] == uuidStr)) {
+              // Server rejected because of conflict (server is newer). Remove local mutation.
+              // A subsequent pull will fetch the newer server version.
+              toRemoveIds.add(item.id);
+            } else if (failedIds.contains(uuidStr)) {
+              // Mark as failed
+              item.status = 2; // Failed status
+              _syncQueueDao.enqueue(item); // Update
+            }
+          }
+          
+          if (toRemoveIds.isNotEmpty) {
+            _syncQueueDao.removeMany(toRemoveIds);
+          }
         }
       }
       

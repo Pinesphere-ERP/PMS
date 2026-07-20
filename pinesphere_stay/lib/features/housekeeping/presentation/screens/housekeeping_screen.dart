@@ -4,7 +4,7 @@ import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:pinesphere_stay/features/housekeeping/presentation/providers/housekeeping_providers.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
-import 'package:pinesphere_stay/features/tasks/data/models/task_model.dart';
+import 'package:pinesphere_stay/features/housekeeping/domain/models/housekeeping_task_entity.dart';
 
 class HousekeepingScreen extends ConsumerWidget {
   const HousekeepingScreen({super.key});
@@ -72,7 +72,7 @@ class HousekeepingScreen extends ConsumerWidget {
 }
 
 class _TaskSwipeCard extends ConsumerWidget {
-  final TaskModel task;
+  final HousekeepingTaskEntity task;
   const _TaskSwipeCard({required this.task});
 
   @override
@@ -90,13 +90,13 @@ class _TaskSwipeCard extends ConsumerWidget {
             ListTile(
               contentPadding: const EdgeInsets.all(16),
               title: Text(
-                task.roomId != null ? 'Room ${task.roomId}' : 'General Area',
+                task.roomNumber.isNotEmpty ? 'Room ${task.roomNumber}' : 'General Area',
                 style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
-                  task.description ?? 'Standard Checkout Cleaning',
+                  task.remarks.isNotEmpty ? task.remarks : 'Standard Cleaning',
                   style: theme.textTheme.bodyLarge,
                 ),
               ),
@@ -140,14 +140,14 @@ class _TaskSwipeCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildBigActionButton(TaskModel task, HousekeepingTaskController controller) {
+  Widget _buildBigActionButton(HousekeepingTaskEntity task, HousekeepingTaskController controller) {
     switch (task.status) {
       case 'pending':
         return SizedBox(
           width: double.infinity,
           height: 60,
           child: ElevatedButton(
-            onPressed: () => controller.acceptTask(task.taskId),
+            onPressed: () => controller.acceptTask(task.uuid),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -160,7 +160,7 @@ class _TaskSwipeCard extends ConsumerWidget {
           width: double.infinity,
           height: 60,
           child: ElevatedButton(
-            onPressed: () => controller.startCleaning(task.taskId),
+            onPressed: () => controller.startCleaning(task.uuid),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -173,7 +173,7 @@ class _TaskSwipeCard extends ConsumerWidget {
           width: double.infinity,
           height: 60,
           child: ElevatedButton(
-            onPressed: () => controller.markCompleted(task.taskId),
+            onPressed: () => controller.markCompleted(task.uuid),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

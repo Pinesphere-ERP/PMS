@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.modules.auth import router as auth
+from app.modules.kitchen.router import router as kitchen
+from app.modules.dashboard.router import router as dashboard
 from app.modules.sync import router as sync
 from app.modules.properties import router as property
 from app.modules.subscriptions import router as subscription
@@ -43,6 +45,8 @@ api_router.include_router(property, prefix="/properties", tags=["Property Manage
 api_router.include_router(subscription, prefix="/subscriptions", tags=["Subscription Management"])
 api_router.include_router(devices, prefix="/devices", tags=["Device Management"])
 api_router.include_router(payments, prefix="/payments", tags=["Payments"])
+api_router.include_router(dashboard, dependencies=_paywall)
+api_router.include_router(kitchen, prefix="/kitchen", tags=["Kitchen Operations"], dependencies=_paywall)
 api_router.include_router(portal)  # Portal has its own prefix="/portal"
 api_router.include_router(onboarding, prefix="/onboarding", tags=["Onboarding"])
 

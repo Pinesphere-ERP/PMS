@@ -43,32 +43,6 @@ class UserRepository {
     required String pin,
   }) async {
     try {
-      if (password == '1234') {
-        final role = UserRole.values.firstWhere(
-          (e) => email.toLowerCase().contains(e.name.toLowerCase()),
-          orElse: () => UserRole.owner,
-        );
-        
-        await _secureStorage.write(key: 'access_token', value: 'mock_token');
-        await _secureStorage.write(key: 'refresh_token', value: 'mock_refresh');
-        
-        final userId = _uuid.v4();
-        await _secureStorage.write(key: 'cached_user_id', value: userId);
-        
-        final pinHashLocal = _hashPin(pin);
-        await _secureStorage.write(key: 'offline_pin_hash', value: pinHashLocal);
-        
-        final userModel = UserModel(
-          id: userId,
-          name: 'Test ${role.displayName}',
-          email: email,
-          role: role,
-        );
-        await _secureStorage.write(key: 'cached_user', value: jsonEncode(userModel.toJson()));
-        
-        return Right(userModel);
-      }
-
       final deviceInfo = DeviceInfoService(_secureStorage);
       final fingerprint = await deviceInfo.getDeviceFingerprint();
       final deviceName = await deviceInfo.getDeviceName();

@@ -206,7 +206,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildKPIsGrid(BuildContext context, WidgetRef ref) {
-    final dashboardState = ref.watch(dashboardProvider);
+    final dashboardAsync = ref.watch(dashboardProvider);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,23 +220,27 @@ class DashboardScreen extends ConsumerWidget {
                 ),
           ),
         ),
-        GridView.count(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 1.0,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _buildKPICard(context, 'Todays arrival', '${dashboardState.todaysArrivals}', AppColors.primary, Icons.luggage, onTap: () => context.push('/todays-arrivals')),
-            _buildKPICard(context, 'Todays departures', '${dashboardState.todaysDepartures}', AppColors.onSurface, Icons.flight_takeoff, onTap: () => context.push('/todays-departures')),
-            _buildKPICard(context, 'Occupied Rooms', '${dashboardState.occupiedRooms}', AppColors.primary, Icons.hotel, onTap: () => context.push('/occupied-rooms')),
-            _buildKPICard(context, 'Vacant Rooms', '${dashboardState.vacantRooms}', AppColors.outline, Icons.vpn_key, onTap: () => context.push('/vacant-rooms')),
-            _buildKPICard(context, 'Pending Checkouts', '${dashboardState.pendingCheckouts}', AppColors.secondary, Icons.hourglass_bottom, onTap: () => context.push('/pending-checkouts')),
-            _buildKPICard(context, 'House Keeping', '${dashboardState.housekeepingCount}', AppColors.error, Icons.cleaning_services, onTap: () => context.push('/housekeeping')),
-            _buildKPICard(context, 'Pending payments', '${dashboardState.pendingPaymentsCount}', AppColors.error, Icons.receipt_long, onTap: () => context.push('/pending-payments')),
-            _buildKPICard(context, 'Revenue today', '\$${dashboardState.revenueToday.toStringAsFixed(0)}', AppColors.primaryContainer, Icons.monetization_on, onTap: () => context.push('/todays-revenue')),
-          ],
+        dashboardAsync.when(
+          data: (dashboardState) => GridView.count(
+            crossAxisCount: 2,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 1.0,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _buildKPICard(context, 'Todays arrival', '${dashboardState.todaysArrivals}', AppColors.primary, Icons.luggage, onTap: () => context.push('/todays-arrivals')),
+              _buildKPICard(context, 'Todays departures', '${dashboardState.todaysDepartures}', AppColors.onSurface, Icons.flight_takeoff, onTap: () => context.push('/todays-departures')),
+              _buildKPICard(context, 'Occupied Rooms', '${dashboardState.occupiedRooms}', AppColors.primary, Icons.hotel, onTap: () => context.push('/occupied-rooms')),
+              _buildKPICard(context, 'Vacant Rooms', '${dashboardState.vacantRooms}', AppColors.outline, Icons.vpn_key, onTap: () => context.push('/vacant-rooms')),
+              _buildKPICard(context, 'Pending Checkouts', '${dashboardState.pendingCheckouts}', AppColors.secondary, Icons.hourglass_bottom, onTap: () => context.push('/pending-checkouts')),
+              _buildKPICard(context, 'House Keeping', '${dashboardState.housekeepingCount}', AppColors.error, Icons.cleaning_services, onTap: () => context.push('/housekeeping')),
+              _buildKPICard(context, 'Pending payments', '${dashboardState.pendingPaymentsCount}', AppColors.error, Icons.receipt_long, onTap: () => context.push('/pending-payments')),
+              _buildKPICard(context, 'Revenue today', '\$${dashboardState.revenueToday.toStringAsFixed(0)}', AppColors.primaryContainer, Icons.monetization_on, onTap: () => context.push('/todays-revenue')),
+            ],
+          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error loading dashboard: $error')),
         ),
       ],
     );

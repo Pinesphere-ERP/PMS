@@ -1,5 +1,6 @@
 import '../../../main.dart';
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
@@ -96,7 +97,7 @@ class GuestService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('createGuest network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final localUuid = data['uuid'] ?? const Uuid().v4();
       final entity = GuestEntity(
         uuid: localUuid.toString(),
         propertyId: data['property_id'] ?? '',
@@ -120,9 +121,9 @@ class GuestService {
       final localId = _guestDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'Guest',
-        entityId: localId,
+        entityId: localUuid.toString(),
         operation: 'CREATE',
-        payload: data,
+        payload: {...data, 'uuid': localUuid.toString()},
       );
       return data;
     } catch (e) {

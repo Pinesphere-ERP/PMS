@@ -1,5 +1,6 @@
 import 'package:pinesphere_stay/main.dart';
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
@@ -100,8 +101,9 @@ class SettingsService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('createPropertySetting network failed, storing locally and queuing sync', e);
+      final localUuid = const Uuid().v4();
       final entity = PropertySettingEntity(
-        uuid: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        uuid: localUuid,
         propertyId: propertyId,
         settingKey: data['setting_key'] ?? '',
         settingValue: data['setting_value'] ?? '',
@@ -112,9 +114,9 @@ class SettingsService {
       final localId = _propertySettingsBox.put(entity);
       _syncService.enqueueMutation(
         entityType: 'PropertySetting',
-        entityId: localId,
+        entityId: localUuid,
         operation: 'CREATE',
-        payload: data,
+        payload: {...data, 'id': localUuid},
       );
       return data;
     } catch (e) {
@@ -168,7 +170,7 @@ class SettingsService {
 
       _syncService.enqueueMutation(
         entityType: 'PropertySetting',
-        entityId: 0,
+        entityId: settingId,
         operation: 'UPDATE',
         payload: {'id': settingId, ...data},
       );

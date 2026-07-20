@@ -11,6 +11,8 @@ from app.modules.checkin.schemas import (
     WalkInCheckInRequest,
 )
 from app.modules.checkin import service
+from app.modules.reports.service import update_daily_kpi_snapshot
+from datetime import date
 
 router = APIRouter()
 
@@ -23,7 +25,9 @@ async def perform_checkin(
 ):
     """Perform a check-in for an existing confirmed booking."""
     booking = await assert_resource_property_access(Booking, Booking.booking_id, req.booking_id, current_user, db)
-    return await service.perform_checkin(db, req, booking.property_id, current_user.id)
+    res = await service.perform_checkin(db, req, booking.property_id, current_user.id)
+    await update_daily_kpi_snapshot(db, booking.property_id, date.today())
+    return res
 
 
 @router.post("/walkin", response_model=CheckInResponse, status_code=status.HTTP_201_CREATED)
@@ -35,7 +39,9 @@ async def walkin_checkin(
     """Walk-in guest: creates guest, booking, and check-in in a single call."""
     await assert_property_access(req.property_id, current_user, db)
     await assert_resource_property_access(Room, Room.room_id, req.room_id, current_user, db)
-    return await service.perform_walkin_checkin(db, req)
+    res = await service.perform_walkin_checkin(db, req)
+    await update_daily_kpi_snapshot(db, req.property_id, date.today())
+    return res
 
 
 @router.get("/today", response_model=List[CheckInResponse])

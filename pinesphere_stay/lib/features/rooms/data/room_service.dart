@@ -58,10 +58,10 @@ class RoomService {
 
       _syncService.enqueueMutation(
         entityType: 'Room',
-        entityId: updatedRoom.id,
+        entityId: roomId,
         operation: 'UPDATE',
         payload: {
-          'id': roomId,
+          'uuid': roomId,
           'status': occupancyStatus,
           'housekeeping_status': housekeepingStatus,
         },

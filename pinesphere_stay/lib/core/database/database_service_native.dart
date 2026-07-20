@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pinesphere_stay/objectbox.g.dart';
@@ -73,8 +74,19 @@ class DatabaseService implements IDatabaseService {
       final docsDir = await getApplicationDocumentsDirectory();
       storePath = p.join(docsDir.path, 'obx-pinesphere');
     }
-    _store = await openStore(directory: storePath);
-
+    try {
+      _store = await openStore(directory: storePath);
+    } catch (e) {
+      if (!isTest) {
+        final dir = Directory(storePath);
+        if (dir.existsSync()) {
+          dir.deleteSync(recursive: true);
+        }
+        _store = await openStore(directory: storePath);
+      } else {
+        rethrow;
+      }
+    }
     _guestDao = GuestDaoNative(_store.box<GuestEntity>());
     _bookingDao = BookingDaoNative(_store.box<BookingEntity>());
     _roomDao = RoomDaoNative(_store.box<RoomEntity>());

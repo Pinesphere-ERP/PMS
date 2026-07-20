@@ -3,7 +3,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinesphere_stay/main.dart';
 import '../domain/models/audit_log_entity.dart';
-import 'package:pinesphere_stay/objectbox.g.dart';
+import '../../../core/database/dao/audit_dao.dart';
 
 final _genesisHash = '0' * 64;
 
@@ -28,32 +28,18 @@ String _computeEntryHash({
 }
 
 final auditServiceProvider = Provider<AuditService>((ref) {
-  return AuditService(databaseService.store);
+  return AuditService(databaseService.auditDao);
 });
 
 class AuditService {
-  late final Box<AuditLogEntity> _auditBox;
+  late final IAuditDao _auditDao;
 
-  AuditService(Store store) {
-    _auditBox = store.box<AuditLogEntity>();
+  AuditService(IAuditDao auditDao) {
+    _auditDao = auditDao;
   }
 
   String _getPreviousHash(String? propertyId) {
-    Condition<AuditLogEntity> cond;
-    if (propertyId != null) {
-      cond = AuditLogEntity_.propertyId.equals(propertyId);
-    } else {
-      cond = AuditLogEntity_.propertyId.isNull();
-    }
-    final query = _auditBox
-        .query(cond)
-        .order(AuditLogEntity_.timestamp, flags: Order.descending)
-        .build();
-    final results = query.find();
-    query.close();
-
-    if (results.isEmpty) return _genesisHash;
-    return results.first.entryHash ?? _genesisHash;
+    return _auditDao.getLatestHash(propertyId) ?? _genesisHash;
   }
 
   AuditLogEntity log({
@@ -99,7 +85,7 @@ class AuditService {
       entryHash: entryHash,
     );
 
-    _auditBox.put(entry);
+    _auditDao.put(entry);
     return entry;
   }
 
@@ -109,42 +95,16 @@ class AuditService {
     String? actionType,
     int limit = 50,
   }) {
-    Condition<AuditLogEntity>? condition;
-    
-    if (propertyId != null) {
-      final c = AuditLogEntity_.propertyId.equals(propertyId);
-      condition = c;
-    }
-    if (moduleName != null) {
-      final c = AuditLogEntity_.moduleName.equals(moduleName);
-      condition = condition == null ? c : condition.and(c);
-    }
-    if (actionType != null) {
-      final c = AuditLogEntity_.actionType.equals(actionType);
-      condition = condition == null ? c : condition.and(c);
-    }
-
-    final query = (condition == null ? _auditBox.query() : _auditBox.query(condition))
-        .order(AuditLogEntity_.timestamp, flags: Order.descending)
-        .build();
-    final results = query.find();
-    query.close();
-    return results.take(limit).toList();
+    return _auditDao.queryLogs(
+      propertyId: propertyId,
+      moduleName: moduleName,
+      actionType: actionType,
+      limit: limit,
+    );
   }
 
   bool verifyChain({String? propertyId}) {
-    Condition<AuditLogEntity> cond;
-    if (propertyId != null) {
-      cond = AuditLogEntity_.propertyId.equals(propertyId);
-    } else {
-      cond = AuditLogEntity_.propertyId.isNull();
-    }
-    final query = _auditBox
-        .query(cond)
-        .order(AuditLogEntity_.timestamp)
-        .build();
-    final entries = query.find();
-    query.close();
+    final entries = _auditDao.getChain(propertyId: propertyId);
 
     if (entries.isEmpty) return true;
 

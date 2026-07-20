@@ -8,10 +8,17 @@ class LoginRequest(BaseModel):
     property_id: Optional[uuid.UUID] = None
     device_uid: str
 
+class AccessibleProperty(BaseModel):
+    property_id: str
+    role_id: str
+    is_primary: bool
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    role_code: str
+    properties: list[AccessibleProperty] = []
 
 class OfflineBootstrapRequest(BaseModel):
     device_uid: str

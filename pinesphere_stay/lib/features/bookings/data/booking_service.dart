@@ -1,10 +1,9 @@
-import 'package:pinesphere_stay/main.dart';
+import '../../../main.dart';
 import 'package:dio/dio.dart';
-import 'package:pinesphere_stay/core/database/obx_annotations.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
-import 'package:pinesphere_stay/objectbox.g.dart';
+import '../../../core/database/dao/booking_dao.dart';
 import '../../audit/data/audit_service.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/booking_entity.dart';
@@ -17,23 +16,22 @@ BookingService bookingService(Ref ref) {
     dio: ref.watch(dioClientProvider),
     auditService: ref.watch(auditServiceProvider),
   );
-  service.initialize(databaseService.store, ref.read(syncServiceProvider));
+  service.initialize(databaseService.bookingDao, ref.read(syncServiceProvider));
   return service;
 }
 
 class BookingService {
   final Dio _dio;
   final AuditService _audit;
-  late final Store _store;
-  late final Box<BookingEntity> _bookingBox;
+  late final IBookingDao _bookingDao;
   late final SyncService _syncService;
 
-  BookingService({required this._dio, required AuditService auditService})
-      : _audit = auditService;
+  BookingService({required Dio dio, required AuditService auditService})
+      : _dio = dio,
+        _audit = auditService;
 
-  void initialize(Store store, SyncService syncService) {
-    _store = store;
-    _bookingBox = _store.box<BookingEntity>();
+  void initialize(IBookingDao bookingDao, SyncService syncService) {
+    _bookingDao = bookingDao;
     _syncService = syncService;
   }
 
@@ -71,7 +69,7 @@ class BookingService {
         paymentStatus: body['payment_status']?.toString() ?? data['payment_status'] ?? 'pending',
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       );
-      _bookingBox.put(entity);
+      _bookingDao.put(entity);
       _audit.log(
         moduleName: 'bookings',
         actionType: 'create_booking',
@@ -120,7 +118,7 @@ class BookingService {
         paymentStatus: data['payment_status'] ?? 'pending',
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _bookingBox.put(entity);
+      final localId = _bookingDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'Booking',
         entityId: localId,
@@ -190,7 +188,7 @@ class BookingService {
       
       if (entities.isNotEmpty) {
         // Upsert matching UUIDs (would need a custom merge or clear in production, for prototype we put)
-        _bookingBox.putMany(entities);
+        _bookingDao.putMany(entities);
       }
       
       return dataList;
@@ -248,6 +246,6 @@ class BookingService {
   }
 
   Future<List<BookingEntity>> getCachedBookings() async {
-    return _bookingBox.getAll();
+    return _bookingDao.getAll();
   }
 }

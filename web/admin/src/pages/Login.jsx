@@ -19,7 +19,18 @@ export default function Login() {
       });
       
       localStorage.setItem('token', res.access_token);
-      window.location.href = '/properties';
+      localStorage.setItem('role_code', res.role_code);
+      
+      if (res.role_code === 'SUPER_ADMIN') {
+        window.location.href = '/users'; // Super Admin user management or dashboard
+      } else if (res.role_code === 'OWNER') {
+        window.location.href = '/properties';
+      } else if (res.role_code === 'GUEST') {
+        window.location.href = '/guest';
+      } else {
+        // Fallback (though the backend 403s operational roles on the web)
+        window.location.href = '/';
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {

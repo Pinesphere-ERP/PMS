@@ -5,4 +5,5 @@ abstract class IMaintenanceDao {
   List<MaintenanceTicketEntity> getAll();
   MaintenanceTicketEntity? get(int id);
   bool remove(int id);
+  List<MaintenanceTicketEntity> queryTickets(String propertyId, {String? status, String? category});
 }

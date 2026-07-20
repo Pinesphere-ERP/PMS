@@ -10,6 +10,7 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [properties, setProperties] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +24,7 @@ export default function UserManagement() {
   useEffect(() => {
     fetchUsers();
     fetchRoles();
+    fetchProperties();
   }, []);
 
   const fetchUsers = async () => {
@@ -46,17 +48,29 @@ export default function UserManagement() {
     }
   };
 
+  const fetchProperties = async () => {
+    try {
+      const res = await fetchAPI('/properties');
+      setProperties(Array.isArray(res) ? res : res.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = { ...formData };
+      if (!payload.property_id) delete payload.property_id; // Remove empty string if none selected
+      
       await fetchAPI('/users', {
         method: 'POST',
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       setShowModal(false);
-      setFormData({ name: '', email: '', mobile_number: '', username: '', password: '', role_id: '' });
+      setFormData({ name: '', email: '', mobile_number: '', username: '', password: '', role_id: '', property_id: '' });
       fetchUsers();
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to create user');
@@ -193,14 +207,25 @@ export default function UserManagement() {
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Role</label>
-                      <select name="role_id" required value={formData.role_id} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pine focus:ring-pine sm:text-sm p-2 border">
-                        <option value="">Select Role</option>
-                        {roles.map(r => (
-                          <option key={r.id} value={r.id}>{r.role_name}</option>
-                        ))}
-                      </select>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Role</label>
+                        <select name="role_id" required value={formData.role_id} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pine focus:ring-pine sm:text-sm p-2 border">
+                          <option value="">Select Role</option>
+                          {roles.map(r => (
+                            <option key={r.id} value={r.id}>{r.role_name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Property (Optional)</label>
+                        <select name="property_id" value={formData.property_id || ''} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pine focus:ring-pine sm:text-sm p-2 border">
+                          <option value="">No Property / System-wide</option>
+                          {properties.map(p => (
+                            <option key={p.property_id} value={p.property_id}>{p.property_name}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>

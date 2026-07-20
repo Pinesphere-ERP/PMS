@@ -21,6 +21,7 @@ class SyncQueueEntity {
   String hlcTimestamp;
 
   /// 0 = Pending, 1 = In Progress, 2 = Failed
+  @Index()
   int status;
 
   @Property(type: PropertyType.date)

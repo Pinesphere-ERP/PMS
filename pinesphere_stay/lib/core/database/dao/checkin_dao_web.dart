@@ -32,4 +32,30 @@ class CheckinDaoWeb implements ICheckinDao {
     }
     return false;
   }
+
+  @override
+  void putMany(List<CheckInEntity> checkins) {
+    for (final checkin in checkins) {
+      put(checkin);
+    }
+  }
+
+  @override
+  List<CheckInEntity> findByProperty(String propertyId) {
+    return _storage.values.where((c) => c.propertyId == propertyId).toList();
+  }
+
+  @override
+  List<CheckInEntity> findActiveByProperty(String propertyId) {
+    return _storage.values.where((c) => c.propertyId == propertyId && c.status == 'active').toList();
+  }
+  @override
+  CheckInEntity? findByUuid(String uuid) {
+    try {
+      return getAll().firstWhere((e) => e.uuid == uuid);
+    } catch (_) {
+      return null;
+    }
+  }
+
 }

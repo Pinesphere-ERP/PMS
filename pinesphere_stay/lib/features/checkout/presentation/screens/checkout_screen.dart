@@ -140,7 +140,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
       ),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getPendingCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '')),
-      success: (_, _) => const EmptyStateWidget(
+      success: (_, __) => const EmptyStateWidget(
         icon: Icons.check_circle,
         title: 'Action Completed',
         message: 'The checkout action was completed successfully.',
@@ -179,7 +179,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: checkouts.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, index) => _buildPendingCheckoutCard(checkouts[index], isViewOnly),
       ),
     );
@@ -277,7 +277,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
       ),
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (msg) => _buildErrorView(msg, () => ref.read(checkOutProvider.notifier).getTodaysCheckOuts(ref.read(authProvider).whenOrNull(authenticated: (u) => u.propertyId) ?? '')),
-      success: (_, _) => const EmptyStateWidget(
+      success: (_, __) => const EmptyStateWidget(
         icon: Icons.check_circle,
         title: 'Action Completed',
         message: 'The checkout action was completed successfully.',

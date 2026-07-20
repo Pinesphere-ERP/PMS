@@ -8,6 +8,7 @@ class MaintenanceTicketEntity {
   @Unique()
   String uuid;
   String roomId;
+  @Index()
   String propertyId;
   String roomNumber;
   String reportedBy;
@@ -17,6 +18,7 @@ class MaintenanceTicketEntity {
   String category;
   String priority;
   String issueDescription;
+  @Index()
   String status;
   double repairCost;
   String createdAt;

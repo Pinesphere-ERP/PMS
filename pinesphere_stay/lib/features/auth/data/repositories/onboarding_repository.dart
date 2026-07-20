@@ -26,7 +26,7 @@ class OnboardingRepository {
         'business_name': businessName,
         'property_name': propertyName,
         'property_type': 'HOTEL',
-        'star_category': 'THREE_STAR'
+        'star_category': 3
       });
 
       if (response.statusCode == 201 && response.data['success'] == true) {

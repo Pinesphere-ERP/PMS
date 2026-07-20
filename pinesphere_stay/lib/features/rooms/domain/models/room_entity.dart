@@ -9,9 +9,15 @@ class RoomEntity {
   @Unique()
   String uuid;
 
+  @Index()
+  String propertyId;
+
   String name;
   String type; // e.g. "Deluxe", "Standard"
+  
+  @Index()
   String status; // e.g. "Vacant", "Occupied", "Cleaning", "Maintenance"
+  
   double pricePerNight;
 
   /// Used for conflict resolution
@@ -20,6 +26,7 @@ class RoomEntity {
   RoomEntity({
     this.id = 0,
     required this.uuid,
+    this.propertyId = '',
     required this.name,
     required this.type,
     required this.status,

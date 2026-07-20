@@ -5,4 +5,8 @@ abstract class ICheckoutDao {
   List<CheckOutEntity> getAll();
   CheckOutEntity? get(int id);
   bool remove(int id);
+  void putMany(List<CheckOutEntity> checkouts);
+  List<CheckOutEntity> findByProperty(String propertyId);
+  List<CheckOutEntity> findPendingByProperty(String propertyId);
+  CheckOutEntity? findByUuid(String uuid);
 }

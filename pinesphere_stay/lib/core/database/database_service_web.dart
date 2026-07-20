@@ -1,4 +1,3 @@
-import 'package:pinesphere_stay/objectbox.g.dart';
 import 'database_service.dart';
 import 'dao/guest_dao.dart';
 import 'dao/guest_dao_web.dart';
@@ -20,8 +19,8 @@ import 'dao/kpi_dao.dart';
 import 'dao/kpi_dao_web.dart';
 import 'dao/audit_dao.dart';
 import 'dao/audit_dao_web.dart';
-import 'dao/sync_dao.dart';
-import 'dao/sync_dao_web.dart';
+import 'dao/sync_queue_dao.dart';
+import 'dao/sync_queue_dao_web.dart';
 import 'dao/sync_op_dao.dart';
 import 'dao/sync_op_dao_web.dart';
 import 'dao/user_dao.dart';
@@ -42,14 +41,14 @@ class DatabaseService implements IDatabaseService {
   late final ISettingsDao _settingsDao;
   late final IKpiDao _kpiDao;
   late final IAuditDao _auditDao;
-  late final ISyncDao _syncDao;
+  late final ISyncQueueDao _syncQueueDao;
   late final ISyncOpDao _syncOpDao;
   late final IUserDao _userDao;
   late final IRolePermDao _rolePermDao;
   late final IPermDao _permDao;
 
   @override
-  Future<void> init() async {
+  Future<void> init({bool isTest = false}) async {
     _guestDao = GuestDaoWeb();
     _bookingDao = BookingDaoWeb();
     _roomDao = RoomDaoWeb();
@@ -60,11 +59,21 @@ class DatabaseService implements IDatabaseService {
     _settingsDao = SettingsDaoWeb();
     _kpiDao = KpiDaoWeb();
     _auditDao = AuditDaoWeb();
-    _syncDao = SyncDaoWeb();
+    _syncQueueDao = SyncQueueDaoWeb();
     _syncOpDao = SyncOpDaoWeb();
     _userDao = UserDaoWeb();
     _rolePermDao = RolePermDaoWeb();
     _permDao = PermDaoWeb();
+  }
+
+  @override
+  // TODO: Remove store accessor after DAO migration is complete.
+  dynamic get store => null;
+
+  @override
+  T runInTransaction<T>(T Function() action) {
+    // Web has no native transaction support, execute synchronously
+    return action();
   }
 
   @override
@@ -98,7 +107,7 @@ class DatabaseService implements IDatabaseService {
   IAuditDao get auditDao => _auditDao;
 
   @override
-  ISyncDao get syncDao => _syncDao;
+  ISyncQueueDao get syncQueueDao => _syncQueueDao;
 
   @override
   ISyncOpDao get syncOpDao => _syncOpDao;
@@ -111,7 +120,4 @@ class DatabaseService implements IDatabaseService {
 
   @override
   IPermDao get permDao => _permDao;
-
-  @override
-  Store get store => throw UnimplementedError('Store is not supported on web');
 }

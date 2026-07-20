@@ -33,4 +33,13 @@ class GuestDaoWeb implements IGuestDao {
     }
     return false;
   }
+  @override
+  GuestEntity? findByUuid(String uuid) {
+    try {
+      return getAll().firstWhere((e) => e.uuid == uuid);
+    } catch (_) {
+      return null;
+    }
+  }
+
 }

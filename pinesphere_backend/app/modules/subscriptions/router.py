@@ -62,7 +62,7 @@ async def create_subscription_plan(payload: dict, db: AsyncSession = Depends(get
     )
     db.add(plan)
     try:
-        await db.commit()
+        await db.flush()
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Could not create plan. Name might be a duplicate.")
@@ -97,7 +97,6 @@ async def update_subscription_plan(plan_id: str, payload: dict, db: AsyncSession
     if "status" in payload:
         plan.status = payload["status"]
         
-    await db.commit()
     
     await AuditLogger.log(
         db,
@@ -119,7 +118,6 @@ async def delete_subscription_plan(plan_id: str, db: AsyncSession = Depends(get_
         raise HTTPException(status_code=404, detail="Plan not found")
         
     await db.delete(plan)
-    await db.commit()
     
     await AuditLogger.log(
         db,
@@ -446,7 +444,6 @@ async def toggle_subscription_status(property_id: str, payload: dict, db: AsyncS
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
     sub.status = "Active" if action == "enable" else "Disabled"
-    await db.commit()
     
     await AuditLogger.log(
         db,
@@ -473,7 +470,6 @@ async def toggle_subscription_required(property_id: str, payload: dict, db: Asyn
         sub.subscription_required = required
     else:
         sub.subscription_required = not sub.subscription_required
-    await db.commit()
     
     await AuditLogger.log(
         db,
@@ -500,7 +496,6 @@ async def update_plan(property_id: str, payload: dict, db: AsyncSession = Depend
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
     sub.plan = new_plan
-    await db.commit()
     
     await AuditLogger.log(
         db,
@@ -527,7 +522,6 @@ async def generate_license(property_id: str, db: AsyncSession = Depends(get_db),
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
     sub.license_id = f"PSL-{secrets.token_hex(8).upper()}"
-    await db.commit()
     
     await AuditLogger.log(
         db,

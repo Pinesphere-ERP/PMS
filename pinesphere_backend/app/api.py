@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from app.modules.auth import router as auth
 from app.modules.sync import router as sync
 from app.modules.properties import router as property
@@ -29,43 +29,50 @@ from app.modules.security_guard.router import router as security_guard
 from app.modules.manager.router import router as manager
 from app.modules.accountant.router import router as accountant
 
+# F-11 fix: subscription paywall gate for property-level endpoints
+from app.core.subscription_gate import require_active_subscription
+
+_paywall = [Depends(require_active_subscription)]
+
 api_router = APIRouter()
 
-# ── Core ──────────────────────────────────────────────────────────────────────
+# ── Core (exempt from paywall — needed before/without a subscription) ─────────
 api_router.include_router(auth, prefix="/auth", tags=["Authentication"])
 api_router.include_router(sync, prefix="/sync", tags=["Sync Engine"])
 api_router.include_router(property, prefix="/properties", tags=["Property Management"])
 api_router.include_router(subscription, prefix="/subscriptions", tags=["Subscription Management"])
 api_router.include_router(devices, prefix="/devices", tags=["Device Management"])
 api_router.include_router(payments, prefix="/payments", tags=["Payments"])
-api_router.include_router(bookings, prefix="/bookings", tags=["Booking Management"])
-api_router.include_router(checkin, prefix="/checkin", tags=["Check-In Management"])
-api_router.include_router(checkout, prefix="/checkout", tags=["Check-Out Management"])
-api_router.include_router(housekeeping, prefix="/housekeeping", tags=["Housekeeping & Maintenance"])
-api_router.include_router(reports, prefix="/reports", tags=["Reports & Analytics"])
-api_router.include_router(staff)
-api_router.include_router(settings, prefix="/settings", tags=["Settings & Configuration"])
-api_router.include_router(audit, prefix="/audit", tags=["Audit Logs"])
-api_router.include_router(users, prefix="/users", tags=["User Management"])
-api_router.include_router(guests, prefix="/guests", tags=["Guest Management"])
-api_router.include_router(tasks, prefix="/tasks", tags=["Shared Tasks"])
-api_router.include_router(notifications, prefix="/notifications", tags=["Notifications"])
 api_router.include_router(portal)  # Portal has its own prefix="/portal"
 api_router.include_router(onboarding, prefix="/onboarding", tags=["Onboarding"])
 
+# ── Property-level operational routers (paywalled) ───────────────────────────
+api_router.include_router(bookings, prefix="/bookings", tags=["Booking Management"], dependencies=_paywall)
+api_router.include_router(checkin, prefix="/checkin", tags=["Check-In Management"], dependencies=_paywall)
+api_router.include_router(checkout, prefix="/checkout", tags=["Check-Out Management"], dependencies=_paywall)
+api_router.include_router(housekeeping, prefix="/housekeeping", tags=["Housekeeping & Maintenance"], dependencies=_paywall)
+api_router.include_router(reports, prefix="/reports", tags=["Reports & Analytics"], dependencies=_paywall)
+api_router.include_router(staff, dependencies=_paywall)
+api_router.include_router(settings, prefix="/settings", tags=["Settings & Configuration"], dependencies=_paywall)
+api_router.include_router(audit, prefix="/audit", tags=["Audit Logs"], dependencies=_paywall)
+api_router.include_router(users, prefix="/users", tags=["User Management"])
+api_router.include_router(guests, prefix="/guests", tags=["Guest Management"], dependencies=_paywall)
+api_router.include_router(tasks, prefix="/tasks", tags=["Shared Tasks"], dependencies=_paywall)
+api_router.include_router(notifications, prefix="/notifications", tags=["Notifications"])
+
 # ── Phase 6: Dynamic Pricing ──────────────────────────────────────────────────
-api_router.include_router(pricing, prefix="/pricing", tags=["Dynamic Pricing"])
+api_router.include_router(pricing, prefix="/pricing", tags=["Dynamic Pricing"], dependencies=_paywall)
 
 # ── Phase 8: Foreign Guest Compliance (Form C / FRRO) ─────────────────────────
-api_router.include_router(documents, prefix="/documents", tags=["Foreign Guest Compliance"])
+api_router.include_router(documents, prefix="/documents", tags=["Foreign Guest Compliance"], dependencies=_paywall)
 
 # ── Phase 9: Broker Commission Engine ────────────────────────────────────────
-api_router.include_router(broker, prefix="/broker", tags=["Broker Commission"])
+api_router.include_router(broker, prefix="/broker", tags=["Broker Commission"], dependencies=_paywall)
 
 # ── Phase 7: Security Dashboard ──────────────────────────────────────────────
-api_router.include_router(security, prefix="/security", tags=["Security Management"])
+api_router.include_router(security, prefix="/security", tags=["Security Management"], dependencies=_paywall)
 
 # ── Phase 10: Staff Role Modules ─────────────────────────────────────────────
-api_router.include_router(security_guard, prefix="/guard", tags=["Security Guard"])
-api_router.include_router(manager, prefix="/manager", tags=["Manager Operations"])
-api_router.include_router(accountant, prefix="/accountant", tags=["Accountant Operations"])
+api_router.include_router(security_guard, prefix="/guard", tags=["Security Guard"], dependencies=_paywall)
+api_router.include_router(manager, prefix="/manager", tags=["Manager Operations"], dependencies=_paywall)
+api_router.include_router(accountant, prefix="/accountant", tags=["Accountant Operations"], dependencies=_paywall)

@@ -9,6 +9,7 @@ class UserCreateRequest(BaseModel):
     mobile_number: str
     password: str = Field(..., min_length=8)
     role_id: uuid.UUID
+    property_id: Optional[uuid.UUID] = None
 
 class UserResponse(BaseModel):
     id: uuid.UUID

@@ -47,30 +47,6 @@ class AuthNotifier extends _$AuthNotifier {
   Future<void> login(String email, String password) async {
     state = const AuthState.loading();
     final repository = ref.read(userRepositoryProvider);
-    
-    // Prototype bypass check:
-    if (password == '1234') {
-      final role = UserRole.values.firstWhere(
-        (e) => email.toLowerCase().contains(e.name.toLowerCase()),
-        orElse: () => UserRole.owner,
-      );
-      final user = UserModel(
-        id: 'mock-123',
-        name: 'Test ${role.displayName}',
-        email: email,
-        role: role,
-      );
-      ref.read(auditServiceProvider).log(
-        moduleName: 'auth',
-        actionType: 'login_success',
-        targetEntity: 'user',
-        targetRecordId: user.id,
-        userId: user.id,
-        newValue: {'email': email, 'role': role.name, 'auth_type': 'mock_bypass'},
-      );
-      state = AuthState.authenticated(user);
-      return;
-    }
 
     final result = await repository.loginOnline(email: email, password: password, pin: '1234');
 

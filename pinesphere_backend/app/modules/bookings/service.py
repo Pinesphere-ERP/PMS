@@ -19,12 +19,28 @@ from app.modules.bookings.schemas import (
 async def create_guest(db: AsyncSession, req: GuestCreateRequest) -> GuestResponse:
     if req.mobile:
         dup_stmt = select(Guest).where(
-        Guest.mobile == req.mobile, Guest.property_id == req.property_id
+            Guest.mobile == req.mobile, Guest.property_id == req.property_id
         )
         dup_res = await db.execute(dup_stmt)
         existing_guest = dup_res.scalars().first()
         if existing_guest:
-            return GuestResponse.model_validate(existing_guest)
+            # F-10 fix: surface the collision rather than silently merging records.
+            # If the name matches exactly, treat as a returning guest (safe to reuse).
+            # If the name differs, the receptionist fat-fingered a number belonging
+            # to a different guest — raise a conflict rather than attach the new
+            # booking to the wrong identity (which would also misroute the OTP).
+            if existing_guest.full_name.strip().lower() == req.full_name.strip().lower():
+                # Returning guest with same name — safe to reuse the record.
+                return GuestResponse.model_validate(existing_guest)
+            else:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        f"The mobile number {req.mobile} is already registered to a different guest "
+                        f"'{existing_guest.full_name}' at this property. "
+                        "Please verify the number before proceeding, or use a different mobile number."
+                    ),
+                )
 
     prop_stmt = select(Property).where(Property.property_id == req.property_id)
     prop_res = await db.execute(prop_stmt)
@@ -131,6 +147,7 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
         guest_id=req.guest_id,
         booking_type=req.booking_type or "online",
         booking_source=req.booking_source,
+        broker_user_id=req.broker_user_id if hasattr(req, 'broker_user_id') else None,
         check_in_date=req.check_in_date,
         check_out_date=req.check_out_date,
         adults=req.adults,
@@ -151,6 +168,10 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
         payment_status="partially_paid" if advance_paid > 0 else "pending",
     )
     db.add(booking)
+    await db.flush()
+    # F-05: generate a unique, human-readable booking reference after the
+    # booking_id UUID is available.  Format: BK-{first 8 hex chars of UUID}.
+    booking.booking_reference = f"BK-{booking.booking_id.hex[:8].upper()}"
     await db.flush()
     await db.refresh(booking)
 

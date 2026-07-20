@@ -87,14 +87,25 @@ class PaymentService:
         )
         return new_payment
 
-    async def list_payments(self, skip: int = 0, limit: int = 20) -> tuple[List[Payment], int]:
+    async def list_payments(self, skip: int = 0, limit: int = 20, property_id=None) -> tuple[List[Payment], int]:
+        """List payments. Always scope by property_id unless caller explicitly passes None (super-admin global view)."""
+        base_stmt = select(Payment)
+        if property_id is not None:
+            # F-09 fix: filter by property through the booking's property or invoice's property
+            base_stmt = base_stmt.join(
+                __import__('app.infra.models', fromlist=['Invoice']).Invoice,
+                Payment.invoice_id == __import__('app.infra.models', fromlist=['Invoice']).Invoice.invoice_id,
+                isouter=True
+            ).where(
+                __import__('app.infra.models', fromlist=['Invoice']).Invoice.property_id == property_id
+            )
         result = await self.db.execute(
-            select(Payment).order_by(Payment.created_at.desc()).offset(skip).limit(limit)
+            base_stmt.order_by(Payment.created_at.desc()).offset(skip).limit(limit)
         )
         payments = result.scalars().all()
         
-        count_result = await self.db.execute(select(func.count(Payment.payment_id)))
-        total = count_result.scalar() or 0
+        count_stmt = select(func.count()).select_from(base_stmt.subquery())
+        total = (await self.db.execute(count_stmt)).scalar() or 0
         
         return list(payments), total
 

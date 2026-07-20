@@ -89,7 +89,6 @@ async def register_nationality_document(
         verified=False,
     )
     db.add(doc)
-    await db.commit()
     await db.refresh(doc)
     return {"id": str(doc.id), "message": "Nationality document registered successfully."}
 
@@ -142,7 +141,6 @@ async def verify_nationality_document(
     doc.verified = True
     doc.verified_at = datetime.utcnow()
     doc.verified_by = current_user.id
-    await db.commit()
     return {"message": "Document verified."}
 
 
@@ -224,7 +222,6 @@ async def submit_form_c(
     record.status = "submitted"
     record.submitted_at = datetime.utcnow()
     record.submitted_by = current_user.id
-    await db.commit()
     return {"message": "Form C submitted successfully.", "id": str(record.id)}
 
 
@@ -260,7 +257,6 @@ async def amend_form_c(
     )
     db.add(amendment)
     record.status = "amended"
-    await db.commit()
     return {"message": "Amendment recorded.", "amendment_id": str(amendment.id)}
 
 
@@ -285,5 +281,4 @@ async def check_form_c_deadlines(db: AsyncSession = Depends(get_db)):
     for record in overdue_records:
         record.status = "overdue"
         count += 1
-    await db.commit()
     return {"marked_overdue": count}

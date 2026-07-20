@@ -286,13 +286,20 @@ class Guest(Base, TimestampMixin, SyncMixin):
 
 class Booking(Base, TimestampMixin, SyncMixin):
     __tablename__ = "bookings"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = (
+        UniqueConstraint('booking_reference', name='uq_bookings_reference'),
+        {'extend_existing': True},
+    )
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     booking_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     guest_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("guests.guest_id"), nullable=False)
     booking_type: Mapped[Optional[str]] = mapped_column(String(20), default='walkin')
     booking_source: Mapped[Optional[str]] = mapped_column(String(30))
+    # Broker who sourced this booking (only set when booking_source == 'broker')
+    broker_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Human-readable, system-generated reference for guest portal auth (globally unique)
+    booking_reference: Mapped[Optional[str]] = mapped_column(String(30), unique=True, nullable=True)
     check_in_date: Mapped[date] = mapped_column(Date, nullable=False)
     check_out_date: Mapped[date] = mapped_column(Date, nullable=False)
     adults: Mapped[int] = mapped_column(Integer, default=1)
@@ -567,8 +574,13 @@ from app.modules.settings.models import SystemConfiguration, PropertySetting
 
 class Task(Base, TimestampMixin, SyncMixin):
     __tablename__ = "tasks"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = (
+        Index("ix_tasks_property", "property_id"),
+        {'extend_existing': True},
+    )
     task_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # property_id is REQUIRED for isolation — every task must belong to exactly one property
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
     task_type: Mapped[str] = mapped_column(String(50), nullable=False) # cleaning, maintenance, food
     status: Mapped[str] = mapped_column(String(20), default='pending') # pending, accepted, in_progress, completed, closed
     priority: Mapped[str] = mapped_column(String(20), default='normal') # normal, high, emergency

@@ -120,6 +120,7 @@ async def list_property_staff(
 class TaskAssignPayload(BaseModel):
     task_id: uuid.UUID
     assigned_to: uuid.UUID
+    property_id: uuid.UUID  # Manager must declare property context; server verifies both task and staff belong here
     due_at: Optional[datetime] = None
     priority: Optional[str] = None  # normal, high, emergency
 
@@ -130,11 +131,39 @@ async def assign_task(
     current_user: User = Depends(get_current_user),
 ):
     """Manager assigns or reassigns a task to a staff member."""
+    # T-05 fix: manager must have access to the declared property
+    await assert_property_access(payload.property_id, current_user, db)
+
     stmt = select(Task).where(Task.task_id == payload.task_id)
     result = await db.execute(stmt)
     task = result.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    # T-05 fix: task must belong to the same property the manager declared
+    if task.property_id != payload.property_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Task does not belong to this property. You cannot assign tasks across properties."
+        )
+
+    # T-05 fix: assigned staff must belong to the same property — prevents
+    # Sunita Rao (A1) from assigning a task to Ritu Verma (B1's housekeeping staff)
+    staff_stmt = select(User).where(
+        User.id == payload.assigned_to,
+        User.property_id == payload.property_id,
+        User.status == "ACTIVE",
+    )
+    staff_res = await db.execute(staff_stmt)
+    staff_member = staff_res.scalars().first()
+    if not staff_member:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "The selected staff member does not belong to this property or is not active. "
+                "Cross-property staff assignment is not permitted (§23)."
+            ),
+        )
 
     task.assigned_to = payload.assigned_to
     if payload.due_at:
@@ -143,7 +172,6 @@ async def assign_task(
         task.priority = payload.priority
     task.status = "pending"
 
-    await db.commit()
     return {"message": "Task assigned successfully.", "task_id": str(task.task_id)}
 
 

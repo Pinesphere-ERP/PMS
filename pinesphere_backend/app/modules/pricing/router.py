@@ -99,7 +99,6 @@ async def create_pricing_rule(
         created_by=current_user.id,
     )
     db.add(rule)
-    await db.commit()
     await db.refresh(rule)
     return rule
 
@@ -152,7 +151,6 @@ async def update_pricing_rule(
     for key, value in update_data.items():
         setattr(rule, key, value)
 
-    await db.commit()
     await db.refresh(rule)
     return rule
 
@@ -171,7 +169,6 @@ async def delete_pricing_rule(
     if not rule:
         raise HTTPException(status_code=404, detail="Pricing rule not found")
     await db.delete(rule)
-    await db.commit()
 
 
 # ── Quote API ─────────────────────────────────────────────────────────────────

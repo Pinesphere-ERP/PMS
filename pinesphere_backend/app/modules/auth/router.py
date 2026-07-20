@@ -180,7 +180,6 @@ async def login(
             target_entity="user", target_record_id=uuid.uuid4(),
             new_value={"identifier": payload.email, "reason": "invalid_credentials"},
         )
-        await db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     # ── Status checks ────────────────────────────────────────────────────────
@@ -236,7 +235,6 @@ async def login(
         user_id=user.id, property_id=user.property_id,
         new_value={"identifier": payload.email, "platform": platform},
     )
-    await db.commit()
     return token_response
 
 
@@ -261,7 +259,6 @@ async def heartbeat(
             .where(UserSession.session_token == token, UserSession.revoked_at.is_(None))
             .values(expires_at=datetime.utcnow() + timedelta(hours=12))
         )
-        await db.commit()
 
     return {"status": "ok", "user_id": str(current_user.id)}
 
@@ -297,7 +294,6 @@ async def request_unlock_otp(payload: OTPRequestPayload, db: AsyncSession = Depe
         expires_at=datetime.utcnow() + timedelta(minutes=10),
     )
     db.add(otp_rec)
-    await db.commit()
 
     # In production, send via SMS / WhatsApp. For now log it.
     print(f"[OTP] User {user.id} unlock OTP: {otp_plain}")  # TODO: replace with real notification
@@ -334,14 +330,12 @@ async def verify_otp(payload: OTPVerifyPayload, db: AsyncSession = Depends(get_d
     # Unlock user
     user.status = "ACTIVE"
     user.failed_login_attempts = 0
-    await db.commit()
 
     await AuditLogger.log(
         db, module_name="auth", action_type="account_unlocked",
         target_entity="user", target_record_id=user.id,
         user_id=user.id, new_value={"method": "otp"},
     )
-    await db.commit()
 
     return {"message": "Account unlocked successfully. You may now log in."}
 
@@ -441,5 +435,4 @@ async def logout(
         target_entity="user", target_record_id=current_user.id,
         user_id=current_user.id, property_id=current_user.property_id,
     )
-    await db.commit()
     return {"status": "success"}

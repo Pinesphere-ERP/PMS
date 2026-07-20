@@ -59,7 +59,6 @@ async def create_guest(
         property_id=current_user.property_id,
         new_value={"name": f"{new_guest.first_name} {new_guest.last_name}", "mobile": new_guest.mobile_number},
     )
-    await db.commit()
     return new_guest
 
 
@@ -141,7 +140,6 @@ async def update_guest(
     )
 
     db.add(guest)
-    await db.commit()
     await db.refresh(guest)
     return guest
 
@@ -170,7 +168,6 @@ async def toggle_guest_vip(
         old_value={"is_vip": old_vip}, new_value={"is_vip": is_vip},
     )
 
-    await db.commit()
     await db.refresh(guest)
     return guest
 
@@ -199,6 +196,5 @@ async def toggle_guest_blacklist(
         old_value={"is_blacklisted": old_val}, new_value={"is_blacklisted": is_blacklisted},
     )
 
-    await db.commit()
     await db.refresh(guest)
     return guest

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
@@ -14,7 +14,7 @@ from app.modules.audit.logger import AuditLogger
 router = APIRouter()
 
 @router.post("/register", response_model=OwnerRegistrationResponse, status_code=status.HTTP_201_CREATED)
-async def register_owner(payload: OwnerRegistrationRequest, db: AsyncSession = Depends(get_db)):
+async def register_owner(payload: OwnerRegistrationRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """
     Public endpoint for self-service owner registration and property creation.
     """
@@ -67,13 +67,13 @@ async def register_owner(payload: OwnerRegistrationRequest, db: AsyncSession = D
             property_type=payload.property_type,
             star_category=payload.star_category,
             year_established=datetime.now().year,
-            status="Active" # Make active so they can log in immediately
+            onboarding_status="active" # Make active so they can log in immediately
         )
         db.add(new_property)
         await db.flush()
 
         # Provision Tenant Schema
-        await provision_tenant_schema(db, str(property_id))
+        background_tasks.add_task(provision_tenant_schema, str(property_id))
 
         # Get or Create OWNER Role
         role_stmt = select(Role).where(Role.role_code == "OWNER")
@@ -84,7 +84,6 @@ async def register_owner(payload: OwnerRegistrationRequest, db: AsyncSession = D
                 role_code="OWNER",
                 role_name="Property Owner",
                 is_system_role=True,
-                is_hotel_role=True,
                 description="Default role for Property Owners"
             )
             db.add(owner_role)
@@ -107,7 +106,6 @@ async def register_owner(payload: OwnerRegistrationRequest, db: AsyncSession = D
         await db.flush()
 
         # Commit everything
-        await db.commit()
 
         return OwnerRegistrationResponse(
             success=True,

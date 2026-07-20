@@ -61,7 +61,6 @@ async def create_commission_rule(
         created_by=current_user.id,
     )
     db.add(rule)
-    await db.commit()
     return {"id": str(rule.id), "message": "Commission rule created."}
 
 
@@ -172,10 +171,11 @@ async def accrue_commission(
 ) -> None:
     """
     Called after a guest payment is confirmed.
-    Finds the active broker rule for this property and booking,
-    accrues commission to the broker's wallet.
+    Only accrues commission when the booking was sourced through a broker
+    (booking.booking_source == 'broker').  A direct / walk-in booking must
+    NEVER generate a commission transaction regardless of whether a
+    commission rule exists for the property (§29.7 rule 2).
     """
-    # Find active rule (most recent effective_from, still valid)
     from app.infra.models import Booking
     booking_stmt = select(Booking).where(Booking.booking_id == booking_id)
     booking_res = await db.execute(booking_stmt)
@@ -183,10 +183,25 @@ async def accrue_commission(
     if not booking:
         return
 
+    # ── Guard: only broker-sourced bookings generate commission ───────────────
+    if booking.booking_source != "broker":
+        return  # Direct / walk-in / OTA booking — no commission (§29.7 rule 2)
+
+    # ── Identify the broker who sourced this specific booking ─────────────────
+    # The broker's user_id must be stored on the booking itself.  We look it up
+    # via the BrokerCommissionRule table filtered to both this property AND the
+    # broker linked to this booking (stored in booking.broker_user_id).
+    broker_user_id = getattr(booking, "broker_user_id", None)
+    if not broker_user_id:
+        # No broker linked — safety net; should not happen for booking_source='broker'
+        return
+
+    # ── Select the active rule for THIS broker at THIS property ───────────────
     rule_stmt = (
         select(BrokerCommissionRule)
         .where(
             BrokerCommissionRule.property_id == property_id,
+            BrokerCommissionRule.broker_user_id == broker_user_id,  # F-03 fix
             BrokerCommissionRule.is_active == True,
             BrokerCommissionRule.effective_from <= date.today(),
         )
@@ -195,7 +210,7 @@ async def accrue_commission(
     rule_res = await db.execute(rule_stmt)
     rule = rule_res.scalars().first()
     if not rule:
-        return  # No commission rule — skip
+        return  # No commission rule for this broker — skip
 
     commission_amount = round(payment_amount * float(rule.rate_percent) / 100, 2)
     if commission_amount <= 0:
@@ -284,7 +299,6 @@ async def initiate_payout(
         initiated_by=current_user.id,
     )
     db.add(payout)
-    await db.commit()
     return {"id": str(payout.id), "message": "Payout initiated.", "amount": req.amount}
 
 

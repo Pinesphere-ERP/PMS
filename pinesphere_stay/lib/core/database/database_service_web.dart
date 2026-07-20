@@ -48,7 +48,7 @@ class DatabaseService implements IDatabaseService {
   late final IPermDao _permDao;
 
   @override
-  Future<void> init() async {
+  Future<void> init({bool isTest = false}) async {
     _guestDao = GuestDaoWeb();
     _bookingDao = BookingDaoWeb();
     _roomDao = RoomDaoWeb();

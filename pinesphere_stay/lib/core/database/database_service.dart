@@ -16,7 +16,7 @@ import 'dao/role_perm_dao.dart';
 import 'dao/perm_dao.dart';
 
 abstract class IDatabaseService {
-  Future<void> init();
+  Future<void> init({bool isTest = false});
   
   /// Execute a set of DAO operations within an atomic database transaction.
   T runInTransaction<T>(T Function() action);

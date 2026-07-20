@@ -65,9 +65,14 @@ class DatabaseService implements IDatabaseService {
   late final IPermDao _permDao;
 
   @override
-  Future<void> init() async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final storePath = p.join(docsDir.path, 'obx-pinesphere');
+  Future<void> init({bool isTest = false}) async {
+    String storePath;
+    if (isTest) {
+      storePath = 'memory:test';
+    } else {
+      final docsDir = await getApplicationDocumentsDirectory();
+      storePath = p.join(docsDir.path, 'obx-pinesphere');
+    }
     _store = await openStore(directory: storePath);
 
     _guestDao = GuestDaoNative(_store.box<GuestEntity>());

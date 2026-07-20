@@ -394,7 +394,7 @@ class PmsNotifier extends Notifier<PmsState> {
           );
         }).toList();
 
-        final String? newSelectedId = (state.selectedResortId == 'resort-1' && loadedResorts.isNotEmpty) 
+        final String? newSelectedId = (state.selectedResortId == null && loadedResorts.isNotEmpty) 
             ? loadedResorts.first.id 
             : state.selectedResortId;
             

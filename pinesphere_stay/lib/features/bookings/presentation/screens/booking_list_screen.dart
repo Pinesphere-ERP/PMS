@@ -85,7 +85,6 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                     ),
                   ),
                 ),
-            ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
       ),

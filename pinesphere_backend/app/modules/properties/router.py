@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from app.infra.database import get_db, provision_tenant_schema
 from app.core.dependencies import assert_property_access, get_current_user, require_room_access, require_super_admin
-from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User
+from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User, Role
 import uuid
 from app.modules.properties.schemas import PropertyCreateInput
 from app.modules.audit.logger import AuditLogger
@@ -36,12 +36,13 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     target_user = None
 
     if payload.owner_user_id:
-        user_stmt = select(User).join(Role).where(User.id == uuid.UUID(payload.owner_user_id))
+        user_stmt = select(User, Role).join(Role, User.role_id == Role.id).where(User.id == uuid.UUID(payload.owner_user_id))
         user_res = await db.execute(user_stmt)
-        target_user = user_res.scalar_one_or_none()
-        if not target_user:
+        row = user_res.first()
+        if not row:
             raise HTTPException(status_code=404, detail="User not found")
-        if target_user.role.role_code != "OWNER":
+        target_user, role = row
+        if role.role_code != "OWNER":
             raise HTTPException(status_code=400, detail="Target user must have the OWNER role")
         owner_name = target_user.name
         owner_mobile = target_user.mobile_number or payload.owner_mobile

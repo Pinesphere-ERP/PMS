@@ -106,6 +106,7 @@ async def register_owner(payload: OwnerRegistrationRequest, background_tasks: Ba
         await db.flush()
 
         # Commit everything
+        await db.commit()
 
         return OwnerRegistrationResponse(
             success=True,

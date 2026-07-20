@@ -35,20 +35,26 @@ def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
 async def get_current_user_id(user=Depends(get_current_user)) -> uuid.UUID:
     return user.id
 
-@router.post("/", status_code=501)
+@router.post("/")
 async def create_payment(
     payment_data: PaymentCreate,
     service: PaymentService = Depends(get_payment_service),
     user_id: uuid.UUID = Depends(get_current_user_id)
 ):
-    return JSONResponse(
-        status_code=501,
-        content={
-            "success": False,
-            "status": "not_implemented",
-            "message": "Payment provider integration is not configured",
-        },
-    )
+    try:
+        provider_transaction_id = f"manual_{uuid.uuid4().hex[:8]}"
+        payment = await service.create_payment(
+            payment_data,
+            user_id,
+            provider_transaction_id=provider_transaction_id
+        )
+        await service.db.commit()
+        await service.db.refresh(payment)
+        return payment
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=PaymentListResponse)
 async def list_payments(

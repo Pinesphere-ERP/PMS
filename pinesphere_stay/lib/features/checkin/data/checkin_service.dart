@@ -1,6 +1,7 @@
 import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/database/dao/checkin_dao.dart';
@@ -43,7 +44,7 @@ class CheckInService {
 
   Future<Map<String, dynamic>> performCheckIn(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('/checkin/', data: data);
+      final response = await _dio.post('/checkin', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = CheckInEntity(
         uuid: body['id']?.toString() ?? data['uuid'] ?? '',
@@ -88,7 +89,7 @@ class CheckInService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('performCheckIn network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final localUuid = data['uuid'] ?? const Uuid().v4();
       final entity = CheckInEntity(
         uuid: localUuid.toString(),
         bookingId: data['booking_id'] ?? '',
@@ -115,7 +116,7 @@ class CheckInService {
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
       _syncService.enqueueMutation(
         entityType: 'CheckIn',
-        entityId: localId,
+        entityId: localUuid.toString(),
         operation: 'CREATE',
         payload: data,
       );
@@ -277,7 +278,7 @@ class CheckInService {
       AppLogger.w('cancelCheckIn network failed, queuing sync', e);
       _syncService.enqueueMutation(
         entityType: 'CheckIn',
-        entityId: 0,
+        entityId: checkinId,
         operation: 'UPDATE',
         payload: {'id': checkinId, 'status': 'cancelled'},
       );

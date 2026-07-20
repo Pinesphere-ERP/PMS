@@ -8,8 +8,8 @@ class SyncQueueEntity {
   /// E.g. "Room", "Booking"
   String entityType;
 
-  /// The local ID of the entity that was mutated
-  int entityId;
+  /// The UUID of the entity that was mutated
+  String entityId;
 
   /// "CREATE", "UPDATE", "DELETE"
   String operation;

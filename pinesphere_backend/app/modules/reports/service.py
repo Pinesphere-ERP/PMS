@@ -10,7 +10,7 @@ from sqlalchemy import select, func, and_, extract, desc
 from fastapi import HTTPException
 
 from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, ScheduledReport
-from app.infra.models import Booking, Payment, CheckOut
+from app.infra.models import Booking, Payment, CheckOut, Room
 from app.modules.reports.schemas import (
     DailyKPISnapshotResponse,
     PLReportResponse, MonthlyPLRow,
@@ -23,6 +23,63 @@ from app.modules.reports.schemas import (
 
 
 # ── KPI Snapshots ──────────────────────────────────────────────
+
+async def update_daily_kpi_snapshot(
+    db: AsyncSession, property_id: uuid.UUID, target_date: date
+) -> None:
+    # 1. Occupied and Vacant Rooms
+    occupied = await db.scalar(select(func.count(Room.room_id)).where(Room.property_id == property_id, func.lower(Room.status) == 'occupied'))
+    vacant = await db.scalar(select(func.count(Room.room_id)).where(Room.property_id == property_id, func.lower(Room.status) == 'vacant'))
+    
+    # 2. Revenue and Payments
+    payments = await db.execute(select(Payment).join(Booking).where(
+        Booking.property_id == property_id,
+        func.date(Payment.payment_date) == target_date,
+        Payment.status == 'Completed'
+    ))
+    payments = payments.scalars().all()
+    revenue_room_rent = sum((p.amount for p in payments if p.payment_method != 'Addon'), Decimal('0.0'))
+    revenue_addons = sum((p.amount for p in payments if p.payment_method == 'Addon'), Decimal('0.0'))
+    
+    # Simple approx for outstanding payments and GST
+    outstanding = await db.scalar(select(func.coalesce(func.sum(Booking.total_sum - Booking.deposit_paid), Decimal('0.0'))).where(
+        Booking.property_id == property_id,
+        Booking.payment_status.in_(['Pending', 'Partial']),
+        Booking.status != 'Cancelled'
+    ))
+    gst_collected = (revenue_room_rent + revenue_addons) * Decimal('0.18')  # Assuming 18% GST approx for the report
+    
+    # Upsert snapshot
+    stmt = select(DailyKPISnapshot).where(
+        DailyKPISnapshot.property_id == property_id,
+        DailyKPISnapshot.snapshot_date == target_date
+    )
+    result = await db.execute(stmt)
+    snapshot = result.scalar_one_or_none()
+    
+    if snapshot:
+        snapshot.occupied_rooms = occupied or 0
+        snapshot.vacant_rooms = vacant or 0
+        snapshot.revenue_room_rent = float(revenue_room_rent)
+        snapshot.revenue_addons = float(revenue_addons)
+        snapshot.outstanding_payments = float(outstanding or 0.0)
+        snapshot.gst_collected = float(gst_collected)
+    else:
+        snapshot = DailyKPISnapshot(
+            property_id=property_id,
+            snapshot_date=target_date,
+            occupied_rooms=occupied or 0,
+            vacant_rooms=vacant or 0,
+            revenue_room_rent=float(revenue_room_rent),
+            revenue_addons=float(revenue_addons),
+            outstanding_payments=float(outstanding or 0.0),
+            gst_collected=float(gst_collected),
+        )
+        db.add(snapshot)
+    
+    await db.flush()
+
+
 
 async def get_today_kpi(
     db: AsyncSession, property_id: uuid.UUID

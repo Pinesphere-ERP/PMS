@@ -13,6 +13,7 @@ from app.infra.models import User, Role, RolePermission, Permission, UserSession
 from app.core.dependencies import get_current_user
 from app.core.security import verify_password, create_access_token, create_refresh_token, get_password_hash
 from app.modules.audit.logger import AuditLogger
+from app.modules.notifications.service import NotificationDispatchService
 import jwt
 
 router = APIRouter()
@@ -301,7 +302,14 @@ async def request_unlock_otp(payload: OTPRequestPayload, db: AsyncSession = Depe
     db.add(otp_rec)
 
     # In production, send via SMS / WhatsApp. For now log it.
-    print(f"[OTP] User {user.id} unlock OTP: {otp_plain}")  # TODO: replace with real notification
+    notification_service = NotificationDispatchService(db)
+    await notification_service.dispatch(
+        recipient_id=user.id,
+        title="Account Unlock OTP",
+        message=f"Your Pinesphere Stay account unlock OTP is {otp_plain}. It is valid for 10 minutes.",
+        channel="sms",
+        priority="high"
+    )
 
     return {"message": "If an account exists, an OTP has been sent."}
 

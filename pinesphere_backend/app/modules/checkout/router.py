@@ -11,6 +11,8 @@ from app.modules.checkout.schemas import (
     PendingCheckoutItem, CheckoutBillingDetail,
 )
 from app.modules.checkout import service
+from app.modules.reports.service import update_daily_kpi_snapshot
+from datetime import date
 
 router = APIRouter()
 
@@ -23,7 +25,9 @@ async def perform_checkout(
 ):
     """Perform guest check-out with full billing settlement."""
     checkin = await assert_resource_property_access(CheckIn, CheckIn.checkin_id, req.checkin_id, current_user, db)
-    return await service.perform_checkout(db, req, checkin.property_id, current_user.id)
+    res = await service.perform_checkout(db, req, checkin.property_id, current_user.id)
+    await update_daily_kpi_snapshot(db, checkin.property_id, date.today())
+    return res
 
 
 @router.get("/pending", response_model=List[PendingCheckoutItem])

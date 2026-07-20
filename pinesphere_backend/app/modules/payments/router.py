@@ -22,7 +22,8 @@ from .schemas import (
 from .service import PaymentService
 
 from app.infra.database import get_db
-from app.infra.models import SubscriptionTransaction, Invoice, PendingDue, Property, Owner, Subscription
+from app.infra.models import SubscriptionTransaction, Invoice, PendingDue, Property, Owner, Subscription, Booking
+from app.modules.reports.service import update_daily_kpi_snapshot
 
 # Subscription finance is a cross-property platform administration surface.
 # It must not be exposed to property staff, owners, or guests.
@@ -50,6 +51,13 @@ async def create_payment(
         )
         await service.db.commit()
         await service.db.refresh(payment)
+        
+        # Update daily KPI for the property this payment belongs to
+        if payment.booking_id:
+            booking = await service.db.get(Booking, payment.booking_id)
+            if booking:
+                await update_daily_kpi_snapshot(service.db, booking.property_id, date.today())
+                
         return payment
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -97,7 +105,11 @@ async def create_razorpay_order(
     service: PaymentService = Depends(get_payment_service)
 ):
     try:
-        return await service.create_razorpay_order(request.amount)
+        order = await service.create_razorpay_order(request.amount)
+        return RazorpayOrderResponse(
+            razorpay_order_id=order["id"],
+            amount=order["amount"]
+        )
     except ValueError as e:
         if str(e) == "Razorpay credentials not configured":
             return JSONResponse(
@@ -131,6 +143,13 @@ async def verify_razorpay_payment(
             payment_mode=request.payment_mode,
             split_payments=request.split_payments
         )
+        
+        # Update daily KPI
+        if payment.booking_id:
+            booking = await service.db.get(Booking, payment.booking_id)
+            if booking:
+                await update_daily_kpi_snapshot(service.db, booking.property_id, date.today())
+                
         return payment
     except ValueError as e:
         if str(e) == "Razorpay credentials not configured":

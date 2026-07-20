@@ -575,19 +575,7 @@ class PmsNotifier extends Notifier<PmsState> {
       }
     } catch (e) {
       debugPrint('Failed to create booking: $e');
-      // Offline fallback: Add to local state and mark room as Occupied so it is viewed immediately
-      state = state.copyWith(
-        bookings: [...state.bookings, booking],
-        rooms: state.rooms.map((room) {
-          if (room.id == booking.roomId) {
-            return room.copyWith(
-              status: 'Occupied',
-              currentBookingId: booking.id,
-            );
-          }
-          return room;
-        }).toList(),
-      );
+      rethrow;
 
       // Save to local ObjectBox DB for persistence
       try {
@@ -671,6 +659,7 @@ class PmsNotifier extends Notifier<PmsState> {
       }
     } catch (e) {
       debugPrint('Failed to update room status: $e');
+      rethrow;
     }
   }
 
@@ -706,10 +695,7 @@ class PmsNotifier extends Notifier<PmsState> {
       }
     } catch (e) {
       debugPrint('Failed to delete room: $e');
-      // Offline fallback: Delete locally
-      state = state.copyWith(
-        rooms: state.rooms.where((r) => r.id != roomId).toList(),
-      );
+      rethrow;
     }
   }
 
@@ -796,10 +782,7 @@ class PmsNotifier extends Notifier<PmsState> {
       }
     } catch (e) {
       debugPrint('Failed to add room: $e');
-      // Offline fallback: Add to local state
-      state = state.copyWith(
-        rooms: [...state.rooms, room],
-      );
+      rethrow;
     }
   }
 
@@ -831,10 +814,7 @@ class PmsNotifier extends Notifier<PmsState> {
       }
     } catch (e) {
       debugPrint('Failed to create resort: $e');
-      // Offline fallback: Add to local state
-      state = state.copyWith(
-        resorts: [...state.resorts, resort],
-      );
+      rethrow;
     }
   }
 
@@ -870,13 +850,7 @@ class PmsNotifier extends Notifier<PmsState> {
       }
     } catch (e) {
       debugPrint('Failed to update resort: $e');
-      // Offline fallback: Update local state
-      final index = state.resorts.indexWhere((r) => r.id == resort.id);
-      if (index != -1) {
-        final list = List<ResortModel>.from(state.resorts);
-        list[index] = resort;
-        state = state.copyWith(resorts: list);
-      }
+      rethrow;
     }
   }
 
@@ -896,10 +870,7 @@ class PmsNotifier extends Notifier<PmsState> {
       await loadResorts();
     } catch (e) {
       debugPrint('Failed to delete resort: $e');
-      // Offline fallback: Delete locally
-      state = state.copyWith(
-        resorts: state.resorts.where((r) => r.id != resortId).toList(),
-      );
+      rethrow;
     }
   }
 
@@ -955,38 +926,7 @@ class PmsNotifier extends Notifier<PmsState> {
       }
     } catch (e) {
       debugPrint('Failed to create resort with rooms: $e');
-      // Offline fallback: Add resort and generate mock rooms locally so they are viewed instantly
-      final generatedRooms = List.generate(numRooms, (index) {
-        final roomNumber = '${(state.resorts.length + 1) * 100 + index + 1}';
-        return RoomModel(
-          id: 'room_${resort.id}_$index',
-          roomNumber: roomNumber,
-          type: index % 2 == 0 ? 'Deluxe Suite' : 'Standard Room',
-          price: index % 2 == 0 ? 1500.0 : 900.0,
-          seasonPrice: index % 2 == 0 ? 400.0 : 250.0,
-          weekendPrice: index % 2 == 0 ? 250.0 : 150.0,
-          holidayPrice: index % 2 == 0 ? 600.0 : 350.0,
-          extraBedPrice: index % 2 == 0 ? 200.0 : 100.0,
-          amenities: const [
-            {'name': 'Food / Buffet Included', 'price': 300.0},
-            {'name': 'Portable Bluetooth Speaker', 'price': 150.0},
-            {'name': 'Smart TV Access', 'price': 100.0},
-          ],
-          status: 'Vacant',
-          resortId: resort.id,
-          images: index % 2 == 0 
-              ? ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=500&q=80']
-              : ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80'],
-          description: index % 2 == 0 
-              ? 'Luxurious Deluxe Suite featuring premium view, elegant interiors and master bed.' 
-              : 'Comfortable Standard Room with modern furniture and high-speed Wi-Fi.',
-        );
-      });
-
-      state = state.copyWith(
-        resorts: [...state.resorts, resort],
-        rooms: [...state.rooms, ...generatedRooms],
-      );
+      rethrow;
     }
   }
 }

@@ -1,5 +1,6 @@
 import '../../../main.dart';
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
@@ -63,7 +64,7 @@ class HousekeepingService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('createTask network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final localUuid = data['uuid'] ?? const Uuid().v4();
       final entity = HousekeepingTaskEntity(
         uuid: localUuid.toString(),
         roomId: data['room_id'] ?? '',
@@ -82,9 +83,9 @@ class HousekeepingService {
       final localId = _housekeepingDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'HousekeepingTask',
-        entityId: localId,
+        entityId: localUuid.toString(),
         operation: 'CREATE',
-        payload: data,
+        payload: {...data, 'uuid': localUuid.toString()},
       );
       return data;
     } catch (e) {
@@ -145,7 +146,7 @@ class HousekeepingService {
       AppLogger.w('updateTask network failed, queuing sync', e);
       _syncService.enqueueMutation(
         entityType: 'HousekeepingTask',
-        entityId: 0,
+        entityId: taskId,
         operation: 'UPDATE',
         payload: {'id': taskId, ...data},
       );
@@ -164,7 +165,7 @@ class HousekeepingService {
       AppLogger.w('inspectTask network failed, queuing sync', e);
       _syncService.enqueueMutation(
         entityType: 'HousekeepingTask',
-        entityId: 0,
+        entityId: taskId,
         operation: 'UPDATE',
         payload: {'id': taskId, ...data, 'action': 'inspect'},
       );
@@ -202,7 +203,7 @@ class HousekeepingService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('createMaintenanceTicket network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final localUuid = data['uuid'] ?? const Uuid().v4();
       final entity = MaintenanceTicketEntity(
         uuid: localUuid.toString(),
         roomId: data['room_id'] ?? '',
@@ -223,9 +224,9 @@ class HousekeepingService {
       final localId = _maintenanceDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'MaintenanceTicket',
-        entityId: localId,
+        entityId: localUuid.toString(),
         operation: 'CREATE',
-        payload: data,
+        payload: {...data, 'uuid': localUuid.toString()},
       );
       return data;
     } catch (e) {
@@ -258,7 +259,7 @@ class HousekeepingService {
       AppLogger.w('updateMaintenanceTicket network failed, queuing sync', e);
       _syncService.enqueueMutation(
         entityType: 'MaintenanceTicket',
-        entityId: 0,
+        entityId: ticketId,
         operation: 'UPDATE',
         payload: {'id': ticketId, ...data},
       );

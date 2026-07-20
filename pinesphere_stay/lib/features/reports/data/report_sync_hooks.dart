@@ -27,7 +27,7 @@ class ReportSyncHooks {
 
     final item = SyncQueueEntity(
       entityType: 'ReportTemplate',
-      entityId: 0, // local auto-generated; server assigns UUID
+      entityId: template.templateId,
       operation: 'CREATE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
@@ -48,7 +48,7 @@ class ReportSyncHooks {
 
     final item = SyncQueueEntity(
       entityType: 'ReportTemplate',
-      entityId: 0,
+      entityId: template.templateId,
       operation: 'UPDATE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
@@ -71,7 +71,7 @@ class ReportSyncHooks {
 
     final item = SyncQueueEntity(
       entityType: 'ScheduledReport',
-      entityId: 0,
+      entityId: schedule.scheduleId,
       operation: 'CREATE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
@@ -94,7 +94,7 @@ class ReportSyncHooks {
 
     final item = SyncQueueEntity(
       entityType: 'ScheduledReport',
-      entityId: 0,
+      entityId: schedule.scheduleId,
       operation: 'UPDATE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
@@ -110,7 +110,7 @@ class ReportSyncHooks {
 
     final item = SyncQueueEntity(
       entityType: entityType,
-      entityId: 0,
+      entityId: serverUuid,
       operation: 'DELETE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:pinesphere_stay/features/rooms/presentation/providers/pms_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:pinesphere_stay/core/network/dio_client.dart';
+import 'package:pinesphere_stay/features/rooms/presentation/providers/pms_provider.dart';
 
 part 'dashboard_provider.g.dart';
 
@@ -25,25 +26,16 @@ class DashboardState {
     required this.revenueToday,
   });
 
-  DashboardState copyWith({
-    int? todaysArrivals,
-    int? todaysDepartures,
-    int? occupiedRooms,
-    int? vacantRooms,
-    int? pendingCheckouts,
-    int? housekeepingCount,
-    int? pendingPaymentsCount,
-    double? revenueToday,
-  }) {
+  factory DashboardState.fromJson(Map<String, dynamic> json) {
     return DashboardState(
-      todaysArrivals: todaysArrivals ?? this.todaysArrivals,
-      todaysDepartures: todaysDepartures ?? this.todaysDepartures,
-      occupiedRooms: occupiedRooms ?? this.occupiedRooms,
-      vacantRooms: vacantRooms ?? this.vacantRooms,
-      pendingCheckouts: pendingCheckouts ?? this.pendingCheckouts,
-      housekeepingCount: housekeepingCount ?? this.housekeepingCount,
-      pendingPaymentsCount: pendingPaymentsCount ?? this.pendingPaymentsCount,
-      revenueToday: revenueToday ?? this.revenueToday,
+      todaysArrivals: json['todays_arrivals'] ?? 0,
+      todaysDepartures: json['todays_departures'] ?? 0,
+      occupiedRooms: json['occupied_rooms'] ?? 0,
+      vacantRooms: json['vacant_rooms'] ?? 0,
+      pendingCheckouts: json['pending_checkouts'] ?? 0,
+      housekeepingCount: json['housekeeping_count'] ?? 0,
+      pendingPaymentsCount: json['pending_payments_count'] ?? 0,
+      revenueToday: (json['revenue_today'] ?? 0.0).toDouble(),
     );
   }
 }
@@ -51,48 +43,40 @@ class DashboardState {
 @riverpod
 class DashboardNotifier extends _$DashboardNotifier {
   @override
-  DashboardState build() {
-    final pmsState = ref.watch(pmsProvider);
-    final now = DateTime.now();
+  FutureOr<DashboardState> build() async {
+    return _fetchDashboard();
+  }
 
-    int arrivals = 0;
-    int departures = 0;
-    int checkouts = 0;
-    int pendingPayments = 0;
-    double revenue = 0.0;
-
-    for (var booking in pmsState.bookings) {
-      if (DateUtils.isSameDay(booking.checkInDate, now)) {
-        arrivals++;
+  Future<DashboardState> _fetchDashboard() async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final pmsState = ref.read(pmsProvider);
+      
+      final Map<String, dynamic> queryParams = {};
+      if (pmsState.selectedResortId != null) {
+        queryParams['property_id'] = pmsState.selectedResortId;
       }
-      if (DateUtils.isSameDay(booking.checkOutDate, now) || (booking.status == 'Active' && booking.checkOutDate.isBefore(now))) {
-        departures++;
-      }
-      if (booking.status == 'Active' && (booking.checkOutDate.isBefore(now) || DateUtils.isSameDay(booking.checkOutDate, now))) {
-        checkouts++;
-      }
-      if (!booking.isPaid && (booking.totalSum - booking.depositPaid) > 0) {
-        pendingPayments++;
-      }
-      if (DateUtils.isSameDay(booking.checkInDate, now) || (booking.status == 'Active' && !booking.checkInDate.isAfter(now))) {
-        // Just a simple approximation for today's revenue from active/arriving bookings
-        revenue += booking.totalSum;
-      }
+      
+      final response = await dio.get('/dashboard', queryParameters: queryParams);
+      return DashboardState.fromJson(response.data);
+    } catch (e) {
+      debugPrint('Failed to fetch dashboard metrics: $e');
+      // Return zeroes on error
+      return DashboardState(
+        todaysArrivals: 0,
+        todaysDepartures: 0,
+        occupiedRooms: 0,
+        vacantRooms: 0,
+        pendingCheckouts: 0,
+        housekeepingCount: 0,
+        pendingPaymentsCount: 0,
+        revenueToday: 0.0,
+      );
     }
+  }
 
-    int occupiedRooms = pmsState.rooms.where((r) => r.status.toLowerCase() == 'occupied').length;
-    int vacantRooms = pmsState.rooms.where((r) => r.status.toLowerCase() == 'vacant').length;
-    int housekeeping = pmsState.rooms.where((r) => r.status.toLowerCase() == 'cleaning' || r.status.toLowerCase() == 'maintenance').length;
-
-    return DashboardState(
-      todaysArrivals: arrivals,
-      todaysDepartures: departures,
-      occupiedRooms: occupiedRooms,
-      vacantRooms: vacantRooms,
-      pendingCheckouts: checkouts,
-      housekeepingCount: housekeeping,
-      pendingPaymentsCount: pendingPayments,
-      revenueToday: revenue,
-    );
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => _fetchDashboard());
   }
 }

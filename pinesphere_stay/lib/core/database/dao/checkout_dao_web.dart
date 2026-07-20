@@ -32,4 +32,30 @@ class CheckoutDaoWeb implements ICheckoutDao {
     }
     return false;
   }
+
+  @override
+  void putMany(List<CheckOutEntity> checkouts) {
+    for (final checkout in checkouts) {
+      put(checkout);
+    }
+  }
+
+  @override
+  List<CheckOutEntity> findByProperty(String propertyId) {
+    return _storage.values.where((c) => c.propertyId == propertyId).toList();
+  }
+
+  @override
+  List<CheckOutEntity> findPendingByProperty(String propertyId) {
+    return _storage.values.where((c) => c.propertyId == propertyId && c.checkoutStatus == 'pending').toList();
+  }
+  @override
+  CheckOutEntity? findByUuid(String uuid) {
+    try {
+      return getAll().firstWhere((e) => e.uuid == uuid);
+    } catch (_) {
+      return null;
+    }
+  }
+
 }

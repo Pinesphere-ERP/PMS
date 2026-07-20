@@ -32,4 +32,18 @@ class MaintenanceDaoWeb implements IMaintenanceDao {
     }
     return false;
   }
+
+  @override
+  List<MaintenanceTicketEntity> queryTickets(String propertyId, {String? status, String? category}) {
+    return _storage.values.where((e) {
+      bool match = e.propertyId == propertyId;
+      if (status != null) {
+        match = match && e.status == status;
+      }
+      if (category != null && category.isNotEmpty) {
+        match = match && e.category == category;
+      }
+      return match;
+    }).toList();
+  }
 }

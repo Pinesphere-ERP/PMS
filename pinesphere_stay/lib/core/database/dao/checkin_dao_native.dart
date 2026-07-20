@@ -26,4 +26,39 @@ class CheckinDaoNative implements ICheckinDao {
   bool remove(int id) {
     return _box.remove(id);
   }
+
+  @override
+  void putMany(List<CheckInEntity> checkins) {
+    _box.putMany(checkins);
+  }
+
+  @override
+  List<CheckInEntity> findByProperty(String propertyId) {
+    final query = _box.query(CheckInEntity_.propertyId.equals(propertyId)).build();
+    try {
+      return query.find();
+    } finally {
+      query.close();
+    }
+  }
+
+  @override
+  List<CheckInEntity> findActiveByProperty(String propertyId) {
+    final query = _box.query(
+      CheckInEntity_.propertyId.equals(propertyId) & CheckInEntity_.status.equals('active'),
+    ).build();
+    try {
+      return query.find();
+    } finally {
+      query.close();
+    }
+  }
+  @override
+  CheckInEntity? findByUuid(String uuid) {
+    final query = _box.query(CheckInEntity_.uuid.equals(uuid)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
 }

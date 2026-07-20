@@ -5,4 +5,5 @@ abstract class IRoomDao {
   List<RoomEntity> getAll();
   RoomEntity? get(int id);
   bool remove(int id);
+  RoomEntity? findByUuid(String uuid);
 }

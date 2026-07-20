@@ -15,6 +15,13 @@ class HousekeepingDaoWeb implements IHousekeepingDao {
   }
 
   @override
+  void putMany(List<HousekeepingTaskEntity> entities) {
+    for (var entity in entities) {
+      put(entity);
+    }
+  }
+
+  @override
   List<HousekeepingTaskEntity> getAll() {
     return _storage.values.toList();
   }
@@ -31,5 +38,19 @@ class HousekeepingDaoWeb implements IHousekeepingDao {
       return true;
     }
     return false;
+  }
+
+  @override
+  List<HousekeepingTaskEntity> queryTasks(String propertyId, {String? status, String? staffId}) {
+    return _storage.values.where((e) {
+      bool match = e.propertyId == propertyId;
+      if (status != null) {
+        match = match && e.status == status;
+      }
+      if (staffId != null && staffId.isNotEmpty) {
+        match = match && e.assignedStaffId == staffId;
+      }
+      return match;
+    }).toList();
   }
 }

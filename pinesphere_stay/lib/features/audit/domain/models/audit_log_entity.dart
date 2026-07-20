@@ -8,17 +8,21 @@ class AuditLogEntity {
   @Index()
   String logId;
 
+  @Index()
   String? propertyId;
 
   String? userId;
 
   String? deviceId;
 
+  @Index()
   @Property(type: PropertyType.date)
   DateTime timestamp;
 
+  @Index()
   String? moduleName;
 
+  @Index()
   String? actionType;
 
   String? targetEntity;

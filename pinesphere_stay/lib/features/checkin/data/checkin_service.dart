@@ -1,11 +1,11 @@
-import 'package:pinesphere_stay/main.dart';
+import '../../../main.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
-import 'package:pinesphere_stay/objectbox.g.dart';
+import '../../../core/database/dao/checkin_dao.dart';
+import '../../../core/database/dao/room_dao.dart';
 import '../../audit/data/audit_service.dart';
-import '../../rooms/domain/models/room_entity.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/checkin_entity.dart';
 
@@ -17,25 +17,27 @@ CheckInService checkInService(Ref ref) {
     dio: ref.watch(dioClientProvider),
     auditService: ref.watch(auditServiceProvider),
   );
-  service.initialize(databaseService.store, ref.read(syncServiceProvider));
+  service.initialize(
+    databaseService.checkinDao,
+    databaseService.roomDao,
+    ref.read(syncServiceProvider),
+  );
   return service;
 }
 
 class CheckInService {
   final Dio _dio;
   final AuditService _audit;
-  late final Store _store;
-  late final Box<CheckInEntity> _checkinBox;
-  late final Box<RoomEntity> _roomBox;
+  late final ICheckinDao _checkinDao;
+  late final IRoomDao _roomDao;
   late final SyncService _syncService;
 
-  CheckInService({required this._dio, required AuditService auditService})
-      : _audit = auditService;
+  CheckInService({required Dio dio, required AuditService auditService})
+      : _dio = dio, _audit = auditService;
 
-  void initialize(Store store, SyncService syncService) {
-    _store = store;
-    _checkinBox = _store.box<CheckInEntity>();
-    _roomBox = _store.box<RoomEntity>();
+  void initialize(ICheckinDao checkinDao, IRoomDao roomDao, SyncService syncService) {
+    _checkinDao = checkinDao;
+    _roomDao = roomDao;
     _syncService = syncService;
   }
 
@@ -65,7 +67,7 @@ class CheckInService {
         parkingRequired: body['parking_required'] ?? data['parking_required'] ?? false,
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       );
-      _checkinBox.put(entity);
+      _checkinDao.put(entity);
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
       _audit.log(
         moduleName: 'checkin',
@@ -109,7 +111,7 @@ class CheckInService {
         parkingRequired: data['parking_required'] ?? false,
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _checkinBox.put(entity);
+      final localId = _checkinDao.put(entity);
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
       _syncService.enqueueMutation(
         entityType: 'CheckIn',
@@ -195,15 +197,15 @@ class CheckInService {
       )).toList();
       
       if (entities.isNotEmpty) {
-        _checkinBox.putMany(entities);
+        _checkinDao.putMany(entities);
       }
       return dataList;
     } on DioException catch (e) {
       AppLogger.w('getTodaysCheckIns network failed, falling back to ObjectBox', e);
-      return _checkinBox.query(CheckInEntity_.propertyId.equals(propertyId)).build().find();
+      return _checkinDao.findByProperty(propertyId);
     } catch (e) {
       AppLogger.e('getTodaysCheckIns unexpected error', e);
-      return _checkinBox.query(CheckInEntity_.propertyId.equals(propertyId)).build().find();
+      return _checkinDao.findByProperty(propertyId);
     }
   }
 
@@ -236,19 +238,15 @@ class CheckInService {
       )).toList();
       
       if (entities.isNotEmpty) {
-        _checkinBox.putMany(entities);
+        _checkinDao.putMany(entities);
       }
       return dataList;
     } on DioException catch (e) {
       AppLogger.w('getActiveCheckIns network failed, falling back to ObjectBox', e);
-      return _checkinBox.query(
-        CheckInEntity_.propertyId.equals(propertyId) & CheckInEntity_.status.equals('active'),
-      ).build().find();
+      return _checkinDao.findActiveByProperty(propertyId);
     } catch (e) {
       AppLogger.e('getActiveCheckIns unexpected error', e);
-      return _checkinBox.query(
-        CheckInEntity_.propertyId.equals(propertyId) & CheckInEntity_.status.equals('active'),
-      ).build().find();
+      return _checkinDao.findActiveByProperty(propertyId);
     }
   }
 
@@ -297,12 +295,9 @@ class CheckInService {
   }
 
   void _updateRoomStatus(String roomId, String occupancyStatus, String housekeepingStatus) {
-    final query = _roomBox.query(RoomEntity_.uuid.equals(roomId)).build();
-    final rooms = query.find();
-    query.close();
-    if (rooms.isNotEmpty) {
-      final room = rooms.first;
-      _roomBox.put(room);
+    final room = _roomDao.findByUuid(roomId);
+    if (room != null) {
+      _roomDao.put(room);
     }
   }
 }

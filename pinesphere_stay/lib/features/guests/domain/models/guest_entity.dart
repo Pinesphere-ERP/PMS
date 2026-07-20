@@ -7,6 +7,7 @@ class GuestEntity {
 
   @Unique()
   String uuid;
+  @Index()
   String propertyId;
   String fullName;
   String mobile;

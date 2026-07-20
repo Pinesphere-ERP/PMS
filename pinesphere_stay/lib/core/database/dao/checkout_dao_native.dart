@@ -26,4 +26,39 @@ class CheckoutDaoNative implements ICheckoutDao {
   bool remove(int id) {
     return _box.remove(id);
   }
+
+  @override
+  void putMany(List<CheckOutEntity> checkouts) {
+    _box.putMany(checkouts);
+  }
+
+  @override
+  List<CheckOutEntity> findByProperty(String propertyId) {
+    final query = _box.query(CheckOutEntity_.propertyId.equals(propertyId)).build();
+    try {
+      return query.find();
+    } finally {
+      query.close();
+    }
+  }
+
+  @override
+  List<CheckOutEntity> findPendingByProperty(String propertyId) {
+    final query = _box.query(
+      CheckOutEntity_.propertyId.equals(propertyId).and(CheckOutEntity_.checkoutStatus.equals('pending')),
+    ).build();
+    try {
+      return query.find();
+    } finally {
+      query.close();
+    }
+  }
+  @override
+  CheckOutEntity? findByUuid(String uuid) {
+    final query = _box.query(CheckOutEntity_.uuid.equals(uuid)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
 }

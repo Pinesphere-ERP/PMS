@@ -13,6 +13,11 @@ class HousekeepingDaoNative implements IHousekeepingDao {
   }
 
   @override
+  void putMany(List<HousekeepingTaskEntity> entities) {
+    _box.putMany(entities);
+  }
+
+  @override
   List<HousekeepingTaskEntity> getAll() {
     return _box.getAll();
   }
@@ -25,5 +30,22 @@ class HousekeepingDaoNative implements IHousekeepingDao {
   @override
   bool remove(int id) {
     return _box.remove(id);
+  }
+
+  @override
+  List<HousekeepingTaskEntity> queryTasks(String propertyId, {String? status, String? staffId}) {
+    var condition = HousekeepingTaskEntity_.propertyId.equals(propertyId);
+    if (status != null) {
+      condition = condition & HousekeepingTaskEntity_.status.equals(status);
+    }
+    
+    final query = _box.query(condition).build();
+    final results = query.find();
+    query.close();
+    
+    if (staffId != null && staffId.isNotEmpty) {
+      return results.where((e) => e.assignedStaffId == staffId).toList();
+    }
+    return results;
   }
 }

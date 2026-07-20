@@ -7,6 +7,7 @@ class BookingEntity {
 
   @Unique()
   String uuid;
+  @Index()
   String propertyId;
   String roomId;
   String guestId;
@@ -15,6 +16,7 @@ class BookingEntity {
   String roomType;
   String bookingType;
   String bookingSource;
+  @Index()
   String checkInDate;
   String checkOutDate;
   int adults;
@@ -31,6 +33,7 @@ class BookingEntity {
   String guestPreferences;
   String notes;
   String vehicleNumber;
+  @Index()
   String bookingStatus;
   String paymentStatus;
   String lastModifiedHlc;

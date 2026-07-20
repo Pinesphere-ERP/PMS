@@ -622,7 +622,7 @@ class PmsNotifier extends Notifier<PmsState> {
           paymentStatus: 'pending',
           lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         );
-        databaseService.bookingDao.put(entity);
+        databaseService.bookingDao.put(bookingEntity);
         debugPrint('Offline booking saved to local DB successfully');
       } catch (dbErr) {
         debugPrint('Failed to save offline booking to DB: $dbErr');

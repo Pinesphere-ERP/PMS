@@ -35,7 +35,7 @@ final housekeepingTasksProvider = FutureProvider<List<HousekeepingTaskEntity>>((
         inspectedAt: body['inspected_at']?.toString() ?? '',
         createdAt: body['created_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
-      )).toList();
+      )).toList().cast<HousekeepingTaskEntity>();
 });
 
 final housekeepingTaskControllerProvider = Provider((ref) {

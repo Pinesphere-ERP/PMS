@@ -11,6 +11,7 @@ class UserDaoWeb implements IUserDao {
       entity.id = _counter++;
     }
     _storage[entity.id] = entity;
+    _controller.add(getAll());
     return entity.id;
   }
 

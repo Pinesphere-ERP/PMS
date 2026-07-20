@@ -14,9 +14,9 @@ class SyncQueueDaoNative implements ISyncQueueDao {
 
   @override
   List<SyncQueueEntity> getPending({int limit = 100}) {
-    // 0 = Pending
+    // 'Pending'
     final query = _box
-        .query(SyncQueueEntity_.status.equals(0))
+        .query(SyncQueueEntity_.status.equals('Pending'))
         .order(SyncQueueEntity_.createdAt)
         .build();
     query.limit = limit;
@@ -26,7 +26,7 @@ class SyncQueueDaoNative implements ISyncQueueDao {
   }
 
   @override
-  List<SyncQueueEntity> getByStatus(int status, {int limit = 100}) {
+  List<SyncQueueEntity> getByStatus(String status, {int limit = 100}) {
     final query = _box
         .query(SyncQueueEntity_.status.equals(status))
         .order(SyncQueueEntity_.createdAt)
@@ -46,7 +46,7 @@ class SyncQueueDaoNative implements ISyncQueueDao {
   bool markSuccess(int id) {
     final entity = get(id);
     if (entity != null) {
-      entity.status = 3; // 3 = Success/Processed
+      entity.status = 'Synced';
       _box.put(entity);
       return true;
     }
@@ -57,7 +57,7 @@ class SyncQueueDaoNative implements ISyncQueueDao {
   bool markFailure(int id) {
     final entity = get(id);
     if (entity != null) {
-      entity.status = 2; // 2 = Failed
+      entity.status = 'Failed';
       _box.put(entity);
       return true;
     }
@@ -66,9 +66,9 @@ class SyncQueueDaoNative implements ISyncQueueDao {
 
   @override
   int removeProcessed() {
-    // Note: If using markSuccess -> status 3, we delete status 3.
+    // Note: If using markSuccess -> status 'Synced', we delete status 'Synced'.
     // If just using removeMany, this could be a fallback.
-    final query = _box.query(SyncQueueEntity_.status.equals(3)).build();
+    final query = _box.query(SyncQueueEntity_.status.equals('Synced')).build();
     final count = query.remove();
     query.close();
     return count;
@@ -82,15 +82,15 @@ class SyncQueueDaoNative implements ISyncQueueDao {
 
   @override
   int retryFailed() {
-    // Find all failed items (status = 2) and mark them as pending (status = 0)
-    final query = _box.query(SyncQueueEntity_.status.equals(2)).build();
+    // Find all failed items (status = 'Failed') and mark them as pending (status = 'Pending')
+    final query = _box.query(SyncQueueEntity_.status.equals('Failed')).build();
     final failedItems = query.find();
     query.close();
     
     if (failedItems.isEmpty) return 0;
     
     for (var item in failedItems) {
-      item.status = 0;
+      item.status = 'Pending';
     }
     _box.putMany(failedItems);
     return failedItems.length;

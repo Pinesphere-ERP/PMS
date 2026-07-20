@@ -21,6 +21,11 @@ class GuestDaoWeb implements IGuestDao {
   }
 
   @override
+  List<GuestEntity> findByProperty(String propertyId) {
+    return _storage.values.where((g) => g.propertyId == propertyId).toList();
+  }
+
+  @override
   GuestEntity? get(int id) {
     return _storage[id];
   }
@@ -34,9 +39,9 @@ class GuestDaoWeb implements IGuestDao {
     return false;
   }
   @override
-  GuestEntity? findByUuid(String uuid) {
+  GuestEntity? getByServerId(String serverId) {
     try {
-      return getAll().firstWhere((e) => e.uuid == uuid);
+      return getAll().firstWhere((e) => e.serverId == serverId);
     } catch (_) {
       return null;
     }

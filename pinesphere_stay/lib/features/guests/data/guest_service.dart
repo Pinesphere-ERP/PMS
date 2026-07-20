@@ -48,10 +48,10 @@ class GuestService {
       return response.data as List<dynamic>;
     } on DioException catch (e) {
       AppLogger.w('searchGuests network failed, falling back to ObjectBox', e);
-      return getCachedGuests();
+      return getCachedGuests(propertyId);
     } catch (e) {
       AppLogger.e('searchGuests unexpected error', e);
-      return getCachedGuests();
+      return getCachedGuests(propertyId);
     }
   }
 
@@ -61,7 +61,7 @@ class GuestService {
         moduleName: 'guests',
         actionType: 'create_guest',
         targetEntity: 'guest',
-        targetRecordId: data['uuid']?.toString() ?? '',
+        targetRecordId: data['server_id']?.toString() ?? '',
         propertyId: data['property_id']?.toString(),
         newValue: {
           'full_name': data['full_name'],
@@ -74,7 +74,7 @@ class GuestService {
       final response = await _dio.post('/bookings/guests', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = GuestEntity(
-        uuid: body['id']?.toString() ?? data['uuid'] ?? '',
+        serverId: body['id']?.toString() ?? data['server_id'] ?? '',
         propertyId: body['property_id']?.toString() ?? data['property_id'] ?? '',
         fullName: body['full_name']?.toString() ?? data['full_name'] ?? '',
         mobile: body['mobile']?.toString() ?? data['mobile'] ?? '',
@@ -92,14 +92,15 @@ class GuestService {
         emergencyContactName: body['emergency_contact_name']?.toString() ?? data['emergency_contact_name'] ?? '',
         emergencyContactPhone: body['emergency_contact_phone']?.toString() ?? data['emergency_contact_phone'] ?? '',
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Synced',
       );
       _guestDao.put(entity);
       return body;
     } on DioException catch (e) {
       AppLogger.w('createGuest network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? const Uuid().v4();
+      final localUuid = data['server_id'] ?? const Uuid().v4();
       final entity = GuestEntity(
-        uuid: localUuid.toString(),
+        serverId: localUuid.toString(),
         propertyId: data['property_id'] ?? '',
         fullName: data['full_name'] ?? '',
         mobile: data['mobile'] ?? '',
@@ -117,13 +118,14 @@ class GuestService {
         emergencyContactName: data['emergency_contact_name'] ?? '',
         emergencyContactPhone: data['emergency_contact_phone'] ?? '',
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Pending',
       );
       final localId = _guestDao.put(entity);
       _syncService.enqueueMutation(
         entityType: 'Guest',
         entityId: localUuid.toString(),
         operation: 'CREATE',
-        payload: {...data, 'uuid': localUuid.toString()},
+        payload: {...data, 'server_id': localUuid.toString()},
       );
       return data;
     } catch (e) {
@@ -132,7 +134,7 @@ class GuestService {
     }
   }
 
-  Future<List<GuestEntity>> getCachedGuests() async {
-    return _guestDao.getAll();
+  Future<List<GuestEntity>> getCachedGuests(String propertyId) async {
+    return _guestDao.findByProperty(propertyId);
   }
 }

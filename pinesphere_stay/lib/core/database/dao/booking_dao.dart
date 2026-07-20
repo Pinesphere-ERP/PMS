@@ -4,7 +4,8 @@ abstract class IBookingDao {
   int put(BookingEntity booking);
   void putMany(List<BookingEntity> bookings);
   List<BookingEntity> getAll();
+  List<BookingEntity> findByProperty(String propertyId);
   BookingEntity? get(int id);
   bool remove(int id);
-  BookingEntity? findByUuid(String uuid);
+  BookingEntity? getByServerId(String serverId);
 }

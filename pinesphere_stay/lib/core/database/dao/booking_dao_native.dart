@@ -18,6 +18,14 @@ class BookingDaoNative implements IBookingDao {
   }
 
   @override
+  List<BookingEntity> findByProperty(String propertyId) {
+    final query = _box.query(BookingEntity_.propertyId.equals(propertyId)).build();
+    final results = query.find();
+    query.close();
+    return results;
+  }
+
+  @override
   BookingEntity? get(int id) {
     return _box.get(id);
   }
@@ -32,8 +40,8 @@ class BookingDaoNative implements IBookingDao {
     _box.putMany(bookings);
   }
   @override
-  BookingEntity? findByUuid(String uuid) {
-    final query = _box.query(BookingEntity_.uuid.equals(uuid)).build();
+  BookingEntity? getByServerId(String serverId) {
+    final query = _box.query(BookingEntity_.serverId.equals(serverId)).build();
     final result = query.findFirst();
     query.close();
     return result;

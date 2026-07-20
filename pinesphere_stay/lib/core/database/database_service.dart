@@ -12,6 +12,7 @@ import 'dao/audit_dao.dart';
 import 'dao/sync_queue_dao.dart';
 import 'dao/sync_op_dao.dart';
 import 'dao/user_dao.dart';
+import 'dao/role_dao.dart';
 import 'dao/role_perm_dao.dart';
 import 'dao/perm_dao.dart';
 
@@ -36,6 +37,7 @@ abstract class IDatabaseService {
   ISyncQueueDao get syncQueueDao;
   ISyncOpDao get syncOpDao;
   IUserDao get userDao;
+  IRoleDao get roleDao;
   IRolePermDao get rolePermDao;
   IPermDao get permDao;
 }

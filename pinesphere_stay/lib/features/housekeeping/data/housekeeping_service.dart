@@ -6,6 +6,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/database/dao/housekeeping_dao.dart';
 import '../../../core/database/dao/maintenance_dao.dart';
+import '../../audit/data/audit_service.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/housekeeping_task_entity.dart';
 import '../domain/models/maintenance_ticket_entity.dart';
@@ -17,7 +18,7 @@ HousekeepingService housekeepingService(Ref ref) {
   final service = HousekeepingService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(databaseService.housekeepingDao, databaseService.maintenanceDao, ref.read(syncServiceProvider));
+  service.initialize(databaseService.housekeepingDao, databaseService.maintenanceDao, ref.read(syncServiceProvider), ref.read(auditServiceProvider));
   return service;
 }
 
@@ -26,13 +27,15 @@ class HousekeepingService {
   late final IHousekeepingDao _housekeepingDao;
   late final IMaintenanceDao _maintenanceDao;
   late final SyncService _syncService;
+  late final AuditService _audit;
 
   HousekeepingService({required Dio dio}) : _dio = dio;
 
-  void initialize(IHousekeepingDao housekeepingDao, IMaintenanceDao maintenanceDao, SyncService syncService) {
+  void initialize(IHousekeepingDao housekeepingDao, IMaintenanceDao maintenanceDao, SyncService syncService, AuditService audit) {
     _housekeepingDao = housekeepingDao;
     _maintenanceDao = maintenanceDao;
     _syncService = syncService;
+    _audit = audit;
   }
 
   Future<Map<String, dynamic>> createTask(Map<String, dynamic> data) async {
@@ -40,7 +43,7 @@ class HousekeepingService {
       final response = await _dio.post('/housekeeping/tasks', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = HousekeepingTaskEntity(
-        uuid: body['id']?.toString() ?? data['uuid'] ?? '',
+        serverId: body['id']?.toString() ?? data['uuid'] ?? '',
         roomId: body['room_id']?.toString() ?? data['room_id'] ?? '',
         propertyId: body['property_id']?.toString() ?? data['property_id'] ?? '',
         roomNumber: body['room_number']?.toString() ?? data['room_number'] ?? '',
@@ -66,7 +69,7 @@ class HousekeepingService {
       AppLogger.w('createTask network failed, storing locally and queuing sync', e);
       final localUuid = data['uuid'] ?? const Uuid().v4();
       final entity = HousekeepingTaskEntity(
-        uuid: localUuid.toString(),
+        serverId: localUuid.toString(),
         roomId: data['room_id'] ?? '',
         propertyId: data['property_id'] ?? '',
         roomNumber: data['room_number'] ?? '',
@@ -87,6 +90,16 @@ class HousekeepingService {
         operation: 'CREATE',
         payload: {...data, 'uuid': localUuid.toString()},
       );
+      
+      _audit.log(
+        moduleName: 'housekeeping',
+        actionType: 'create_task',
+        targetEntity: 'housekeeping_task',
+        targetRecordId: localUuid.toString(),
+        propertyId: data['property_id'],
+        newValue: data,
+      );
+      
       return data;
     } catch (e) {
       AppLogger.e('createTask unexpected error', e);
@@ -103,7 +116,7 @@ class HousekeepingService {
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       final entities = dataList.map<HousekeepingTaskEntity>((body) => HousekeepingTaskEntity(
-        uuid: body['id']?.toString() ?? '',
+        serverId: body['id']?.toString() ?? '',
         roomId: body['room_id']?.toString() ?? '',
         propertyId: body['property_id']?.toString() ?? '',
         roomNumber: body['room_number']?.toString() ?? '',
@@ -150,6 +163,16 @@ class HousekeepingService {
         operation: 'UPDATE',
         payload: {'id': taskId, ...data},
       );
+      
+      _audit.log(
+        moduleName: 'housekeeping',
+        actionType: 'update_task',
+        targetEntity: 'housekeeping_task',
+        targetRecordId: taskId,
+        propertyId: data['property_id'],
+        newValue: data,
+      );
+      
       return data;
     } catch (e) {
       AppLogger.e('updateTask unexpected error', e);
@@ -169,6 +192,16 @@ class HousekeepingService {
         operation: 'UPDATE',
         payload: {'id': taskId, ...data, 'action': 'inspect'},
       );
+      
+      _audit.log(
+        moduleName: 'housekeeping',
+        actionType: 'inspect_task',
+        targetEntity: 'housekeeping_task',
+        targetRecordId: taskId,
+        propertyId: data['property_id'],
+        newValue: data,
+      );
+      
       return data;
     } catch (e) {
       AppLogger.e('inspectTask unexpected error', e);
@@ -181,7 +214,7 @@ class HousekeepingService {
       final response = await _dio.post('/housekeeping/maintenance', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = MaintenanceTicketEntity(
-        uuid: body['id']?.toString() ?? data['uuid'] ?? '',
+        serverId: body['id']?.toString() ?? data['uuid'] ?? '',
         roomId: body['room_id']?.toString() ?? data['room_id'] ?? '',
         propertyId: body['property_id']?.toString() ?? data['property_id'] ?? '',
         roomNumber: body['room_number']?.toString() ?? data['room_number'] ?? '',
@@ -205,7 +238,7 @@ class HousekeepingService {
       AppLogger.w('createMaintenanceTicket network failed, storing locally and queuing sync', e);
       final localUuid = data['uuid'] ?? const Uuid().v4();
       final entity = MaintenanceTicketEntity(
-        uuid: localUuid.toString(),
+        serverId: localUuid.toString(),
         roomId: data['room_id'] ?? '',
         propertyId: data['property_id'] ?? '',
         roomNumber: data['room_number'] ?? '',
@@ -228,6 +261,16 @@ class HousekeepingService {
         operation: 'CREATE',
         payload: {...data, 'uuid': localUuid.toString()},
       );
+      
+      _audit.log(
+        moduleName: 'maintenance',
+        actionType: 'create_ticket',
+        targetEntity: 'maintenance_ticket',
+        targetRecordId: localUuid.toString(),
+        propertyId: data['property_id'],
+        newValue: data,
+      );
+      
       return data;
     } catch (e) {
       AppLogger.e('createMaintenanceTicket unexpected error', e);
@@ -263,6 +306,16 @@ class HousekeepingService {
         operation: 'UPDATE',
         payload: {'id': ticketId, ...data},
       );
+      
+      _audit.log(
+        moduleName: 'maintenance',
+        actionType: 'update_ticket',
+        targetEntity: 'maintenance_ticket',
+        targetRecordId: ticketId,
+        propertyId: data['property_id'],
+        newValue: data,
+      );
+      
       return data;
     } catch (e) {
       AppLogger.e('updateMaintenanceTicket unexpected error', e);

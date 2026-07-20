@@ -6,7 +6,8 @@ class CheckInEntity {
   int id = 0;
 
   @Unique()
-  String uuid;
+  String serverId;
+  String? tenantId;
   String bookingId;
   String roomId;
   String guestId;
@@ -26,11 +27,22 @@ class CheckInEntity {
   String specialRequests;
   String vehicleNumber;
   bool parkingRequired;
+  
+  // Sync metadata
+  String syncStatus;
   String lastModifiedHlc;
+  bool isDeleted;
+  @Property(type: PropertyType.date)
+  DateTime? createdAt;
+  @Property(type: PropertyType.date)
+  DateTime? updatedAt;
+  @Property(type: PropertyType.date)
+  DateTime? deletedAt;
 
   CheckInEntity({
     this.id = 0,
-    required this.uuid,
+    required this.serverId,
+    this.tenantId,
     required this.bookingId,
     required this.roomId,
     required this.guestId,
@@ -49,6 +61,11 @@ class CheckInEntity {
     this.specialRequests = '',
     this.vehicleNumber = '',
     this.parkingRequired = false,
+    this.syncStatus = 'Pending',
     required this.lastModifiedHlc,
+    this.isDeleted = false,
+    this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
   });
 }

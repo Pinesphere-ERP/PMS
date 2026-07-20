@@ -18,6 +18,11 @@ class UserDaoNative implements IUserDao {
   }
 
   @override
+  Stream<List<UserEntity>> watchAll() {
+    return _box.query().watch(triggerImmediately: true).map((query) => query.find());
+  }
+
+  @override
   UserEntity? get(int id) {
     return _box.get(id);
   }

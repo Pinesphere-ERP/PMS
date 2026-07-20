@@ -8,7 +8,7 @@ abstract class ISyncQueueDao {
   List<SyncQueueEntity> getPending({int limit = 100});
 
   /// Fetch items by their specific status ordered by createdAt ascending
-  List<SyncQueueEntity> getByStatus(int status, {int limit = 100});
+  List<SyncQueueEntity> getByStatus(String status, {int limit = 100});
 
   /// Get a specific sync item by ID
   SyncQueueEntity? get(int id);

@@ -20,9 +20,9 @@ class SyncQueueEntity {
   /// Hybrid Logical Clock timestamp of the mutation
   String hlcTimestamp;
 
-  /// 0 = Pending, 1 = In Progress, 2 = Failed
+  /// "Pending", "Syncing", "Synced", "Failed", "Conflict"
   @Index()
-  int status;
+  String status;
 
   @Property(type: PropertyType.date)
   DateTime createdAt;
@@ -34,7 +34,7 @@ class SyncQueueEntity {
     required this.operation,
     required this.payload,
     required this.hlcTimestamp,
-    this.status = 0,
+    this.status = 'Pending',
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 }

@@ -56,7 +56,7 @@ class CheckInNotifier extends _$CheckInNotifier {
     try {
       final rooms = await roomService.getRooms(propertyId);
       final vacantRooms = rooms.where((r) => r.status == 'Vacant').map((r) => <String, dynamic>{
-        'id': r.uuid,
+        'id': r.serverId,
         'name': r.name,
         'type': r.type,
         'status': r.status,

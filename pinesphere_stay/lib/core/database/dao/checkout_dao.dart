@@ -8,5 +8,5 @@ abstract class ICheckoutDao {
   void putMany(List<CheckOutEntity> checkouts);
   List<CheckOutEntity> findByProperty(String propertyId);
   List<CheckOutEntity> findPendingByProperty(String propertyId);
-  CheckOutEntity? findByUuid(String uuid);
+  CheckOutEntity? getByServerId(String serverId);
 }

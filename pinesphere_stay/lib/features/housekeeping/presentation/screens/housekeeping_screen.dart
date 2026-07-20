@@ -147,7 +147,7 @@ class _TaskSwipeCard extends ConsumerWidget {
           width: double.infinity,
           height: 60,
           child: ElevatedButton(
-            onPressed: () => controller.acceptTask(task.uuid),
+            onPressed: () => controller.acceptTask(task.serverId),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -160,7 +160,7 @@ class _TaskSwipeCard extends ConsumerWidget {
           width: double.infinity,
           height: 60,
           child: ElevatedButton(
-            onPressed: () => controller.startCleaning(task.uuid),
+            onPressed: () => controller.startCleaning(task.serverId),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -173,7 +173,7 @@ class _TaskSwipeCard extends ConsumerWidget {
           width: double.infinity,
           height: 60,
           child: ElevatedButton(
-            onPressed: () => controller.markCompleted(task.uuid),
+            onPressed: () => controller.markCompleted(task.serverId),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

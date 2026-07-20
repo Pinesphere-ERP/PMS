@@ -29,6 +29,8 @@ import 'dao/sync_op_dao.dart';
 import 'dao/sync_op_dao_native.dart';
 import 'dao/user_dao.dart';
 import 'dao/user_dao_native.dart';
+import 'dao/role_dao.dart';
+import 'dao/role_dao_native.dart';
 import 'dao/role_perm_dao.dart';
 import 'dao/role_perm_dao_native.dart';
 import 'dao/perm_dao.dart';
@@ -62,6 +64,7 @@ class DatabaseService implements IDatabaseService {
   late final ISyncQueueDao _syncQueueDao;
   late final ISyncOpDao _syncOpDao;
   late final IUserDao _userDao;
+  late final IRoleDao _roleDao;
   late final IRolePermDao _rolePermDao;
   late final IPermDao _permDao;
 
@@ -100,6 +103,7 @@ class DatabaseService implements IDatabaseService {
     _syncQueueDao = SyncQueueDaoNative(_store.box<SyncQueueEntity>());
     _syncOpDao = SyncOpDaoNative(_store.box<SyncOperation>());
     _userDao = UserDaoNative(_store.box<UserEntity>());
+    _roleDao = RoleDaoNative(_store.box<RoleEntity>());
     _rolePermDao = RolePermDaoNative(_store.box<RolePermissionEntity>());
     _permDao = PermDaoNative(_store.box<PermissionEntity>());
   }
@@ -151,6 +155,9 @@ class DatabaseService implements IDatabaseService {
 
   @override
   IUserDao get userDao => _userDao;
+
+  @override
+  IRoleDao get roleDao => _roleDao;
 
   @override
   IRolePermDao get rolePermDao => _rolePermDao;

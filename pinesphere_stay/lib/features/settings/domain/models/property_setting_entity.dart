@@ -6,7 +6,7 @@ class PropertySettingEntity {
   int id = 0;
 
   @Unique()
-  String uuid;
+  String serverId;
 
   String propertyId;
   String settingKey;
@@ -19,7 +19,7 @@ class PropertySettingEntity {
 
   PropertySettingEntity({
     this.id = 0,
-    required this.uuid,
+    required this.serverId,
     required this.propertyId,
     required this.settingKey,
     required this.settingValue,

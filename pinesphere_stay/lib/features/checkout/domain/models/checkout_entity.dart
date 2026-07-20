@@ -6,7 +6,8 @@ class CheckOutEntity {
   int id = 0;
 
   @Unique()
-  String uuid;
+  String serverId;
+  String? tenantId;
   String checkinId;
   String bookingId;
   String roomId;
@@ -34,11 +35,22 @@ class CheckOutEntity {
   bool feedbackSubmitted;
   String remarks;
   String checkoutStatus;
+  
+  // Sync metadata
+  String syncStatus;
   String lastModifiedHlc;
+  bool isDeleted;
+  @Property(type: PropertyType.date)
+  DateTime? createdAt;
+  @Property(type: PropertyType.date)
+  DateTime? updatedAt;
+  @Property(type: PropertyType.date)
+  DateTime? deletedAt;
 
   CheckOutEntity({
     this.id = 0,
-    required this.uuid,
+    required this.serverId,
+    this.tenantId,
     required this.checkinId,
     required this.bookingId,
     required this.roomId,
@@ -65,6 +77,11 @@ class CheckOutEntity {
     this.feedbackSubmitted = false,
     this.remarks = '',
     this.checkoutStatus = 'pending',
+    this.syncStatus = 'Pending',
     required this.lastModifiedHlc,
+    this.isDeleted = false,
+    this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
   });
 }

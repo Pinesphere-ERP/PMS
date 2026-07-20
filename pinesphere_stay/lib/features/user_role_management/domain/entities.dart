@@ -23,7 +23,35 @@ class UserEntity {
   String? createdBy;
   bool isPendingSync;
 
+
+  // --- Standard Sync Metadata ---
+  String? tenantId;
+  @Property(type: PropertyType.date)
+  DateTime? createdAt;
+  @Property(type: PropertyType.date)
+  DateTime? updatedAt;
+  @Property(type: PropertyType.date)
+  DateTime? lastSyncedAt;
+  int syncVersion;
+  String? deviceId;
+  String? lastModifiedHlc;
+  String syncStatus;
+  bool isDeleted;
+  @Property(type: PropertyType.date)
+  DateTime? deletedAt;
+  // ------------------------------
   UserEntity({
+    this.tenantId,
+    this.createdAt,
+    this.updatedAt,
+    this.lastSyncedAt,
+    this.syncVersion = 0,
+    this.deviceId,
+    this.lastModifiedHlc,
+    this.syncStatus = 'Pending',
+    this.isDeleted = false,
+    this.deletedAt,
+
     this.id = 0,
     required this.serverId,
     this.propertyId,
@@ -57,7 +85,35 @@ class RoleEntity {
   bool isSystemRole;
   String? description;
 
+
+  // --- Standard Sync Metadata ---
+  String? tenantId;
+  @Property(type: PropertyType.date)
+  DateTime? createdAt;
+  @Property(type: PropertyType.date)
+  DateTime? updatedAt;
+  @Property(type: PropertyType.date)
+  DateTime? lastSyncedAt;
+  int syncVersion;
+  String? deviceId;
+  String? lastModifiedHlc;
+  String syncStatus;
+  bool isDeleted;
+  @Property(type: PropertyType.date)
+  DateTime? deletedAt;
+  // ------------------------------
   RoleEntity({
+    this.tenantId,
+    this.createdAt,
+    this.updatedAt,
+    this.lastSyncedAt,
+    this.syncVersion = 0,
+    this.deviceId,
+    this.lastModifiedHlc,
+    this.syncStatus = 'Pending',
+    this.isDeleted = false,
+    this.deletedAt,
+
     this.id = 0,
     required this.serverId,
     this.propertyId,
@@ -80,7 +136,35 @@ class PermissionEntity {
   String moduleName;
   String? description;
 
+
+  // --- Standard Sync Metadata ---
+  String? tenantId;
+  @Property(type: PropertyType.date)
+  DateTime? createdAt;
+  @Property(type: PropertyType.date)
+  DateTime? updatedAt;
+  @Property(type: PropertyType.date)
+  DateTime? lastSyncedAt;
+  int syncVersion;
+  String? deviceId;
+  String? lastModifiedHlc;
+  String syncStatus;
+  bool isDeleted;
+  @Property(type: PropertyType.date)
+  DateTime? deletedAt;
+  // ------------------------------
   PermissionEntity({
+    this.tenantId,
+    this.createdAt,
+    this.updatedAt,
+    this.lastSyncedAt,
+    this.syncVersion = 0,
+    this.deviceId,
+    this.lastModifiedHlc,
+    this.syncStatus = 'Pending',
+    this.isDeleted = false,
+    this.deletedAt,
+
     this.id = 0,
     required this.serverId,
     required this.permissionCode,
@@ -100,7 +184,35 @@ class RolePermissionEntity {
   String permissionId;
   String accessLevel;
 
+
+  // --- Standard Sync Metadata ---
+  String? tenantId;
+  @Property(type: PropertyType.date)
+  DateTime? createdAt;
+  @Property(type: PropertyType.date)
+  DateTime? updatedAt;
+  @Property(type: PropertyType.date)
+  DateTime? lastSyncedAt;
+  int syncVersion;
+  String? deviceId;
+  String? lastModifiedHlc;
+  String syncStatus;
+  bool isDeleted;
+  @Property(type: PropertyType.date)
+  DateTime? deletedAt;
+  // ------------------------------
   RolePermissionEntity({
+    this.tenantId,
+    this.createdAt,
+    this.updatedAt,
+    this.lastSyncedAt,
+    this.syncVersion = 0,
+    this.deviceId,
+    this.lastModifiedHlc,
+    this.syncStatus = 'Pending',
+    this.isDeleted = false,
+    this.deletedAt,
+
     this.id = 0,
     required this.serverId,
     required this.roleId,

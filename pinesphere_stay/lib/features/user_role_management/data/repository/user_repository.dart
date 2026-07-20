@@ -50,9 +50,9 @@ class UserRepository {
       final response = await _dio.post('/auth/login', data: {
         'email': email,
         'password': password,
-        'device_id': fingerprint,
+        'device_id': 'portal',
         'device_name': deviceName,
-        'device_fingerprint': fingerprint,
+        'device_fingerprint': 'portal',
       });
 
       final accessToken = response.data['access_token'] as String;

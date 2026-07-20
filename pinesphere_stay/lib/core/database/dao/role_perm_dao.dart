@@ -6,4 +6,5 @@ abstract class IRolePermDao {
   RolePermissionEntity? get(int id);
   bool remove(int id);
   List<RolePermissionEntity> getByRoleId(String roleId);
+  RolePermissionEntity? getByServerId(String serverId);
 }

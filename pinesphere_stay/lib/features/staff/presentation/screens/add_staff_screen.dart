@@ -125,7 +125,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedRole,
+                initialValue: _selectedRole,
                 decoration: const InputDecoration(labelText: 'Role'),
                 items: const [
                   DropdownMenuItem(value: 'manager', child: Text('Manager')),

@@ -7,7 +7,7 @@ class KpiSnapshotEntity {
 
   /// Server-assigned UUID; empty until synced
   @Unique(onConflict: ConflictStrategy.replace)
-  String uuid;
+  String serverId;
 
   /// Property UUID this snapshot belongs to
   @Index()

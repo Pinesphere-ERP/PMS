@@ -11,12 +11,18 @@ class UserDaoWeb implements IUserDao {
       entity.id = _counter++;
     }
     _storage[entity.id] = entity;
+    _controller.add(getAll());
     return entity.id;
   }
 
   @override
   List<UserEntity> getAll() {
     return _storage.values.toList();
+  }
+
+  @override
+  Stream<List<UserEntity>> watchAll() {
+    return _controller.stream;
   }
 
   @override

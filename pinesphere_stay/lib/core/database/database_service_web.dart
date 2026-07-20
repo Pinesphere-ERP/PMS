@@ -25,6 +25,8 @@ import 'dao/sync_op_dao.dart';
 import 'dao/sync_op_dao_web.dart';
 import 'dao/user_dao.dart';
 import 'dao/user_dao_web.dart';
+import 'dao/role_dao.dart';
+import 'dao/role_dao_web.dart';
 import 'dao/role_perm_dao.dart';
 import 'dao/role_perm_dao_web.dart';
 import 'dao/perm_dao.dart';
@@ -44,6 +46,7 @@ class DatabaseService implements IDatabaseService {
   late final ISyncQueueDao _syncQueueDao;
   late final ISyncOpDao _syncOpDao;
   late final IUserDao _userDao;
+  late final IRoleDao _roleDao;
   late final IRolePermDao _rolePermDao;
   late final IPermDao _permDao;
 
@@ -62,6 +65,7 @@ class DatabaseService implements IDatabaseService {
     _syncQueueDao = SyncQueueDaoWeb();
     _syncOpDao = SyncOpDaoWeb();
     _userDao = UserDaoWeb();
+    _roleDao = RoleDaoWeb();
     _rolePermDao = RolePermDaoWeb();
     _permDao = PermDaoWeb();
   }
@@ -114,6 +118,9 @@ class DatabaseService implements IDatabaseService {
 
   @override
   IUserDao get userDao => _userDao;
+
+  @override
+  IRoleDao get roleDao => _roleDao;
 
   @override
   IRolePermDao get rolePermDao => _rolePermDao;

@@ -162,11 +162,14 @@ export default function PropertyDashboard() {
     setTimeout(() => setSelectedProp(null), 300); // 300ms matches transition duration
   };
 
+  const safeString = (val) => (val ? String(val).toLowerCase() : '');
+  const search = (searchTerm || '').toLowerCase();
+
   const filteredProperties = properties.filter(prop => 
-    (prop.name && prop.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (prop.owner && prop.owner.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (prop.mobile && prop.mobile.includes(searchTerm)) ||
-    (prop.city && prop.city.toLowerCase().includes(searchTerm.toLowerCase()))
+    safeString(prop.name).includes(search) ||
+    safeString(prop.owner).includes(search) ||
+    safeString(prop.mobile).includes(search) ||
+    safeString(prop.city).includes(search)
   );
 
   return (

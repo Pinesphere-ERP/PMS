@@ -712,3 +712,17 @@ async def get_property_detail(property_id: str, db: AsyncSession = Depends(get_d
             "expiry": str(sub.expiry_date) if sub else None,
         }
     }
+
+@router.delete("/{property_id}", dependencies=[Depends(require_super_admin)])
+async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
+    """Soft delete a property by setting is_deleted=True."""
+    prop_uuid = uuid.UUID(property_id)
+    result = await db.execute(select(Property).where(Property.property_id == prop_uuid))
+    prop = result.scalar_one_or_none()
+    
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+        
+    prop.is_deleted = True
+    await db.commit()
+    return {"message": "Property deleted successfully"}

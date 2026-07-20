@@ -21,7 +21,8 @@ import {
   Key,
   RefreshCw,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { propertyService } from '../../services/propertyService';
 import { utils, writeFile } from 'xlsx';
@@ -50,6 +51,22 @@ export default function PropertyDashboard() {
   const [error, setError] = useState(null);
   const [properties, setProperties] = useState([]);
   const [kpis, setKpis] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteProperty = async () => {
+    if (!selectedProp || !window.confirm(`Are you sure you want to delete ${selectedProp.name || selectedProp.property_name}?`)) return;
+    setIsDeleting(true);
+    try {
+      await propertyService.deleteProperty(selectedProp.id);
+      setProperties(prev => prev.filter(p => p.id !== selectedProp.id));
+      setIsDrawerOpen(false);
+      setTimeout(() => setSelectedProp(null), 300);
+    } catch (err) {
+      alert(err.message || 'Failed to delete property');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleExport = async () => {
     if (properties.length === 0) {
@@ -403,6 +420,13 @@ export default function PropertyDashboard() {
                 <div className="pt-4 flex gap-3">
                   <button className="saas-button-secondary flex-1 justify-center">View Documents</button>
                   <button className="saas-button-primary flex-1 justify-center" onClick={() => navigate(`/properties/${selectedProp.id}`)}>Full Details</button>
+                  <button 
+                    onClick={handleDeleteProperty} 
+                    disabled={isDeleting}
+                    className="p-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 hover:text-red-700 transition flex items-center justify-center disabled:opacity-50"
+                  >
+                    {isDeleting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
             </>

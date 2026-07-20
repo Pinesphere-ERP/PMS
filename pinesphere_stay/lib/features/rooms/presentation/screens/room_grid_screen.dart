@@ -800,6 +800,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
             ),
         ],
       ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddRoomDialog(context),
         backgroundColor: AppColors.primary,

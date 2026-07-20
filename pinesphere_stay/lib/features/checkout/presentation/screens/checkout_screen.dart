@@ -627,7 +627,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
   Widget _buildSection1GuestSummary() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: BentoCard(
+      child: PineCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -648,7 +648,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
   Widget _buildSection2Charges() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: BentoCard(
+      child: PineCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -670,7 +670,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
   Widget _buildSection3Adjustments() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: BentoCard(
+      child: PineCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -706,7 +706,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
     final isRefund = _refundAmount > 0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: BentoCard(
+      child: PineCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -731,7 +731,7 @@ class _BillingSheetState extends ConsumerState<_BillingSheet> {
   Widget _buildSection5CheckoutOptions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: BentoCard(
+      child: PineCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

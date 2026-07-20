@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/network/tenant_provider.dart';
 import '../../../../core/security/permission_engine.dart';
@@ -321,8 +322,9 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         backgroundColor: AppColors.surface,
         scrolledUnderElevation: 0,
       ),
-      body: Column(
-        children: [
+      body: PineBackground(
+        child: Column(
+          children: [
           if (isViewOnly)
             Container(
               width: double.infinity,
@@ -356,13 +358,14 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 
   Widget _buildModeToggle(bool isViewOnly) {
     return AbsorbPointer(
       absorbing: isViewOnly,
-      child: BentoCard(
+      child: PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -448,7 +451,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildSearchSection(bool isLoading) {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -605,7 +608,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildGuestVerification() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -634,7 +637,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildRoomAssignment() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -652,7 +655,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildPaymentDeposit() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -673,7 +676,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildAdditionalDetails() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -696,7 +699,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildCheckInActions(bool isLoading) {
-    return BentoCard(
+    return PineCard(
       child: Column(
         children: [
           SizedBox(
@@ -803,7 +806,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildWalkInGuestInfo() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -846,7 +849,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildWalkInIdentity() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -865,7 +868,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildWalkInStayDetails() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -919,7 +922,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
   Widget _buildWalkInRoomSelection() {
     final state = ref.watch(checkInProvider);
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -965,7 +968,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildWalkInPayment() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -979,7 +982,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildWalkInAdditional() {
-    return BentoCard(
+    return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1000,7 +1003,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   Widget _buildWalkInAction(bool isLoading) {
-    return BentoCard(
+    return PineCard(
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(

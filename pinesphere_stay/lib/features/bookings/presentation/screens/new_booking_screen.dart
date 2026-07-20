@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class NewBookingScreen extends ConsumerStatefulWidget {
   const NewBookingScreen({super.key});
@@ -54,10 +56,11 @@ class _NewBookingScreenState extends ConsumerState<NewBookingScreen> {
           onPressed: () => context.go('/dashboard'),
         ),
       ),
-      body: Column(
-        children: [
-          // Search & Filter Header Section
-          Container(
+      body: PineBackground(
+        child: Column(
+          children: [
+            // Search & Filter Header Section
+            Container(
             color: AppColors.surface,
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Column(
@@ -156,7 +159,7 @@ class _NewBookingScreenState extends ConsumerState<NewBookingScreen> {
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
-                        child: BentoCard(
+                        child: PineCard(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,6 +278,7 @@ class _NewBookingScreenState extends ConsumerState<NewBookingScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

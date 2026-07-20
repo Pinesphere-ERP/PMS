@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/security/permission_engine.dart';
 import '../../../../core/presentation/widgets/access_restricted_view.dart';
@@ -92,38 +93,40 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
           ],
         ),
       ),
-      body: Column(
-        children: [
-          if (isViewOnly)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              color: Colors.amber.withValues(alpha: 0.2),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: PineBackground(
+        child: Column(
+          children: [
+            if (isViewOnly)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                color: Colors.amber.withValues(alpha: 0.2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.visibility, size: 16, color: Colors.amber),
+                    const SizedBox(width: 8),
+                    Text(
+                      'View-Only Mode',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.amber.shade900,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
                 children: [
-                  const Icon(Icons.visibility, size: 16, color: Colors.amber),
-                  const SizedBox(width: 8),
-                  Text(
-                    'View-Only Mode',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.amber.shade900,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
+                  _buildPendingCheckoutsTab(isViewOnly),
+                  _buildTodaysCheckoutsTab(isViewOnly),
                 ],
               ),
             ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildPendingCheckoutsTab(isViewOnly),
-                _buildTodaysCheckoutsTab(isViewOnly),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -192,7 +195,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen>
     final nights = checkout['nights_stayed']?.toString() ?? checkout['nightsStayed'] ?? '-';
     final amountDue = checkout['amount_due']?.toString() ?? checkout['totalBillAmount'] ?? '0.00';
 
-    return BentoCard(
+    return PineCard(
       onTap: () => _openBillingSheet(checkout, isViewOnly),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

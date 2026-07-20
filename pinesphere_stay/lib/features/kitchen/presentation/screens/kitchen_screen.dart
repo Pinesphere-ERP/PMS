@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:pinesphere_stay/features/kitchen/presentation/providers/kitchen_providers.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import 'package:pinesphere_stay/features/tasks/data/models/task_model.dart';
 
 class KitchenScreen extends ConsumerWidget {
@@ -17,39 +19,41 @@ class KitchenScreen extends ConsumerWidget {
         title: const Text('Kitchen Display System (KDS)'),
         backgroundColor: theme.colorScheme.surface,
       ),
-      body: tasksAsync.when(
-        data: (tasks) {
-          if (tasks.isEmpty) {
-            return const EmptyStateWidget(
-              icon: Icons.restaurant,
-              title: 'No Active Orders',
-              message: 'There are currently no active kitchen orders.',
+      body: PineBackground(
+        child: tasksAsync.when(
+          data: (tasks) {
+            if (tasks.isEmpty) {
+              return const EmptyStateWidget(
+                icon: Icons.restaurant,
+                title: 'No Active Orders',
+                message: 'There are currently no active kitchen orders.',
+              );
+            }
+
+            // Sort tasks: pending first, then accepted, then in_progress, then ready
+            final activeTasks = tasks.where((t) => t.status != 'completed' && t.status != 'closed').toList();
+            activeTasks.sort((a, b) => (a.dueAt ?? DateTime.now()).compareTo(b.dueAt ?? DateTime.now()));
+
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: activeTasks.length,
+              itemBuilder: (context, index) {
+                return _OrderCard(task: activeTasks[index]);
+              },
             );
-          }
-
-          // Sort tasks: pending first, then accepted, then in_progress, then ready
-          final activeTasks = tasks.where((t) => t.status != 'completed' && t.status != 'closed').toList();
-          activeTasks.sort((a, b) => (a.dueAt ?? DateTime.now()).compareTo(b.dueAt ?? DateTime.now()));
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.8,
-            ),
-            itemCount: activeTasks.length,
-            itemBuilder: (context, index) {
-              return _OrderCard(task: activeTasks[index]);
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => EmptyStateWidget(
-          icon: Icons.error_outline,
-          title: 'Error',
-          message: err.toString(),
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => EmptyStateWidget(
+            icon: Icons.error_outline,
+            title: 'Error',
+            message: err.toString(),
+          ),
         ),
       ),
     );
@@ -75,13 +79,10 @@ class _OrderCard extends ConsumerWidget {
       cardColor = Colors.red.shade100; // SLA breached
     }
 
-    return Card(
-      color: cardColor,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+    return PineCard(
+      backgroundColor: cardColor,
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
@@ -112,12 +113,11 @@ class _OrderCard extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text('Remarks: ${task.remarks}', style: const TextStyle(fontStyle: FontStyle.italic)),
               ),
-            const SizedBox(height: 16),
+            const Spacer(),
             _buildActionButtons(context, task, controller),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildActionButtons(BuildContext context, TaskModel task, KitchenTaskController controller) {

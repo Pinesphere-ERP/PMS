@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/empty_state_widget.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 
 import '../../data/reports_repository.dart';
 import '../../domain/models/kpi_dto.dart';
@@ -45,13 +46,16 @@ class PLReportScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
       ),
-      body: reportAsync.when(
-        data: (report) => _buildReportView(context, report),
+      body: PineBackground(
+        child: reportAsync.when(
+          data: (report) => _buildReportView(context, report),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => EmptyStateWidget(
           icon: Icons.error_outline,
           title: 'Error',
           message: error.toString(),
+        ),
+      ),
         ),
       ),
     );
@@ -63,7 +67,7 @@ class PLReportScreen extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        BentoCard(
+        PineCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -82,7 +86,7 @@ class PLReportScreen extends ConsumerWidget {
         const SizedBox(height: 16),
         ...report.monthlyBreakdown.map((monthData) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: BentoCard(
+              child: PineCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

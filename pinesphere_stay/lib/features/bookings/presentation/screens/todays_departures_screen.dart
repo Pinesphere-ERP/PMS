@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
 
 class TodaysDeparturesScreen extends ConsumerStatefulWidget {
@@ -38,10 +39,11 @@ class _TodaysDeparturesScreenState extends ConsumerState<TodaysDeparturesScreen>
           onPressed: () => context.pop(),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
+      body: PineBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -85,6 +87,7 @@ class _TodaysDeparturesScreenState extends ConsumerState<TodaysDeparturesScreen>
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -94,7 +97,7 @@ class _TodaysDeparturesScreenState extends ConsumerState<TodaysDeparturesScreen>
     final amountDue = departure.totalSum - departure.depositPaid;
     final isOverdue = departure.checkOutDate.isBefore(DateTime.now()) && !DateUtils.isSameDay(departure.checkOutDate, DateTime.now());
     
-    return BentoCard(
+    return PineCard(
       onTap: () => _showDepartureDetails(departure),
       padding: const EdgeInsets.all(16),
       child: Row(

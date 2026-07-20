@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 
 class OccupiedRoom {
   final String roomNumber;
@@ -97,10 +98,11 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
+      body: PineBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -126,11 +128,12 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
   Widget _buildRoomCard(OccupiedRoom room) {
-    return BentoCard(
+    return PineCard(
       onTap: () => _showRoomDetails(room),
       padding: const EdgeInsets.all(16),
       child: Row(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:pinesphere_stay/features/housekeeping/presentation/providers/housekeeping_providers.dart';
+import '../../../../core/presentation/widgets/design_system/pine_background.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import 'package:pinesphere_stay/features/tasks/data/models/task_model.dart';
 
 class HousekeepingScreen extends ConsumerWidget {
@@ -17,26 +19,28 @@ class HousekeepingScreen extends ConsumerWidget {
         title: const Text('My Cleaning Tasks'),
         backgroundColor: theme.colorScheme.surface,
       ),
-      body: tasksAsync.when(
-        data: (tasks) {
-          final activeTasks = tasks.where((t) => t.status != 'completed' && t.status != 'closed').toList();
-          if (activeTasks.isEmpty) {
-            return _buildEmptyState(context);
-          }
+      body: PineBackground(
+        child: tasksAsync.when(
+          data: (tasks) {
+            final activeTasks = tasks.where((t) => t.status != 'completed' && t.status != 'closed').toList();
+            if (activeTasks.isEmpty) {
+              return _buildEmptyState(context);
+            }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: activeTasks.length,
-            itemBuilder: (context, index) {
-              return _TaskSwipeCard(task: activeTasks[index]);
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => EmptyStateWidget(
-          icon: Icons.error_outline,
-          title: 'Error',
-          message: err.toString(),
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: activeTasks.length,
+              itemBuilder: (context, index) {
+                return _TaskSwipeCard(task: activeTasks[index]);
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => EmptyStateWidget(
+            icon: Icons.error_outline,
+            title: 'Error',
+            message: err.toString(),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -78,9 +82,8 @@ class _TaskSwipeCard extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
-      child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: PineCard(
+        padding: EdgeInsets.zero,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

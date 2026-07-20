@@ -47,7 +47,7 @@ class CheckInService {
       final response = await _dio.post('/checkin', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = CheckInEntity(
-        uuid: body['id']?.toString() ?? data['uuid'] ?? '',
+        serverId: body['id']?.toString() ?? data['server_id'] ?? '',
         bookingId: body['booking_id']?.toString() ?? data['booking_id'] ?? '',
         roomId: body['room_id']?.toString() ?? data['room_id'] ?? '',
         guestId: body['guest_id']?.toString() ?? data['guest_id'] ?? '',
@@ -67,6 +67,7 @@ class CheckInService {
         vehicleNumber: body['vehicle_number']?.toString() ?? data['vehicle_number'] ?? '',
         parkingRequired: body['parking_required'] ?? data['parking_required'] ?? false,
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Synced',
       );
       _checkinDao.put(entity);
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
@@ -89,9 +90,9 @@ class CheckInService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('performCheckIn network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? const Uuid().v4();
+      final localUuid = data['server_id'] ?? const Uuid().v4();
       final entity = CheckInEntity(
-        uuid: localUuid.toString(),
+        serverId: localUuid.toString(),
         bookingId: data['booking_id'] ?? '',
         roomId: data['room_id'] ?? '',
         guestId: data['guest_id'] ?? '',
@@ -111,6 +112,7 @@ class CheckInService {
         vehicleNumber: data['vehicle_number'] ?? '',
         parkingRequired: data['parking_required'] ?? false,
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Pending',
       );
       final localId = _checkinDao.put(entity);
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
@@ -175,7 +177,7 @@ class CheckInService {
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       final entities = dataList.map<CheckInEntity>((data) => CheckInEntity(
-        uuid: data['id']?.toString() ?? data['uuid'] ?? '',
+        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',
         guestId: data['guest_id']?.toString() ?? '',
@@ -195,6 +197,7 @@ class CheckInService {
         vehicleNumber: data['vehicle_number']?.toString() ?? '',
         parkingRequired: data['parking_required'] ?? false,
         lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Synced',
       )).toList();
       
       if (entities.isNotEmpty) {
@@ -216,7 +219,7 @@ class CheckInService {
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       final entities = dataList.map<CheckInEntity>((data) => CheckInEntity(
-        uuid: data['id']?.toString() ?? data['uuid'] ?? '',
+        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',
         guestId: data['guest_id']?.toString() ?? '',
@@ -236,6 +239,7 @@ class CheckInService {
         vehicleNumber: data['vehicle_number']?.toString() ?? '',
         parkingRequired: data['parking_required'] ?? false,
         lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Synced',
       )).toList();
       
       if (entities.isNotEmpty) {
@@ -296,7 +300,7 @@ class CheckInService {
   }
 
   void _updateRoomStatus(String roomId, String occupancyStatus, String housekeepingStatus) {
-    final room = _roomDao.findByUuid(roomId);
+    final room = _roomDao.getByServerId(roomId);
     if (room != null) {
       _roomDao.put(room);
     }

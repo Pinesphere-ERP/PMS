@@ -41,7 +41,7 @@ class PropertySetting(Base, TimestampMixin, SyncMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False, index=True
+        ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False, index=True
     )
     setting_key: Mapped[str] = mapped_column(String(100), nullable=False)
     setting_value: Mapped[str] = mapped_column(Text, nullable=False)

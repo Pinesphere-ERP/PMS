@@ -20,6 +20,11 @@ class RoomDaoWeb implements IRoomDao {
   }
 
   @override
+  List<RoomEntity> findByProperty(String propertyId) {
+    return _storage.values.where((e) => e.propertyId == propertyId).toList();
+  }
+
+  @override
   RoomEntity? get(int id) {
     return _storage[id];
   }
@@ -34,9 +39,9 @@ class RoomDaoWeb implements IRoomDao {
   }
 
   @override
-  RoomEntity? findByUuid(String uuid) {
+  RoomEntity? getByServerId(String serverId) {
     for (final entity in _storage.values) {
-      if (entity.uuid == uuid) return entity;
+      if (entity.serverId == serverId) return entity;
     }
     return null;
   }

@@ -25,14 +25,14 @@ class SyncQueueDaoWeb implements ISyncQueueDao {
 
   @override
   List<SyncQueueEntity> getPending({int limit = 100}) {
-    // 0 = Pending
-    final results = _store.where((e) => e.status == 0).toList();
+    // 'Pending'
+    final results = _store.where((e) => e.status == 'Pending').toList();
     results.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     return results.take(limit).toList();
   }
 
   @override
-  List<SyncQueueEntity> getByStatus(int status, {int limit = 100}) {
+  List<SyncQueueEntity> getByStatus(String status, {int limit = 100}) {
     final results = _store.where((e) => e.status == status).toList();
     results.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     return results.take(limit).toList();
@@ -51,7 +51,7 @@ class SyncQueueDaoWeb implements ISyncQueueDao {
   bool markSuccess(int id) {
     final entity = get(id);
     if (entity != null) {
-      entity.status = 3; // 3 = Success/Processed
+      entity.status = 'Synced';
       enqueue(entity);
       return true;
     }
@@ -62,7 +62,7 @@ class SyncQueueDaoWeb implements ISyncQueueDao {
   bool markFailure(int id) {
     final entity = get(id);
     if (entity != null) {
-      entity.status = 2; // 2 = Failed
+      entity.status = 'Failed';
       enqueue(entity);
       return true;
     }
@@ -72,7 +72,7 @@ class SyncQueueDaoWeb implements ISyncQueueDao {
   @override
   int removeProcessed() {
     final initialLength = _store.length;
-    _store.removeWhere((e) => e.status == 3);
+    _store.removeWhere((e) => e.status == 'Synced');
     return initialLength - _store.length;
   }
 
@@ -86,8 +86,8 @@ class SyncQueueDaoWeb implements ISyncQueueDao {
   int retryFailed() {
     int count = 0;
     for (var item in _store) {
-      if (item.status == 2) {
-        item.status = 0;
+      if (item.status == 'Failed') {
+        item.status = 'Pending';
         count++;
       }
     }

@@ -6,7 +6,7 @@ class HousekeepingTaskEntity {
   int id = 0;
 
   @Unique()
-  String uuid;
+  String serverId;
   String roomId;
   @Index()
   String propertyId;
@@ -30,7 +30,7 @@ class HousekeepingTaskEntity {
 
   HousekeepingTaskEntity({
     this.id = 0,
-    required this.uuid,
+    required this.serverId,
     required this.roomId,
     this.propertyId = '',
     this.roomNumber = '',

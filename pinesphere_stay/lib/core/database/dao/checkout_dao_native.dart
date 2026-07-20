@@ -54,8 +54,8 @@ class CheckoutDaoNative implements ICheckoutDao {
     }
   }
   @override
-  CheckOutEntity? findByUuid(String uuid) {
-    final query = _box.query(CheckOutEntity_.uuid.equals(uuid)).build();
+  CheckOutEntity? getByServerId(String serverId) {
+    final query = _box.query(CheckOutEntity_.serverId.equals(serverId)).build();
     final result = query.findFirst();
     query.close();
     return result;

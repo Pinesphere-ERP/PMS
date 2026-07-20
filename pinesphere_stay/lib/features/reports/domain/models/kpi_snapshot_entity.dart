@@ -33,7 +33,7 @@ class KpiSnapshotEntity {
 
   KpiSnapshotEntity({
     this.id = 0,
-    required this.uuid,
+    required this.serverId,
     required this.propertyId,
     required this.snapshotDate,
     this.occupiedRooms = 0,

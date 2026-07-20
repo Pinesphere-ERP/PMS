@@ -34,7 +34,8 @@ ENTITY_MAP = {
 PUSH_ALLOWED_ENTITIES = {
     "Room", "RoomCategory", "Guest", "Booking", 
     "CheckIn", "CheckOut", "Payment", 
-    "HousekeepingTask", "MaintenanceTicket", "Task", "TaskLog"
+    "HousekeepingTask", "MaintenanceTicket", "Task", "TaskLog",
+    "User", "Role", "RolePermission"
 }
 
 class SyncService:

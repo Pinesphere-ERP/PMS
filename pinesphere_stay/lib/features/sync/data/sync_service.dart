@@ -18,6 +18,11 @@ import '../../../core/database/dao/room_dao.dart';
 import '../../../core/database/dao/guest_dao.dart';
 import '../../../core/database/dao/checkin_dao.dart';
 import '../../../core/database/dao/checkout_dao.dart';
+import '../../../core/database/dao/user_dao.dart';
+import '../../../core/database/dao/role_dao.dart';
+import '../../../core/database/dao/perm_dao.dart';
+import '../../../core/database/dao/role_perm_dao.dart';
+import '../../../features/user_role_management/domain/entities.dart';
 
 part 'sync_service.g.dart';
 
@@ -41,6 +46,10 @@ class SyncService {
   late final IGuestDao _guestDao;
   late final ICheckinDao _checkInDao;
   late final ICheckoutDao _checkOutDao;
+  late final IUserDao _userDao;
+  late final IRoleDao _roleDao;
+  late final IPermDao _permDao;
+  late final IRolePermDao _rolePermDao;
   
   bool _isSyncing = false;
 
@@ -53,6 +62,10 @@ class SyncService {
     _guestDao = databaseService.guestDao;
     _checkInDao = databaseService.checkinDao;
     _checkOutDao = databaseService.checkoutDao;
+    _userDao = databaseService.userDao;
+    _roleDao = databaseService.roleDao;
+    _permDao = databaseService.permDao;
+    _rolePermDao = databaseService.rolePermDao;
 
     // Listen to network changes
     Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
@@ -85,7 +98,7 @@ class SyncService {
       operation: operation,
       payload: jsonEncode(payload),
       hlcTimestamp: hlcTimestamp,
-      status: 0, // Pending
+      status: 'Pending',
     );
     
     _syncQueueDao.enqueue(item);
@@ -145,7 +158,7 @@ class SyncService {
               toRemoveIds.add(item.id);
             } else if (failedIds.contains(uuidStr)) {
               // Mark as failed
-              item.status = 2; // Failed status
+              item.status = 'Failed';
               _syncQueueDao.enqueue(item); // Update
             }
           }
@@ -185,10 +198,10 @@ class SyncService {
             }
             
             if (entityType == 'Booking') {
-              final existing = _bookingDao.findByUuid(entityId);
+              final existing = _bookingDao.getByServerId(entityId);
               final entity = BookingEntity(
                 id: existing?.id ?? 0,
-                uuid: entityId,
+                serverId: entityId,
                 propertyId: payload['property_id']?.toString() ?? existing?.propertyId ?? '',
                 roomId: payload['room_id']?.toString() ?? existing?.roomId ?? '',
                 guestId: payload['guest_id']?.toString() ?? existing?.guestId ?? '',
@@ -215,26 +228,28 @@ class SyncService {
                 vehicleNumber: payload['vehicle_number']?.toString() ?? existing?.vehicleNumber ?? '',
                 bookingStatus: payload['booking_status']?.toString() ?? existing?.bookingStatus ?? 'confirmed',
                 paymentStatus: payload['payment_status']?.toString() ?? existing?.paymentStatus ?? 'pending',
+                syncStatus: 'Synced',
                 lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
               );
               _bookingDao.put(entity);
             } else if (entityType == 'Room') {
-              final existing = _roomDao.findByUuid(entityId);
+              final existing = _roomDao.getByServerId(entityId);
               final entity = RoomEntity(
                 id: existing?.id ?? 0,
-                uuid: entityId,
+                serverId: entityId,
                 name: payload['room_number']?.toString() ?? existing?.name ?? '',
                 type: payload['room_category_id']?.toString() ?? existing?.type ?? '',
                 status: payload['occupancy_status']?.toString() ?? payload['status']?.toString() ?? existing?.status ?? 'available',
                 pricePerNight: payload['base_price'] != null ? double.parse(payload['base_price'].toString()) : (existing?.pricePerNight ?? 0),
+                syncStatus: 'Synced',
                 lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
               );
               _roomDao.put(entity);
             } else if (entityType == 'Guest') {
-              final existing = _guestDao.findByUuid(entityId);
+              final existing = _guestDao.getByServerId(entityId);
               final entity = GuestEntity(
                 id: existing?.id ?? 0,
-                uuid: entityId,
+                serverId: entityId,
                 fullName: payload['full_name']?.toString() ?? existing?.fullName ?? '',
                 mobile: payload['mobile']?.toString() ?? existing?.mobile ?? '',
                 email: payload['email']?.toString() ?? existing?.email ?? '',
@@ -242,24 +257,25 @@ class SyncService {
               );
               _guestDao.put(entity);
             } else if (entityType == 'CheckIn') {
-              final existing = _checkInDao.findByUuid(entityId);
+              final existing = _checkInDao.getByServerId(entityId);
               final entity = CheckInEntity(
                 id: existing?.id ?? 0,
-                uuid: entityId,
+                serverId: entityId,
                 bookingId: payload['booking_id']?.toString() ?? existing?.bookingId ?? '',
                 roomId: payload['room_id']?.toString() ?? existing?.roomId ?? '',
                 guestId: payload['guest_id']?.toString() ?? existing?.guestId ?? '',
                 checkedInAt: payload['checked_in_at']?.toString() ?? existing?.checkedInAt ?? DateTime.now().toUtc().toIso8601String(),
                 idVerified: payload['id_verified'] == true || (payload['id_verified']?.toString() == 'true'),
                 status: payload['status']?.toString() ?? existing?.status ?? 'active',
+                syncStatus: 'Synced',
                 lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
               );
               _checkInDao.put(entity);
             } else if (entityType == 'CheckOut') {
-              final existing = _checkOutDao.findByUuid(entityId);
+              final existing = _checkOutDao.getByServerId(entityId);
               final entity = CheckOutEntity(
                 id: existing?.id ?? 0,
-                uuid: entityId,
+                serverId: entityId,
                 checkinId: payload['checkin_id']?.toString() ?? existing?.checkinId ?? '',
                 bookingId: payload['booking_id']?.toString() ?? existing?.bookingId ?? '',
                 roomId: payload['room_id']?.toString() ?? existing?.roomId ?? '',
@@ -267,9 +283,71 @@ class SyncService {
                 totalAmount: payload['total_amount'] != null ? double.parse(payload['total_amount'].toString()) : (existing?.totalAmount ?? 0),
                 paymentStatus: payload['payment_status']?.toString() ?? existing?.paymentStatus ?? 'pending',
                 checkoutStatus: payload['checkout_status']?.toString() ?? existing?.checkoutStatus ?? 'pending',
+                syncStatus: 'Synced',
                 lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
               );
               _checkOutDao.put(entity);
+            } else if (entityType == 'User') {
+              final existing = _userDao.getByServerId(entityId);
+              final entity = UserEntity(
+                id: existing?.id ?? 0,
+                serverId: entityId,
+                tenantId: payload['tenant_id']?.toString() ?? existing?.tenantId,
+                propertyId: payload['property_id']?.toString() ?? existing?.propertyId,
+                roleId: payload['role_id']?.toString() ?? existing?.roleId ?? '',
+                name: payload['name']?.toString() ?? existing?.name ?? '',
+                mobileNumber: payload['mobile_number']?.toString() ?? existing?.mobileNumber,
+                email: payload['email']?.toString() ?? existing?.email,
+                username: payload['username']?.toString() ?? existing?.username,
+                isPrimaryOwner: payload['is_primary_owner'] == true || payload['is_primary_owner']?.toString() == 'true',
+                status: payload['status']?.toString() ?? existing?.status ?? 'active',
+                lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
+                isDeleted: payload['is_deleted'] == true || payload['is_deleted']?.toString() == 'true',
+                syncStatus: 'Synced',
+              );
+              _userDao.put(entity);
+            } else if (entityType == 'Role') {
+              final existing = _roleDao.getByServerId(entityId);
+              final entity = RoleEntity(
+                id: existing?.id ?? 0,
+                serverId: entityId,
+                tenantId: payload['tenant_id']?.toString() ?? existing?.tenantId,
+                propertyId: payload['property_id']?.toString() ?? existing?.propertyId,
+                name: payload['name']?.toString() ?? existing?.name ?? '',
+                description: payload['description']?.toString() ?? existing?.description,
+                isSystem: payload['is_system'] == true || payload['is_system']?.toString() == 'true',
+                lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
+                isDeleted: payload['is_deleted'] == true || payload['is_deleted']?.toString() == 'true',
+                syncStatus: 'Synced',
+              );
+              _roleDao.put(entity);
+            } else if (entityType == 'Permission') {
+              final existing = _permDao.getByServerId(entityId);
+              final entity = PermissionEntity(
+                id: existing?.id ?? 0,
+                serverId: entityId,
+                name: payload['name']?.toString() ?? existing?.name ?? '',
+                category: payload['category']?.toString() ?? existing?.category ?? '',
+                description: payload['description']?.toString() ?? existing?.description,
+                isSystem: payload['is_system'] == true || payload['is_system']?.toString() == 'true',
+                lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
+                isDeleted: payload['is_deleted'] == true || payload['is_deleted']?.toString() == 'true',
+                syncStatus: 'Synced',
+              );
+              _permDao.put(entity);
+            } else if (entityType == 'RolePermission') {
+              final existing = _rolePermDao.getByServerId(entityId);
+              final entity = RolePermissionEntity(
+                id: existing?.id ?? 0,
+                serverId: entityId,
+                tenantId: payload['tenant_id']?.toString() ?? existing?.tenantId,
+                roleId: payload['role_id']?.toString() ?? existing?.roleId ?? '',
+                permissionId: payload['permission_id']?.toString() ?? existing?.permissionId ?? '',
+                lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
+                isDeleted: payload['is_deleted'] == true || payload['is_deleted']?.toString() == 'true',
+                syncStatus: 'Synced',
+              );
+              _rolePermDao.put(entity);
             }
           }
         });

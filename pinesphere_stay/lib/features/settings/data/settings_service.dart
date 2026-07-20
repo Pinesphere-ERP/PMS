@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/logger.dart';
 import 'package:pinesphere_stay/objectbox.g.dart';
+import '../../audit/data/audit_service.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/property_setting_entity.dart';
 import '../domain/models/device_config_entity.dart';
@@ -16,7 +17,7 @@ SettingsService settingsService(Ref ref) {
   final service = SettingsService(
     dio: ref.watch(dioClientProvider),
   );
-  service.initialize(databaseService.store, ref.read(syncServiceProvider));
+  service.initialize(databaseService.store, ref.read(syncServiceProvider), ref.read(auditServiceProvider));
   return service;
 }
 
@@ -26,14 +27,16 @@ class SettingsService {
   late final Box<PropertySettingEntity> _propertySettingsBox;
   late final Box<DeviceConfigEntity> _deviceConfigBox;
   late final SyncService _syncService;
+  late final AuditService _audit;
 
   SettingsService({required Dio dio}) : _dio = dio;
 
-  void initialize(Store store, SyncService syncService) {
+  void initialize(Store store, SyncService syncService, AuditService audit) {
     _store = store;
     _propertySettingsBox = _store.box<PropertySettingEntity>();
     _deviceConfigBox = _store.box<DeviceConfigEntity>();
     _syncService = syncService;
+    _audit = audit;
   }
 
   // ── Property Settings (synced) ──────────────────────────────
@@ -46,7 +49,7 @@ class SettingsService {
 
       for (final item in items) {
         final entity = PropertySettingEntity(
-          uuid: item['id']?.toString() ?? '',
+          serverId: item['id']?.toString() ?? '',
           propertyId: propertyId,
           settingKey: item['setting_key']?.toString() ?? '',
           settingValue: item['setting_value']?.toString() ?? '',
@@ -66,7 +69,7 @@ class SettingsService {
           .build()
           .find();
       return locals.map((e) => {
-        'id': e.uuid,
+        'id': e.serverId,
         'property_id': e.propertyId,
         'setting_key': e.settingKey,
         'setting_value': e.settingValue,
@@ -88,8 +91,8 @@ class SettingsService {
       final response = await _dio.post('/settings/property/$propertyId', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = PropertySettingEntity(
-        uuid: body['id']?.toString() ?? '',
-        propertyId: propertyId,
+          serverId: body['id']?.toString() ?? '',
+          propertyId: propertyId,
         settingKey: data['setting_key'] ?? '',
         settingValue: data['setting_value'] ?? '',
         valueType: data['value_type'] ?? 'string',
@@ -103,7 +106,7 @@ class SettingsService {
       AppLogger.w('createPropertySetting network failed, storing locally and queuing sync', e);
       final localUuid = const Uuid().v4();
       final entity = PropertySettingEntity(
-        uuid: localUuid,
+        serverId: localUuid,
         propertyId: propertyId,
         settingKey: data['setting_key'] ?? '',
         settingValue: data['setting_value'] ?? '',
@@ -118,6 +121,16 @@ class SettingsService {
         operation: 'CREATE',
         payload: {...data, 'id': localUuid},
       );
+      
+      _audit.log(
+        moduleName: 'settings',
+        actionType: 'create_property_setting',
+        targetEntity: 'property_setting',
+        targetRecordId: localUuid,
+        propertyId: propertyId,
+        newValue: data,
+      );
+      
       return data;
     } catch (e) {
       AppLogger.e('createPropertySetting unexpected error', e);
@@ -135,7 +148,7 @@ class SettingsService {
       final body = response.data as Map<String, dynamic>;
 
       final query = _propertySettingsBox
-          .query(PropertySettingEntity_.uuid.equals(settingId))
+          .query(PropertySettingEntity_.serverId.equals(settingId))
           .build();
       final locals = query.find();
       query.close();
@@ -154,7 +167,7 @@ class SettingsService {
       AppLogger.w('updatePropertySetting network failed, updating locally and queuing sync', e);
 
       final query = _propertySettingsBox
-          .query(PropertySettingEntity_.uuid.equals(settingId))
+          .query(PropertySettingEntity_.serverId.equals(settingId))
           .build();
       final locals = query.find();
       query.close();
@@ -174,6 +187,16 @@ class SettingsService {
         operation: 'UPDATE',
         payload: {'id': settingId, ...data},
       );
+      
+      _audit.log(
+        moduleName: 'settings',
+        actionType: 'update_property_setting',
+        targetEntity: 'property_setting',
+        targetRecordId: settingId,
+        propertyId: propertyId,
+        newValue: data,
+      );
+      
       return data;
     } catch (e) {
       AppLogger.e('updatePropertySetting unexpected error', e);

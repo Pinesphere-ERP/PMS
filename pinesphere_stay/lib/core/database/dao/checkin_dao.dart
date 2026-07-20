@@ -8,5 +8,5 @@ abstract class ICheckinDao {
   void putMany(List<CheckInEntity> checkins);
   List<CheckInEntity> findByProperty(String propertyId);
   List<CheckInEntity> findActiveByProperty(String propertyId);
-  CheckInEntity? findByUuid(String uuid);
+  CheckInEntity? getByServerId(String serverId);
 }

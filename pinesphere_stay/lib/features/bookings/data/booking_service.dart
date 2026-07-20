@@ -41,7 +41,7 @@ class BookingService {
       final response = await _dio.post('/bookings', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = BookingEntity(
-        uuid: body['id']?.toString() ?? data['uuid'] ?? '',
+        serverId: body['id']?.toString() ?? data['server_id'] ?? '',
         propertyId: body['property_id']?.toString() ?? data['property_id'] ?? '',
         roomId: body['room_id']?.toString() ?? data['room_id'] ?? '',
         guestId: body['guest_id']?.toString() ?? data['guest_id'] ?? '',
@@ -69,6 +69,7 @@ class BookingService {
         bookingStatus: body['booking_status']?.toString() ?? data['booking_status'] ?? 'confirmed',
         paymentStatus: body['payment_status']?.toString() ?? data['payment_status'] ?? 'pending',
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Synced',
       );
       _bookingDao.put(entity);
       _audit.log(
@@ -88,9 +89,9 @@ class BookingService {
       return body;
     } on DioException catch (e) {
       AppLogger.w('createBooking network failed, storing locally and queuing sync', e);
-      final localUuid = data['uuid'] ?? const Uuid().v4();
+      final localUuid = data['server_id'] ?? const Uuid().v4();
       final entity = BookingEntity(
-        uuid: localUuid.toString(),
+        serverId: localUuid.toString(),
         propertyId: data['property_id'] ?? '',
         roomId: data['room_id'] ?? '',
         guestId: data['guest_id'] ?? '',
@@ -118,6 +119,7 @@ class BookingService {
         bookingStatus: data['booking_status'] ?? 'confirmed',
         paymentStatus: data['payment_status'] ?? 'pending',
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Pending',
       );
       final localId = _bookingDao.put(entity);
       _syncService.enqueueMutation(
@@ -157,7 +159,7 @@ class BookingService {
       
       // Cache data locally for offline use
       final entities = dataList.map<BookingEntity>((data) => BookingEntity(
-        uuid: data['id']?.toString() ?? data['uuid'] ?? '',
+        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
         propertyId: data['property_id'] ?? '',
         roomId: data['room_id'] ?? '',
         guestId: data['guest_id'] ?? '',
@@ -185,6 +187,7 @@ class BookingService {
         bookingStatus: data['booking_status'] ?? 'confirmed',
         paymentStatus: data['payment_status'] ?? 'pending',
         lastModifiedHlc: data['last_modified_hlc'] ?? DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Synced',
       )).toList();
       
       if (entities.isNotEmpty) {
@@ -195,10 +198,10 @@ class BookingService {
       return dataList;
     } on DioException catch (e) {
       AppLogger.w('getBookings network failed, falling back to ObjectBox', e);
-      return getCachedBookings();
+      return getCachedBookings(propertyId);
     } catch (e) {
       AppLogger.e('getBookings unexpected error', e);
-      return getCachedBookings();
+      return getCachedBookings(propertyId);
     }
   }
 
@@ -246,7 +249,7 @@ class BookingService {
     }
   }
 
-  Future<List<BookingEntity>> getCachedBookings() async {
-    return _bookingDao.getAll();
+  Future<List<BookingEntity>> getCachedBookings(String propertyId) async {
+    return _bookingDao.findByProperty(propertyId);
   }
 }

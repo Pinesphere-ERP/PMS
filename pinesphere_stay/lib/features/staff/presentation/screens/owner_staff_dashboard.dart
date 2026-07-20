@@ -1,39 +1,67 @@
 import 'package:flutter/material.dart';
+import 'add_staff_screen.dart';
+import '../../user_role_management/presentation/screens/role_directory_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/staff_provider.dart';
 
-class OwnerStaffDashboardScreen extends StatelessWidget {
+class OwnerStaffDashboardScreen extends ConsumerWidget {
   const OwnerStaffDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final staffAsync = ref.watch(staffListProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Staff Overview'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.admin_panel_settings),
+            tooltip: 'Role Management',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RoleDirectoryScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildMetricsGrid(),
+            staffAsync.when(
+              data: (staff) => _buildMetricsGrid(staff.length.toString()),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, st) => Text('Error: $e'),
+            ),
             const SizedBox(height: 24),
             _buildSectionTitle('Pending Tasks & Alerts'),
             _buildTasksList(),
             const SizedBox(height: 24),
             _buildSectionTitle('Recently Added Staff'),
-            _buildRecentStaffList(),
+            staffAsync.when(
+              data: (staff) => _buildRecentStaffList(staff),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, st) => Text('Error: $e'),
+            ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Add staff action
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddStaffScreen()),
+          );
         },
         child: const Icon(Icons.person_add),
       ),
     );
   }
 
-  Widget _buildMetricsGrid() {
+  Widget _buildMetricsGrid(String totalStaff) {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -42,10 +70,10 @@ class OwnerStaffDashboardScreen extends StatelessWidget {
       mainAxisSpacing: 16,
       childAspectRatio: 1.5,
       children: [
-        _buildMetricCard('Total Staff', '24', Icons.people, Colors.blue),
-        _buildMetricCard('Present Today', '18', Icons.check_circle, Colors.green),
-        _buildMetricCard('On Leave', '2', Icons.beach_access, Colors.orange),
-        _buildMetricCard('Pending Leaves', '3', Icons.pending_actions, Colors.red),
+        _buildMetricCard('Total Staff', totalStaff, Icons.people, Colors.blue),
+        _buildMetricCard('Present Today', '0', Icons.check_circle, Colors.green),
+        _buildMetricCard('On Leave', '0', Icons.beach_access, Colors.orange),
+        _buildMetricCard('Pending Leaves', '0', Icons.pending_actions, Colors.red),
       ],
     );
   }
@@ -97,22 +125,24 @@ class OwnerStaffDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentStaffList() {
+  Widget _buildRecentStaffList(List<dynamic> staffList) {
+    if (staffList.isEmpty) return const Text('No staff found.');
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: 3,
+      itemCount: staffList.length > 3 ? 3 : staffList.length,
       itemBuilder: (context, index) {
+        final staff = staffList[index];
         return Card(
           margin: const EdgeInsets.only(top: 8),
           child: ListTile(
             leading: CircleAvatar(
-              child: Text('S${index + 1}'),
+              child: Text(staff.name.isNotEmpty ? staff.name[0] : '?'),
             ),
-            title: Text('Staff Name ${index + 1}'),
-            subtitle: const Text('Joined 2 days ago'),
+            title: Text(staff.name),
+            subtitle: Text(staff.roleId),
             trailing: Chip(
-              label: const Text('Active'),
+              label: Text(staff.status),
               backgroundColor: Colors.green[100],
               labelStyle: const TextStyle(color: Colors.green),
             ),

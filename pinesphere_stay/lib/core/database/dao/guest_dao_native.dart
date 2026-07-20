@@ -18,6 +18,14 @@ class GuestDaoNative implements IGuestDao {
   }
 
   @override
+  List<GuestEntity> findByProperty(String propertyId) {
+    final query = _box.query(GuestEntity_.propertyId.equals(propertyId)).build();
+    final results = query.find();
+    query.close();
+    return results;
+  }
+
+  @override
   GuestEntity? get(int id) {
     return _box.get(id);
   }
@@ -27,8 +35,8 @@ class GuestDaoNative implements IGuestDao {
     return _box.remove(id);
   }
   @override
-  GuestEntity? findByUuid(String uuid) {
-    final query = _box.query(GuestEntity_.uuid.equals(uuid)).build();
+  GuestEntity? getByServerId(String serverId) {
+    final query = _box.query(GuestEntity_.serverId.equals(serverId)).build();
     final result = query.findFirst();
     query.close();
     return result;

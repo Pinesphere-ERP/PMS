@@ -54,8 +54,8 @@ class CheckinDaoNative implements ICheckinDao {
     }
   }
   @override
-  CheckInEntity? findByUuid(String uuid) {
-    final query = _box.query(CheckInEntity_.uuid.equals(uuid)).build();
+  CheckInEntity? getByServerId(String serverId) {
+    final query = _box.query(CheckInEntity_.serverId.equals(serverId)).build();
     final result = query.findFirst();
     query.close();
     return result;

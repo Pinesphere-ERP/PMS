@@ -20,6 +20,11 @@ class BookingDaoWeb implements IBookingDao {
   }
 
   @override
+  List<BookingEntity> findByProperty(String propertyId) {
+    return _storage.values.where((b) => b.propertyId == propertyId).toList();
+  }
+
+  @override
   BookingEntity? get(int id) {
     return _storage[id];
   }
@@ -40,9 +45,9 @@ class BookingDaoWeb implements IBookingDao {
     }
   }
   @override
-  BookingEntity? findByUuid(String uuid) {
+  BookingEntity? getByServerId(String serverId) {
     try {
-      return getAll().firstWhere((e) => e.uuid == uuid);
+      return getAll().firstWhere((e) => e.serverId == serverId);
     } catch (_) {
       return null;
     }

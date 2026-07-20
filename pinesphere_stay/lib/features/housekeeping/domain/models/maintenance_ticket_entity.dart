@@ -6,7 +6,7 @@ class MaintenanceTicketEntity {
   int id = 0;
 
   @Unique()
-  String uuid;
+  String serverId;
   String roomId;
   @Index()
   String propertyId;
@@ -28,7 +28,7 @@ class MaintenanceTicketEntity {
 
   MaintenanceTicketEntity({
     this.id = 0,
-    required this.uuid,
+    required this.serverId,
     required this.roomId,
     this.propertyId = '',
     this.roomNumber = '',

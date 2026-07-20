@@ -18,6 +18,14 @@ class RoomDaoNative implements IRoomDao {
   }
 
   @override
+  List<RoomEntity> findByProperty(String propertyId) {
+    final query = _box.query(RoomEntity_.propertyId.equals(propertyId)).build();
+    final results = query.find();
+    query.close();
+    return results;
+  }
+
+  @override
   RoomEntity? get(int id) {
     return _box.get(id);
   }
@@ -28,8 +36,8 @@ class RoomDaoNative implements IRoomDao {
   }
 
   @override
-  RoomEntity? findByUuid(String uuid) {
-    final query = _box.query(RoomEntity_.uuid.equals(uuid)).build();
+  RoomEntity? getByServerId(String serverId) {
+    final query = _box.query(RoomEntity_.serverId.equals(serverId)).build();
     final result = query.findFirst();
     query.close();
     return result;

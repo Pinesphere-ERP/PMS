@@ -9,7 +9,8 @@ class UserCreateRequest(BaseModel):
     mobile_number: str
     password: str = Field(..., min_length=6)
     username: Optional[str] = None
-    role_id: uuid.UUID
+    role_id: Optional[uuid.UUID] = None
+    role_code: Optional[str] = None
     property_id: Optional[uuid.UUID] = None
 
 class UserResponse(BaseModel):

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/settings_provider.dart';
+import '../../../staff/presentation/screens/owner_staff_dashboard.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -44,7 +45,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _buildSectionTitle(context, 'Account & Property'),
                   _buildMenuGroup(context, [
                     _buildMenuItem(context, Icons.domain, 'Property Information'),
-                    _buildMenuItem(context, Icons.badge_outlined, 'Staff Management'),
+                    _buildMenuItem(
+                      context, 
+                      Icons.badge_outlined, 
+                      'Staff Management',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const OwnerStaffDashboardScreen()),
+                        );
+                      },
+                    ),
                     _buildMenuItem(context, Icons.credit_card, 'Subscription', isLast: true),
                   ]),
                   const SizedBox(height: 24),

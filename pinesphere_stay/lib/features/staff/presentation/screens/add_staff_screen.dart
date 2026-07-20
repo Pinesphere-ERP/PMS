@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../main.dart';
 import '../../../user_role_management/domain/entities.dart';
 import '../../../sync/data/sync_service.dart';
+import '../../../rooms/presentation/providers/pms_provider.dart';
 
 class AddStaffScreen extends ConsumerStatefulWidget {
   final UserEntity? existingStaff;
@@ -53,6 +54,9 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
       final serverId = _isEditing ? widget.existingStaff!.serverId : const Uuid().v4();
       final operation = _isEditing ? 'UPDATE' : 'CREATE';
 
+      final pmsState = ref.read(pmsProvider);
+      final activePropertyId = pmsState.selectedResortId;
+
       final user = UserEntity(
         id: _isEditing ? widget.existingStaff!.id : 0,
         serverId: serverId,
@@ -65,7 +69,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
         syncStatus: 'Pending',
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         tenantId: _isEditing ? widget.existingStaff!.tenantId : null,
-        propertyId: _isEditing ? widget.existingStaff!.propertyId : null,
+        propertyId: _isEditing ? widget.existingStaff!.propertyId : activePropertyId,
         createdAt: _isEditing ? widget.existingStaff!.createdAt : DateTime.now().toUtc(),
         updatedAt: DateTime.now().toUtc(),
       );
@@ -85,6 +89,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
           'role_id': user.roleId,
           'status': user.status,
           'is_primary_owner': user.isPrimaryOwner,
+          'property_id': user.propertyId,
         },
       );
 

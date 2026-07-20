@@ -38,6 +38,7 @@ class RoleDaoWeb implements IRoleDao {
 
   @override
   bool remove(int id) {
+
     if (_storage.containsKey(id)) {
       _storage.remove(id);
       return true;

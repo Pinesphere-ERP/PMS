@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, update
 
 from app.infra.database import get_db
-from app.infra.models import User, Role, RolePermission, Permission, UserSession, OTPRequest, DeviceBlacklist
+from app.infra.models import User, Role, RolePermission, Permission, UserSession, OTPRequest, DeviceBlacklist, Device
 from app.core.dependencies import get_current_user
 from app.core.security import verify_password, create_access_token, create_refresh_token, get_password_hash
 from app.modules.audit.logger import AuditLogger
@@ -95,11 +95,10 @@ async def _build_token_response(db: AsyncSession, user: User, device_id_str: Opt
     )
 
     device_id: Optional[uuid.UUID] = None
-    if device_id_str:
-        try:
-            device_id = uuid.UUID(device_id_str)
-        except ValueError:
-            pass
+    if device_fp:
+        stmt = select(Device.id).where(Device.device_uid == device_fp)
+        res = await db.execute(stmt)
+        device_id = res.scalar_one_or_none()
 
     session = UserSession(
         id=uuid.uuid4(),

@@ -40,6 +40,7 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    role_code: str
     properties: List[AccessibleProperty] = []
 
 class PermissionSnapshot(BaseModel):
@@ -128,7 +129,12 @@ async def _build_token_response(db: AsyncSession, user: User, device_id_str: Opt
                 AccessibleProperty(property_id=str(access.property_id), role_id=str(access.role_id), is_primary=False)
             )
 
-    return TokenResponse(access_token=access_token, refresh_token=refresh_token, properties=accessible_properties)
+    role_stmt = select(Role).where(Role.id == user.role_id)
+    role_result = await db.execute(role_stmt)
+    user_role = role_result.scalars().first()
+    role_code = user_role.role_code if user_role else "UNKNOWN"
+
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token, role_code=role_code, properties=accessible_properties)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

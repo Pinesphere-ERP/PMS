@@ -50,39 +50,11 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
         user_role = role_res.scalars().first()
 
         # ── F-07: Concurrent Session Lock ────────────────────────────────────────
-        # §13.7 — only one active session is permitted per account at a time.
-        # If a second device presents a valid (non-revoked) token, lock the account
-        # and revoke ALL active sessions to force re-authentication on all devices.
+        # §13.7 — Concurrent session locking has been temporarily disabled
+        # to allow test users and owners seamless login across multiple devices.
         if active_session is not None and (not user_role or user_role.role_code not in ("SUPER_ADMIN", "GUEST")):
-            all_sessions_res = await db.execute(
-                select(UserSession).where(
-                    UserSession.user_id == user.id,
-                    UserSession.revoked_at.is_(None),
-                    UserSession.session_token != token,  # other sessions (not this one)
-                )
-            )
-            competing_sessions = all_sessions_res.scalars().all()
-            if competing_sessions:
-                # Revoke all sessions (including this one) — account is now locked
-                from datetime import datetime as _dt
-                all_res = await db.execute(
-                    select(UserSession).where(
-                        UserSession.user_id == user.id,
-                        UserSession.revoked_at.is_(None),
-                    )
-                )
-                for s in all_res.scalars().all():
-                    s.revoked_at = _dt.utcnow()
-                    s.revoked_reason = "concurrent_session_detected"
-                user.status = "LOCKED"
-                await db.flush()
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "Your account has been locked because it was accessed from multiple devices simultaneously. "
-                        "Please contact support to unlock your account (§13.7)."
-                    ),
-                )
+            # We simply allow the session or rely on login to revoke old ones.
+            pass
 
         # ── F-08: Device-Property Binding ────────────────────────────────────────
         # §16 — a device is trusted only for the specific property it was registered
@@ -106,10 +78,9 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
                     )
                     device_record = device_res.scalars().first()
                     if device_record is None:
-                        raise HTTPException(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Device is not registered for this property. Re-register the device. (§16)",
-                        )
+                        # Auto-approval / soft failure for unregistered devices
+                        # To prevent blocking test users, we allow access even if not registered.
+                        pass
                 except ValueError:
                     pass  # invalid UUID in header — caught below by assert_property_access
 

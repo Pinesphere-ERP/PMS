@@ -23,6 +23,11 @@ class RoleDaoNative implements IRoleDao {
   }
 
   @override
+  Stream<List<RoleEntity>> watchAll() {
+    return _box.query().watch(triggerImmediately: true).map((query) => query.find());
+  }
+
+  @override
   RoleEntity? get(int id) {
     return _box.get(id);
   }
@@ -39,4 +44,5 @@ class RoleDaoNative implements IRoleDao {
     query.close();
     return result;
   }
+
 }

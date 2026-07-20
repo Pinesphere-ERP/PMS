@@ -5,7 +5,6 @@ import '../../../rooms/presentation/providers/pms_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class NewBookingScreen extends ConsumerStatefulWidget {
   const NewBookingScreen({super.key});

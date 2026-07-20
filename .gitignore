@@ -26,3 +26,4 @@ node_modules/
 
 pinesphere_backend\venve
 full-history.txt
+web/admin/.env

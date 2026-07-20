@@ -4,6 +4,7 @@ abstract class IRoleDao {
   int put(RoleEntity entity);
   void putMany(List<RoleEntity> roles);
   List<RoleEntity> getAll();
+  Stream<List<RoleEntity>> watchAll();
   RoleEntity? get(int id);
   bool remove(int id);
   RoleEntity? getByServerId(String serverId);

@@ -6,4 +6,5 @@ abstract class IPermDao {
   PermissionEntity? get(int id);
   bool remove(int id);
   PermissionEntity? getByPermissionCode(String code);
+  PermissionEntity? getByServerId(String serverId);
 }

@@ -41,4 +41,13 @@ class PermDaoWeb implements IPermDao {
       return null;
     }
   }
+
+  @override
+  PermissionEntity? getByServerId(String serverId) {
+    try {
+      return _storage.values.firstWhere((e) => e.serverId == serverId);
+    } catch (_) {
+      return null;
+    }
+  }
 }

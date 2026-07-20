@@ -31,7 +31,7 @@ class ReportSyncHooks {
       operation: 'CREATE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
-      status: 0,
+      status: 'Pending',
     );
 
     _syncQueueBox.put(item);
@@ -52,7 +52,7 @@ class ReportSyncHooks {
       operation: 'UPDATE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
-      status: 0,
+      status: 'Pending',
     );
 
     _syncQueueBox.put(item);
@@ -75,7 +75,7 @@ class ReportSyncHooks {
       operation: 'CREATE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
-      status: 0,
+      status: 'Pending',
     );
 
     _syncQueueBox.put(item);
@@ -98,7 +98,7 @@ class ReportSyncHooks {
       operation: 'UPDATE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
-      status: 0,
+      status: 'Pending',
     );
 
     _syncQueueBox.put(item);
@@ -114,7 +114,7 @@ class ReportSyncHooks {
       operation: 'DELETE',
       payload: payload,
       hlcTimestamp: DateTime.now().toUtc().toIso8601String(),
-      status: 0,
+      status: 'Pending',
     );
 
     _syncQueueBox.put(item);

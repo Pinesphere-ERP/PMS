@@ -34,8 +34,23 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     owner_mobile = payload.owner_mobile
     owner_email = payload.owner_email
     target_user = None
+    owner = None
 
-    if payload.owner_user_id:
+    # ── Priority 1: Existing Owner linked by owner_id ──────────────────────────
+    if payload.owner_id:
+        try:
+            oid = uuid.UUID(payload.owner_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid owner_id format")
+        owner = (await db.execute(select(Owner).where(Owner.owner_id == oid))).scalar_one_or_none()
+        if not owner:
+            raise HTTPException(status_code=404, detail="Owner not found with provided owner_id")
+        owner_name = owner.full_name
+        owner_mobile = owner.mobile_number
+        owner_email = owner.email
+
+    # ── Priority 2: Existing User with OWNER role linked by owner_user_id ──────
+    elif payload.owner_user_id:
         user_stmt = select(User, Role).join(Role, User.role_id == Role.id).where(User.id == uuid.UUID(payload.owner_user_id))
         user_res = await db.execute(user_stmt)
         row = user_res.first()
@@ -48,28 +63,30 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
         owner_mobile = target_user.mobile_number or payload.owner_mobile
         owner_email = target_user.email or payload.owner_email
 
-    if not owner_name or not owner_mobile or not owner_email:
-        raise HTTPException(status_code=400, detail="Owner name, mobile, and email are required.")
-
-    owner_result = await db.execute(
-        select(Owner).where(
-            or_(Owner.email == owner_email, Owner.mobile_number == owner_mobile)
-        )
-    )
-    matching_owners = owner_result.scalars().all()
-    if len(matching_owners) > 1:
-        raise HTTPException(status_code=400, detail="Owner email and mobile number belong to different owners.")
-
-    owner = matching_owners[0] if matching_owners else None
+    # ── Priority 3: Create new Owner from inline details (backwards compat) ────
     if owner is None:
-        owner = Owner(
-            full_name=owner_name,
-            mobile_number=owner_mobile,
-            email=owner_email,
-            pan_number=payload.owner_pan,
+        if not owner_name or not owner_mobile or not owner_email:
+            raise HTTPException(status_code=400, detail="Owner name, mobile, and email are required.")
+
+        owner_result = await db.execute(
+            select(Owner).where(
+                or_(Owner.email == owner_email, Owner.mobile_number == owner_mobile)
+            )
         )
-        db.add(owner)
-        await db.flush()
+        matching_owners = owner_result.scalars().all()
+        if len(matching_owners) > 1:
+            raise HTTPException(status_code=400, detail="Owner email and mobile number belong to different owners.")
+
+        owner = matching_owners[0] if matching_owners else None
+        if owner is None:
+            owner = Owner(
+                full_name=owner_name,
+                mobile_number=owner_mobile,
+                email=owner_email,
+                pan_number=payload.owner_pan,
+            )
+            db.add(owner)
+            await db.flush()
 
     # Create Business
     new_business = Business(
@@ -99,40 +116,103 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     db.add(new_property)
     await db.flush()
 
+    if payload.rooms:
+        from app.infra.models import RoomCategory, Room
+        for r in payload.rooms:
+            # r is a dict from frontend
+            cat = RoomCategory(
+                property_id=new_property.property_id,
+                room_name=r.get('name') or r.get('category') or 'Standard',
+                base_price=float(r.get('price') or 1000.0),
+                number_of_rooms=int(r.get('totalRooms') or 1),
+                description=r.get('description', '')
+            )
+            db.add(cat)
+            await db.flush()
+            
+            total_rooms = int(r.get('totalRooms') or 1)
+            for i in range(total_rooms):
+                room_number = f"{(cat.room_name[:3] if cat.room_name else 'STD').upper()}-{i+101}"
+                new_room = Room(
+                    property_id=new_property.property_id,
+                    room_category_id=cat.room_category_id,
+                    room_number=room_number,
+                    housekeeping_status="clean",
+                    occupancy_status="vacant",
+                )
+                db.add(new_room)
+        await db.flush()
+
     if target_user:
         target_user.property_id = new_property.property_id
         target_user.is_primary_owner = True
         await db.flush()
     else:
-        # Create a new user with the OWNER role
-        owner_role_stmt = select(Role).where(Role.role_code == "OWNER")
-        owner_role_res = await db.execute(owner_role_stmt)
-        owner_role = owner_role_res.scalar_one_or_none()
-        if not owner_role:
-            raise HTTPException(status_code=500, detail="OWNER role not found in system")
-        
-        # Generate a temporary password for the new owner user
-        import secrets
-        import string
-        from app.core.security import get_password_hash
-        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(10))
-        
-        new_user = User(
-            id=uuid.uuid4(),
-            property_id=new_property.property_id,
-            role_id=owner_role.id,
-            name=owner_name,
-            email=owner_email,
-            mobile_number=owner_mobile,
-            password_hash=get_password_hash(temp_password),
-            status="ACTIVE",
-            is_primary_owner=True
+        # Check if a User with this mobile or email already exists
+        user_check_stmt = select(User).where(
+            or_(User.mobile_number == owner_mobile, User.email == owner_email)
         )
-        db.add(new_user)
-        await db.flush()
-        target_user = new_user
+        existing_user_res = await db.execute(user_check_stmt)
+        existing_user = existing_user_res.scalars().first()
+        
+        if existing_user:
+            target_user = existing_user
+            if target_user.property_id is None:
+                target_user.property_id = new_property.property_id
+            target_user.is_primary_owner = True
+            await db.flush()
+        else:
+            # Create a new user with the OWNER role
+            owner_role_stmt = select(Role).where(Role.role_code == "OWNER")
+            owner_role_res = await db.execute(owner_role_stmt)
+            owner_role = owner_role_res.scalar_one_or_none()
+            if not owner_role:
+                raise HTTPException(status_code=500, detail="OWNER role not found in system")
+            
+            # Generate a temporary password for the new owner user
+            import secrets
+            import string
+            from app.core.security import get_password_hash
+            temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(10))
+            
+            new_user = User(
+                id=uuid.uuid4(),
+                property_id=new_property.property_id,
+                role_id=owner_role.id,
+                name=owner_name,
+                email=owner_email,
+                mobile_number=owner_mobile,
+                password_hash=get_password_hash(temp_password),
+                status="ACTIVE",
+                is_primary_owner=True
+            )
+            db.add(new_user)
+            await db.flush()
+            target_user = new_user
 
-    
+    # Give the user access to this specific property in UserPropertyAccess
+    from app.infra.models import UserPropertyAccess
+    # Check if access already exists just in case
+    access_check = await db.execute(
+        select(UserPropertyAccess).where(
+            UserPropertyAccess.user_id == target_user.id,
+            UserPropertyAccess.property_id == new_property.property_id
+        )
+    )
+    if not access_check.scalars().first():
+        target_role_id = getattr(target_user, "role_id", None)
+        if not target_role_id:
+            role_res = await db.execute(select(Role).where(Role.role_code == "OWNER"))
+            role_obj = role_res.scalar_one_or_none()
+            target_role_id = role_obj.id if role_obj else None
+            
+        new_access = UserPropertyAccess(
+            user_id=target_user.id,
+            property_id=new_property.property_id,
+            role_id=target_role_id
+        )
+        db.add(new_access)
+        await db.flush()
     # Provision the tenant database schema
     background_tasks.add_task(provision_tenant_schema, str(new_property.property_id))
     
@@ -193,6 +273,9 @@ async def update_property(property_id: str, payload: PropertyCreateInput, db: As
 @router.delete("/{property_id}", status_code=204)
 async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
     import uuid as _uuid
+    from sqlalchemy import delete, update
+    from app.infra.models import AuditLog, User, UserPropertyAccess, Room, Role
+    
     try:
         pid = _uuid.UUID(property_id)
     except ValueError:
@@ -204,19 +287,52 @@ async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
         
-    await db.delete(prop)
+    # Manually cleanup child records to prevent ForeignKeyViolationError
+    # since the DB schema lacks ondelete="CASCADE" for these relations.
     
+    # 1. Audit Logs
+    await db.execute(delete(AuditLog).where(AuditLog.property_id == pid))
+    
+    # 2. User Property Access
+    await db.execute(delete(UserPropertyAccess).where(UserPropertyAccess.property_id == pid))
+    
+    # 3. Rooms
+    await db.execute(delete(Room).where(Room.property_id == pid))
+    
+    # 4. Custom Roles
+    await db.execute(delete(Role).where(Role.property_id == pid))
+    
+    # 5. Unlink Users (Don't delete to avoid cascading user FK errors)
+    await db.execute(update(User).where(User.property_id == pid).values(property_id=None, is_primary_owner=False))
+    
+    from sqlalchemy.exc import IntegrityError
+    try:
+        await db.delete(prop)
+        await db.flush() # Force flush to catch any other IntegrityError immediately
+    except IntegrityError as e:
+        await db.rollback()
+        # Log the actual DB error to console for debugging
+        print(f"Failed to delete property {pid}: {str(e)}")
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot delete property because it has active linked records. Check server logs for details."
+        )
+    
+    # We do NOT log the deletion using the deleted property's ID as the 'property_id' 
+    # field for the log itself, because the property no longer exists and would fail FK checks.
+    # Instead, we pass property_id=None, but keep target_record_id=pid.
     await AuditLogger.log(
         db,
-        property_id=prop.property_id,
+        property_id=None,
         user_id=None,
         module_name="Properties",
         action_type="Deleted",
         target_entity="Property",
-        target_record_id=prop.property_id
+        target_record_id=pid
     )
     
     return None
+
 
 
 from pydantic import BaseModel
@@ -726,3 +842,84 @@ async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
     prop.is_deleted = True
     await db.commit()
     return {"message": "Property deleted successfully"}
+
+
+@router.get("/{property_id}/staff", dependencies=[Depends(require_super_admin)])
+async def get_property_staff(property_id: str, db: AsyncSession = Depends(get_db)):
+    """Return all users (staff) assigned to this property. Super Admin only."""
+    try:
+        pid = uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+
+    prop = (await db.execute(select(Property).where(Property.property_id == pid))).scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    stmt = (
+        select(User, Role)
+        .join(Role, User.role_id == Role.id)
+        .where(User.property_id == pid)
+        .order_by(Role.role_code, User.name)
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    staff = []
+    for user, role in rows:
+        staff.append({
+            "id": str(user.id),
+            "name": user.name,
+            "email": user.email,
+            "mobile_number": user.mobile_number,
+            "username": user.username,
+            "role_code": role.role_code,
+            "role_name": role.role_name,
+            "status": user.status,
+            "is_primary_owner": user.is_primary_owner,
+        })
+
+    return staff
+
+
+@router.get("/{property_id}/audit-logs", dependencies=[Depends(require_super_admin)])
+async def get_property_audit_logs(
+    property_id: str,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return recent audit log entries scoped to this property."""
+    try:
+        pid = uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+
+    prop = (await db.execute(select(Property).where(Property.property_id == pid))).scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    stmt = (
+        select(AuditLog, User)
+        .outerjoin(User, AuditLog.user_id == User.id)
+        .where(AuditLog.property_id == pid)
+        .order_by(AuditLog.timestamp.desc())
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    logs = []
+    for log, user in rows:
+        logs.append({
+            "log_id": str(log.log_id),
+            "action_type": log.action_type,
+            "module_name": log.module_name,
+            "target_entity": log.target_entity,
+            "target_record_id": str(log.target_record_id) if log.target_record_id else None,
+            "user_name": user.name if user else "System",
+            "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+            "ip_address": log.ip_address,
+        })
+
+    return logs
+

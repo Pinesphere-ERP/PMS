@@ -33,27 +33,54 @@ export default function AddPropertyWizard() {
 
   // Form State
   const [formData, setFormData] = useState({
+    owner_id: '',           // Preferred: link to existing Owner entity
     owner_user_id: '', owner_name: '', owner_designation: '', owner_mobile: '', owner_email: '', owner_pan: '',
     business_type: '', business_name: '', business_reg_number: '', business_gst: '', business_pan: '',
     property_name: '', property_type: '', star_category: '', year_established: '', total_floors: '', total_rooms: '', description: '',
     address: '', city: '', state: '', country: '', pincode: ''
   });
 
+  const [availableOwners, setAvailableOwners] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
 
   useEffect(() => {
-    const loadUsers = async () => {
+    const loadData = async () => {
       try {
-        const res = await fetchAPI('/users?unassigned_only=true&role_code=OWNER');
-        setAvailableUsers(Array.isArray(res) ? res : res.data || []);
+        // Load existing owners for selection (primary method)
+        const ownersRes = await fetchAPI('/owners');
+        setAvailableOwners(Array.isArray(ownersRes) ? ownersRes : []);
+        // Also load OWNER-role users for backwards compatibility
+        const usersRes = await fetchAPI('/users?unassigned_only=true&role_code=OWNER');
+        setAvailableUsers(Array.isArray(usersRes) ? usersRes : usersRes?.data || []);
       } catch (err) {
-        console.error('Failed to load users', err);
+        console.error('Failed to load owners/users', err);
       }
     };
-    loadUsers();
+    loadData();
   }, []);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleOwnerEntitySelect = (e) => {
+    const ownerId = e.target.value;
+    if (ownerId) {
+      const selected = availableOwners.find(o => String(o.owner_id) === String(ownerId));
+      if (selected) {
+        setFormData(prev => ({
+          ...prev,
+          owner_id: ownerId,
+          owner_user_id: '',
+          owner_name: selected.full_name || '',
+          owner_mobile: selected.mobile_number || '',
+          owner_email: selected.email || '',
+          owner_pan: selected.pan_number || '',
+          owner_designation: selected.designation || '',
+        }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, owner_id: '', owner_name: '', owner_mobile: '', owner_email: '', owner_pan: '', owner_designation: '' }));
+    }
+  };
 
   const handleUserSelect = (e) => {
     const userId = e.target.value;
@@ -83,7 +110,7 @@ export default function AddPropertyWizard() {
 
   // Dynamic Room Categories State
   const [rooms, setRooms] = useState([
-    { id: '1', name: 'Deluxe Room', category: 'Deluxe', totalRooms: 10, occupancy: 2, bedType: 'Double', size: '200 sq ft', smoking: false, bathroom: true, balcony: false, view: 'City', ac: true, description: '' }
+    { id: '1', name: '', category: 'Standard', totalRooms: 0, occupancy: 2, bedType: 'Single', size: '', smoking: false, bathroom: true, balcony: false, view: '', ac: true, description: '' }
   ]);
 
   const addRoom = () => {
@@ -136,6 +163,8 @@ export default function AddPropertyWizard() {
       if (payload.total_floors) payload.total_floors = parseInt(payload.total_floors, 10);
       if (payload.total_rooms) payload.total_rooms = parseInt(payload.total_rooms, 10);
       
+      payload.rooms = rooms;
+      
       await propertyService.createProperty(payload);
       alert('Property created successfully!');
       navigate('/properties');
@@ -184,28 +213,39 @@ export default function AddPropertyWizard() {
         {currentStep === 1 && (
           <div className="space-y-6 animate-slide-in-right">
             <div><h2 className="text-lg font-semibold text-gray-900">Owner Registration</h2><p className="text-sm text-gray-500">Primary contact details for the owner.</p></div>
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-              <div className="flex">
-                <div className="ml-3">
-                  <p className="text-sm text-blue-700">
-                    Select an existing User from the dropdown to automatically link them as the property owner. 
-                    Or fill out the details manually to create a standalone owner record.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mb-6 border-b pb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Existing User (Recommended)</label>
-              <select name="owner_user_id" value={formData.owner_user_id} onChange={handleUserSelect} className="saas-input bg-white w-full">
-                <option value="">-- Manual Entry --</option>
-                {availableUsers.map(user => (
-                  <option key={user.id} value={user.id}>{user.name} ({user.mobile_number || user.email})</option>
+
+            {/* ── Preferred: Select from existing Owner entities ── */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">✦ Recommended: Link to Existing Owner</p>
+              <p className="text-xs text-amber-600 mb-3">
+                Select an owner you already created via Owner Management. This is the preferred multi-tenant flow.
+              </p>
+              <select
+                value={formData.owner_id}
+                onChange={handleOwnerEntitySelect}
+                className="saas-input bg-white w-full"
+              >
+                <option value="">-- Select Existing Owner --</option>
+                {availableOwners.map(owner => (
+                  <option key={owner.owner_id} value={owner.owner_id}>
+                    {owner.full_name} · {owner.mobile_number} ({owner.property_count} {owner.property_count === 1 ? 'property' : 'properties'})
+                  </option>
                 ))}
               </select>
+              {availableOwners.length === 0 && (
+                <p className="text-xs text-amber-600 mt-2">
+                  No owners found. <a href="/owners" className="underline font-semibold">Create an Owner first</a> or fill details below.
+                </p>
+              )}
             </div>
 
-            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${formData.owner_user_id ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="relative flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400 font-medium">OR fill manually</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${formData.owner_id ? 'opacity-40 pointer-events-none' : ''}`}>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label><input type="text" name="owner_name" value={formData.owner_name} onChange={handleChange} className="saas-input" placeholder="John Doe" /></div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Designation (Optional)</label>

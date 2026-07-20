@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 
 /// A reusable background widget featuring the aesthetic abstract shapes
 /// used in the PineStay app's Login and Dashboard screens.

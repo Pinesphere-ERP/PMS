@@ -15,9 +15,15 @@ import {
   PieChart,
   Shield,
   ShieldAlert,
-  LogOut
+  LogOut,
+  Crown,
+  Users
 } from 'lucide-react';
 import { useState } from 'react';
+
+const ownerNavigation = [
+  { name: 'Owners', to: '/owners', icon: Crown },
+];
 
 const propertyNavigation = [
   { name: 'Property Dashboard', to: '/properties', icon: Building2 }
@@ -70,6 +76,30 @@ export default function AdminLayout() {
         </div>
         
         <div className="px-4 py-6">
+          <p className="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Owner Management
+          </p>
+          <nav className="space-y-1 mb-6">
+            {ownerNavigation.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
+                    isActive
+                      ? 'bg-amber-50 text-amber-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`
+                }
+              >
+                <item.icon className={`mr-3 h-4 w-4 flex-shrink-0 ${
+                  location.pathname.startsWith(item.to) ? 'text-amber-600' : 'text-gray-400'
+                }`} />
+                {item.name}
+              </NavLink>
+            ))}
+          </nav>
+
           <p className="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
             Property Management
           </p>

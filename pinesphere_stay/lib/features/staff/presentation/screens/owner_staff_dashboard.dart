@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'add_staff_screen.dart';
-import '../../user_role_management/presentation/screens/role_directory_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/staff_provider.dart';
 
@@ -18,10 +17,10 @@ class OwnerStaffDashboardScreen extends ConsumerWidget {
             icon: const Icon(Icons.admin_panel_settings),
             tooltip: 'Role Management',
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RoleDirectoryScreen()),
-              );
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => const RoleDirectoryScreen()),
+              // );
             },
           ),
         ],

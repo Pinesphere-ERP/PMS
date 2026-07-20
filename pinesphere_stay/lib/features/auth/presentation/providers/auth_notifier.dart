@@ -4,7 +4,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../audit/data/audit_service.dart';
 import '../../../user_role_management/data/repository/user_repository.dart';
 import '../../../user_role_management/domain/permission_set.dart';
-import '../../../../core/permissions/user_role.dart';
 import '../../domain/models/user_model.dart';
 import '../../../sync/data/sync_service.dart';
 

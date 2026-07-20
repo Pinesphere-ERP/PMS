@@ -29,7 +29,7 @@ class SettingsService {
   late final SyncService _syncService;
   late final AuditService _audit;
 
-  SettingsService({required Dio dio}) : _dio = dio;
+  SettingsService({required this._dio});
 
   void initialize(Store store, SyncService syncService, AuditService audit) {
     _store = store;
@@ -114,7 +114,7 @@ class SettingsService {
         description: data['description'] ?? '',
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
-      final localId = _propertySettingsBox.put(entity);
+
       _syncService.enqueueMutation(
         entityType: 'PropertySetting',
         entityId: localUuid,

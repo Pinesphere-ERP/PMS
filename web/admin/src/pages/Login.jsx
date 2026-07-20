@@ -18,17 +18,27 @@ export default function Login() {
         body: JSON.stringify({ email, password })
       });
       
+      // Persist auth context for the session
       localStorage.setItem('token', res.access_token);
       localStorage.setItem('role_code', res.role_code);
       
+      // Store first accessible property if available
+      if (res.properties && res.properties.length > 0) {
+        const primaryProp = res.properties.find(p => p.is_primary) || res.properties[0];
+        localStorage.setItem('property_id', primaryProp.property_id);
+        localStorage.setItem('properties', JSON.stringify(res.properties));
+      }
+      
+      // Role-based routing
       if (res.role_code === 'SUPER_ADMIN') {
-        window.location.href = '/users'; // Super Admin user management or dashboard
+        window.location.href = '/properties';
       } else if (res.role_code === 'OWNER') {
         window.location.href = '/properties';
       } else if (res.role_code === 'GUEST') {
         window.location.href = '/guest';
       } else {
-        // Fallback (though the backend 403s operational roles on the web)
+        // Operational staff — redirect to property dashboard in pinesphere_stay app
+        // For now, land on a restricted page
         window.location.href = '/';
       }
     } catch (err) {
@@ -37,6 +47,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

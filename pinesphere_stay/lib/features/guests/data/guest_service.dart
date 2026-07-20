@@ -30,7 +30,7 @@ class GuestService {
   late final SyncService _syncService;
   late final AuditService _audit;
 
-  GuestService({required Dio dio}) : _dio = dio;
+  GuestService({required this._dio});
 
   void initialize(IGuestDao guestDao, SyncService syncService, AuditService audit) {
     _guestDao = guestDao;
@@ -120,7 +120,7 @@ class GuestService {
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         syncStatus: 'Pending',
       );
-      final localId = _guestDao.put(entity);
+
       _syncService.enqueueMutation(
         entityType: 'Guest',
         entityId: localUuid.toString(),

@@ -15,8 +15,8 @@ FlutterSecureStorage secureStorage(Ref ref) {
 
 @riverpod
 Dio dioClient(Ref ref) {
-  // Use dart-define for physical device IP, fallback to emulator IP 10.0.2.2 or localhost
-  const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'http://10.0.2.2:8000/api/v1');
+  // Use dart-define for physical device IP, fallback to hosted backend
+  const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://pms-bvko.onrender.com/api/v1');
 
   final dio = Dio(
     BaseOptions(
@@ -49,8 +49,9 @@ class OfflineOutboxInterceptor extends Interceptor {
 
     final method = err.requestOptions.method.toUpperCase();
 
-    // If it's a mutating request and the network is down, queue it!
-    if (isNetworkError && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
+    // If it's a mutating request, not an auth endpoint, and the network is down, queue it!
+    final isAuth = err.requestOptions.path.contains('/auth/');
+    if (isNetworkError && !isAuth && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
       try {
         final box = databaseService.store.box<SyncOperation>();
         

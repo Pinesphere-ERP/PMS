@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Building2, 
   ClipboardCheck, 
@@ -14,7 +14,8 @@ import {
   ChevronRight,
   PieChart,
   Shield,
-  ShieldAlert
+  ShieldAlert,
+  LogOut
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -47,10 +48,17 @@ const systemNavigation = [
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Helper to generate breadcrumbs from path
   const pathParts = location.pathname.split('/').filter(Boolean);
   const breadcrumbs = pathParts.map((part) => part.charAt(0).toUpperCase() + part.slice(1));
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    // Assuming there's a /login route or simply redirect to the landing page
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans text-gray-900 selection:bg-pine-light/20 selection:text-pine">
@@ -229,6 +237,13 @@ export default function AdminLayout() {
             <div className="h-8 w-8 rounded-full bg-pine-100 border border-pine-200 flex items-center justify-center cursor-pointer hover:ring-2 ring-pine ring-offset-2 transition-all">
               <User className="h-4 w-4 text-pine-DEFAULT" />
             </div>
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+              title="Log out"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
         </header>
 

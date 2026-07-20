@@ -55,6 +55,32 @@ export default function AddPropertyWizard() {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const handleUserSelect = (e) => {
+    const userId = e.target.value;
+    if (userId) {
+      const selectedUser = availableUsers.find(u => String(u.id) === String(userId));
+      if (selectedUser) {
+        setFormData(prev => ({
+          ...prev,
+          owner_user_id: userId,
+          owner_name: selectedUser.name || '',
+          owner_mobile: selectedUser.mobile_number || selectedUser.phone || '',
+          owner_email: selectedUser.email || '',
+          owner_pan: selectedUser.pan_number || selectedUser.pan || ''
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        owner_user_id: '',
+        owner_name: '',
+        owner_mobile: '',
+        owner_email: '',
+        owner_pan: ''
+      }));
+    }
+  };
+
   // Dynamic Room Categories State
   const [rooms, setRooms] = useState([
     { id: '1', name: 'Deluxe Room', category: 'Deluxe', totalRooms: 10, occupancy: 2, bedType: 'Double', size: '200 sq ft', smoking: false, bathroom: true, balcony: false, view: 'City', ac: true, description: '' }
@@ -171,7 +197,7 @@ export default function AddPropertyWizard() {
             
             <div className="mb-6 border-b pb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">Select Existing User (Recommended)</label>
-              <select name="owner_user_id" value={formData.owner_user_id} onChange={handleChange} className="saas-input bg-white w-full">
+              <select name="owner_user_id" value={formData.owner_user_id} onChange={handleUserSelect} className="saas-input bg-white w-full">
                 <option value="">-- Manual Entry --</option>
                 {availableUsers.map(user => (
                   <option key={user.id} value={user.id}>{user.name} ({user.mobile_number || user.email})</option>

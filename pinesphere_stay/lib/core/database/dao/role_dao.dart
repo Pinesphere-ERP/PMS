@@ -8,5 +8,4 @@ abstract class IRoleDao {
   RoleEntity? get(int id);
   bool remove(int id);
   RoleEntity? getByServerId(String serverId);
-  Stream<List<RoleEntity>> watchAll();
 }

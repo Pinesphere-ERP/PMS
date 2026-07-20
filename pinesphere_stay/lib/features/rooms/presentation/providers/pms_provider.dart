@@ -592,7 +592,7 @@ class PmsNotifier extends Notifier<PmsState> {
                 ? '44444444-4444-4444-4444-444444444444'
                 : booking.resortId);
 
-        final entity = BookingEntity(
+        final bookingEntity = BookingEntity(
           serverId: booking.id,
           propertyId: resolvedPropertyId,
           roomId: booking.roomId,

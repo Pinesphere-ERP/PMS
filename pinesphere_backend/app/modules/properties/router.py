@@ -69,19 +69,7 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
             pan_number=payload.owner_pan,
         )
         db.add(owner)
-        try:
-            await db.flush()
-        except IntegrityError:
-            await db.rollback()
-            owner_result = await db.execute(
-                select(Owner).where(
-                    or_(Owner.email == owner_email, Owner.mobile_number == owner_mobile)
-                )
-            )
-            matching_owners = owner_result.scalars().all()
-            if len(matching_owners) != 1:
-                raise HTTPException(status_code=400, detail="Owner email and mobile number belong to different owners.")
-            owner = matching_owners[0]
+        await db.flush()
 
     # Create Business
     new_business = Business(
@@ -97,7 +85,6 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     new_property = Property(
         business_id=new_business.business_id,
         owner_id=owner.owner_id,
-        owner_user_id=target_user.id if target_user else None,
         property_name=payload.property_name,
         property_type=payload.property_type,
         star_category=payload.star_category,
@@ -162,6 +149,9 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
         new_value={"property_name": new_property.property_name}
     )
 
+    # Explicitly commit the transaction to ensure changes are saved
+    await db.commit()
+    
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 
 

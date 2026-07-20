@@ -125,7 +125,7 @@ class KpiAggregationService {
     var entity = _dao.findByPropertyAndDate(propertyId, dateKey);
 
     entity ??= KpiSnapshotEntity(
-        uuid: '',
+        serverId: '',
         propertyId: propertyId,
         snapshotDate: dateKey,
         isLocalOnly: true,

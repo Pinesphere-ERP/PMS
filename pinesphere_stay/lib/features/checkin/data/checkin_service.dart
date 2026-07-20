@@ -33,8 +33,8 @@ class CheckInService {
   late final IRoomDao _roomDao;
   late final SyncService _syncService;
 
-  CheckInService({required Dio dio, required AuditService auditService})
-      : _dio = dio, _audit = auditService;
+  CheckInService({required this._dio, required AuditService auditService})
+      : _audit = auditService;
 
   void initialize(ICheckinDao checkinDao, IRoomDao roomDao, SyncService syncService) {
     _checkinDao = checkinDao;
@@ -114,7 +114,7 @@ class CheckInService {
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         syncStatus: 'Pending',
       );
-      final localId = _checkinDao.put(entity);
+
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
       _syncService.enqueueMutation(
         entityType: 'CheckIn',

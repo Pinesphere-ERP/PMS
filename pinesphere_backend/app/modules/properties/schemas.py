@@ -35,3 +35,6 @@ class PropertyCreateInput(BaseModel):
     state: Optional[str] = None
     country: Optional[str] = None
     pincode: Optional[str] = None
+
+    # Dynamic Rooms configuration
+    rooms: Optional[list] = None

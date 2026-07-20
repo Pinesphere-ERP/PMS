@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinesphere_stay/core/network/dio_client.dart';
 import 'package:pinesphere_stay/features/tasks/data/models/task_model.dart';
 import 'package:pinesphere_stay/core/utils/logger.dart';
@@ -16,7 +15,7 @@ KitchenService kitchenService(Ref ref) {
 class KitchenService {
   final Dio _dio;
 
-  KitchenService({required Dio dio}) : _dio = dio;
+  KitchenService({required this._dio});
 
   Future<List<TaskModel>> getOrders(String propertyId) async {
     try {

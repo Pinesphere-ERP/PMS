@@ -29,7 +29,7 @@ class RoomService {
   late final SyncService _syncService;
   late final AuditService _audit;
 
-  RoomService({required Dio dio}) : _dio = dio;
+  RoomService({required this._dio});
 
   void initialize(IRoomDao roomDao, SyncService syncService, AuditService audit) {
     _roomDao = roomDao;

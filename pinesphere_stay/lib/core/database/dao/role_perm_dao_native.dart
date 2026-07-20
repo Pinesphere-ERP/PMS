@@ -31,4 +31,9 @@ class RolePermDaoNative implements IRolePermDao {
   List<RolePermissionEntity> getByRoleId(String roleId) {
     return _box.query(RolePermissionEntity_.roleId.equals(roleId)).build().find();
   }
+
+  @override
+  RolePermissionEntity? getByServerId(String serverId) {
+    return _box.query(RolePermissionEntity_.serverId.equals(serverId)).build().findFirst();
+  }
 }

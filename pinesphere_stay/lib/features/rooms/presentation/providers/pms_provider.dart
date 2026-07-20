@@ -583,7 +583,6 @@ class PmsNotifier extends Notifier<PmsState> {
       }
     } catch (e) {
       debugPrint('Failed to create booking: $e');
-      rethrow;
 
       // Save to local ObjectBox DB for persistence
       try {
@@ -594,7 +593,7 @@ class PmsNotifier extends Notifier<PmsState> {
                 : booking.resortId);
 
         final entity = BookingEntity(
-          uuid: booking.id,
+          serverId: booking.id,
           propertyId: resolvedPropertyId,
           roomId: booking.roomId,
           guestId: 'offline_${DateTime.now().millisecondsSinceEpoch}', 
@@ -628,6 +627,7 @@ class PmsNotifier extends Notifier<PmsState> {
       } catch (dbErr) {
         debugPrint('Failed to save offline booking to DB: $dbErr');
       }
+      rethrow;
     }
   }
 

@@ -39,4 +39,9 @@ class RoleDaoNative implements IRoleDao {
     query.close();
     return result;
   }
+
+  @override
+  Stream<List<RoleEntity>> watchAll() {
+    return _box.query().watch(triggerImmediately: true).map((query) => query.find());
+  }
 }

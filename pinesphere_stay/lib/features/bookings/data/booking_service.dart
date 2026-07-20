@@ -27,9 +27,8 @@ class BookingService {
   late final IBookingDao _bookingDao;
   late final SyncService _syncService;
 
-  BookingService({required Dio dio, required AuditService auditService})
-      : _dio = dio,
-        _audit = auditService;
+  BookingService({required this._dio, required AuditService auditService})
+      : _audit = auditService;
 
   void initialize(IBookingDao bookingDao, SyncService syncService) {
     _bookingDao = bookingDao;
@@ -121,7 +120,7 @@ class BookingService {
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         syncStatus: 'Pending',
       );
-      final localId = _bookingDao.put(entity);
+
       _syncService.enqueueMutation(
         entityType: 'Booking',
         entityId: localUuid.toString(),

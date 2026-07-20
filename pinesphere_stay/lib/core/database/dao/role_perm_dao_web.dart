@@ -37,4 +37,13 @@ class RolePermDaoWeb implements IRolePermDao {
   List<RolePermissionEntity> getByRoleId(String roleId) {
     return _storage.values.where((e) => e.roleId == roleId).toList();
   }
+
+  @override
+  RolePermissionEntity? getByServerId(String serverId) {
+    try {
+      return _storage.values.firstWhere((e) => e.serverId == serverId);
+    } catch (_) {
+      return null;
+    }
+  }
 }

@@ -31,4 +31,9 @@ class PermDaoNative implements IPermDao {
   PermissionEntity? getByPermissionCode(String code) {
     return _box.query(PermissionEntity_.permissionCode.equals(code)).build().findFirst();
   }
+
+  @override
+  PermissionEntity? getByServerId(String serverId) {
+    return _box.query(PermissionEntity_.serverId.equals(serverId)).build().findFirst();
+  }
 }

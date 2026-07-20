@@ -16,7 +16,7 @@ final housekeepingTasksProvider = FutureProvider<List<HousekeepingTaskEntity>>((
   // Let's use the dao directly to stream it, or just use getTasks and map it.
   final rawData = await service.getTasks(propertyId);
   return rawData.map((body) => HousekeepingTaskEntity(
-        uuid: body['id']?.toString() ?? '',
+        serverId: body['id']?.toString() ?? '',
         roomId: body['room_id']?.toString() ?? '',
         propertyId: body['property_id']?.toString() ?? '',
         roomNumber: body['room_number']?.toString() ?? '',

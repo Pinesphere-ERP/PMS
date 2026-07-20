@@ -116,6 +116,33 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     db.add(new_property)
     await db.flush()
 
+    if payload.rooms:
+        from app.infra.models import RoomCategory, Room
+        for r in payload.rooms:
+            # r is a dict from frontend
+            cat = RoomCategory(
+                property_id=new_property.property_id,
+                room_name=r.get('name') or r.get('category') or 'Standard',
+                base_price=float(r.get('price') or 1000.0),
+                number_of_rooms=int(r.get('totalRooms') or 1),
+                description=r.get('description', '')
+            )
+            db.add(cat)
+            await db.flush()
+            
+            total_rooms = int(r.get('totalRooms') or 1)
+            for i in range(total_rooms):
+                room_number = f"{(cat.room_name[:3] if cat.room_name else 'STD').upper()}-{i+101}"
+                new_room = Room(
+                    property_id=new_property.property_id,
+                    room_category_id=cat.room_category_id,
+                    room_number=room_number,
+                    housekeeping_status="clean",
+                    occupancy_status="vacant",
+                )
+                db.add(new_room)
+        await db.flush()
+
     if target_user:
         target_user.property_id = new_property.property_id
         target_user.is_primary_owner = True

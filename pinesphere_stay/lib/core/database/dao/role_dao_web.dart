@@ -1,12 +1,12 @@
 import '../../../features/user_role_management/domain/entities.dart';
-import 'user_dao.dart';
+import 'role_dao.dart';
 
-class UserDaoWeb implements IUserDao {
-  final Map<int, UserEntity> _storage = {};
+class RoleDaoWeb implements IRoleDao {
+  final Map<int, RoleEntity> _storage = {};
   int _counter = 1;
 
   @override
-  int put(UserEntity entity) {
+  int put(RoleEntity entity) {
     if (entity.id == 0) {
       entity.id = _counter++;
     }
@@ -15,17 +15,24 @@ class UserDaoWeb implements IUserDao {
   }
 
   @override
-  List<UserEntity> getAll() {
+  void putMany(List<RoleEntity> roles) {
+    for (var role in roles) {
+      put(role);
+    }
+  }
+
+  @override
+  List<RoleEntity> getAll() {
     return _storage.values.toList();
   }
 
   @override
-  Stream<List<UserEntity>> watchAll() {
+  Stream<List<RoleEntity>> watchAll() {
     return Stream.value(_storage.values.toList());
   }
 
   @override
-  UserEntity? get(int id) {
+  RoleEntity? get(int id) {
     return _storage[id];
   }
 
@@ -39,18 +46,9 @@ class UserDaoWeb implements IUserDao {
   }
 
   @override
-  UserEntity? getByServerId(String serverId) {
+  RoleEntity? getByServerId(String serverId) {
     try {
       return _storage.values.firstWhere((e) => e.serverId == serverId);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  @override
-  UserEntity? getByEmail(String email) {
-    try {
-      return _storage.values.firstWhere((e) => e.email == email);
     } catch (_) {
       return null;
     }

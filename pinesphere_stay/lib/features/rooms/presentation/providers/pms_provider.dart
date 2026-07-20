@@ -347,7 +347,7 @@ class PmsNotifier extends Notifier<PmsState> {
             status: (json['status'] as String?)?.isNotEmpty == true 
                 ? '${json['status'][0].toUpperCase()}${json['status'].substring(1).toLowerCase()}' 
                 : 'Vacant',
-            resortId: json['resort_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['resort_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : json['resort_id']),
+            resortId: json['resort_id']?.toString() ?? '',
             images: imagesList,
             description: descText,
           );
@@ -367,12 +367,11 @@ class PmsNotifier extends Notifier<PmsState> {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         final loadedResorts = data.map((json) {
-          final id = json['id'];
-          final resortId = id == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (id == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : id);
+          final id = json['id'].toString();
           
           String descText = json['description'] ?? '';
-          String locVal = json['city'] ?? '';
-          String imgVal = json['image'] ?? '';
+          String locVal = json['city'] ?? 'Unknown';
+          String imgVal = json['image'] ?? 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80';
 
           try {
             if (descText.startsWith('{') && descText.endsWith('}')) {
@@ -381,38 +380,25 @@ class PmsNotifier extends Notifier<PmsState> {
               locVal = parsed['location'] ?? locVal;
               imgVal = parsed['image'] ?? imgVal;
             }
-          } catch (_) {
-            // Fallback to legacy/default
-          }
+          } catch (_) {}
 
-          if (locVal.isEmpty || locVal == 'Unknown') {
-            if (resortId == 'resort-1') {
-              locVal = 'Kodaikanal, Tamil Nadu';
-            } else if (resortId == 'resort-2') {
-              locVal = 'Varkala, Kerala';
-            } else {
-              locVal = 'Unknown';
-            }
-          }
-          if (imgVal.isEmpty) {
-            if (resortId == 'resort-1') {
-              imgVal = 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80';
-            } else {
-              imgVal = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80';
-            }
-          }
+          if (locVal.isEmpty) locVal = 'Unknown';
+          if (imgVal.isEmpty) imgVal = 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80';
 
           return ResortModel(
-            id: resortId,
-            name: json['name'] ?? '',
+            id: id,
+            name: json['name'] ?? 'Unnamed Property',
             image: imgVal,
             location: locVal,
             description: descText,
           );
-        }).where((resort) => !_locallyDeletedResortIds.contains(resort.id)).toList();
+        }).toList();
 
-        final defaultFilteredResorts = _initialState().resorts.where((r) => !_locallyDeletedResortIds.contains(r.id)).toList();
-        state = state.copyWith(resorts: loadedResorts.isEmpty ? defaultFilteredResorts : loadedResorts);
+        final String? newSelectedId = (state.selectedResortId == 'resort-1' && loadedResorts.isNotEmpty) 
+            ? loadedResorts.first.id 
+            : state.selectedResortId;
+            
+        state = state.copyWith(resorts: loadedResorts, selectedResortId: newSelectedId);
       }
     } catch (e) {
       debugPrint('Failed to load resorts: $e');
@@ -444,7 +430,7 @@ class PmsNotifier extends Notifier<PmsState> {
           
           return BookingModel(
             id: json['booking_id']?.toString() ?? 'unknown_id',
-            resortId: json['property_id'] == '33333333-3333-3333-3333-333333333333' ? 'resort-1' : (json['property_id'] == '44444444-4444-4444-4444-444444444444' ? 'resort-2' : (json['property_id']?.toString() ?? 'resort-1')),
+            resortId: json['property_id']?.toString() ?? '',
             roomId: json['room_id']?.toString() ?? '',
             roomNumber: json['room_number']?.toString() ?? '',
             guestName: json['guest_name']?.toString() ?? 'Guest',
@@ -508,26 +494,11 @@ class PmsNotifier extends Notifier<PmsState> {
 
 
   static PmsState _initialState() {
-    final resorts = [
-      ResortModel(
-        id: 'resort-1',
-        name: 'PineSphere Forest Resort',
-        image: 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80',
-        location: 'Kodaikanal, Tamil Nadu',
-        description: 'A serene getaway surrounded by towering pines and misty hills.',
-      ),
-      ResortModel(
-        id: 'resort-2',
-        name: 'PineSphere Beachside Sanctuary',
-        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-        location: 'Varkala, Kerala',
-        description: 'A beautiful seaside escape with stunning cliffside ocean views.',
-      ),
-    ];
+    final resorts = <ResortModel>[];
     final rooms = <RoomModel>[];
     final bookings = <BookingModel>[];
 
-    return PmsState(resorts: resorts, rooms: rooms, bookings: bookings, selectedResortId: 'resort-1');
+    return PmsState(resorts: resorts, rooms: rooms, bookings: bookings, selectedResortId: null);
   }
 
   void setSelectedResortId(String? resortId) {
@@ -538,11 +509,7 @@ class PmsNotifier extends Notifier<PmsState> {
     try {
       final dio = ref.read(dioClientProvider);
       
-      final String resolvedPropertyId = booking.resortId == 'resort-1' 
-          ? '33333333-3333-3333-3333-333333333333' 
-          : (booking.resortId == 'resort-2'
-              ? '44444444-4444-4444-4444-444444444444'
-              : booking.resortId);
+      final String resolvedPropertyId = booking.resortId;
 
       // Create guest first to prevent 404 Guest not found on booking creation
       final guestResponse = await dio.post('/bookings/guests', data: {
@@ -770,9 +737,7 @@ class PmsNotifier extends Notifier<PmsState> {
         'room_number': room.roomNumber,
         'type': room.type,
         'price': room.price,
-        'resort_id': room.resortId == 'resort-1' 
-            ? '33333333-3333-3333-3333-333333333333' 
-            : (room.resortId == 'resort-2' ? '44444444-4444-4444-4444-444444444444' : room.resortId),
+        'resort_id': room.resortId,
         'description': jsonEncode({
           'description': room.description,
           'season_price': room.seasonPrice,

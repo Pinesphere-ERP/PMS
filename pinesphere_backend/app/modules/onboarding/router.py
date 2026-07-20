@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, delete
 from sqlalchemy.exc import IntegrityError
 
 from app.infra.database import get_db, provision_tenant_schema
@@ -121,15 +121,18 @@ async def register_owner(payload: OwnerRegistrationRequest, background_tasks: Ba
 
 @router.post("/seed_roles")
 async def seed_roles(db: AsyncSession = Depends(get_db)):
+    # Cleanup old incorrect roles
+    await db.execute(delete(Role).where(Role.role_code.in_(["FRONT_DESK", "RESTAURANT", "VALET"])))
+
     roles = [
-        {"role_code": "FRONT_DESK", "role_name": "Front Desk", "description": "Handles guest check-ins and reservations"},
+        {"role_code": "RECEPTIONIST", "role_name": "Receptionist", "description": "Handles guest check-ins and front desk operations"},
         {"role_code": "HOUSEKEEPING", "role_name": "Housekeeping", "description": "Manages room cleaning and status"},
         {"role_code": "MAINTENANCE", "role_name": "Maintenance", "description": "Handles repair and maintenance tasks"},
-        {"role_code": "RESTAURANT", "role_name": "Restaurant Staff", "description": "Manages dining and room service orders"},
+        {"role_code": "KITCHEN", "role_name": "Kitchen Staff", "description": "Manages dining and room service orders"},
         {"role_code": "MANAGER", "role_name": "Property Manager", "description": "Oversees daily operations"},
         {"role_code": "ACCOUNTANT", "role_name": "Accountant", "description": "Manages billing, invoicing, and finances"},
-        {"role_code": "SECURITY", "role_name": "Security", "description": "Monitors property security and visitor logs"},
-        {"role_code": "VALET", "role_name": "Valet", "description": "Manages guest vehicles and parking"}
+        {"role_code": "SECURITY", "role_name": "Security Guard", "description": "Monitors property security and visitor logs"},
+        {"role_code": "BROKER", "role_name": "Broker", "description": "Manages guest acquisition and broker commissions"}
     ]
     created = 0
     for r in roles:
@@ -146,4 +149,4 @@ async def seed_roles(db: AsyncSession = Depends(get_db)):
             db.add(role)
             created += 1
     await db.commit()
-    return {"message": f"Seeded {created} roles"}
+    return {"message": f"Seeded PRD roles. Added {created} new roles."}

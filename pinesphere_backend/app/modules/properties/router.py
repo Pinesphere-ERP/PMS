@@ -353,12 +353,24 @@ class RoomCreateInput(BaseModel):
     image_url: Optional[str] = ""
 
 
-@router.get("/rooms", dependencies=[Depends(require_super_admin)])
-async def get_rooms(db: AsyncSession = Depends(get_db)):
+@router.get("/rooms")
+async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    role = await get_current_role(current_user, db)
+    
     # Select all rooms joined with their category
     q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
+    
+    if role.role_code != "SUPER_ADMIN":
+        from app.infra.models import UserPropertyAccess
+        from sqlalchemy import or_
+        q = q.outerjoin(UserPropertyAccess, UserPropertyAccess.property_id == RoomCategory.property_id)
+        conditions = [UserPropertyAccess.user_id == current_user.id]
+        if current_user.property_id:
+            conditions.append(RoomCategory.property_id == current_user.property_id)
+        q = q.where(or_(*conditions))
+        
     result = await db.execute(q)
-    rows = result.all()
+    rows = result.unique().all()
     data = []
     for room, cat in rows:
         data.append({
@@ -631,16 +643,17 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
     
     if role.role_code == "OWNER":
         # Owners only see properties they own
-        from sqlalchemy.orm import aliased
         from app.infra.models import UserPropertyAccess
+        from sqlalchemy import or_
         
-        # Check if they are the primary owner linked to the property directly
-        # Or if they have UserPropertyAccess for it
+        # Outerjoin to allow matching EITHER condition
+        q = q.outerjoin(UserPropertyAccess, UserPropertyAccess.property_id == Property.property_id)
+        
+        conditions = [UserPropertyAccess.user_id == current_user.id]
         if current_user.property_id:
-            q = q.where(Property.property_id == current_user.property_id)
-        else:
-            q = q.join(UserPropertyAccess, UserPropertyAccess.property_id == Property.property_id)
-            q = q.where(UserPropertyAccess.user_id == current_user.id)
+            conditions.append(Property.property_id == current_user.property_id)
+            
+        q = q.where(or_(*conditions))
 
     result = await db.execute(q)
     rows = result.unique().all()

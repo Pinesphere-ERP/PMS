@@ -50,7 +50,8 @@ class OfflineOutboxInterceptor extends Interceptor {
     final method = err.requestOptions.method.toUpperCase();
 
     // If it's a mutating request and the network is down, queue it!
-    if (isNetworkError && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
+    // Exclude auth routes from being queued offline.
+    if (isNetworkError && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method) && !err.requestOptions.path.contains('/auth/')) {
       try {
         final box = databaseService.store.box<SyncOperation>();
         

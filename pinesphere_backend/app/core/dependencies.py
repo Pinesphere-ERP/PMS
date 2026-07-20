@@ -101,7 +101,7 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
                         select(Device).where(
                             Device.device_uid == device_fp,
                             Device.property_id == requested_property_uuid,
-                            Device.status == "approved",
+                            Device.status.in_(["approved", "active"]),
                         )
                     )
                     device_record = device_res.scalars().first()

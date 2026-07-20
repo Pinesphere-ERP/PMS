@@ -194,22 +194,26 @@ class PmsState {
   final List<ResortModel> resorts;
   final List<RoomModel> rooms;
   final List<BookingModel> bookings;
+  final String? selectedResortId;
 
   PmsState({
     required this.resorts,
     required this.rooms,
     required this.bookings,
+    this.selectedResortId,
   });
 
   PmsState copyWith({
     List<ResortModel>? resorts,
     List<RoomModel>? rooms,
     List<BookingModel>? bookings,
+    String? selectedResortId,
   }) {
     return PmsState(
       resorts: resorts ?? this.resorts,
       rooms: rooms ?? this.rooms,
       bookings: bookings ?? this.bookings,
+      selectedResortId: selectedResortId ?? this.selectedResortId,
     );
   }
 }
@@ -523,7 +527,11 @@ class PmsNotifier extends Notifier<PmsState> {
     final rooms = <RoomModel>[];
     final bookings = <BookingModel>[];
 
-    return PmsState(resorts: resorts, rooms: rooms, bookings: bookings);
+    return PmsState(resorts: resorts, rooms: rooms, bookings: bookings, selectedResortId: 'resort-1');
+  }
+
+  void setSelectedResortId(String? resortId) {
+    state = state.copyWith(selectedResortId: resortId);
   }
 
   Future<void> createBooking(BookingModel booking) async {

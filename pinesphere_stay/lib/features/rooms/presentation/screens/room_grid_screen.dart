@@ -40,57 +40,95 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
   }
 
   void _showAddResortDialog(BuildContext context) {
+    final businessNameCtrl = TextEditingController();
     final nameCtrl = TextEditingController();
     final locationCtrl = TextEditingController();
     final descriptionCtrl = TextEditingController();
     final Map<String, dynamic> dialogData = {'image': ''};
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Add Resort Property'),
-              content: SingleChildScrollView(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: const BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
-                      controller: nameCtrl,
-                      decoration: const InputDecoration(labelText: 'Resort Name'),
+                    const Text(
+                      'Add New Property',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.onBackground,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: locationCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Location / City',
-                        hintText: 'e.g. Munnar, Kerala',
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: businessNameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Business / Company Name',
+                        prefixIcon: const Icon(Icons.business_center_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Property / Resort Name',
+                        prefixIcon: const Icon(Icons.apartment_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: locationCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Location / City',
+                        hintText: 'e.g. Munnar, Kerala',
+                        prefixIcon: const Icon(Icons.location_on_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
                       controller: descriptionCtrl,
-                      decoration: const InputDecoration(labelText: 'Description'),
+                      decoration: InputDecoration(
+                        labelText: 'Description (Optional)',
+                        prefixIcon: const Icon(Icons.description_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       maxLines: 2,
                     ),
-                    const SizedBox(height: 20),
-                    const Text('Resort Cover Photo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 24),
+                    const Text('Property Cover Photo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.outline)),
+                    const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () => _pickResortImage(setDialogState, dialogData),
+                      onTap: () => _pickResortImage(setSheetState, dialogData),
                       child: Container(
-                        width: double.infinity,
-                        height: 100,
+                        height: 120,
                         decoration: BoxDecoration(
                           color: AppColors.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.outlineVariant, width: 1.2),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.outlineVariant, width: 1.5, style: BorderStyle.solid),
                         ),
                         child: dialogData['image'].toString().isNotEmpty
                             ? ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                                 child: (kIsWeb || dialogData['image'].toString().startsWith('http') || dialogData['image'].toString().startsWith('blob:'))
                                     ? Image.network(dialogData['image'].toString(), fit: BoxFit.cover)
                                     : Image.file(File(dialogData['image'].toString()), fit: BoxFit.cover),
@@ -98,44 +136,57 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                             : const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.add_a_photo_outlined, size: 24, color: AppColors.outline),
-                                  SizedBox(height: 4),
-                                  Text('Select from Gallery', style: TextStyle(fontSize: 11, color: AppColors.outline)),
+                                  Icon(Icons.add_a_photo_rounded, size: 32, color: AppColors.outline),
+                                  SizedBox(height: 8),
+                                  Text('Tap to select from Gallery', style: TextStyle(fontSize: 13, color: AppColors.outline)),
                                 ],
                               ),
                       ),
                     ),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        if (nameCtrl.text.isEmpty || locationCtrl.text.isEmpty || businessNameCtrl.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please fill all required fields')),
+                          );
+                          return;
+                        }
+                        
+                        final imagePath = dialogData['image'].toString().isEmpty
+                            ? 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80'
+                            : dialogData['image'].toString();
+
+                        // Using ResortModel to pass data to pms_provider
+                        // We are appending businessName to description since ResortModel doesn't have a businessName field
+                        // so we can extract it in pms_provider later.
+                        final businessDesc = '${businessNameCtrl.text}|||${descriptionCtrl.text}';
+
+                        final newResort = ResortModel(
+                          id: 'resort_${DateTime.now().millisecondsSinceEpoch}',
+                          name: nameCtrl.text,
+                          location: locationCtrl.text,
+                          image: imagePath,
+                          description: businessDesc,
+                        );
+
+                        ref.read(pmsProvider.notifier).addResort(newResort);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Created property ${nameCtrl.text}!')),
+                        );
+                      },
+                      child: const Text('Create Property', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-                  onPressed: () {
-                    if (nameCtrl.text.isEmpty || locationCtrl.text.isEmpty) return;
-
-                    final imagePath = dialogData['image'].toString().isEmpty
-                        ? 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80'
-                        : dialogData['image'].toString();
-
-                    final newResort = ResortModel(
-                      id: 'resort_${DateTime.now().millisecondsSinceEpoch}',
-                      name: nameCtrl.text,
-                      location: locationCtrl.text,
-                      image: imagePath,
-                      description: descriptionCtrl.text,
-                    );
-
-                    ref.read(pmsProvider.notifier).addResort(newResort);
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Created property ${nameCtrl.text}!')),
-                    );
-                  },
-                  child: const Text('Create Property'),
-                ),
-              ],
             );
           },
         );
@@ -1308,31 +1359,12 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
 
   void _showAddRoomDialog(BuildContext context) {
     final roomNumCtrl = TextEditingController();
-    final typeCtrl = TextEditingController(text: 'Standard Room');
-    final priceCtrl = TextEditingController(text: '1000');
+    final typeCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
     final descriptionCtrl = TextEditingController();
     
-    // Pricing rule controls
-    final seasonCtrl = TextEditingController(text: '300');
-    final weekendCtrl = TextEditingController(text: '150');
-    final holidayCtrl = TextEditingController(text: '400');
-    final extraBedCtrl = TextEditingController(text: '100');
-
-    // Room status default
     String initialStatus = 'Vacant';
-
-    // Dynamic amenities list inside dialog
-    final List<Map<String, dynamic>> dialogAmenities = [
-      {'name': 'Food / Buffet Included', 'price': 300.0},
-      {'name': 'Portable Bluetooth Speaker', 'price': 150.0},
-      {'name': 'Smart TV Access', 'price': 100.0},
-    ];
-
-    // Selected photo gallery paths
     final List<String> uploadedImages = [];
-
-    final nameNewAmenityCtrl = TextEditingController();
-    final priceNewAmenityCtrl = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -1341,330 +1373,130 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final double keyboardPadding = MediaQuery.of(context).viewInsets.bottom;
-            final double safeAreaBottom = MediaQuery.of(context).padding.bottom;
             return Container(
-              padding: EdgeInsets.only(bottom: keyboardPadding),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.85,
-                ),
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + safeAreaBottom),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: const BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const Text(
+                      'Add New Room',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.onBackground,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Configure and Create Room',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+                        Expanded(
+                          child: TextFormField(
+                            controller: roomNumCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Room Number',
+                              prefixIcon: const Icon(Icons.tag),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () => Navigator.pop(context),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: initialStatus,
+                            decoration: InputDecoration(
+                              labelText: 'Status',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            items: ['Vacant', 'Occupied', 'Maintenance', 'Cleaning'].map((status) {
+                              return DropdownMenuItem(value: status, child: Text(status));
+                            }).toList(),
+                            onChanged: (val) => setDialogState(() => initialStatus = val ?? 'Vacant'),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextField(
-                              controller: roomNumCtrl,
-                              decoration: const InputDecoration(labelText: 'Room Number (e.g. 105)', contentPadding: EdgeInsets.zero),
-                            ),
-                            const SizedBox(height: 10),
-                            TextField(
-                              controller: typeCtrl,
-                              decoration: const InputDecoration(labelText: 'Room Type (e.g. Deluxe Suite)', contentPadding: EdgeInsets.zero),
-                            ),
-                            const SizedBox(height: 10),
-                            DropdownButtonFormField<String>(
-                              initialValue: initialStatus,
-                              decoration: const InputDecoration(labelText: 'Initial Status', contentPadding: EdgeInsets.zero),
-                              items: ['Vacant', 'Occupied', 'Maintenance', 'Cleaning'].map((status) {
-                                return DropdownMenuItem(value: status, child: Text(status));
-                              }).toList(),
-                              onChanged: (val) => setDialogState(() => initialStatus = val ?? 'Vacant'),
-                            ),
-                            const SizedBox(height: 10),
-                            TextField(
-                              controller: descriptionCtrl,
-                              decoration: const InputDecoration(labelText: 'Room Description', contentPadding: EdgeInsets.zero),
-                              maxLines: 2,
-                            ),
-                            
-                            const SizedBox(height: 16),
-                            const Text('Configure Pricing Models (₹)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
-                            const SizedBox(height: 8),
-                            
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: priceCtrl,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(labelText: 'Base Price / Night', contentPadding: EdgeInsets.zero),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextField(
-                                    controller: extraBedCtrl,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(labelText: 'Extra Bed Cost', contentPadding: EdgeInsets.zero),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: weekendCtrl,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(labelText: 'Weekend Surcharge', contentPadding: EdgeInsets.zero),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextField(
-                                    controller: seasonCtrl,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(labelText: 'Season Surcharge', contentPadding: EdgeInsets.zero),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: holidayCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Holiday Surcharge', contentPadding: EdgeInsets.zero),
-                            ),
-
-                            const SizedBox(height: 20),
-                            const Text('Room Custom Amenities', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
-                            const SizedBox(height: 6),
-                            
-                            // List current configured amenities
-                            Column(
-                              children: dialogAmenities.map((amenity) {
-                                return Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('- ${amenity['name']} (₹${amenity['price']})', style: const TextStyle(fontSize: 11)),
-                                    IconButton(
-                                      icon: const Icon(Icons.remove_circle_outline, size: 14, color: AppColors.error),
-                                      onPressed: () {
-                                        setDialogState(() {
-                                          dialogAmenities.remove(amenity);
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 4),
-                            
-                            // Add new custom amenity form inline
-                            Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    controller: nameNewAmenityCtrl,
-                                    decoration: const InputDecoration(hintText: 'New amenity name...', contentPadding: EdgeInsets.zero),
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextField(
-                                    controller: priceNewAmenityCtrl,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(hintText: 'Cost (₹)', contentPadding: EdgeInsets.zero),
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.add_box, color: AppColors.primary),
-                                  onPressed: () {
-                                    if (nameNewAmenityCtrl.text.isNotEmpty && priceNewAmenityCtrl.text.isNotEmpty) {
-                                      setDialogState(() {
-                                        dialogAmenities.add({
-                                          'name': nameNewAmenityCtrl.text,
-                                          'price': double.tryParse(priceNewAmenityCtrl.text) ?? 10.0,
-                                        });
-                                        nameNewAmenityCtrl.clear();
-                                        priceNewAmenityCtrl.clear();
-                                      });
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
-                            Text(
-                              'Room Photo Gallery (${uploadedImages.length}/5)',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline),
-                            ),
-                            const SizedBox(height: 8),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: List.generate(5, (index) {
-                                  final hasImage = index < uploadedImages.length;
-                                  final isNextSlot = index == uploadedImages.length;
-
-                                  if (hasImage) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8.0),
-                                      child: Stack(
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(10),
-                                            child: SizedBox(
-                                              width: 60,
-                                              height: 60,
-                                              child: (kIsWeb || uploadedImages[index].startsWith('http') || uploadedImages[index].startsWith('blob:'))
-                                                  ? Image.network(
-                                                      uploadedImages[index], 
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) => Container(
-                                                        color: AppColors.surfaceContainerHigh,
-                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
-                                                      ),
-                                                    )
-                                                  : Image.file(
-                                                      File(uploadedImages[index]), 
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) => Container(
-                                                        color: AppColors.surfaceContainerHigh,
-                                                        child: const Icon(Icons.broken_image_outlined, size: 24, color: AppColors.outline),
-                                                      ),
-                                                    ),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            top: 2,
-                                            right: 2,
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                setDialogState(() {
-                                                  uploadedImages.removeAt(index);
-                                                });
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.all(2),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.black54,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(Icons.close, size: 10, color: Colors.white),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  } else if (isNextSlot) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8.0),
-                                      child: GestureDetector(
-                                        onTap: () => pickImage(setDialogState, uploadedImages),
-                                        child: Container(
-                                          width: 60,
-                                          height: 60,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.surfaceContainerHigh,
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: AppColors.outlineVariant, width: 1.2),
-                                          ),
-                                          child: const Icon(Icons.add_a_photo_outlined, size: 18, color: AppColors.outline),
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8.0),
-                                      child: Container(
-                                        width: 60,
-                                        height: 60,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.surfaceContainerLow.withValues(alpha: 0.4),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: const Icon(Icons.image_outlined, size: 18, color: Colors.grey),
-                                      ),
-                                    );
-                                  }
-                                }),
-                              ),
-                            ),
-                          ],
-                        ),
+                    TextFormField(
+                      controller: typeCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Room Type (e.g. Deluxe Suite)',
+                        prefixIcon: const Icon(Icons.bed),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          onPressed: () {
-                            if (roomNumCtrl.text.isEmpty) return;
+                    TextFormField(
+                      controller: priceCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Base Price / Night (₹)',
+                        prefixIcon: const Icon(Icons.currency_rupee),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: descriptionCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Description (Optional)',
+                        prefixIcon: const Icon(Icons.description_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        if (roomNumCtrl.text.isEmpty || typeCtrl.text.isEmpty || priceCtrl.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please fill all required fields')),
+                          );
+                          return;
+                        }
 
-                            final finalImages = uploadedImages.isEmpty
-                                ? ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80']
-                                : uploadedImages;
+                        final newRoom = RoomModel(
+                          id: 'room_${DateTime.now().millisecondsSinceEpoch}',
+                          roomNumber: roomNumCtrl.text,
+                          type: typeCtrl.text,
+                          price: double.tryParse(priceCtrl.text) ?? 1000.0,
+                          seasonPrice: 300.0, 
+                          weekendPrice: 150.0, 
+                          holidayPrice: 400.0, 
+                          extraBedPrice: 100.0, 
+                          amenities: [
+                            {'name': 'Free WiFi', 'price': 0.0},
+                            {'name': 'Air Conditioning', 'price': 0.0}
+                          ],
+                          status: initialStatus,
+                          resortId: widget.resort.id,
+                          images: ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80'],
+                          description: descriptionCtrl.text,
+                        );
 
-                            final newRoom = RoomModel(
-                              id: 'room_${DateTime.now().millisecondsSinceEpoch}',
-                              roomNumber: roomNumCtrl.text,
-                              type: typeCtrl.text,
-                              price: double.tryParse(priceCtrl.text) ?? 100.0,
-                              seasonPrice: double.tryParse(seasonCtrl.text) ?? 30.0,
-                              weekendPrice: double.tryParse(weekendCtrl.text) ?? 15.0,
-                              holidayPrice: double.tryParse(holidayCtrl.text) ?? 40.0,
-                              extraBedPrice: double.tryParse(extraBedCtrl.text) ?? 10.0,
-                              amenities: List.from(dialogAmenities),
-                              status: initialStatus,
-                              resortId: widget.resort.id,
-                              images: finalImages,
-                              description: descriptionCtrl.text,
-                            );
-
-                            ref.read(pmsProvider.notifier).addRoom(newRoom);
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Added Room ${roomNumCtrl.text} to ${widget.resort.name} successfully with configured rates!')),
-                            );
-                          },
-                          child: const Text('Add Room'),
-                        ),
-                      ],
+                        ref.read(pmsProvider.notifier).addRoom(newRoom);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Added Room ${roomNumCtrl.text} to ${widget.resort.name} successfully!')),
+                        );
+                      },
+                      child: const Text('Add Room', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

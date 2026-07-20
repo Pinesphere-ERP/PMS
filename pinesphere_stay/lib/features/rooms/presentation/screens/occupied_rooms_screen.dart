@@ -4,88 +4,24 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 
-class OccupiedRoom {
-  final String roomNumber;
-  final String cottageType;
-  final String guestName;
-  final String bookingId;
-  final String mobileNumber;
-  final String checkInDate;
-  final String checkOutDate;
-  final String nightsStayed;
-  final String nightsRemaining;
-  final String guestsCount;
-  final String occupancyStatus;
-  final String paymentStatus;
-  final String amountDue;
-  final String bookingSource;
-  final String housekeepingStatus;
-  final String specialRequests;
-  final String lastRoomService;
-  final String currentBill;
-  final String idVerification;
-  final String assignedStaff;
-  final String remarks;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/pms_provider.dart';
 
-  OccupiedRoom({
-    required this.roomNumber,
-    required this.cottageType,
-    required this.guestName,
-    required this.bookingId,
-    required this.mobileNumber,
-    required this.checkInDate,
-    required this.checkOutDate,
-    required this.nightsStayed,
-    required this.nightsRemaining,
-    required this.guestsCount,
-    required this.occupancyStatus,
-    required this.paymentStatus,
-    required this.amountDue,
-    required this.bookingSource,
-    required this.housekeepingStatus,
-    required this.specialRequests,
-    required this.lastRoomService,
-    required this.currentBill,
-    required this.idVerification,
-    required this.assignedStaff,
-    required this.remarks,
-  });
-}
-
-class OccupiedRoomsScreen extends StatefulWidget {
+class OccupiedRoomsScreen extends ConsumerStatefulWidget {
   const OccupiedRoomsScreen({super.key});
 
   @override
-  State<OccupiedRoomsScreen> createState() => _OccupiedRoomsScreenState();
+  ConsumerState<OccupiedRoomsScreen> createState() => _OccupiedRoomsScreenState();
 }
 
-class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
-  final List<OccupiedRoom> _rooms = [
-    OccupiedRoom(
-      roomNumber: '302', cottageType: 'Deluxe Suite', guestName: 'John Doe', bookingId: 'BKG-10294', mobileNumber: '+1 555-0198',
-      checkInDate: 'Oct 23, 2024', checkOutDate: 'Oct 26, 2024', nightsStayed: '1', nightsRemaining: '2', guestsCount: '2',
-      occupancyStatus: 'Occupied', paymentStatus: 'Paid', amountDue: '\$0.00', bookingSource: 'Website',
-      housekeepingStatus: 'Cleaned', specialRequests: 'Extra pillows', lastRoomService: '10:30 AM', currentBill: '\$0.00',
-      idVerification: 'Verified', assignedStaff: 'Sarah (Housekeeping)', remarks: 'VIP Guest',
-    ),
-    OccupiedRoom(
-      roomNumber: '105', cottageType: 'Twin Room', guestName: 'Alice Smith', bookingId: 'BKG-10295', mobileNumber: '+44 7700 900077',
-      checkInDate: 'Oct 24, 2024', checkOutDate: 'Oct 25, 2024', nightsStayed: '0', nightsRemaining: '1', guestsCount: '1',
-      occupancyStatus: 'Occupied', paymentStatus: 'Pending', amountDue: '\$85.00', bookingSource: 'Booking.com',
-      housekeepingStatus: 'Requested', specialRequests: 'Late check-out', lastRoomService: '-', currentBill: '\$105.00',
-      idVerification: 'Pending', assignedStaff: 'Mike', remarks: '-',
-    ),
-    OccupiedRoom(
-      roomNumber: '212', cottageType: 'Standard King', guestName: 'Bob Johnson', bookingId: 'BKG-10296', mobileNumber: '+1 555-0102',
-      checkInDate: 'Oct 21, 2024', checkOutDate: 'Oct 25, 2024', nightsStayed: '3', nightsRemaining: '1', guestsCount: '3',
-      occupancyStatus: 'Occupied', paymentStatus: 'Partial', amountDue: '\$45.00', bookingSource: 'Airbnb',
-      housekeepingStatus: 'Do Not Disturb', specialRequests: 'Extra bed', lastRoomService: 'Yesterday 4:00 PM', currentBill: '\$120.00',
-      idVerification: 'Verified', assignedStaff: 'Sarah', remarks: 'Check AC',
-    ),
-  ];
-
+class _OccupiedRoomsScreenState extends ConsumerState<OccupiedRoomsScreen> {
   @override
   Widget build(BuildContext context) {
+    final pmsState = ref.watch(pmsProvider);
+
+    // Active bookings
+    final activeBookings = pmsState.bookings.where((b) => b.status == 'Active').toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -113,16 +49,34 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _rooms.length,
-                  itemBuilder: (context, index) {
-                    final room = _rooms[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: _buildRoomCard(room),
-                    );
-                  },
-                ),
+                child: activeBookings.isEmpty 
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.hotel, size: 64, color: AppColors.outline),
+                          SizedBox(height: 16),
+                          Text(
+                            'No occupied rooms',
+                            style: TextStyle(
+                              color: AppColors.outline,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: activeBookings.length,
+                      itemBuilder: (context, index) {
+                        final booking = activeBookings[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: _buildRoomCard(booking),
+                        );
+                      },
+                    ),
               ),
             ],
           ),
@@ -132,9 +86,15 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
     );
   }
 
-  Widget _buildRoomCard(OccupiedRoom room) {
+  Widget _buildRoomCard(BookingModel booking) {
+    final now = DateTime.now();
+    final checkOut = booking.checkOutDate;
+    final nightsRemaining = checkOut.difference(now).inDays > 0 ? checkOut.difference(now).inDays : 0;
+    
+    final paymentStatus = booking.isPaid ? 'Paid' : (booking.depositPaid > 0 ? 'Partial' : 'Pending');
+
     return PineCard(
-      onTap: () => _showRoomDetails(room),
+      onTap: () => _showRoomDetails(booking),
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
@@ -155,7 +115,7 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  room.guestName,
+                  booking.guestName,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.onSurface,
                     fontWeight: FontWeight.bold,
@@ -163,7 +123,7 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Room: ${room.roomNumber} | ID: ${room.bookingId}',
+                  'Room: ${booking.roomNumber} | ID: ${booking.id}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -173,8 +133,8 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    _buildStatusChip(room.housekeepingStatus),
-                    _buildStatusChip(room.paymentStatus),
+                    _buildStatusChip('Occupied'),
+                    _buildStatusChip(paymentStatus),
                   ],
                 ),
               ],
@@ -184,7 +144,7 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${room.nightsRemaining} Nights',
+                '$nightsRemaining Nights',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
@@ -204,7 +164,13 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
     );
   }
 
-  void _showRoomDetails(OccupiedRoom room) {
+  void _showRoomDetails(BookingModel booking) {
+    final checkInStr = booking.checkInDate.toString().substring(0, 10);
+    final checkOutStr = booking.checkOutDate.toString().substring(0, 10);
+    final paymentStatus = booking.isPaid ? 'Paid' : (booking.depositPaid > 0 ? 'Partial' : 'Pending');
+    final amountDue = booking.totalSum - booking.depositPaid;
+    final amountDueStr = '\$${amountDue.toStringAsFixed(2)}';
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -236,47 +202,37 @@ class _OccupiedRoomsScreenState extends State<OccupiedRoomsScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        _buildStatusChip(room.occupancyStatus),
+                        _buildStatusChip('Occupied'),
                       ],
                     ),
                     const SizedBox(height: 24),
-                    _buildDetailRow(Icons.person, 'Guest Name', room.guestName),
+                    _buildDetailRow(Icons.person, 'Guest Name', booking.guestName),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.phone, 'Mobile Number', room.mobileNumber),
+                    _buildDetailRow(Icons.phone, 'Mobile Number', booking.guestPhone),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.meeting_room, 'Room / Cottage', '${room.roomNumber} (${room.cottageType})'),
+                    _buildDetailRow(Icons.meeting_room, 'Room', booking.roomNumber),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.tag, 'Booking ID', room.bookingId),
+                    _buildDetailRow(Icons.tag, 'Booking ID', booking.id),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.login, 'Check-in Date', room.checkInDate),
+                    _buildDetailRow(Icons.login, 'Check-in Date', checkInStr),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.logout, 'Check-out Date', room.checkOutDate),
+                    _buildDetailRow(Icons.logout, 'Check-out Date', checkOutStr),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.bedtime, 'Nights', '${room.nightsStayed} Stayed, ${room.nightsRemaining} Remaining'),
+                    _buildDetailRow(Icons.group, 'Number of Guests', 'Standard'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.group, 'Number of Guests', room.guestsCount),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.source, 'Booking Source', room.bookingSource),
+                    _buildDetailRow(Icons.source, 'Booking Source', booking.bookingSource),
                     const Divider(height: 32),
                     Text('Billing & Services', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primary)),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.payment, 'Payment Status', room.paymentStatus),
+                    _buildDetailRow(Icons.payment, 'Payment Status', paymentStatus),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.money_off, 'Amount Due', room.amountDue, isAlert: room.amountDue != '\$0.00'),
+                    _buildDetailRow(Icons.money_off, 'Amount Due', amountDueStr, isAlert: amountDue > 0),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.receipt, 'Current Bill', room.currentBill),
+                    _buildDetailRow(Icons.receipt, 'Current Bill', '\$${booking.totalSum.toStringAsFixed(2)}'),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.cleaning_services, 'Housekeeping', room.housekeepingStatus),
+                    _buildDetailRow(Icons.cleaning_services, 'Housekeeping', 'Cleaned'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.room_service, 'Last Room Service', room.lastRoomService),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.star, 'Special Requests', room.specialRequests),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.assignment_ind, 'ID Verification', room.idVerification),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.support_agent, 'Assigned Staff', room.assignedStaff),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(Icons.notes, 'Remarks', room.remarks),
+                    _buildDetailRow(Icons.assignment_ind, 'ID Verification', booking.guestIdProof),
                     const SizedBox(height: 32),
                   ],
                 ),

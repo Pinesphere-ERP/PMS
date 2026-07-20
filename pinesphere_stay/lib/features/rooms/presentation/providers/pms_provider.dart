@@ -797,11 +797,21 @@ class PmsNotifier extends Notifier<PmsState> {
   Future<void> addResort(ResortModel resort) async {
     try {
       final dio = ref.read(dioClientProvider);
+      
+      String businessName = '${resort.name} Business';
+      String description = resort.description;
+      
+      if (resort.description.contains('|||')) {
+        final parts = resort.description.split('|||');
+        businessName = parts[0];
+        description = parts.length > 1 ? parts[1] : '';
+      }
+
       final response = await dio.post('/properties', data: {
         'owner_name': 'Default Owner',
         'owner_mobile': '9999999999',
         'owner_email': 'owner@example.com',
-        'business_name': '${resort.name} Business',
+        'business_name': businessName,
         'property_name': resort.name,
         'property_type': 'Resort',
         'star_category': 5,
@@ -809,7 +819,7 @@ class PmsNotifier extends Notifier<PmsState> {
         'total_floors': 3,
         'total_rooms': 10,
         'description': jsonEncode({
-          'description': resort.description,
+          'description': description,
           'location': resort.location,
           'image': resort.image,
         }),

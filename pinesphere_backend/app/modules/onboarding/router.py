@@ -118,3 +118,32 @@ async def register_owner(payload: OwnerRegistrationRequest, background_tasks: Ba
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+@router.post("/seed_roles")
+async def seed_roles(db: AsyncSession = Depends(get_db)):
+    roles = [
+        {"role_code": "FRONT_DESK", "role_name": "Front Desk", "description": "Handles guest check-ins and reservations"},
+        {"role_code": "HOUSEKEEPING", "role_name": "Housekeeping", "description": "Manages room cleaning and status"},
+        {"role_code": "MAINTENANCE", "role_name": "Maintenance", "description": "Handles repair and maintenance tasks"},
+        {"role_code": "RESTAURANT", "role_name": "Restaurant Staff", "description": "Manages dining and room service orders"},
+        {"role_code": "MANAGER", "role_name": "Property Manager", "description": "Oversees daily operations"},
+        {"role_code": "ACCOUNTANT", "role_name": "Accountant", "description": "Manages billing, invoicing, and finances"},
+        {"role_code": "SECURITY", "role_name": "Security", "description": "Monitors property security and visitor logs"},
+        {"role_code": "VALET", "role_name": "Valet", "description": "Manages guest vehicles and parking"}
+    ]
+    created = 0
+    for r in roles:
+        stmt = select(Role).where(Role.role_code == r["role_code"])
+        result = await db.execute(stmt)
+        if not result.scalars().first():
+            role = Role(
+                id=uuid.uuid4(),
+                role_code=r["role_code"],
+                role_name=r["role_name"],
+                is_system_role=True,
+                description=r["description"]
+            )
+            db.add(role)
+            created += 1
+    await db.commit()
+    return {"message": f"Seeded {created} roles"}

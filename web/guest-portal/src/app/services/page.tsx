@@ -24,6 +24,7 @@ import AppContainer from "@/components/ui/AppContainer";
 import AppCard from "@/components/ui/AppCard";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { guest } from "@/data/guest";
+import { fetchAPI } from "@/services/api";
 
 interface ServiceItem {
   id: string;
@@ -135,7 +136,10 @@ export default function ServicesPage() {
     }
   }, []);
 
-  const handleRequest = (serviceId: string) => {
+  const handleRequest = async (serviceId: string) => {
+    const service = SERVICES_LIST.find(s => s.id === serviceId);
+    if (!service) return;
+
     // Optimistic sending state
     const newRequests = {
       ...requests,
@@ -145,10 +149,16 @@ export default function ServicesPage() {
       },
     };
     setRequests(newRequests);
-    localStorage.setItem("guestServicesRequests", JSON.stringify(newRequests));
 
-    // Simulate network delay
-    setTimeout(() => {
+    try {
+      await fetchAPI('/portal/services', {
+        method: 'POST',
+        body: JSON.stringify({
+          service_type: service.category === 'dining' ? 'room_service' : service.category,
+          description: service.name,
+        }),
+      });
+
       const updatedRequests = {
         ...requests,
         [serviceId]: {
@@ -158,7 +168,13 @@ export default function ServicesPage() {
       };
       setRequests(updatedRequests);
       localStorage.setItem("guestServicesRequests", JSON.stringify(updatedRequests));
-    }, 1500);
+    } catch (err) {
+      console.error("Service request failed", err);
+      // Revert optimistic state on failure
+      const reverted = { ...requests };
+      delete reverted[serviceId];
+      setRequests(reverted);
+    }
   };
 
   const renderServiceSection = (category: "housekeeping" | "dining" | "frontdesk", title: string, subtitle: string) => {

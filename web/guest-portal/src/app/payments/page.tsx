@@ -21,6 +21,7 @@ import AppCard from "@/components/ui/AppCard";
 import AppButton from "@/components/ui/AppButton";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { guest } from "@/data/guest";
+import { fetchAPI } from "@/services/api";
 
 export default function PaymentsPage() {
   const [guestName, setGuestName] = useState(guest.guestName);
@@ -51,14 +52,26 @@ export default function PaymentsPage() {
     }
   }, []);
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     setPaying(true);
-    setTimeout(() => {
-      setPaying(false);
+    try {
+      // Use mock Razorpay payload since we don't have keys in this environment
+      await fetchAPI('/portal/pay', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: balance,
+          mode: 'razorpay',
+        }),
+      });
       setPaidSuccess(true);
       setBalance(0);
       localStorage.setItem("paymentBalance", "0");
-    }, 2000);
+    } catch (err: any) {
+      console.error("Payment failed", err);
+      alert("Payment failed: " + (err.message || "Unknown error"));
+    } finally {
+      setPaying(false);
+    }
   };
 
   const handleDownloadInvoice = () => {

@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 
 from app.infra.models import Device, AuditLog, User, Property
 from app.modules.audit.logger import AuditLogger
-from app.modules.subscriptions.models import Subscription, SubscriptionPlan, License
+from app.infra.models import Subscription
 from app.modules.devices.schemas import (
     DeviceRegisterRequest, DeviceActivateRequest, DeviceActivateResponse,
     DeviceActionRequest, DeviceTransferRequest, DeviceSyncCheckinRequest,
@@ -107,10 +107,10 @@ async def activate_device(db: AsyncSession, device_id: uuid.UUID) -> DeviceActiv
         raise HTTPException(status_code=400, detail=f"Device cannot be activated. Current status is '{device.status}'. Must be approved first.")
 
     # Determine max devices from property subscription or default
-    sub_stmt = select(SubscriptionPlan).join(Subscription, Subscription.plan_id == SubscriptionPlan.id).where(Subscription.property_id == device.property_id)
+    sub_stmt = select(Subscription).where(Subscription.property_id == device.property_id)
     sub_res = await db.execute(sub_stmt)
-    plan = sub_res.scalar_one_or_none()
-    max_devices = plan.device_limit if plan else 5
+    sub = sub_res.scalar_one_or_none()
+    max_devices = sub.device_limit if sub else 5
 
     expiry_date = (datetime.utcnow() + timedelta(days=365)).strftime("%Y-%m-%d")
     token_payload, signature, license_code = generate_signed_token(
@@ -219,10 +219,10 @@ async def perform_device_action(
         cnt_res = await db.execute(active_cnt_stmt)
         active_count = cnt_res.scalar() or 0
 
-        sub_stmt = select(SubscriptionPlan).join(Subscription, Subscription.plan_id == SubscriptionPlan.id).where(Subscription.property_id == device.property_id)
+        sub_stmt = select(Subscription).where(Subscription.property_id == device.property_id)
         sub_res = await db.execute(sub_stmt)
-        plan = sub_res.scalar_one_or_none()
-        max_devices = plan.device_limit if plan else 5
+        sub = sub_res.scalar_one_or_none()
+        max_devices = sub.device_limit if sub else 5
 
         if active_count >= max_devices:
             raise HTTPException(

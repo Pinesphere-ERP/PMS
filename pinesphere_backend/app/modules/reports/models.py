@@ -22,7 +22,7 @@ class DailyKPISnapshot(Base, TimestampMixin):
         PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     property_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("public.properties.property_id"), nullable=False, index=True
+        ForeignKey("properties.property_id"), nullable=False, index=True
     )
     snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
 
@@ -44,7 +44,7 @@ class ReportTemplate(Base, TimestampMixin):
         PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     property_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("public.properties.property_id"), nullable=True, index=True
+        ForeignKey("properties.property_id"), nullable=True, index=True
     )
     report_name: Mapped[str] = mapped_column(String(150), nullable=False)
     report_type: Mapped[str] = mapped_column(String(50), nullable=False)

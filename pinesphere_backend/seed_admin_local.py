@@ -12,14 +12,14 @@ import os
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./pinesphere.db")
 
 async def main():
-    engine = create_async_engine(DATABASE_URL)
+    engine = create_async_engine(DATABASE_URL, execution_options={"schema_translate_map": {"public": None}})
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     
     async with async_session() as session:
         async with session.begin():
             try:
                 owner_id = uuid.uuid4()
-                owner = Owner(owner_id=owner_id, full_name="Admin User", mobile_number="1234567890", email="admin@pinesphere.com")
+                owner = Owner(owner_id=owner_id, full_name="Admin User", mobile_number="1234567890", email="owner@test.com")
                 session.add(owner)
                 await session.flush()
                 
@@ -39,11 +39,11 @@ async def main():
                 await session.flush()
                 
                 user_id = uuid.uuid4()
-                user = User(id=user_id, property_id=property_id, role_id=role_id, name="Admin User", email="admin@pinesphere.com", password_hash=get_password_hash("password123"), status="ACTIVE", failed_login_attempts=0, is_primary_owner=True)
+                user = User(id=user_id, property_id=property_id, role_id=role_id, name="Admin User", email="owner@test.com", password_hash=get_password_hash("password123"), status="ACTIVE", failed_login_attempts=0, is_primary_owner=True)
                 session.add(user)
                 await session.flush()
                 
-                print("SUCCESS: User admin@pinesphere.com created in local SQLite DB!")
+                print("SUCCESS: User owner@test.com created in local SQLite DB!")
             except Exception as e:
                 print("Error:", e)
                 raise e

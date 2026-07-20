@@ -24,7 +24,7 @@ from app.infra.database import Base, TimestampMixin, SyncMixin
 
 class Owner(Base, TimestampMixin):
     __tablename__ = "owners"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     owner_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
     designation: Mapped[Optional[str]] = mapped_column(String(50))
@@ -42,9 +42,9 @@ class Owner(Base, TimestampMixin):
 
 class Business(Base, TimestampMixin):
     __tablename__ = "businesses"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     business_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.owners.owner_id"), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("owners.owner_id"), nullable=False)
     business_type: Mapped[Optional[str]] = mapped_column(String(30))
     business_name: Mapped[str] = mapped_column(String(200), nullable=False)
     business_reg_number: Mapped[Optional[str]] = mapped_column(String(50))
@@ -57,10 +57,10 @@ class Business(Base, TimestampMixin):
 
 class Property(Base, TimestampMixin, SyncMixin):
     __tablename__ = "properties"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     property_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.businesses.business_id"), nullable=False)
-    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.owners.owner_id"), nullable=False)
+    business_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("businesses.business_id"), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("owners.owner_id"), nullable=False)
     property_name: Mapped[str] = mapped_column(String(200), nullable=False)
     property_type: Mapped[Optional[str]] = mapped_column(String(30))
     star_category: Mapped[Optional[int]] = mapped_column(SmallInteger)
@@ -86,7 +86,7 @@ class Role(Base, TimestampMixin):
         {'extend_existing': True}
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id"))
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
     role_code: Mapped[str] = mapped_column(String(40), nullable=False)
     role_name: Mapped[str] = mapped_column(String(80), nullable=False)
     is_system_role: Mapped[bool] = mapped_column(default=True)
@@ -95,7 +95,7 @@ class Role(Base, TimestampMixin):
 
 class Permission(Base):
     __tablename__ = "permissions"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     permission_code: Mapped[str] = mapped_column(String(60), nullable=False, unique=True)
     module_name: Mapped[str] = mapped_column(String(60), nullable=False)
@@ -110,7 +110,7 @@ class RolePermission(Base):
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
-    permission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.permissions.id", ondelete="CASCADE"), nullable=False)
+    permission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("permissions.id", ondelete="CASCADE"), nullable=False)
     access_level: Mapped[str] = mapped_column(String(20), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
@@ -125,7 +125,7 @@ class User(Base, TimestampMixin, SyncMixin):
         {'extend_existing': True}
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id"))
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"))
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     mobile_number: Mapped[Optional[str]] = mapped_column(String(15))
@@ -162,7 +162,7 @@ class UserPropertyAccess(Base, TimestampMixin):
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     
@@ -171,10 +171,10 @@ class UserPropertyAccess(Base, TimestampMixin):
 
 class Device(Base, TimestampMixin):
     __tablename__ = "devices"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     device_uid: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     primary_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     device_name: Mapped[Optional[str]] = mapped_column(String(80))
     os_type: Mapped[Optional[str]] = mapped_column(String(20), default='android')
@@ -189,7 +189,7 @@ class UserDevice(Base):
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.devices.id", ondelete="CASCADE"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), nullable=False)
     is_primary_device: Mapped[bool] = mapped_column(default=True, nullable=False)
     linked_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE", nullable=False)
@@ -197,10 +197,10 @@ class UserDevice(Base):
 
 class UserSession(Base):
     __tablename__ = "user_sessions"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    device_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.devices.id"), nullable=True)
+    device_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("devices.id"), nullable=True)
     session_token: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
     is_offline_session: Mapped[bool] = mapped_column(default=False, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
@@ -211,9 +211,9 @@ class UserSession(Base):
 
 class StaffInvitation(Base):
     __tablename__ = "staff_invitations"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     role_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("roles.id"), nullable=False)
     invited_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     mobile_number: Mapped[str] = mapped_column(String(15), nullable=False)
@@ -225,7 +225,7 @@ class StaffInvitation(Base):
 
 class CredentialResetRequest(Base):
     __tablename__ = "credential_reset_requests"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     reset_type: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -238,7 +238,7 @@ class CredentialResetRequest(Base):
 
 class UserSyncLog(Base):
     __tablename__ = "user_sync_log"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     entity_type: Mapped[str] = mapped_column(String(40), nullable=False)
     entity_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
@@ -252,7 +252,7 @@ class UserSyncLog(Base):
 class RoomCategory(Base, TimestampMixin):
     __tablename__ = "room_categories"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     room_category_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_name: Mapped[Optional[str]] = mapped_column(String(100))
     number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
@@ -263,7 +263,7 @@ class RoomCategory(Base, TimestampMixin):
 class Room(Base, TimestampMixin, SyncMixin):
     __tablename__ = "rooms"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_categories.room_category_id"), nullable=False)
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -277,7 +277,7 @@ class Room(Base, TimestampMixin, SyncMixin):
 class Guest(Base, TimestampMixin, SyncMixin):
     __tablename__ = "guests"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     guest_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
     mobile: Mapped[Optional[str]] = mapped_column(String(15))
@@ -290,7 +290,7 @@ class Booking(Base, TimestampMixin, SyncMixin):
         UniqueConstraint('booking_reference', name='uq_bookings_reference'),
         {'extend_existing': True},
     )
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     booking_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     guest_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("guests.guest_id"), nullable=False)
@@ -320,7 +320,7 @@ class Booking(Base, TimestampMixin, SyncMixin):
 class CheckIn(Base, TimestampMixin, SyncMixin):
     __tablename__ = "check_ins"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     checkin_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id"), nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
@@ -337,7 +337,7 @@ class CheckIn(Base, TimestampMixin, SyncMixin):
 class CheckOut(Base, TimestampMixin, SyncMixin):
     __tablename__ = "check_outs"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     checkout_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     checkin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("check_ins.checkin_id"), nullable=False)
     booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id"), nullable=False)
@@ -375,7 +375,7 @@ class AuditLog(Base):
         {'extend_existing': True},
     )
     log_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id"), nullable=True)
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"), nullable=True)
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     device_id: Mapped[Optional[str]] = mapped_column(String(100))
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)
@@ -407,7 +407,7 @@ class RoomAssignment(Base, TimestampMixin):
 class HousekeepingTask(Base, TimestampMixin, SyncMixin):
     __tablename__ = "housekeeping_tasks"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     task_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     assigned_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
@@ -421,7 +421,7 @@ class HousekeepingTask(Base, TimestampMixin, SyncMixin):
 class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
     __tablename__ = "maintenance_tickets"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     ticket_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     reported_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
@@ -436,7 +436,7 @@ class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
 class LostAndFound(Base, TimestampMixin):
     __tablename__ = "lost_and_found"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     item_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -451,7 +451,7 @@ class Invoice(Base, TimestampMixin):
     """Guest billing invoice (property-level, for check-out folio)."""
     __tablename__ = "invoices"
     __table_args__ = {'extend_existing': True}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     invoice_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))
     guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id"))
@@ -489,8 +489,8 @@ class Payment(Base, TimestampMixin, SyncMixin):
 class SubscriptionPlan(Base, TimestampMixin):
     """Available subscription plans on the platform."""
     __tablename__ = "subscription_plans"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    __table_args__ = {'extend_existing': True}
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     plan_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     features: Mapped[Optional[str]] = mapped_column(Text)
@@ -501,9 +501,9 @@ class SubscriptionPlan(Base, TimestampMixin):
 class Subscription(Base, TimestampMixin):
     """Admin-level property subscription (platform plan)."""
     __tablename__ = "subscriptions"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     plan: Mapped[str] = mapped_column(String(50), nullable=False)
     billing_cycle: Mapped[str] = mapped_column(String(20), nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -518,11 +518,11 @@ class Subscription(Base, TimestampMixin):
 class SubscriptionTransaction(Base, TimestampMixin):
     """Admin-level payment record (Pinesphere platform subscription payment)."""
     __tablename__ = "subscription_transactions"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     payment_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("invoices.invoice_id"))
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     method: Mapped[Optional[str]] = mapped_column(String(50))
     status: Mapped[str] = mapped_column(String(20), default="Processing")
@@ -542,9 +542,9 @@ class PaymentTransaction(Base, TimestampMixin):
 class PendingDue(Base, TimestampMixin):
     """Tracks overdue/unpaid subscription amounts."""
     __tablename__ = "pending_dues"
-    __table_args__ = {'extend_existing': True, 'schema': 'public'}
+    __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     plan: Mapped[str] = mapped_column(String(50), nullable=False)
     due_date: Mapped[date] = mapped_column(Date, nullable=False)
     amount_due: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
@@ -580,7 +580,7 @@ class Task(Base, TimestampMixin, SyncMixin):
     )
     task_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # property_id is REQUIRED for isolation — every task must belong to exactly one property
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     task_type: Mapped[str] = mapped_column(String(50), nullable=False) # cleaning, maintenance, food
     status: Mapped[str] = mapped_column(String(20), default='pending') # pending, accepted, in_progress, completed, closed
     priority: Mapped[str] = mapped_column(String(20), default='normal') # normal, high, emergency
@@ -646,7 +646,7 @@ class PricingRule(Base, TimestampMixin):
         {'extend_existing': True},
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     rule_type: Mapped[str] = mapped_column(String(30), nullable=False)
     condition_json: Mapped[Optional[dict]] = mapped_column(JSONB)
@@ -670,7 +670,7 @@ class SecurityIncident(Base, TimestampMixin):
         {'extend_existing': True},
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id"), nullable=True)
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id"), nullable=True)
     incident_type: Mapped[str] = mapped_column(String(50), nullable=False)
     severity: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -699,7 +699,7 @@ class SecurityCamera(Base, TimestampMixin):
     __tablename__ = "security_cameras"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     location: Mapped[str] = mapped_column(String(255), nullable=False)
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
@@ -712,7 +712,7 @@ class Watchlist(Base, TimestampMixin):
     __tablename__ = "watchlist"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=True)
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True)
     person_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     id_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     reason: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -729,7 +729,7 @@ class GuestNationalityDocument(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guest_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("guests.guest_id", ondelete="CASCADE"), nullable=False)
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"), nullable=True)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     nationality: Mapped[str] = mapped_column(String(60), nullable=False)
     passport_number: Mapped[str] = mapped_column(String(30), nullable=False)
     passport_expiry: Mapped[Optional[date]] = mapped_column(Date)
@@ -752,7 +752,7 @@ class FormCRecord(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     guest_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("guests.guest_id"), nullable=False)
     booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     nationality_doc_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guest_nationality_documents.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="generated")
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -782,7 +782,7 @@ class BrokerCommissionRule(Base, TimestampMixin):
     __tablename__ = "broker_commission_rules"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     broker_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     rate_percent: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     effective_from: Mapped[date] = mapped_column(Date, nullable=False)
@@ -800,7 +800,7 @@ class BrokerWallet(Base, TimestampMixin):
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     broker_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id", ondelete="CASCADE"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     balance: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(5), nullable=False, default="INR")
 
@@ -825,7 +825,7 @@ class CommissionPayout(Base, TimestampMixin):
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     broker_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     mode: Mapped[str] = mapped_column(String(30), nullable=False)
     reference: Mapped[Optional[str]] = mapped_column(String(100))
@@ -845,7 +845,7 @@ class FolioLineItem(Base, TimestampMixin):
     )
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id", ondelete="CASCADE"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     category: Mapped[str] = mapped_column(String(30), nullable=False)
     description: Mapped[str] = mapped_column(String(200), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
@@ -864,7 +864,7 @@ class VisitorLog(Base, TimestampMixin):
     __tablename__ = "visitor_logs"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     visitor_name: Mapped[str] = mapped_column(String(150), nullable=False)
     visitor_mobile: Mapped[Optional[str]] = mapped_column(String(15))
     host_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -883,7 +883,7 @@ class VehicleLog(Base, TimestampMixin):
     __tablename__ = "vehicle_logs"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     plate_number: Mapped[str] = mapped_column(String(20), nullable=False)
     vehicle_type: Mapped[Optional[str]] = mapped_column(String(30))
     driver_name: Mapped[Optional[str]] = mapped_column(String(150))
@@ -898,7 +898,7 @@ class PropertyIncidentReport(Base):
     __tablename__ = "property_incident_reports"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("public.properties.property_id"), nullable=False)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     reported_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     incident_type: Mapped[str] = mapped_column(String(50), nullable=False)
     location: Mapped[Optional[str]] = mapped_column(String(100))

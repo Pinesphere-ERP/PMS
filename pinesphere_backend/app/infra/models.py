@@ -341,14 +341,22 @@ class UserSyncLog(Base):
     synced_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 # ── E. Rooms ──────────────────────────────────────────────────────────────────
 
-class RoomCategory(Base, TimestampMixin):
-    __tablename__ = "room_categories"
+class RoomType(Base, TimestampMixin):
+    __tablename__ = "room_types"
     __table_args__ = {'extend_existing': True}
-    room_category_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
-    room_name: Mapped[Optional[str]] = mapped_column(String(100))
-    number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
-    base_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[Optional[str]] = mapped_column(String(100))
+    category: Mapped[Optional[str]] = mapped_column(String(50))
+    occupancy: Mapped[int] = mapped_column(Integer, default=2)
+    bed_type: Mapped[Optional[str]] = mapped_column(String(50))
+    room_size: Mapped[Optional[str]] = mapped_column(String(50))
+    smoking: Mapped[bool] = mapped_column(Boolean, default=False)
+    balcony: Mapped[bool] = mapped_column(Boolean, default=False)
+    view: Mapped[Optional[str]] = mapped_column(String(100))
+    ac: Mapped[bool] = mapped_column(Boolean, default=True)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+
 class RoomInventory(Base, TimestampMixin):
     __tablename__ = "room_inventory"
     __table_args__ = {'extend_existing': True}
@@ -384,7 +392,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     __table_args__ = {'extend_existing': True}
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    room_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_categories.room_category_id"), nullable=False)
+    room_type_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_types.id"), nullable=False)
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     floor: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')

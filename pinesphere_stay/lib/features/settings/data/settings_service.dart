@@ -105,7 +105,7 @@ class SettingsService {
     } on DioException catch (e) {
       AppLogger.w('createPropertySetting network failed, storing locally and queuing sync', e);
       final localUuid = const Uuid().v4();
-      final entity = PropertySettingEntity(
+      final _ = PropertySettingEntity(
         serverId: localUuid,
         propertyId: propertyId,
         settingKey: data['setting_key'] ?? '',

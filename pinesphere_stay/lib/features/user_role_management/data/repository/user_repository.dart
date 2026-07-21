@@ -44,7 +44,7 @@ class UserRepository {
   }) async {
     try {
       final deviceInfo = DeviceInfoService(_secureStorage);
-      final fingerprint = await deviceInfo.getDeviceFingerprint();
+      final _ = await deviceInfo.getDeviceFingerprint();
       final deviceName = await deviceInfo.getDeviceName();
 
       final response = await _dio.post('/auth/login', data: {

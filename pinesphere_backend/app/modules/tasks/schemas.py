@@ -10,6 +10,8 @@ class TaskCreate(BaseModel):
     room_id: Optional[str] = None
     booking_id: Optional[str] = None
     description: Optional[str] = None
+    requested_by_user_id: Optional[str] = None
+    requested_by_guest_id: Optional[str] = None
     due_at: Optional[datetime] = None
 
 class TaskResponse(BaseModel):
@@ -21,6 +23,8 @@ class TaskResponse(BaseModel):
     room_id: Optional[uuid.UUID]
     booking_id: Optional[uuid.UUID]
     assigned_to: Optional[uuid.UUID]
+    requested_by_user_id: Optional[uuid.UUID]
+    requested_by_guest_id: Optional[uuid.UUID]
     description: Optional[str]
     due_at: Optional[datetime]
     completed_at: Optional[datetime]
@@ -37,3 +41,6 @@ class TaskStatusUpdate(BaseModel):
     notes: Optional[str] = None
     photos: Optional[str] = None
     remarks: Optional[str] = None
+
+class TaskAssign(BaseModel):
+    assigned_to: str

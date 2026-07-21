@@ -29,6 +29,8 @@ import '../../features/reports/presentation/screens/pl_report_screen.dart';
 import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
+import 'package:pinesphere_stay/features/requests/presentation/screens/requests_screen.dart';
+import 'package:pinesphere_stay/features/requests/presentation/screens/create_request_screen.dart';
 
 import '../../features/splash/presentation/custom_splash_screen.dart';
 import '../../features/portal/presentation/screens/portal_login_screen.dart';
@@ -44,7 +46,7 @@ class RouterNotifier extends ChangeNotifier {
   RouterNotifier(this._ref) {
     _ref.listen<AuthState>(
       authProvider,
-      (_, __) => notifyListeners(),
+      (_, _) => notifyListeners(),
     );
   }
 }
@@ -118,6 +120,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/splash',
         builder: (context, state) => const CustomSplashScreen(),
+      ),
+      GoRoute(
+        path: '/requests',
+        builder: (context, state) => const RequestsScreen(),
+      ),
+      GoRoute(
+        path: '/requests/create',
+        builder: (context, state) => const CreateRequestScreen(),
       ),
       GoRoute(
         path: '/login',

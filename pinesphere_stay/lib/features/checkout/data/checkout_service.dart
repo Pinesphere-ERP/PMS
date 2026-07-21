@@ -98,7 +98,7 @@ class CheckOutService {
     } on DioException catch (e) {
       AppLogger.w('performCheckOut network failed, storing locally and queuing sync', e);
       final localUuid = data['server_id'] ?? const Uuid().v4();
-      final entity = CheckOutEntity(
+      final _ = CheckOutEntity(
         serverId: localUuid.toString(),
         checkinId: data['checkin_id'] ?? '',
         bookingId: data['booking_id'] ?? '',

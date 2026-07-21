@@ -405,7 +405,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _localSyncLogs.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.outlineVariant),
+        separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.outlineVariant),
         itemBuilder: (context, idx) {
           final log = _localSyncLogs[idx];
           return Padding(

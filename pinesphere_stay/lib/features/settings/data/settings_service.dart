@@ -114,6 +114,7 @@ class SettingsService {
         description: data['description'] ?? '',
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
+      _propertySettingsBox.put(entity);
 
       _syncService.enqueueMutation(
         entityType: 'PropertySetting',

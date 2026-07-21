@@ -3,6 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 from datetime import date, timedelta
+import stripe
+import os
+from fastapi import Request
+
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_mock")
 
 from app.infra.database import get_db
 from app.infra.models import (
@@ -30,6 +36,46 @@ def _days_remaining(expiry: date) -> int:
 
 def _fmt_amount(amount: float) -> str:
     return f"${amount:,.2f}"
+
+
+# ── Owner: get my subscription ────────────────────────────────────────────────
+
+@router.get("/my-subscription")
+async def get_my_subscription(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Returns the subscription for the current user's active property."""
+    property_id = current_user.property_id
+    if not property_id:
+        return {"data": None, "message": "No property associated with this user."}
+
+    sub_res = await db.execute(
+        select(Subscription)
+        .where(Subscription.property_id == property_id)
+        .order_by(Subscription.expiry_date.desc())
+    )
+    sub = sub_res.scalars().first()
+    if not sub:
+        return {"data": None, "message": "No subscription found."}
+
+    remaining = _days_remaining(sub.expiry_date)
+    return {
+        "data": {
+            "id": str(sub.id),
+            "plan": sub.plan,
+            "status": sub.status,
+            "billing_cycle": sub.billing_cycle,
+            "start_date": str(sub.start_date),
+            "expiry_date": str(sub.expiry_date),
+            "days_remaining": remaining,
+            "device_limit": sub.device_limit,
+            "registered_devices": sub.registered_devices,
+            "subscription_required": sub.subscription_required,
+            "is_trial": sub.plan == "Trial",
+            "is_active": sub.status in ("Active", "Trial") and sub.expiry_date >= date.today(),
+        }
+    }
 
 
 # ── List all subscriptions ─────────────────────────────────────────────────────
@@ -535,3 +581,116 @@ async def generate_license(property_id: str, db: AsyncSession = Depends(get_db),
     )
     
     return {"message": "License regenerated", "licenseId": sub.license_id}
+
+# ── Stripe Checkout & Webhooks ───────────────────────────────────────────────
+
+@router.post("/create-checkout-session")
+async def create_checkout_session(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    plan_name = payload.get("plan")
+    if not plan_name or plan_name not in PLAN_PRICE:
+        raise HTTPException(status_code=400, detail="Invalid plan selected")
+        
+    property_id = current_user.property_id
+    if not property_id:
+        raise HTTPException(status_code=400, detail="No property associated with user")
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[
+                {
+                    'price_data': {
+                        'currency': 'usd',
+                        'product_data': {
+                            'name': f"Pinesphere Stay - {plan_name} Plan",
+                        },
+                        'unit_amount': int(PLAN_PRICE[plan_name] * 100),
+                    },
+                    'quantity': 1,
+                },
+            ],
+            mode='subscription',
+            success_url=payload.get("success_url", "https://pinesphere.com/success?session_id={CHECKOUT_SESSION_ID}"),
+            cancel_url=payload.get("cancel_url", "https://pinesphere.com/cancel"),
+            client_reference_id=property_id,
+            metadata={"plan": plan_name, "owner_id": str(current_user.id)}
+        )
+        return {"checkout_url": checkout_session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/cancel")
+async def cancel_subscription(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    property_id = current_user.property_id
+    if not property_id:
+        raise HTTPException(status_code=400, detail="No property associated")
+        
+    q = select(Subscription).where(Subscription.property_id == property_id)
+    result = await db.execute(q)
+    sub = result.scalars().first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+
+    # In a real scenario, we'd also call Stripe API to cancel:
+    # stripe.Subscription.modify(sub.stripe_subscription_id, cancel_at_period_end=True)
+    
+    sub.status = "Cancelled"
+    # Keeping expiry_date unchanged so they have access until billing cycle ends
+    
+    await AuditLogger.log(
+        db,
+        property_id=sub.property_id,
+        module_name="Subscriptions",
+        action_type="Cancelled",
+        target_entity="Subscription",
+        target_record_id=sub.id,
+        user_id=current_user.id
+    )
+    
+    return {"message": "Subscription cancelled successfully", "expiry_date": str(sub.expiry_date)}
+
+@router.post("/webhooks/stripe")
+async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        # Invalid payload
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    # Handle the checkout.session.completed event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        
+        property_id = session.get('client_reference_id')
+        plan_name = session.get('metadata', {}).get('plan', 'Professional')
+        
+        if property_id:
+            # Upgrade their subscription in the DB
+            q = select(Subscription).where(Subscription.property_id == property_id)
+            result = await db.execute(q)
+            sub = result.scalars().first()
+            
+            if sub:
+                sub.plan = plan_name
+                sub.status = "Active"
+                sub.billing_cycle = "Monthly"
+                sub.start_date = date.today()
+                sub.expiry_date = date.today() + timedelta(days=30)
+                await db.commit()
+                
+    return {"status": "success"}

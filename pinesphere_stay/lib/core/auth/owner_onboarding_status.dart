@@ -37,7 +37,7 @@ enum OwnerOnboardingStatus {
       case 'completed':
         if (sub == 'expired') return OwnerOnboardingStatus.subscriptionExpired;
         if (sub == 'suspended') return OwnerOnboardingStatus.suspended;
-        if (sub != 'active' && ob != 'completed') return OwnerOnboardingStatus.paymentPending;
+        if (sub != 'active' && sub != 'trial' && ob != 'completed') return OwnerOnboardingStatus.paymentPending;
         return OwnerOnboardingStatus.active;
       default:
         return OwnerOnboardingStatus.unknown;

@@ -80,46 +80,46 @@ class AuthRepository {
       final userId = payload['sub']?.toString() ?? 'unknown_id';
       final propertyId = payload['tenant_id']?.toString();
 
-      final accessibleProps = (rawProperties ?? [])
-          .map((p) => AccessiblePropertyModel.fromJson(p as Map<String, dynamic>))
-          .toList();
-      
-      String? primaryPropertyId = propertyId;
-      String? onboardingStatus;
-      String? subscriptionStatus;
-      
-      if (accessibleProps.isNotEmpty) {
-        final firstProp = accessibleProps.first;
-        primaryPropertyId ??= firstProp.propertyId;
-        onboardingStatus = firstProp.onboardingStatus;
-        subscriptionStatus = firstProp.subscriptionStatus;
-      }
-
-      final user = UserModel(
-        id: userId,
-        name: email.split('@')[0], // Placeholder until /me is added
-        email: email,
-        role: UserRole.owner, // Placeholder
-        propertyId: primaryPropertyId,
-        roleCode: tokenResponse.roleCode,
-        onboardingStatus: onboardingStatus,
-        subscriptionStatus: subscriptionStatus,
-        accessibleProperties: accessibleProps,
-      );
-      
-      await _secureStorage.write(key: 'cached_user', value: jsonEncode(user.toJson()));
       await _secureStorage.write(key: 'device_uid', value: fingerprint);
       if (propertyId != null) {
         await _secureStorage.write(key: 'tenant_id', value: propertyId);
       }
 
       // Fetch offline bootstrap info (permissions & role details)
+      UserModel? finalUser;
       try {
         final bootstrapResponse = await _dio.post('/auth/offline-bootstrap');
-        await _secureStorage.write(key: 'cached_permissions', value: jsonEncode(bootstrapResponse.data['permissions']));
+        final data = bootstrapResponse.data;
+        await _secureStorage.write(key: 'cached_permissions', value: jsonEncode(data['permissions']));
+        
+        final accessibleProps = (data['accessible_properties'] as List<dynamic>?)
+            ?.map((p) => AccessiblePropertyModel.fromJson(p as Map<String, dynamic>))
+            .toList() ?? [];
+            
+        finalUser = UserModel(
+          id: data['user_id'] ?? userId,
+          name: data['name'] ?? email.split('@')[0],
+          email: data['email'] ?? email,
+          role: UserRole.owner, // Derived primarily via roleCode
+          propertyId: propertyId,
+          roleCode: data['role_code'] ?? tokenResponse.roleCode,
+          onboardingStatus: data['onboarding_status'],
+          subscriptionStatus: data['subscription_status'],
+          accessibleProperties: accessibleProps,
+        );
       } catch (e) {
         debugPrint("Failed to fetch offline bootstrap: $e");
+        finalUser = UserModel(
+          id: userId,
+          name: email.split('@')[0],
+          email: email,
+          role: UserRole.owner,
+          propertyId: propertyId,
+          roleCode: tokenResponse.roleCode,
+        );
       }
+
+      await _secureStorage.write(key: 'cached_user', value: jsonEncode(finalUser.toJson()));
 
       // Wipe local database on successful login to prevent conflicts
       // We will pull the fresh state from the cloud immediately after.
@@ -136,7 +136,7 @@ class AuthRepository {
         debugPrint("Failed to clear local db on login: $e");
       }
 
-      return Right(user);
+      return Right(finalUser);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401 || e.response?.statusCode == 400) {
         return Left(Failure.auth(e.response?.data['detail'] ?? 'Invalid credentials'));

@@ -361,12 +361,18 @@ async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Dep
     q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
     
     if role.role_code != "SUPER_ADMIN":
-        from app.infra.models import UserPropertyAccess
+        from app.infra.models import UserPropertyAccess, Property, Owner
         from sqlalchemy import or_
         q = q.outerjoin(UserPropertyAccess, UserPropertyAccess.property_id == RoomCategory.property_id)
+        q = q.outerjoin(Property, Property.property_id == RoomCategory.property_id)
+        q = q.outerjoin(Owner, Owner.owner_id == Property.owner_id)
+        
         conditions = [UserPropertyAccess.user_id == current_user.id]
         if current_user.property_id:
             conditions.append(RoomCategory.property_id == current_user.property_id)
+        if current_user.email:
+            conditions.append(Owner.email == current_user.email)
+            
         q = q.where(or_(*conditions))
         
     result = await db.execute(q)
@@ -637,12 +643,12 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
         select(Property, Owner, Business, Subscription)
         .select_from(Property)
         .join(Owner, Property.owner_id == Owner.owner_id)
-        .join(Business, Property.business_id == Business.business_id)
+        .outerjoin(Business, Property.business_id == Business.business_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
     )
     
-    if role.role_code == "OWNER":
-        # Owners only see properties they own
+    if role.role_code != "SUPER_ADMIN":
+        # Non-super admins only see properties they have access to
         from app.infra.models import UserPropertyAccess
         from sqlalchemy import or_
         
@@ -652,6 +658,8 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
         conditions = [UserPropertyAccess.user_id == current_user.id]
         if current_user.property_id:
             conditions.append(Property.property_id == current_user.property_id)
+        if current_user.email:
+            conditions.append(Owner.email == current_user.email)
             
         q = q.where(or_(*conditions))
 

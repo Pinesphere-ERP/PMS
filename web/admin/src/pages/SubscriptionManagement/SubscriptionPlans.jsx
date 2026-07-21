@@ -66,7 +66,7 @@ export default function SubscriptionPlans() {
     try {
       const payload = {
         ...planForm,
-        amount: parseFloat(planForm.amount),
+        amount: parseFloat(String(planForm.amount).replace(/[^0-9.]/g, '')),
         duration: parseInt(planForm.duration, 10)
       };
 

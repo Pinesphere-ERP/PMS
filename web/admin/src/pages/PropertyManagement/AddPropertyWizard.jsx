@@ -110,12 +110,24 @@ export default function AddPropertyWizard() {
 
   // Dynamic Room Categories State
   const [rooms, setRooms] = useState([
-    { id: '1', name: '', category: 'Standard', totalRooms: 0, occupancy: 2, bedType: 'Single', size: '', smoking: false, bathroom: true, balcony: false, view: '', ac: true, description: '' }
+    { id: '1', name: '', category: 'Standard', totalRooms: 0, occupancy: 2, bedType: 'Single', size: '', smoking: false, bathroom: true, balcony: false, view: '', ac: true, description: '', amenities: [], basePrice: '', weekendPrice: '', extraAdult: '', extraChild: '', taxPercent: '', mealPlan: '' }
   ]);
 
   const addRoom = () => {
-    setRooms([...rooms, { id: Date.now().toString(), name: '', category: 'Standard', totalRooms: 0, occupancy: 2, bedType: 'Single', size: '', smoking: false, bathroom: true, balcony: false, view: '', ac: true, description: '' }]);
+    setRooms([...rooms, { id: Date.now().toString(), name: '', category: 'Standard', totalRooms: 0, occupancy: 2, bedType: 'Single', size: '', smoking: false, bathroom: true, balcony: false, view: '', ac: true, description: '', amenities: [], basePrice: '', weekendPrice: '', extraAdult: '', extraChild: '', taxPercent: '', mealPlan: '' }]);
   };
+  
+  const toggleRoomAmenity = (roomId, amenity) => {
+    setRooms(rooms.map(r => {
+      if (r.id !== roomId) return r;
+      const amenities = r.amenities || [];
+      if (amenities.includes(amenity)) {
+        return { ...r, amenities: amenities.filter(a => a !== amenity) };
+      }
+      return { ...r, amenities: [...amenities, amenity] };
+    }));
+  };
+
   const removeRoom = (id) => {
     setRooms(rooms.filter(r => r.id !== id));
   };
@@ -433,7 +445,7 @@ export default function AddPropertyWizard() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                     {['WiFi', 'Television', 'Mini Refrigerator', 'Wardrobe', 'Hair Dryer', 'Safe Locker', 'Coffee Maker', 'Work Desk', 'Towels', 'Toiletries', 'Iron', 'Electric Kettle'].map(amenity => (
                       <label key={amenity} className="flex items-center text-gray-700">
-                        <input type="checkbox" className="mr-2 text-pine focus:ring-pine rounded border-gray-300" /> {amenity}
+                        <input type="checkbox" checked={(room.amenities || []).includes(amenity)} onChange={() => toggleRoomAmenity(room.id, amenity)} className="mr-2 text-pine focus:ring-pine rounded border-gray-300" /> {amenity}
                       </label>
                     ))}
                   </div>
@@ -527,12 +539,12 @@ export default function AddPropertyWizard() {
                 <div key={room.id} className="saas-card p-5 border border-gray-200">
                   <h3 className="font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">{room.name || room.category}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Base Price / Night (Optional)</label><input type="number" className="saas-input text-sm" placeholder="₹" /></div>
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Weekend Price (Optional)</label><input type="number" className="saas-input text-sm" placeholder="₹" /></div>
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Extra Adult Charge (Optional)</label><input type="number" className="saas-input text-sm" placeholder="₹" /></div>
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Extra Child Charge (Optional)</label><input type="number" className="saas-input text-sm" placeholder="₹" /></div>
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Taxes (GST %) (Optional)</label><select className="saas-input text-sm bg-white"><option>None</option><option>12%</option><option>18%</option><option>Included in Base</option></select></div>
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Meal Plan (Optional)</label><select className="saas-input text-sm bg-white"><option>None</option><option>EP (Room Only)</option><option>CP (Breakfast)</option><option>MAP (Half Board)</option></select></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Base Price / Night (Optional)</label><input type="number" value={room.basePrice || ''} onChange={e => updateRoom(room.id, 'basePrice', e.target.value)} className="saas-input text-sm" placeholder="₹" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Weekend Price (Optional)</label><input type="number" value={room.weekendPrice || ''} onChange={e => updateRoom(room.id, 'weekendPrice', e.target.value)} className="saas-input text-sm" placeholder="₹" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Extra Adult Charge (Optional)</label><input type="number" value={room.extraAdult || ''} onChange={e => updateRoom(room.id, 'extraAdult', e.target.value)} className="saas-input text-sm" placeholder="₹" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Extra Child Charge (Optional)</label><input type="number" value={room.extraChild || ''} onChange={e => updateRoom(room.id, 'extraChild', e.target.value)} className="saas-input text-sm" placeholder="₹" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Taxes (GST %) (Optional)</label><select value={room.taxPercent || ''} onChange={e => updateRoom(room.id, 'taxPercent', e.target.value)} className="saas-input text-sm bg-white"><option value="">None</option><option value="12">12%</option><option value="18">18%</option><option value="included">Included in Base</option></select></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Meal Plan (Optional)</label><select value={room.mealPlan || ''} onChange={e => updateRoom(room.id, 'mealPlan', e.target.value)} className="saas-input text-sm bg-white"><option value="">None</option><option value="EP">EP (Room Only)</option><option value="CP">CP (Breakfast)</option><option value="MAP">MAP (Half Board)</option></select></div>
                   </div>
                 </div>
               ))}

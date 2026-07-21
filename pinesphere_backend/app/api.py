@@ -22,7 +22,7 @@ from app.modules.notifications.router import router as notifications
 from app.modules.portal.router import router as portal
 from app.modules.onboarding.router import router as onboarding
 from app.modules.owners.router import router as owners
-
+from app.modules.inventory.router import router as inventory
 # ── New modules (Wave 5–9 completions) ────────────────────────────────────────
 from app.modules.pricing.router import router as pricing
 from app.modules.documents.router import router as documents
@@ -51,7 +51,7 @@ api_router.include_router(kitchen, prefix="/kitchen", tags=["Kitchen Operations"
 api_router.include_router(portal)  # Portal has its own prefix="/portal"
 api_router.include_router(onboarding, prefix="/onboarding", tags=["Onboarding"])
 api_router.include_router(owners, prefix="/owners", tags=["Owner Management"])
-
+api_router.include_router(inventory, prefix="/inventory", tags=["Inventory Management"])
 # ── Property-level operational routers (paywalled) ───────────────────────────
 api_router.include_router(bookings, prefix="/bookings", tags=["Booking Management"], dependencies=_paywall)
 api_router.include_router(checkin, prefix="/checkin", tags=["Check-In Management"], dependencies=_paywall)

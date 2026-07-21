@@ -123,26 +123,79 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     db.add(new_property)
     await db.flush()
 
+    # 1. Insert Property Address
+    from app.infra.models import PropertyAddress, RoomType, RoomInventory, RoomPricing, Room, Amenity, RoomAmenity, select
+    
+    address = PropertyAddress(
+        property_id=new_property.property_id,
+        address=payload.address,
+        city=payload.city,
+        state=payload.state,
+        country=payload.country,
+        pincode=payload.pincode
+    )
+    db.add(address)
+    await db.flush()
+
     if payload.rooms:
-        from app.infra.models import RoomCategory, Room
         for r in payload.rooms:
-            # r is a dict from frontend
-            cat = RoomCategory(
+            # Create Room Type
+            room_type = RoomType(
                 property_id=new_property.property_id,
-                room_name=r.get('name') or r.get('category') or 'Standard',
-                base_price=float(r.get('price') or 1000.0),
-                number_of_rooms=int(r.get('totalRooms') or 1),
+                name=r.get('name') or r.get('category') or 'Standard',
+                category=r.get('category') or 'Standard',
+                occupancy=int(r.get('occupancy') or 2),
+                bed_type=r.get('bedType'),
+                room_size=r.get('size'),
+                smoking=bool(r.get('smoking')),
+                balcony=bool(r.get('balcony')),
+                view=r.get('view'),
+                ac=bool(r.get('ac')),
                 description=r.get('description', '')
             )
-            db.add(cat)
+            db.add(room_type)
             await db.flush()
             
+            # Create Room Inventory
             total_rooms = int(r.get('totalRooms') or 1)
+            inventory = RoomInventory(
+                room_type_id=room_type.id,
+                total_rooms=total_rooms,
+                available_rooms=total_rooms
+            )
+            db.add(inventory)
+            
+            # Create Room Pricing
+            pricing = RoomPricing(
+                room_type_id=room_type.id,
+                base_price=float(r.get('basePrice') or r.get('price') or 1000.0),
+                weekend_price=float(r.get('weekendPrice')) if r.get('weekendPrice') else None,
+                extra_adult=float(r.get('extraAdult')) if r.get('extraAdult') else None,
+                extra_child=float(r.get('extraChild')) if r.get('extraChild') else None,
+                tax=str(r.get('taxPercent')) if r.get('taxPercent') else None,
+                meal_plan=r.get('mealPlan')
+            )
+            db.add(pricing)
+            
+            # Create Amenities
+            amenities_list = r.get('amenities') or []
+            for am_name in amenities_list:
+                stmt = select(Amenity).where(Amenity.name == am_name)
+                res = await db.execute(stmt)
+                am_obj = res.scalar_one_or_none()
+                if not am_obj:
+                    am_obj = Amenity(name=am_name, category='room')
+                    db.add(am_obj)
+                    await db.flush()
+                ra = RoomAmenity(room_type_id=room_type.id, amenity_id=am_obj.id)
+                db.add(ra)
+            
+            # Create individual rooms
             for i in range(total_rooms):
-                room_number = f"{(cat.room_name[:3] if cat.room_name else 'STD').upper()}-{i+101}"
+                room_number = f"{(room_type.name[:3] if room_type.name else 'STD').upper()}-{i+101}"
                 new_room = Room(
                     property_id=new_property.property_id,
-                    room_category_id=cat.room_category_id,
+                    room_type_id=room_type.id,
                     room_number=room_number,
                     housekeeping_status="clean",
                     occupancy_status="vacant",

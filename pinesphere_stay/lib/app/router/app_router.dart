@@ -44,8 +44,7 @@ import '../../features/housekeeping/presentation/screens/housekeeper_image_uploa
 
 // Owner Platform screens
 import '../../features/property_onboarding/presentation/screens/property_wizard_screen.dart';
-import '../../features/property_onboarding/presentation/screens/pending_approval_screen.dart';
-import '../../features/property_onboarding/presentation/screens/property_rejected_screen.dart';
+
 import '../../features/subscription_management/presentation/screens/subscription_screen.dart';
 import '../../features/subscription_management/presentation/screens/subscription_expired_screen.dart';
 import '../../features/staff/presentation/screens/staff_management_screen.dart';
@@ -164,29 +163,19 @@ GoRouter appRouter(Ref ref) {
 
           switch (ownerStatus) {
             case OwnerOnboardingStatus.draft:
-              if (location != '/dashboard' &&
-                  !location.startsWith('/onboarding')) {
+              if (!location.startsWith('/onboarding')) {
                 return '/onboarding/property';
               }
               break;
 
-            case OwnerOnboardingStatus.pendingApproval:
-              // Owner can go to dashboard (shows limited trial view) or pending screen
-              // Force them to pending screen unless they're going to dashboard
-              if (location != '/dashboard' &&
-                  !location.startsWith('/onboarding')) {
-                return '/onboarding/pending-approval';
-              }
-              break;
-
-            case OwnerOnboardingStatus.rejected:
-              if (!location.startsWith('/onboarding')) {
-                return '/onboarding/rejected';
+            case OwnerOnboardingStatus.paymentPending:
+              // Force to subscription screen
+              if (location != '/subscription' && location != '/subscription/expired') {
+                return '/subscription';
               }
               break;
 
             case OwnerOnboardingStatus.subscriptionExpired:
-            case OwnerOnboardingStatus.trialExpired:
               // Only allow settings & subscription screen
               if (location != '/subscription' &&
                   location != '/subscription/expired' &&
@@ -196,10 +185,7 @@ GoRouter appRouter(Ref ref) {
               }
               break;
 
-            case OwnerOnboardingStatus.live:
-            case OwnerOnboardingStatus.trial:
-            case OwnerOnboardingStatus.pastDue:
-            case OwnerOnboardingStatus.approved:
+            case OwnerOnboardingStatus.active:
             case OwnerOnboardingStatus.suspended:
             case OwnerOnboardingStatus.unknown:
               break;
@@ -251,16 +237,7 @@ GoRouter appRouter(Ref ref) {
         path: '/onboarding/property',
         builder: (context, state) => const PropertyWizardScreen(),
       ),
-      GoRoute(
-        path: '/onboarding/pending-approval',
-        builder: (context, state) => const PendingApprovalScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/rejected',
-        builder: (context, state) => PropertyRejectedScreen(
-          reason: state.extra as String?,
-        ),
-      ),
+
       GoRoute(
         path: '/subscription',
         builder: (context, state) => const SubscriptionScreen(),

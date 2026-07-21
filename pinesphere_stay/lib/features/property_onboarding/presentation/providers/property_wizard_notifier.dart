@@ -93,11 +93,11 @@ class PropertyWizardNotifier extends _$PropertyWizardNotifier {
     }
   }
 
-  Future<bool> submitForApproval(String propertyId) async {
+  Future<bool> completeOnboarding(String propertyId) async {
     final dio = ref.read(dioClientProvider);
     try {
-      state = state.copyWith(status: 'pending_approval');
-      final response = await dio.post('/properties/$propertyId/submit-for-approval', data: state.toJson());
+      state = state.copyWith(status: 'payment_pending');
+      final response = await dio.post('/properties/$propertyId/complete-onboarding', data: state.toJson());
       if (response.statusCode == 200 || response.statusCode == 201) {
         state = state.copyWith(isCompleted: true);
         return true;

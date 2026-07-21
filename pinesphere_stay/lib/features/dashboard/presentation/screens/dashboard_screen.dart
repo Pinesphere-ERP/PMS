@@ -15,7 +15,7 @@ import '../../../audit/data/audit_service.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
 import '../../../../core/presentation/widgets/property_switcher_widget.dart';
 import '../../../../core/auth/session_context.dart';
-import '../widgets/onboarding_progress_dashboard.dart';
+
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -27,8 +27,7 @@ class DashboardScreen extends ConsumerWidget {
       authenticated: (user) => user.name,
       orElse: () => 'Guest',
     );
-    final session = ref.watch(sessionContextProvider);
-    
+
     return Scaffold(
       backgroundColor: AppColors.background,
       drawer: const AppDrawer(),
@@ -43,15 +42,11 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   _buildStaggeredItem(0, _buildGreeting(context, ref, userName)),
                   const SizedBox(height: 24),
-                  if (session.isOwner && !session.ownerStatus.canAccessDashboard)
-                    _buildStaggeredItem(1, OnboardingProgressDashboard(status: session.ownerStatus))
-                  else ...[
-                    _buildStaggeredItem(1, _buildQuickActions(context, ref)),
-                    const SizedBox(height: 24),
-                    _buildStaggeredItem(2, _buildKPIsGrid(context, ref)),
-                    const SizedBox(height: 24),
-                    _buildStaggeredItem(3, _buildRecentActivity(context, ref)),
-                  ],
+                  _buildStaggeredItem(1, _buildQuickActions(context, ref)),
+                  const SizedBox(height: 24),
+                  _buildStaggeredItem(2, _buildKPIsGrid(context, ref)),
+                  const SizedBox(height: 24),
+                  _buildStaggeredItem(3, _buildRecentActivity(context, ref)),
                   const SizedBox(height: 32), // bottom padding for nav
                 ],
               ),

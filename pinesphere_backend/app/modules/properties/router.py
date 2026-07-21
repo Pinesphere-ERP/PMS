@@ -1043,8 +1043,8 @@ async def update_wizard_step(
     return {"message": "Wizard step saved successfully"}
 
 
-@router.post("/{property_id}/submit-for-approval")
-async def submit_for_approval(
+@router.post("/{property_id}/complete-onboarding")
+async def complete_onboarding(
     property_id: str,
     payload: dict,
     db: AsyncSession = Depends(get_db),
@@ -1069,8 +1069,8 @@ async def submit_for_approval(
     if payload.get("star_category"):
         prop.star_category = int(payload["star_category"])
 
-    prop.onboarding_status = "pending_approval"
+    prop.onboarding_status = "payment_pending"
     
     db.add(prop)
     await db.commit()
-    return {"message": "Property submitted for approval"}
+    return {"message": "Onboarding completed successfully"}

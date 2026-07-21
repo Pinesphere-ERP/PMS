@@ -36,12 +36,11 @@ class SubscriptionRepository {
 
   Future<String?> createCheckoutSession(String planName) async {
     try {
-      final response = await _dio.post('/subscriptions/create-checkout-session', data: {
+      final response = await _dio.post('/subscriptions/activate-placeholder', data: {
         'plan': planName,
-        'success_url': 'https://pinesphere.com/success',
-        'cancel_url': 'https://pinesphere.com/cancel',
       });
-      return response.data['checkout_url'];
+      // Return a special token to indicate direct success
+      return 'placeholder_success';
     } catch (e) {
       return null;
     }

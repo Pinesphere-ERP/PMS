@@ -73,12 +73,13 @@ class PropertyWizardScreen extends ConsumerWidget {
       return;
     }
     
-    final success = await notifier.submitForApproval(propertyId);
+    final success = await notifier.completeOnboarding(propertyId);
 
     if (context.mounted) {
       Navigator.pop(context); // Dismiss loading
       if (success) {
-        context.go('/onboarding/pending-approval');
+        ref.read(sessionContextProvider.notifier).overrideOwnerStatus(OwnerOnboardingStatus.paymentPending);
+        context.go('/subscription');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Submission failed. Please try again.')),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/auth/session_context.dart';
+import '../../../../core/auth/owner_onboarding_status.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/subscription_notifier.dart';
@@ -263,7 +266,15 @@ class SubscriptionScreen extends ConsumerWidget {
     final url = await ref.read(subscriptionProvider.notifier).upgradePlan(planName);
     if (context.mounted) {
       Navigator.pop(context); // Dismiss loading
-      if (url != null && url.isNotEmpty) {
+      if (url == 'placeholder_success') {
+        // Refresh session to update router guards (paymentPending -> active)
+        ref.read(sessionContextProvider.notifier).overrideOwnerStatus(OwnerOnboardingStatus.active);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment Successful! Welcome to Pinesphere.')),
+        );
+        // Router will automatically redirect to dashboard because status is active!
+        context.go('/dashboard');
+      } else if (url != null && url.isNotEmpty) {
         final uri = Uri.parse(url);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);

@@ -41,7 +41,7 @@ import '../../features/property_onboarding/presentation/screens/pending_approval
 import '../../features/property_onboarding/presentation/screens/property_rejected_screen.dart';
 import '../../features/subscription_management/presentation/screens/subscription_screen.dart';
 import '../../features/subscription_management/presentation/screens/subscription_expired_screen.dart';
-import '../../features/staff/presentation/screens/owner_staff_dashboard.dart';
+import '../../features/staff/presentation/screens/staff_management_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -269,7 +269,7 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: '/staff',
-        builder: (context, state) => const OwnerStaffDashboardScreen(),
+        builder: (context, state) => const StaffManagementScreen(),
       ),
 
       // ── Main App Shell (StatefulShellRoute) ────────────────────────────────

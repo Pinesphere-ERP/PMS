@@ -147,6 +147,7 @@ GoRouter appRouter(Ref ref) {
             if (roleCode == 'HOUSEKEEPING') return '/housekeeper-dashboard';
             if (roleCode == 'KITCHEN') return '/kitchen';
             if (roleCode == 'ACCOUNTANT') return '/accountant-dashboard';
+            if (roleCode == 'PROPERTY_MANAGER') return '/manager-dashboard';
             // All other roles land on dashboard (which has its own state guard)
             return '/dashboard';
           },

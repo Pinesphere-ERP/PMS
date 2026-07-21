@@ -24,8 +24,19 @@ class TenantNotifier extends Notifier<String?> {
 
   Future<void> _init() async {
     final tenantId = await _storage.read(key: 'tenant_id');
-    if (tenantId != null) {
+    if (tenantId != null && tenantId.isNotEmpty) {
       state = tenantId;
+    } else {
+      final userStr = await _storage.read(key: 'cached_user');
+      if (userStr != null) {
+        try {
+          final Map<String, dynamic> json = jsonDecode(userStr);
+          final pId = json['property_id'] ?? json['propertyId'];
+          if (pId != null && pId.toString().isNotEmpty) {
+            state = pId.toString();
+          }
+        } catch (_) {}
+      }
     }
   }
 

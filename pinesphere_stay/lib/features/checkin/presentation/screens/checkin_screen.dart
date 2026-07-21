@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -509,7 +511,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: bookings.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final booking = bookings[index];
             final isSelected = (_selectedBooking?['booking_id']?.toString() ?? _selectedBooking?['id']?.toString()) == (booking['booking_id']?.toString() ?? booking['id']?.toString());
@@ -848,20 +850,294 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     );
   }
 
+  bool _isForeigner = false;
+  String? _aadhaarImagePath;
+  String? _aFormImagePath;
+
+  final _passportNumberController = TextEditingController();
+  final _visaNumberController = TextEditingController();
+
+  Future<void> _pickDocumentImage(bool isAadhaar) async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() {
+          if (isAadhaar) {
+            _aadhaarImagePath = picked.path;
+          } else {
+            _aFormImagePath = picked.path;
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  Widget _buildDocumentUploadTile({
+    required String title,
+    required String subtitle,
+    required String? imagePath,
+    required VoidCallback onTap,
+    required VoidCallback onRemove,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.camera_alt, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.outline)),
+          const SizedBox(height: 12),
+          if (imagePath != null && imagePath.isNotEmpty)
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(imagePath),
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 120,
+                      color: Colors.grey.shade200,
+                      child: const Center(child: Text('Document Attached ✅')),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: InkWell(
+                    onTap: onRemove,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.upload_file),
+              label: Text('Capture / Upload $title'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 44),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWalkInIdentity() {
     return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('2. Identity'),
-          _buildDropdownField(
-            'ID Type',
-            ['Passport', 'Driver License', 'National ID', 'Aadhaar', 'Voter ID'],
-            _idType,
-            (v) => setState(() => _idType = v),
-            isRequired: true,
+          _buildSectionHeader('2. Nationality & ID Verification'),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isForeigner = false;
+                      _idType = 'Aadhaar Card';
+                      _nationalityController.text = 'Indian';
+                      _countryController.text = 'India';
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: !_isForeigner ? AppColors.primaryContainer.withValues(alpha: 0.4) : AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: !_isForeigner ? AppColors.primary : AppColors.outlineVariant,
+                        width: !_isForeigner ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('🇮🇳', style: TextStyle(fontSize: 20)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Indian National\n(Aadhaar)',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: !_isForeigner ? AppColors.primary : AppColors.onSurface,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isForeigner = true;
+                      _idType = 'Passport';
+                      if (_nationalityController.text.isEmpty || _nationalityController.text.toLowerCase() == 'indian') {
+                        _nationalityController.text = '';
+                      }
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: _isForeigner ? Colors.orange.shade50 : AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _isForeigner ? Colors.orange.shade800 : AppColors.outlineVariant,
+                        width: _isForeigner ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('✈️', style: TextStyle(fontSize: 20)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Foreigner\n(A Form)',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _isForeigner ? Colors.orange.shade900 : AppColors.onSurface,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          _buildTextField('ID Number', isRequired: true, controller: _idNumberController),
+          const SizedBox(height: 16),
+          if (!_isForeigner) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.badge, color: AppColors.primary),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '🇮🇳 Indian Guest: Mandatory 12-digit Aadhaar Card number & Aadhaar Image upload required.',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildDropdownField(
+              'ID Type',
+              ['Aadhaar Card', 'Voter ID', 'Driving License', 'Passport', 'PAN Card'],
+              _idType ?? 'Aadhaar Card',
+              (v) => setState(() => _idType = v),
+              isRequired: true,
+            ),
+            _buildTextField(
+              '12-Digit Aadhaar / ID Number',
+              isRequired: true,
+              controller: _idNumberController,
+              keyboardType: TextInputType.number,
+            ),
+            _buildDocumentUploadTile(
+              title: 'Aadhaar Card Image / Photo',
+              subtitle: 'Upload or capture clear photo of guest Aadhaar card front/back',
+              imagePath: _aadhaarImagePath,
+              onTap: () => _pickDocumentImage(true),
+              onRemove: () => setState(() => _aadhaarImagePath = null),
+            ),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.orange.shade700),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.assignment_ind, color: Colors.orange.shade900),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '✈️ Foreign National: A Form Foreigner Registration (Nationality & A Form Photo required).',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange.shade900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(child: _buildTextField('Nationality', isRequired: true, controller: _nationalityController)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildTextField('Country of Origin', isRequired: true, controller: _countryController)),
+              ],
+            ),
+            Row(
+              children: [
+                Expanded(child: _buildTextField('A Form / Passport Number', isRequired: true, controller: _passportNumberController)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildTextField('Visa Number', controller: _visaNumberController)),
+              ],
+            ),
+            _buildDocumentUploadTile(
+              title: 'A Form Document Image / Photo',
+              subtitle: 'Upload or capture clear photo of completed A Form / Passport',
+              imagePath: _aFormImagePath,
+              onTap: () => _pickDocumentImage(false),
+              onRemove: () => setState(() => _aFormImagePath = null),
+            ),
+          ],
         ],
       ),
     );

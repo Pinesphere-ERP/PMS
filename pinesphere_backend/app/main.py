@@ -7,24 +7,49 @@ from app.api import api_router
 
 from contextlib import asynccontextmanager
 import logging
+import structlog
 from sqlalchemy import text
 from minio import Minio
 import redis.asyncio as redis
 from fastapi.staticfiles import StaticFiles
 import os
 
-logger = logging.getLogger(__name__)
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.JSONRenderer()
+    ],
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
+
+logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Database connection check
+    # 1. Database connection check & schema column alignment
     try:
-        from app.infra.database import engine
+        from app.infra.database import engine, Base
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
-        logger.info("Startup check: Database connection successful")
+            await conn.run_sync(Base.metadata.create_all)
+            try:
+                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS floor VARCHAR(10);"))
+                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS housekeeping_status VARCHAR(20) DEFAULT 'clean';"))
+                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS occupancy_status VARCHAR(20) DEFAULT 'vacant';"))
+            except Exception:
+                pass
+        logger.info("Startup check: Database connection and auto-schema alignment successful")
     except Exception as e:
-        logger.warning(f"Startup check: Database connection failed: {e}")
+        logger.warning(f"Startup check: Database connection/schema alignment failed: {e}")
 
     # 2. Redis connection check
     try:
@@ -56,12 +81,21 @@ async def lifespan(app: FastAPI):
 
     yield
 
+from app.core.limiter import limiter
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Offline-First Enterprise PMS Backend API",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # CORS - allow configured origins only
 app.add_middleware(
@@ -91,7 +125,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=422,
         content={
-            "detail": "Validation error",
+            "detail": exc.errors(),
             "request_id": request_id,
             "errors": failed_fields
         },
@@ -99,6 +133,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    with open("crash.log", "w") as f:
+        f.write(traceback.format_exc())
     logger.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,

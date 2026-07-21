@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/auth/session_context.dart';
+import '../../../../core/auth/owner_onboarding_status.dart';
 import '../../../../core/presentation/widgets/bento_card.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../providers/subscription_notifier.dart';
+import '../../domain/models/subscription_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class SubscriptionScreen extends StatelessWidget {
+class SubscriptionScreen extends ConsumerWidget {
   const SubscriptionScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final subState = ref.watch(subscriptionProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -29,74 +38,85 @@ class SubscriptionScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            BentoCard(
-              backgroundColor: AppColors.primaryContainer,
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            subState.when(
+              data: (subscription) {
+                if (subscription == null) {
+                  return const Text('No active subscription found.');
+                }
+                final isActive = subscription.isActive;
+                final isTrial = subscription.isTrial;
+                return BentoCard(
+                  backgroundColor: AppColors.primaryContainer,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Pro Plan (Yearly)',
-                        style: TextStyle(
-                          fontSize: 20,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${subscription.plan} Plan ${isTrial ? "(Trial)" : ""}',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.onPrimaryContainer,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.onPrimaryContainer.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              subscription.status,
+                              style: TextStyle(
+                                color: isActive ? Colors.green : Colors.red,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        subscription.billingCycle,
+                        style: const TextStyle(
+                          fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: AppColors.onPrimaryContainer,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.onPrimaryContainer.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Renews on: ${subscription.expiryDate.split("T").first}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.onPrimaryContainer,
                         ),
-                        child: const Text(
-                          'Active',
-                          style: TextStyle(
-                            color: AppColors.onPrimaryContainer,
-                            fontWeight: FontWeight.w600,
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _showCancelDialog(context, ref),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.onPrimaryContainer,
+                            foregroundColor: AppColors.primaryContainer,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
+                          child: const Text('Cancel Subscription', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '₹ 15,000 / year',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Renews on: 12 Aug 2027',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.onPrimaryContainer,
-                        foregroundColor: AppColors.primaryContainer,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Manage Subscription', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, st) => Text('Error loading subscription: $err'),
             ),
             const SizedBox(height: 32),
             const Text(
@@ -108,71 +128,7 @@ class SubscriptionScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: BentoCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Basic',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.onBackground),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          '₹ 5,000 / year',
-                          style: TextStyle(fontSize: 16, color: AppColors.primary),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text('• Up to 50 rooms\n• Basic Reports\n• Standard Support', style: TextStyle(color: AppColors.onSurfaceVariant, height: 1.5)),
-                        const SizedBox(height: 16),
-                        OutlinedButton(
-                          onPressed: () {},
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
-                            minimumSize: const Size(double.infinity, 48),
-                          ),
-                          child: const Text('Downgrade'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: BentoCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Enterprise',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.onBackground),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Contact Us',
-                          style: TextStyle(fontSize: 16, color: AppColors.primary),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text('• Unlimited rooms\n• Custom Reports\n• 24/7 Dedicated Support', style: TextStyle(color: AppColors.onSurfaceVariant, height: 1.5)),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.onPrimary,
-                            minimumSize: const Size(double.infinity, 48),
-                          ),
-                          child: const Text('Upgrade'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildPlansList(context, ref),
             const SizedBox(height: 32),
             const Text(
               'Billing History',
@@ -213,6 +169,156 @@ class SubscriptionScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlansList(BuildContext context, WidgetRef ref) {
+    final plansAsync = ref.watch(subscriptionPlansProvider);
+
+    return plansAsync.when(
+      data: (plans) {
+        if (plans.isEmpty) {
+          return const Text('No plans available.');
+        }
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: plans.length,
+          itemBuilder: (context, index) {
+            final plan = plans[index];
+            final subState = ref.read(subscriptionProvider).value;
+            final isCurrent = subState != null && plan.name.toLowerCase() == subState.plan.toLowerCase();
+            return _buildPlanItem(context, ref, plan, isCurrent);
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, st) => Text('Error loading plans: $e'),
+    );
+  }
+
+  Widget _buildPlanItem(
+      BuildContext context, WidgetRef ref, SubscriptionPlanModel plan, bool isCurrent) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isCurrent ? Theme.of(context).primaryColor : Colors.grey.shade300,
+          width: isCurrent ? 2 : 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  plan.name,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '\$${plan.amount}/mo',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              plan.features,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isCurrent
+                    ? null
+                    : () => _upgradePlan(context, ref, plan.name),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isCurrent ? Colors.grey.shade300 : Theme.of(context).primaryColor,
+                  foregroundColor: isCurrent ? Colors.grey.shade600 : Colors.white,
+                ),
+                child: Text(isCurrent ? 'Current Plan' : 'Upgrade'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _upgradePlan(BuildContext context, WidgetRef ref, String planName) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    final url = await ref.read(subscriptionProvider.notifier).upgradePlan(planName);
+    if (context.mounted) {
+      Navigator.pop(context); // Dismiss loading
+      if (url == 'placeholder_success') {
+        // Refresh session to update router guards (paymentPending -> active)
+        ref.read(sessionContextProvider.notifier).overrideOwnerStatus(OwnerOnboardingStatus.active);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment Successful! Welcome to Pinesphere.')),
+        );
+        // Router will automatically redirect to dashboard because status is active!
+        context.go('/dashboard');
+      } else if (url != null && url.isNotEmpty) {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open checkout page')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to initiate checkout')),
+        );
+      }
+    }
+  }
+
+  void _showCancelDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Subscription'),
+        content: const Text(
+            'Are you sure you want to cancel? You will retain access until the end of your billing cycle.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Keep Plan'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final success = await ref
+                  .read(subscriptionProvider.notifier)
+                  .cancelSubscription();
+              if (success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Subscription cancelled')),
+                );
+              }
+            },
+            child: const Text('Cancel Subscription', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

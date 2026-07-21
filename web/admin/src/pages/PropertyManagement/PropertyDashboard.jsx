@@ -22,7 +22,11 @@ import {
   RefreshCw,
   Loader2,
   AlertCircle,
-  Trash2
+  Trash2,
+  BedDouble,
+  User as UserIcon,
+  Phone,
+  Mail
 } from 'lucide-react';
 import { propertyService } from '../../services/propertyService';
 import { utils, writeFile } from 'xlsx';
@@ -310,9 +314,18 @@ export default function PropertyDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(prop); }}>
-                        <MoreVertical className="h-5 w-5" />
-                      </button>
+                      <div className="flex items-center justify-end space-x-2">
+                        <button 
+                          className="px-3 py-1.5 bg-pine-50 text-pine hover:bg-pine hover:text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1" 
+                          onClick={(e) => { e.stopPropagation(); navigate(`/properties/${prop.id}/rooms`); }}
+                        >
+                          <BedDouble className="h-3.5 w-3.5" />
+                          <span>Rooms</span>
+                        </button>
+                        <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(prop); }}>
+                          <MoreVertical className="h-5 w-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -370,12 +383,16 @@ export default function PropertyDashboard() {
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Owner Details</h3>
                     <div className="space-y-3">
                       <div className="flex items-center text-sm">
-                        <FileText className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-gray-900 font-medium">{selectedProp.owner}</span>
+                        <UserIcon className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="font-medium text-gray-900">{selectedProp.owner}</span>
                       </div>
                       <div className="flex items-center text-sm">
-                        <Smartphone className="h-4 w-4 text-gray-400 mr-2" />
+                        <Phone className="h-4 w-4 text-gray-400 mr-2" />
                         <span className="text-gray-600">{selectedProp.mobile}</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-600">{selectedProp.email}</span>
                       </div>
                     </div>
                   </div>
@@ -418,7 +435,9 @@ export default function PropertyDashboard() {
                 </div>
 
                 <div className="pt-4 flex gap-3">
-                  <button className="saas-button-secondary flex-1 justify-center">View Documents</button>
+                  <button className="saas-button-secondary flex-1 justify-center flex items-center space-x-1" onClick={() => navigate(`/properties/${selectedProp.id}/rooms`)}>
+                    <BedDouble className="h-4 w-4 mr-1" /> Manage Rooms
+                  </button>
                   <button className="saas-button-primary flex-1 justify-center" onClick={() => navigate(`/properties/${selectedProp.id}`)}>Full Details</button>
                   <button 
                     onClick={handleDeleteProperty} 

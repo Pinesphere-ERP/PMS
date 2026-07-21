@@ -1,13 +1,13 @@
 import asyncio
 from httpx import AsyncClient
-from app.infra.database import SessionLocal
+from app.infra.database import AsyncSessionLocal
 from app.infra.models import User, Role
 from sqlalchemy import select
 from app.core.security import create_access_token
 from datetime import timedelta
 
 async def test():
-    async with SessionLocal() as db:
+    async with AsyncSessionLocal() as db:
         # Find super admin user
         q = select(User).join(Role).where(Role.role_code == "SUPER_ADMIN")
         res = await db.execute(q)

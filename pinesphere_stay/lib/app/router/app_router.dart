@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'app_scaffold.dart';
+import '../../core/auth/owner_onboarding_status.dart';
+import '../../core/auth/session_context.dart';
 import '../../features/auth/presentation/providers/auth_notifier.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/pin_login_screen.dart';
 import '../../features/auth/presentation/screens/owner_registration_screen.dart';
+import '../../features/requests/presentation/screens/requests_screen.dart';
+import '../../features/requests/presentation/screens/create_request_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/manager/screens/manager_dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
@@ -31,22 +36,52 @@ import '../../features/reports/presentation/screens/pl_report_screen.dart';
 import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
-
 import '../../features/splash/presentation/custom_splash_screen.dart';
 import '../../features/portal/presentation/screens/portal_login_screen.dart';
 import '../../features/portal/presentation/screens/guest_dashboard_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_dashboard_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_room_detail_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_image_upload_screen.dart';
+
+// Owner Platform screens
+import '../../features/property_onboarding/presentation/screens/property_wizard_screen.dart';
+
+import '../../features/subscription_management/presentation/screens/subscription_screen.dart';
+import '../../features/subscription_management/presentation/screens/subscription_expired_screen.dart';
+import '../../features/staff/presentation/screens/staff_management_screen.dart';
+
 
 part 'app_router.g.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final GlobalKey<NavigatorState> _rootNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'root');
 
+// ─── Routes exempt from all owner-journey guards ──────────────────────────────
+const _ownerJourneyExempt = {
+  '/splash',
+  '/login',
+  '/register',
+  '/pin-login',
+  '/portal/login',
+  '/portal/dashboard',
+  '/onboarding/property',
+  '/onboarding/pending-approval',
+  '/onboarding/rejected',
+  '/subscription',
+  '/subscription/expired',
+  '/settings',          // Always accessible — even expired subscription
+  '/property-settings',
+};
+
+// ─── RouterNotifier: triggers re-evaluation on auth or session state change ───
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
   RouterNotifier(this._ref) {
-    _ref.listen<AuthState>(
-      authProvider,
-      (_, __) => notifyListeners(),
+    _ref.listen<AuthState>(authProvider, (_, _) => notifyListeners());
+    _ref.listen<SessionContext>(
+      sessionContextProvider,
+      (_, _) => notifyListeners(),
     );
   }
 }
@@ -61,8 +96,26 @@ GoRouter appRouter(Ref ref) {
     debugLogDiagnostics: true,
     refreshListenable: notifier,
     redirect: (context, state) {
+      final location = state.matchedLocation;
+
+      // ── Layer 0: Splash — always passthrough ────────────────────────────────
+      if (location == '/splash') return null;
+
+      // ── Layer 0b: Portal routes — independent auth ──────────────────────────
+      if (location.startsWith('/portal')) {
+        final guestToken = ref.read(guestTokenProvider);
+        if (guestToken == null && location != '/portal/login') {
+          return '/portal/login';
+        }
+        if (guestToken != null && location == '/portal/login') {
+          return '/portal/dashboard';
+        }
+        return null;
+      }
+
       final authState = ref.read(authProvider);
 
+      // ── Layer 1: Auth Guard — not initialising ──────────────────────────────
       if (authState == const AuthState.initial()) return null;
 
       final isAuth = authState.maybeWhen(
@@ -73,54 +126,90 @@ GoRouter appRouter(Ref ref) {
         locked: (_) => true,
         orElse: () => false,
       );
+      final isUnauthenticated = !isAuth && !isLocked;
 
-      final isGoingToLogin = state.matchedLocation == '/login';
-      final isGoingToRegister = state.matchedLocation == '/register';
-      final isGoingToPinLogin = state.matchedLocation == '/pin-login';
-      final isSplash = state.matchedLocation == '/splash';
-      final isPortal = state.matchedLocation.startsWith('/portal');
-      
-      if (isSplash) return null;
+      // Must be on an auth-permitted route if unauthenticated
+      final isAuthRoute = location == '/login' ||
+          location == '/register' ||
+          location == '/pin-login';
 
-      // Allow portal routes to handle their own auth independently
-      if (isPortal) {
-        final guestToken = ref.read(guestTokenProvider);
-        final isGoingToPortalLogin = state.matchedLocation == '/portal/login';
-        if (guestToken == null && !isGoingToPortalLogin) {
-          return '/portal/login';
-        }
-        if (guestToken != null && isGoingToPortalLogin) {
-          return '/portal/dashboard';
-        }
-        return null; // Let portal routes pass
-      }
+      if (isUnauthenticated && !isAuthRoute) return '/login';
 
-      if (!isAuth && !isLocked && !isGoingToLogin && !isGoingToRegister) {
-        return '/login';
-      }
+      // ── Layer 2: Lock Guard ─────────────────────────────────────────────────
+      if (isLocked && location != '/pin-login') return '/pin-login';
 
-      if (isLocked && !isGoingToPinLogin) {
-        return '/pin-login';
-      }
-
-      if (isAuth && (isGoingToLogin || isGoingToPinLogin)) {
+      // ── Layer 3: Role-based redirect from auth screens ─────────────────────
+      if (isAuth && isAuthRoute) {
         return authState.maybeWhen(
           authenticated: (user) {
-            if (user.role.name == 'housekeeping') return '/housekeeping';
-            if (user.role.name == 'kitchen') return '/kitchen';
-            if (user.role.name == 'accountant') return '/accountant-dashboard';
+            final roleCode = (user.roleCode ?? user.role.name).toUpperCase();
+            // Role-specific home screens
+            if (roleCode == 'HOUSEKEEPING') return '/housekeeper-dashboard';
+            if (roleCode == 'KITCHEN') return '/kitchen';
+            if (roleCode == 'ACCOUNTANT') return '/accountant-dashboard';
+            if (roleCode == 'PROPERTY_MANAGER') return '/manager-dashboard';
+            // All other roles land on dashboard (which has its own state guard)
             return '/dashboard';
           },
           orElse: () => '/dashboard',
         );
       }
 
+      // ── Layer 4: Owner State Machine Guard ─────────────────────────────────
+      // Only apply to OWNER role users navigating to non-exempt routes
+      if (isAuth && !_ownerJourneyExempt.contains(location)) {
+        final session = ref.read(sessionContextProvider);
+
+        if (session.isOwner) {
+          final ownerStatus = session.ownerStatus;
+
+          switch (ownerStatus) {
+            case OwnerOnboardingStatus.draft:
+              if (!location.startsWith('/onboarding')) {
+                return '/onboarding/property';
+              }
+              break;
+
+            case OwnerOnboardingStatus.paymentPending:
+              // Force to subscription screen
+              if (location != '/subscription' && location != '/subscription/expired') {
+                return '/subscription';
+              }
+              break;
+
+            case OwnerOnboardingStatus.subscriptionExpired:
+              // Only allow settings & subscription screen
+              if (location != '/subscription' &&
+                  location != '/subscription/expired' &&
+                  location != '/settings' &&
+                  location != '/property-settings') {
+                return '/subscription/expired';
+              }
+              break;
+
+            case OwnerOnboardingStatus.active:
+            case OwnerOnboardingStatus.suspended:
+            case OwnerOnboardingStatus.unknown:
+              break;
+          }
+        }
+      }
+
       return null;
     },
     routes: [
+      // ── Public / Pre-Auth Routes ──────────────────────────────────────────
       GoRoute(
         path: '/splash',
         builder: (context, state) => const CustomSplashScreen(),
+      ),
+      GoRoute(
+        path: '/requests',
+        builder: (context, state) => const RequestsScreen(),
+      ),
+      GoRoute(
+        path: '/requests/create',
+        builder: (context, state) => const CreateRequestScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -134,6 +223,33 @@ GoRouter appRouter(Ref ref) {
         path: '/pin-login',
         builder: (context, state) => const PinLoginScreen(),
       ),
+
+      // ── Portal Routes ─────────────────────────────────────────────────────
+      GoRoute(
+        path: '/portal/login',
+        builder: (context, state) => const PortalLoginScreen(),
+      ),
+      GoRoute(
+        path: '/portal/dashboard',
+        builder: (context, state) => const GuestDashboardScreen(),
+      ),
+
+      // ── Owner Journey Routes ──────────────────────────────────────────────
+      GoRoute(
+        path: '/onboarding/property',
+        builder: (context, state) => const PropertyWizardScreen(),
+      ),
+
+      GoRoute(
+        path: '/subscription',
+        builder: (context, state) => const SubscriptionScreen(),
+      ),
+      GoRoute(
+        path: '/subscription/expired',
+        builder: (context, state) => const SubscriptionExpiredScreen(),
+      ),
+
+      // ── Device / Utility Routes ───────────────────────────────────────────
       GoRoute(
         path: '/device-registration',
         builder: (context, state) => const DeviceRegistrationScreen(),
@@ -155,23 +271,38 @@ GoRouter appRouter(Ref ref) {
         builder: (context, state) => const PLReportScreen(),
       ),
       GoRoute(
-        path: '/portal/login',
-        builder: (context, state) => const PortalLoginScreen(),
+        path: '/staff',
+        builder: (context, state) => const StaffManagementScreen(),
       ),
       GoRoute(
-        path: '/portal/dashboard',
-        builder: (context, state) => const GuestDashboardScreen(),
+        path: '/housekeeper-dashboard',
+        builder: (context, state) => const HousekeeperDashboardScreen(),
       ),
+      GoRoute(
+        path: '/housekeeper/room/:id',
+        builder: (context, state) => HousekeeperRoomDetailScreen(roomId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/housekeeper/room/:id/upload',
+        builder: (context, state) => HousekeeperImageUploadScreen(roomId: state.pathParameters['id']!),
+      ),
+
+      // ── Main App Shell (StatefulShellRoute) ────────────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return AppScaffold(navigationShell: navigationShell);
         },
         branches: [
+          // Branch 0: Dashboard & operations
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/dashboard',
                 builder: (context, state) => const DashboardScreen(),
+              ),
+              GoRoute(
+                path: '/manager-dashboard',
+                builder: (context, state) => const ManagerDashboardScreen(),
               ),
               GoRoute(
                 path: '/checkin',
@@ -235,6 +366,7 @@ GoRouter appRouter(Ref ref) {
               ),
             ],
           ),
+          // Branch 1: Rooms
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -243,6 +375,7 @@ GoRouter appRouter(Ref ref) {
               ),
             ],
           ),
+          // Branch 2: Bookings
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -251,6 +384,7 @@ GoRouter appRouter(Ref ref) {
               ),
             ],
           ),
+          // Branch 3: Reports
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -259,6 +393,7 @@ GoRouter appRouter(Ref ref) {
               ),
             ],
           ),
+          // Branch 4: Settings
           StatefulShellBranch(
             routes: [
               GoRoute(

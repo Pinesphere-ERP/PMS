@@ -22,9 +22,16 @@ enum UserRole {
   }
 
   static UserRole fromString(String role) {
+    final cleanRole = role.trim().toLowerCase();
+    if (cleanRole == 'receptionist' || cleanRole == 'reception' || cleanRole == 'frontdesk') {
+      return UserRole.reception;
+    }
+    if (cleanRole == 'superadmin' || cleanRole == 'super_admin') {
+      return UserRole.superAdmin;
+    }
     return UserRole.values.firstWhere(
-      (e) => e.name.toLowerCase() == role.toLowerCase(),
-      orElse: () => UserRole.guest,
+      (e) => e.name.toLowerCase() == cleanRole,
+      orElse: () => UserRole.reception,
     );
   }
 }

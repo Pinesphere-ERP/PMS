@@ -1,0 +1,1 @@
+class HousekeepingTask { final String id; final String status; HousekeepingTask({required this.id, required this.status}); factory HousekeepingTask.fromJson(Map<String, dynamic> json) => HousekeepingTask(id: json['id'] ?? '', status: json['status'] ?? ''); }

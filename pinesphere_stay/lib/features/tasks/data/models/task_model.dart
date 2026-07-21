@@ -15,6 +15,8 @@ class TaskModel {
   String? roomId;
   String? bookingId;
   String? assignedTo;
+  String? requestedByUserId;
+  String? requestedByGuestId;
   String? description;
   
   @Property(type: PropertyType.date)
@@ -46,6 +48,8 @@ class TaskModel {
     this.roomId,
     this.bookingId,
     this.assignedTo,
+    this.requestedByUserId,
+    this.requestedByGuestId,
     this.description,
     this.dueAt,
     this.completedAt,

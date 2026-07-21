@@ -1,10 +1,10 @@
 import asyncio
-from app.infra.database import SessionLocal
+from app.infra.database import AsyncSessionLocal
 from app.infra.models import Property, Owner, Business, Subscription
 from sqlalchemy import select
 
 async def test():
-    async with SessionLocal() as db:
+    async with AsyncSessionLocal() as db:
         q = (
             select(Property, Owner, Business, Subscription)
             .select_from(Property)

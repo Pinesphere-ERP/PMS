@@ -3,10 +3,12 @@ from typing import Optional
 import uuid
 
 class LoginRequest(BaseModel):
-    email: str
+    email: Optional[str] = None
+    login_id: Optional[str] = None
+    mobile_number: Optional[str] = None
     password: str
     property_id: Optional[uuid.UUID] = None
-    device_uid: str
+    device_uid: Optional[str] = None
 
 class AccessibleProperty(BaseModel):
     property_id: str

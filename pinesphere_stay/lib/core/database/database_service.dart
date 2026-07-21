@@ -5,6 +5,7 @@ import 'dao/room_dao.dart';
 import 'dao/checkin_dao.dart';
 import 'dao/checkout_dao.dart';
 import 'dao/housekeeping_dao.dart';
+import 'dao/housekeeping_room_status_dao.dart';
 import 'dao/maintenance_dao.dart';
 import 'dao/settings_dao.dart';
 import 'dao/kpi_dao.dart';
@@ -30,6 +31,7 @@ abstract class IDatabaseService {
   ICheckinDao get checkinDao;
   ICheckoutDao get checkoutDao;
   IHousekeepingDao get housekeepingDao;
+  IHousekeepingRoomStatusDao get housekeepingRoomStatusDao;
   IMaintenanceDao get maintenanceDao;
   ISettingsDao get settingsDao;
   IKpiDao get kpiDao;

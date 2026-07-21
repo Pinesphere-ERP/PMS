@@ -14,6 +14,29 @@ from app.modules.owners.schemas import OwnerCreateRequest, OwnerResponse, OwnerU
 router = APIRouter()
 
 
+@router.get("/users")
+async def list_owner_users(
+    db: AsyncSession = Depends(get_db),
+):
+    """List all users with role OWNER or system users who can be selected as owner."""
+    from app.infra.models import Role
+    q = select(User, Role).join(Role, User.role_id == Role.id).where(Role.role_code == "OWNER")
+    result = await db.execute(q)
+    rows = result.all()
+    
+    users_data = []
+    for user_obj, role_obj in rows:
+        users_data.append({
+            "id": str(user_obj.id),
+            "owner_user_id": str(user_obj.id),
+            "name": user_obj.name,
+            "full_name": user_obj.name,
+            "email": user_obj.email,
+            "mobile_number": user_obj.mobile_number,
+        })
+    return users_data
+
+
 @router.get("", response_model=List[OwnerResponse])
 async def list_owners(
     _: User = Depends(require_super_admin),

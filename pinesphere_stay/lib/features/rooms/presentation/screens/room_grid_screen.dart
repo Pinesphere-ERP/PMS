@@ -11,6 +11,7 @@ import '../../../../core/presentation/widgets/design_system/pine_background.dart
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../bookings/presentation/screens/create_booking_sheet.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
+import '../../../../core/auth/session_context.dart';
 import '../../../../core/permissions/user_role.dart';
 
 class RoomGridScreen extends ConsumerStatefulWidget {
@@ -21,629 +22,6 @@ class RoomGridScreen extends ConsumerStatefulWidget {
 }
 
 class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
-  String _searchQuery = '';
-  String _selectedCity = 'All';
-
-  Future<void> _pickResortImage(StateSetter setDialogState, Map<String, dynamic> data) async {
-    final ImagePicker picker = ImagePicker();
-    try {
-      final XFile? pickedFile = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-      );
-      if (pickedFile != null) {
-        setDialogState(() {
-          data['image'] = pickedFile.path;
-        });
-      }
-    } catch (e) {
-      // Fail silently
-    }
-  }
-
-  void _showAddResortDialog(BuildContext context) {
-    final businessNameCtrl = TextEditingController();
-    final nameCtrl = TextEditingController();
-    final locationCtrl = TextEditingController();
-    final descriptionCtrl = TextEditingController();
-    final Map<String, dynamic> dialogData = {'image': ''};
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Container(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              decoration: const BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Add New Property',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.onBackground,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: businessNameCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Business / Company Name',
-                        prefixIcon: const Icon(Icons.business_center_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: nameCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Property / Resort Name',
-                        prefixIcon: const Icon(Icons.apartment_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: locationCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Location / City',
-                        hintText: 'e.g. Munnar, Kerala',
-                        prefixIcon: const Icon(Icons.location_on_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: descriptionCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Description (Optional)',
-                        prefixIcon: const Icon(Icons.description_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('Property Cover Photo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.outline)),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: () => _pickResortImage(setSheetState, dialogData),
-                      child: Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.outlineVariant, width: 1.5, style: BorderStyle.solid),
-                        ),
-                        child: dialogData['image'].toString().isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: (kIsWeb || dialogData['image'].toString().startsWith('http') || dialogData['image'].toString().startsWith('blob:'))
-                                    ? Image.network(dialogData['image'].toString(), fit: BoxFit.cover)
-                                    : Image.file(File(dialogData['image'].toString()), fit: BoxFit.cover),
-                              )
-                            : const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_a_photo_rounded, size: 32, color: AppColors.outline),
-                                  SizedBox(height: 8),
-                                  Text('Tap to select from Gallery', style: TextStyle(fontSize: 13, color: AppColors.outline)),
-                                ],
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        if (nameCtrl.text.isEmpty || locationCtrl.text.isEmpty || businessNameCtrl.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please fill all required fields')),
-                          );
-                          return;
-                        }
-                        
-                        final imagePath = dialogData['image'].toString().isEmpty
-                            ? 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80'
-                            : dialogData['image'].toString();
-
-                        // Using ResortModel to pass data to pms_provider
-                        // We are appending businessName to description since ResortModel doesn't have a businessName field
-                        // so we can extract it in pms_provider later.
-                        final businessDesc = '${businessNameCtrl.text}|||${descriptionCtrl.text}';
-
-                        final newResort = ResortModel(
-                          id: 'resort_${DateTime.now().millisecondsSinceEpoch}',
-                          name: nameCtrl.text,
-                          location: locationCtrl.text,
-                          image: imagePath,
-                          description: businessDesc,
-                        );
-
-                        ref.read(pmsProvider.notifier).addResort(newResort);
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Created property ${nameCtrl.text}!')),
-                        );
-                      },
-                      child: const Text('Create Property', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showEditResortDialog(BuildContext context, ResortModel resort) {
-    final nameCtrl = TextEditingController(text: resort.name);
-    final locationCtrl = TextEditingController(text: resort.location);
-    final descriptionCtrl = TextEditingController(text: resort.description);
-    final Map<String, dynamic> dialogData = {'image': resort.image};
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Edit Resort Property'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: nameCtrl,
-                      decoration: const InputDecoration(labelText: 'Resort Name'),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: locationCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Location / City',
-                        hintText: 'e.g. Munnar, Kerala',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: descriptionCtrl,
-                      decoration: const InputDecoration(labelText: 'Description'),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 20),
-                    const Text('Resort Cover Photo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.outline)),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () => _pickResortImage(setDialogState, dialogData),
-                      child: Container(
-                        width: double.infinity,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.outlineVariant, width: 1.2),
-                        ),
-                        child: dialogData['image'].toString().isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: (kIsWeb || dialogData['image'].toString().startsWith('http') || dialogData['image'].toString().startsWith('blob:'))
-                                    ? Image.network(dialogData['image'].toString(), fit: BoxFit.cover)
-                                    : Image.file(File(dialogData['image'].toString()), fit: BoxFit.cover),
-                              )
-                            : const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_a_photo_outlined, size: 24, color: AppColors.outline),
-                                  SizedBox(height: 4),
-                                  Text('Select from Gallery', style: TextStyle(fontSize: 11, color: AppColors.outline)),
-                                ],
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-                  onPressed: () {
-                    if (nameCtrl.text.isEmpty || locationCtrl.text.isEmpty) return;
-
-                    final updatedResort = ResortModel(
-                      id: resort.id,
-                      name: nameCtrl.text,
-                      location: locationCtrl.text,
-                      image: dialogData['image'].toString(),
-                      description: descriptionCtrl.text,
-                    );
-
-                    ref.read(pmsProvider.notifier).updateResort(updatedResort);
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Updated property ${nameCtrl.text}!')),
-                    );
-                  },
-                  child: const Text('Save Changes'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showDeleteResortConfirmation(BuildContext context, ResortModel resort) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Delete Property?'),
-          content: Text('Are you sure you want to delete "${resort.name}"? This action cannot be undone and will delete all associated rooms and details.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              onPressed: () {
-                ref.read(pmsProvider.notifier).deleteResort(resort.id);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Deleted property "${resort.name}"!')),
-                );
-              },
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
-    final canAddEdit = role == UserRole.superAdmin || role == UserRole.owner || role == UserRole.manager;
-    final isReceptionist = !canAddEdit;
-    final assignedPropertyId = authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
-
-    final pmsState = ref.watch(pmsProvider);
-    var resorts = pmsState.resorts;
-    var rooms = pmsState.rooms;
-
-    // Restrict Receptionist to ONLY view their assigned resort and its rooms
-    if (isReceptionist) {
-      if (assignedPropertyId != null && assignedPropertyId.isNotEmpty) {
-        final matches = resorts.where((r) {
-          final rid = r.id.toString().trim().toLowerCase();
-          final aid = assignedPropertyId.toString().trim().toLowerCase();
-          return rid == aid || rid.contains(aid) || aid.contains(rid);
-        }).toList();
-        if (matches.isNotEmpty) {
-          resorts = matches;
-        } else if (resorts.isNotEmpty) {
-          resorts = [resorts.first];
-        }
-      } else if (resorts.isNotEmpty) {
-        resorts = [resorts.first];
-      }
-    }
-
-    // Dynamically parse unique cities from resort location
-    final cities = {'All', ...resorts.map((r) {
-      final parts = r.location.split(',');
-      return parts.isNotEmpty ? parts[0].trim() : r.location;
-    })};
-
-    // Filter resorts based on city selection and search query
-    final filteredResorts = resorts.where((resort) {
-      final cityParts = resort.location.split(',');
-      final resortCity = cityParts.isNotEmpty ? cityParts[0].trim() : resort.location;
-      
-      final matchesCity = _selectedCity == 'All' || resortCity.toLowerCase() == _selectedCity.toLowerCase();
-      final matchesSearch = resort.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                            resort.location.toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      return matchesCity && matchesSearch;
-    }).toList();
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: PineBackground(
-        child: CustomScrollView(
-          slivers: [
-          _buildAppBar(context),
-          
-          // Search Bar Sliver
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: TextField(
-                onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search properties or location...',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.outline),
-                  filled: true,
-                  fillColor: AppColors.surfaceContainerHigh,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                ),
-              ),
-            ),
-          ),
-
-          // City Filter Chips List Sliver
-          SliverToBoxAdapter(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-              child: Row(
-                children: cities.map((city) {
-                  final isSelected = _selectedCity == city;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: ChoiceChip(
-                      label: Text(city),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() {
-                          _selectedCity = city;
-                        });
-                      },
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surfaceContainerHigh,
-                      checkmarkColor: Colors.white,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-
-          // Grid of Resorts
-          filteredResorts.isEmpty
-              ? const SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(48.0),
-                      child: Text('No property matches your search.', style: TextStyle(color: AppColors.outline)),
-                    ),
-                  ),
-                )
-              : SliverPadding(
-                  padding: const EdgeInsets.all(16.0),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.78,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final resort = filteredResorts[index];
-                        final resortRooms = rooms.where((r) => r.resortId == resort.id).toList();
-                        final vacantCount = resortRooms.where((r) => r.status == 'Vacant').length;
-                        
-                        return PineCard(
-                          padding: EdgeInsets.zero,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ResortRoomsDetailScreen(resort: resort),
-                              ),
-                            );
-                          },
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                        child: (kIsWeb || resort.image.startsWith('http') || resort.image.startsWith('blob:'))
-                                            ? Image.network(
-                                                resort.image,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) => Container(
-                                                  color: AppColors.surfaceContainerHigh,
-                                                  child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
-                                                ),
-                                              )
-                                            : Image.file(
-                                                File(resort.image),
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) => Container(
-                                                  color: AppColors.surfaceContainerHigh,
-                                                  child: const Icon(Icons.broken_image, size: 32, color: AppColors.outline),
-                                                ),
-                                              ),
-                                      ),
-                                    ),
-                                    if (!isReceptionist)
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: PopupMenuButton<String>(
-                                          icon: const CircleAvatar(
-                                            backgroundColor: Colors.black45,
-                                            radius: 14,
-                                            child: Icon(Icons.more_vert, size: 16, color: Colors.white),
-                                          ),
-                                          padding: EdgeInsets.zero,
-                                          onSelected: (val) {
-                                            if (val == 'edit') {
-                                              _showEditResortDialog(context, resort);
-                                            } else if (val == 'delete') {
-                                              _showDeleteResortConfirmation(context, resort);
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            const PopupMenuItem(
-                                              value: 'edit',
-                                              child: Row(
-                                                children: [
-                                                  Icon(Icons.edit_rounded, size: 16),
-                                                  SizedBox(width: 8),
-                                                  Text('Edit Property'),
-                                                ],
-                                              ),
-                                            ),
-                                            const PopupMenuItem(
-                                              value: 'delete',
-                                              child: Row(
-                                                children: [
-                                                  Icon(Icons.delete_rounded, size: 16, color: AppColors.error),
-                                                  SizedBox(width: 8),
-                                                  Text('Delete Property', style: TextStyle(color: AppColors.error)),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      resort.name,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      resort.location,
-                                      style: const TextStyle(color: AppColors.outline, fontSize: 10),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (resort.description.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        resort.description,
-                                        style: const TextStyle(color: Colors.grey, fontSize: 9, fontStyle: FontStyle.italic),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          '$vacantCount / ${resortRooms.length} Vacant',
-                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary),
-                                        ),
-                                        const Icon(
-                                          Icons.arrow_forward_rounded,
-                                          size: 14,
-                                          color: AppColors.primary,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      childCount: filteredResorts.length,
-                    ),
-                  ),
-                ),
-        ],
-      ),
-      ),
-      floatingActionButton: isReceptionist
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => _showAddResortDialog(context),
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-              icon: const Icon(Icons.add_home_work),
-              label: const Text('Add Resort'),
-            ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      pinned: true,
-      backgroundColor: AppColors.surface,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-        onPressed: () => context.go('/dashboard'),
-      ),
-      title: Row(
-        children: [
-          const Icon(Icons.signal_wifi_off, color: AppColors.primary),
-          const SizedBox(width: 12),
-          Text(
-            'PineSphere Stay',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ResortRoomsDetailScreen extends ConsumerStatefulWidget {
-  final ResortModel resort;
-  const ResortRoomsDetailScreen({super.key, required this.resort});
-
-  @override
-  ConsumerState<ResortRoomsDetailScreen> createState() => _ResortRoomsDetailScreenState();
-}
-
-class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScreen> {
   String _activeFilter = 'All';
 
   Future<void> pickImage(StateSetter setDialogState, List<String> uploadedImages) async {
@@ -670,9 +48,13 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     final canAddEdit = role == UserRole.superAdmin || role == UserRole.owner || role == UserRole.manager;
     final isReceptionist = !canAddEdit;
 
+    final sessionContext = ref.watch(sessionContextProvider);
+    final activePropertyId = sessionContext.activePropertyId ?? 'default';
+    final activePropertyName = sessionContext.activeProperty?.propertyName ?? 'My Property';
+
     ref.read(pmsProvider.notifier).autoVacateExpiredBookings();
     final pmsState = ref.watch(pmsProvider);
-    final rooms = pmsState.rooms.where((r) => r.resortId == widget.resort.id).toList();
+    final rooms = pmsState.rooms.where((r) => r.resortId == activePropertyId).toList();
 
     // Filter rooms
     final filteredRooms = rooms.where((room) {
@@ -719,14 +101,14 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   child: const Icon(Icons.share, color: Colors.white, size: 20),
                 ),
                 onPressed: () {
-                  _showGlobalResortShareModal(context, widget.resort, rooms);
+                  _showGlobalResortShareModal(context, activePropertyName, activePropertyId, rooms);
                 },
               ),
               const SizedBox(width: 8),
             ],
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                widget.resort.name,
+                activePropertyName,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -737,23 +119,24 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  (kIsWeb || widget.resort.image.startsWith('http') || widget.resort.image.startsWith('blob:'))
-                      ? Image.network(
-                          widget.resort.image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: AppColors.surfaceContainerHigh,
-                            child: const Icon(Icons.broken_image, size: 48, color: AppColors.outline),
-                          ),
-                        )
-                      : Image.file(
-                          File(widget.resort.image),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: AppColors.surfaceContainerHigh,
-                            child: const Icon(Icons.broken_image, size: 48, color: AppColors.outline),
-                          ),
+                  const SizedBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black54,
+                            Colors.black26,
+                            Colors.transparent,
+                            Colors.black87,
+                          ],
                         ),
+                      ),
+                    ),
+                  ),
                   Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
@@ -781,7 +164,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                       children: [
                         const Icon(Icons.location_on, color: AppColors.primary, size: 16),
                         const SizedBox(width: 4),
-                        Text(widget.resort.location, style: const TextStyle(color: AppColors.outline, fontSize: 13)),
+                        const Text('Active Property', style: TextStyle(color: AppColors.outline, fontSize: 13)),
                       ],
                     ),
                     const Divider(height: 20),
@@ -832,7 +215,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
 
           // Rooms grid / Bookings logs
           if (_activeFilter == 'Bookings')
-            _buildBookingsLogsList(context, pmsState, rooms)
+            _buildBookingsLogsList(context, pmsState, rooms, ref)
           else if (filteredRooms.isEmpty)
             const SliverToBoxAdapter(
               child: Center(
@@ -867,7 +250,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
       floatingActionButton: isReceptionist
           ? null
           : FloatingActionButton.extended(
-              onPressed: () => _showAddRoomDialog(context),
+              onPressed: () => _showAddRoomDialog(context, ref),
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.onPrimary,
               icon: const Icon(Icons.add),
@@ -1371,7 +754,11 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     );
   }
 
-  void _showAddRoomDialog(BuildContext context) {
+  void _showAddRoomDialog(BuildContext context, WidgetRef ref) {
+    final sessionContext = ref.read(sessionContextProvider);
+    final activePropertyId = sessionContext.activePropertyId ?? 'default';
+    final activePropertyName = sessionContext.activeProperty?.propertyName ?? 'My Property';
+
     final roomNumCtrl = TextEditingController();
     final typeCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
@@ -1498,7 +885,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                             {'name': 'Air Conditioning', 'price': 0.0}
                           ],
                           status: initialStatus,
-                          resortId: widget.resort.id,
+                          resortId: activePropertyId,
                           images: ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80'],
                           description: descriptionCtrl.text,
                         );
@@ -1506,7 +893,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                         ref.read(pmsProvider.notifier).addRoom(newRoom);
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Added Room ${roomNumCtrl.text} to ${widget.resort.name} successfully!')),
+                          SnackBar(content: Text('Added Room ${roomNumCtrl.text} to $activePropertyName successfully!')),
                         );
                       },
                       child: const Text('Add Room', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -2087,7 +1474,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                                     ref.read(pmsProvider.notifier).createBooking(newManualBooking);
                                     if (context.mounted) {
                                       Navigator.pop(context); // Close actions sheet
-                                      Navigator.pop(context); // Pop ResortRoomsDetailScreen to go back
+                                      Navigator.pop(context); // Pop RoomGridScreen to go back
                                       context.go('/bookings');
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Room ${liveRoom.roomNumber} set to Occupied manually until ${_getMonth(pickedDate)} ${pickedDate.day}!')),
@@ -2218,9 +1605,12 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     );
   }
 
-  Widget _buildBookingsLogsList(BuildContext context, PmsState pmsState, List<RoomModel> rooms) {
+  Widget _buildBookingsLogsList(BuildContext context, PmsState pmsState, List<RoomModel> rooms, WidgetRef ref) {
+    final sessionContext = ref.read(sessionContextProvider);
+    final activePropertyId = sessionContext.activePropertyId ?? 'default';
+
     final resortBookings = pmsState.bookings
-        .where((b) => b.resortId == widget.resort.id)
+        .where((b) => b.resortId == activePropertyId)
         .toList()
         .reversed
         .toList();
@@ -2361,9 +1751,8 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     return months[date.month - 1];
   }
 
-  void _showGlobalResortShareModal(BuildContext context, dynamic resort, List<dynamic> rooms) {
-    final resortName = resort.name ?? 'Resort';
-    final location = resort.location ?? 'Main Property';
+  void _showGlobalResortShareModal(BuildContext context, String resortName, String resortId, List<dynamic> rooms) {
+    final location = 'Main Property';
 
     final vacantRooms = rooms.where((r) => r.status.toString().toLowerCase() == 'vacant').toList();
     final listToShare = vacantRooms.isNotEmpty ? vacantRooms : rooms;
@@ -2386,7 +1775,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     }
 
     const portalBaseUrl = String.fromEnvironment('PORTAL_URL', defaultValue: 'http://localhost:3000');
-    final portalUrl = '$portalBaseUrl/guest-portal?property_id=${resort.id}';
+    final portalUrl = '$portalBaseUrl/guest-portal?property_id=$resortId';
 
     buffer.writeln('🔗 View photos & book online: $portalUrl');
     buffer.writeln('\nContact receptionist to complete your booking!');

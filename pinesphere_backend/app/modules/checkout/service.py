@@ -125,20 +125,20 @@ async def perform_checkout(
             property_id=checkin.property_id,
             guest_id=booking.guest_id,
             invoice_number=invoice_number,
-            grand_total=total_amount,
-            total_paid=advance_paid,
-            balance_due=remaining_balance,
-            status="final",
-            generated_at=now,
+            amount=total_amount,
+            gst=0.0,
+            status="Paid" if remaining_balance <= 0 else "Pending",
+            date=now.date(),
+            due_date=now.date(),
         )
         db.add(invoice)
         await db.flush()
     else:
-        invoice.grand_total = total_amount
-        invoice.total_paid = advance_paid
-        invoice.balance_due = remaining_balance
-        invoice.status = "final"
-        invoice.generated_at = now
+        invoice.amount = total_amount
+        invoice.gst = 0.0
+        invoice.status = "Paid" if remaining_balance <= 0 else "Pending"
+        invoice.date = now.date()
+        invoice.due_date = now.date()
         await db.flush()
 
     charge_items = [
@@ -211,6 +211,15 @@ async def perform_checkout(
             "staff": staff_user_name,
         },
     )
+    
+    # Invalidate portal session capabilities cache for this booking
+    from app.modules.portal.cache import PortalCache
+    from app.infra.models import PortalSession
+    ps_stmt = select(PortalSession.session_id).where(PortalSession.booking_id == booking.booking_id)
+    ps_res = await db.execute(ps_stmt)
+    for s_id in ps_res.scalars():
+        await PortalCache.invalidate_context(s_id)
+
     await db.commit()
     await db.refresh(checkout)
 

@@ -371,7 +371,8 @@ async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Dep
         if current_user.property_id:
             conditions.append(RoomCategory.property_id == current_user.property_id)
         if current_user.email:
-            conditions.append(Owner.email == current_user.email)
+            from sqlalchemy import func
+            conditions.append(func.lower(Owner.email) == current_user.email.lower())
             
         q = q.where(or_(*conditions))
         
@@ -659,7 +660,8 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
         if current_user.property_id:
             conditions.append(Property.property_id == current_user.property_id)
         if current_user.email:
-            conditions.append(Owner.email == current_user.email)
+            from sqlalchemy import func
+            conditions.append(func.lower(Owner.email) == current_user.email.lower())
             
         q = q.where(or_(*conditions))
 

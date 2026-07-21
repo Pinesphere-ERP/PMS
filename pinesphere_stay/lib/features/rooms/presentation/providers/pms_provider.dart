@@ -772,10 +772,17 @@ class PmsNotifier extends Notifier<PmsState> {
         description = parts.length > 1 ? parts[1] : '';
       }
 
+      final users = databaseService.userDao.getAll();
+      final currentUser = users.isNotEmpty ? users.first : null;
+      
+      final ownerEmail = currentUser?.email ?? 'owner@example.com';
+      final ownerName = currentUser?.name ?? 'Default Owner';
+      final ownerMobile = '9999999999';
+
       final response = await dio.post('/properties', data: {
-        'owner_name': 'Default Owner',
-        'owner_mobile': '9999999999',
-        'owner_email': 'owner@example.com',
+        'owner_name': ownerName,
+        'owner_mobile': ownerMobile,
+        'owner_email': ownerEmail,
         'business_name': businessName,
         'property_name': resort.name,
         'property_type': 'Resort',
@@ -808,10 +815,17 @@ class PmsNotifier extends Notifier<PmsState> {
           ? '33333333-3333-3333-3333-333333333333' 
           : (resort.id == 'resort-2' ? '44444444-4444-4444-4444-444444444444' : resort.id);
 
+      final users = databaseService.userDao.getAll();
+      final currentUser = users.isNotEmpty ? users.first : null;
+      
+      final ownerEmail = currentUser?.email ?? 'owner@example.com';
+      final ownerName = currentUser?.name ?? 'Default Owner';
+      final ownerMobile = '9999999999';
+
       final response = await dio.put('/properties/$resolvedId', data: {
-        'owner_name': 'Default Owner',
-        'owner_mobile': '9999999999',
-        'owner_email': 'owner@example.com',
+        'owner_name': ownerName,
+        'owner_mobile': ownerMobile,
+        'owner_email': ownerEmail,
         'business_name': '${resort.name} Business',
         'property_name': resort.name,
         'property_type': 'Resort',
@@ -860,10 +874,17 @@ class PmsNotifier extends Notifier<PmsState> {
   Future<void> addResortWithRooms(ResortModel resort, int numRooms) async {
     try {
       final dio = ref.read(dioClientProvider);
+      final users = databaseService.userDao.getAll();
+      final currentUser = users.isNotEmpty ? users.first : null;
+      
+      final ownerEmail = currentUser?.email ?? 'owner@example.com';
+      final ownerName = currentUser?.name ?? 'Default Owner';
+      final ownerMobile = '9999999999';
+
       final response = await dio.post('/properties', data: {
-        'owner_name': 'Default Owner',
-        'owner_mobile': '9999999999',
-        'owner_email': 'owner@example.com',
+        'owner_name': ownerName,
+        'owner_mobile': ownerMobile,
+        'owner_email': ownerEmail,
         'business_name': '${resort.name} Business',
         'property_name': resort.name,
         'property_type': 'Resort',

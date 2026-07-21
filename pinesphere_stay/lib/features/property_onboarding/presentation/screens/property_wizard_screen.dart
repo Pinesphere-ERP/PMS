@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/property_wizard_model.dart';
 import '../providers/property_wizard_notifier.dart';
+import '../../../core/auth/session_context.dart';
 
 
 class PropertyWizardScreen extends ConsumerWidget {
@@ -60,9 +61,19 @@ class PropertyWizardScreen extends ConsumerWidget {
     );
 
     // Call submit
-    // Note: We need a propertyId. Ideally passed during navigation or stored in session.
-    // For now, we mock the submission or use a draft ID.
-    final success = await notifier.submitForApproval('draft-id');
+    // Note: We read the real propertyId from the sessionContext
+    final propertyId = ref.read(sessionContextProvider).propertyId;
+    if (propertyId == null) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: No active property found.')),
+        );
+      }
+      return;
+    }
+    
+    final success = await notifier.submitForApproval(propertyId);
 
     if (context.mounted) {
       Navigator.pop(context); // Dismiss loading

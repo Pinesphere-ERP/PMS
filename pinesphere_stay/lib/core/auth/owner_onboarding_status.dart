@@ -1,6 +1,9 @@
 /// Represents every possible state an Owner's property can be in.
 /// This drives all router guards — zero ambiguity.
 enum OwnerOnboardingStatus {
+  /// Registration complete but wizard not submitted.
+  draft,
+
   /// Registration complete, waiting for Super Admin approval.
   pendingApproval,
 
@@ -40,6 +43,8 @@ enum OwnerOnboardingStatus {
     final sub = (subscriptionStatus ?? '').toLowerCase();
 
     switch (ob) {
+      case 'draft':
+        return OwnerOnboardingStatus.draft;
       case 'pending_approval':
         return OwnerOnboardingStatus.pendingApproval;
       case 'rejected':

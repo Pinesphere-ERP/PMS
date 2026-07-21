@@ -1011,3 +1011,66 @@ async def get_property_audit_logs(
 
     return logs
 
+
+@router.patch("/{property_id}/wizard-step")
+async def update_wizard_step(
+    property_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+
+    q = select(Property).where(Property.property_id == pid)
+    result = await db.execute(q)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    if payload.get("name"):
+        prop.property_name = payload["name"]
+    if payload.get("property_type"):
+        prop.property_type = payload["property_type"]
+    if payload.get("star_category"):
+        prop.star_category = int(payload["star_category"])
+        
+    db.add(prop)
+    await db.commit()
+    return {"message": "Wizard step saved successfully"}
+
+
+@router.post("/{property_id}/submit-for-approval")
+async def submit_for_approval(
+    property_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+
+    q = select(Property).where(Property.property_id == pid)
+    result = await db.execute(q)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    if payload.get("name"):
+        prop.property_name = payload["name"]
+    if payload.get("property_type"):
+        prop.property_type = payload["property_type"]
+    if payload.get("star_category"):
+        prop.star_category = int(payload["star_category"])
+
+    prop.onboarding_status = "pending_approval"
+    
+    db.add(prop)
+    await db.commit()
+    return {"message": "Property submitted for approval"}

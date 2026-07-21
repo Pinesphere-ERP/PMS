@@ -56,3 +56,4 @@ aiosqlite
 aiohttp
 structlog==24.4.0
 slowapi==0.1.9
+stripe==11.4.0

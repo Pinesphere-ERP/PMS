@@ -24,6 +24,25 @@ class SubscriptionScreen extends ConsumerWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.onBackground),
       ),
+      floatingActionButton: subState.when(
+        data: (subscription) {
+          if (subscription != null && subscription.isActive) {
+            return FloatingActionButton.extended(
+              onPressed: () {
+                ref.read(sessionContextProvider.notifier).overrideOwnerStatus(OwnerOnboardingStatus.active);
+                context.go('/dashboard');
+              },
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text('Proceed to Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+            );
+          }
+          return const SizedBox.shrink();
+        },
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(

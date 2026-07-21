@@ -68,7 +68,7 @@ class HousekeepingService {
     } on DioException catch (e) {
       AppLogger.w('createTask network failed, storing locally and queuing sync', e);
       final localUuid = data['uuid'] ?? const Uuid().v4();
-      final entity = HousekeepingTaskEntity(
+      final _ = HousekeepingTaskEntity(
         serverId: localUuid.toString(),
         roomId: data['room_id'] ?? '',
         propertyId: data['property_id'] ?? '',
@@ -238,7 +238,7 @@ class HousekeepingService {
     } on DioException catch (e) {
       AppLogger.w('createMaintenanceTicket network failed, storing locally and queuing sync', e);
       final localUuid = data['uuid'] ?? const Uuid().v4();
-      final entity = MaintenanceTicketEntity(
+      final _ = MaintenanceTicketEntity(
         serverId: localUuid.toString(),
         roomId: data['room_id'] ?? '',
         propertyId: data['property_id'] ?? '',

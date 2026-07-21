@@ -8,7 +8,7 @@ from sqlalchemy.future import select
 from app.infra.database import get_db
 from app.infra.models import Task, TaskLog, User
 from app.core.dependencies import get_current_user, assert_property_access, get_current_role
-from app.modules.tasks.schemas import TaskCreate, TaskResponse, TaskStatusUpdate
+from app.modules.tasks.schemas import TaskCreate, TaskResponse, TaskStatusUpdate, TaskAssign
 
 router = APIRouter()
 
@@ -31,12 +31,14 @@ async def create_task(
 
     new_task = Task(
         task_id=uuid.uuid4(),
-        property_id=payload.property_id,  # F-02 fix: store property_id on task
+        property_id=payload.property_id,
         task_type=payload.task_type,
         priority=payload.priority,
         room_id=room_id,
         booking_id=booking_id,
         description=payload.description,
+        requested_by_user_id=uuid.UUID(payload.requested_by_user_id) if payload.requested_by_user_id else None,
+        requested_by_guest_id=uuid.UUID(payload.requested_by_guest_id) if payload.requested_by_guest_id else None,
         due_at=payload.due_at,
         status="pending"
     )
@@ -148,5 +150,47 @@ async def update_task_status(
 
     db.add(task)
     db.add(log)
+    await db.refresh(task)
+    return task
+
+@router.patch("/{task_id}/assign", response_model=TaskResponse)
+async def assign_task(
+    task_id: uuid.UUID,
+    payload: TaskAssign,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Assign task to a specific user. Caller must be Manager or Owner."""
+    stmt = select(Task).where(Task.task_id == task_id)
+    result = await db.execute(stmt)
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    await assert_property_access(task.property_id, current_user, db)
+
+    try:
+        assigned_user_uuid = uuid.UUID(payload.assigned_to)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID format")
+
+    old_status = task.status
+    task.assigned_to = assigned_user_uuid
+    if task.status == "pending":
+        task.status = "accepted"
+
+    log = TaskLog(
+        log_id=uuid.uuid4(),
+        task_id=task.task_id,
+        user_id=current_user.id,
+        old_status=old_status,
+        new_status=task.status,
+        notes=f"Task assigned to {assigned_user_uuid}"
+    )
+
+    db.add(task)
+    db.add(log)
+    await db.commit()
     await db.refresh(task)
     return task

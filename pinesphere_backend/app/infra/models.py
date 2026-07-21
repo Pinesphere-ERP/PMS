@@ -716,6 +716,8 @@ class Task(Base, TimestampMixin, SyncMixin):
     room_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("rooms.room_id"), nullable=True)
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"), nullable=True)
     assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    requested_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    requested_by_guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id", ondelete="SET NULL"), nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text)
     due_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
@@ -1036,3 +1038,48 @@ class PropertyIncidentReport(Base):
     witness_name: Mapped[Optional[str]] = mapped_column(String(150))
     photo_url: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class ServiceRequest(Base, TimestampMixin, SyncMixin):
+    __tablename__ = "service_requests"
+    __table_args__ = (
+        CheckConstraint(
+            "(requested_by_guest_id IS NOT NULL AND requested_by_user_id IS NULL) OR "
+            "(requested_by_guest_id IS NULL AND requested_by_user_id IS NOT NULL)",
+            name="chk_request_creator"
+        ),
+        Index("idx_service_requests_property", "property_id"),
+        Index("idx_service_requests_status", "status"),
+        Index("idx_service_requests_assigned_to", "assigned_to"),
+        Index("idx_service_requests_room", "room_id"),
+        Index("idx_service_requests_booking", "booking_id"),
+        Index("idx_service_requests_created", "created_at"),
+        Index("idx_service_requests_property_status", "property_id", "status"),
+        {'extend_existing': True},
+    )
+
+    request_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
+    booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id", ondelete="SET NULL"), nullable=True)
+    room_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("rooms.room_id", ondelete="SET NULL"), nullable=True)
+    
+    requested_by_guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id", ondelete="SET NULL"), nullable=True)
+    requested_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    request_category: Mapped[str] = mapped_column(String(30), nullable=False)
+    title: Mapped[str] = mapped_column(String(150), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    priority: Mapped[str] = mapped_column(String(20), default='normal', nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default='pending', nullable=False)
+    
+    assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    
+    completed_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    completion_photo_url: Mapped[Optional[str]] = mapped_column(Text)
+    
+    manager_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    verified_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    remarks: Mapped[Optional[str]] = mapped_column(Text)

@@ -7,16 +7,11 @@ from fastapi import HTTPException
 
 from app.infra.models import (
     CheckOut, CheckIn, Booking, Room, RoomCategory, Guest,
-<<<<<<< HEAD
-    Invoice, InvoiceItem, User, Property,
+    Invoice, InvoiceItem, User, Property, HousekeepingRoomStatus,
 )
 from app.core.notifications import whatsapp
 from app.core.config import settings
-=======
-    Invoice, InvoiceItem, User, HousekeepingRoomStatus,
-)
 from app.modules.housekeeping.service import _notify_housekeepers
->>>>>>> 7da586ee8781e8ad603d5bdbcc1bbb38829b45ca
 from app.modules.audit.logger import AuditLogger
 from app.modules.checkout.schemas import (
     CheckOutRequest, CheckOutResponse,

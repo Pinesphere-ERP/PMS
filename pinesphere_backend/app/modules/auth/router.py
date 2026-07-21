@@ -27,7 +27,9 @@ SESSION_HEARTBEAT_TIMEOUT_MINUTES = 30
 # ──────────────────────────────────────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
-    email: str
+    email: Optional[str] = None
+    login_id: Optional[str] = None
+    mobile_number: Optional[str] = None
     password: str
     device_id: Optional[str] = None
     device_name: Optional[str] = None
@@ -176,7 +178,13 @@ async def login(
                 detail="Device is blacklisted from accessing the platform."
             )
             
-    user = await _resolve_user(db, payload.email)
+    identifier = payload.email or payload.login_id or payload.mobile_number
+    if not identifier:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="email, login_id, or mobile_number is required"
+        )
+    user = await _resolve_user(db, identifier)
 
     # ── Validate credentials ────────────────────────────────────────────────
     is_valid = False

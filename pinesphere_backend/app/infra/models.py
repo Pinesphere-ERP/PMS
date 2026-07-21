@@ -344,8 +344,7 @@ class UserSyncLog(Base):
 class RoomCategory(Base, TimestampMixin):
     __tablename__ = "room_categories"
     __table_args__ = {'extend_existing': True}
-<<<<<<< HEAD
-    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    room_category_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     name: Mapped[Optional[str]] = mapped_column(String(100))
     category: Mapped[Optional[str]] = mapped_column(String(50))
@@ -357,8 +356,9 @@ class RoomCategory(Base, TimestampMixin):
     view: Mapped[Optional[str]] = mapped_column(String(100))
     ac: Mapped[bool] = mapped_column(Boolean, default=True)
     description: Mapped[Optional[str]] = mapped_column(Text)
-
-RoomCategory = RoomType
+    room_name: Mapped[Optional[str]] = mapped_column(String(100))
+    number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
+    base_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
 
 class RoomInventory(Base, TimestampMixin):
     __tablename__ = "room_inventory"
@@ -389,15 +389,6 @@ class RoomAmenity(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_type_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_types.id", ondelete="CASCADE"), nullable=False)
     amenity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("amenities.id", ondelete="CASCADE"), nullable=False)
-
-
-=======
-    room_category_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
-    room_name: Mapped[Optional[str]] = mapped_column(String(100))
-    number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
-    base_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
->>>>>>> 7da586ee8781e8ad603d5bdbcc1bbb38829b45ca
 
 class Room(Base, TimestampMixin, SyncMixin):
     __tablename__ = "rooms"

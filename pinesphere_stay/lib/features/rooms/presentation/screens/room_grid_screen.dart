@@ -1364,7 +1364,6 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     final descriptionCtrl = TextEditingController();
     
     String initialStatus = 'Vacant';
-    final _ = <String>[];
 
     showModalBottomSheet(
       context: context,

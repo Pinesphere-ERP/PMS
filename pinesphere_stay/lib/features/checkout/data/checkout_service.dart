@@ -129,6 +129,7 @@ class CheckOutService {
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         syncStatus: 'Pending',
       );
+      _checkoutDao.put(entity);
 
       _updateRoomToDirty(data['room_id']?.toString() ?? '');
       _syncService.enqueueMutation(

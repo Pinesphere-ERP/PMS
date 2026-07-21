@@ -83,6 +83,7 @@ class HousekeepingService {
         createdAt: DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
+      _housekeepingDao.put(entity);
 
       _syncService.enqueueMutation(
         entityType: 'HousekeepingTask',
@@ -254,6 +255,7 @@ class HousekeepingService {
         createdAt: DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
       );
+      _maintenanceDao.put(entity);
 
       _syncService.enqueueMutation(
         entityType: 'MaintenanceTicket',

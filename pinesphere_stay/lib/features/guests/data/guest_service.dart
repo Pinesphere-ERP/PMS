@@ -120,6 +120,7 @@ class GuestService {
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         syncStatus: 'Pending',
       );
+      _guestDao.put(entity);
 
       _syncService.enqueueMutation(
         entityType: 'Guest',

@@ -120,6 +120,7 @@ class BookingService {
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         syncStatus: 'Pending',
       );
+      _bookingDao.put(entity);
 
       _syncService.enqueueMutation(
         entityType: 'Booking',

@@ -14,10 +14,16 @@ class ApiInterceptor extends Interceptor {
       options.headers['Authorization'] = 'Bearer $accessToken';
     }
 
-    // Inject Tenant ID if available
+    // Inject Tenant / Property context headers
     final tenantId = await secureStorage.read(key: 'tenant_id');
     if (tenantId != null) {
       options.headers['X-Tenant-ID'] = tenantId;
+    }
+
+    // Inject the active property context for multi-property owners
+    final activePropertyId = await secureStorage.read(key: 'active_property_id');
+    if (activePropertyId != null) {
+      options.headers['X-Active-Property-Id'] = activePropertyId;
     }
 
     super.onRequest(options, handler);
@@ -25,10 +31,9 @@ class ApiInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Placeholder for refresh token logic on 401
     if (err.response?.statusCode == 401) {
-      // TODO: Handle token refresh
-      // If refresh fails, log out the user
+      // TODO: Implement token refresh logic
+      // Attempt refresh, if it fails clear session and redirect to login
     }
     super.onError(err, handler);
   }

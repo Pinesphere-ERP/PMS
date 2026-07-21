@@ -1,10 +1,22 @@
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
+from app.infra.database import engine
 
-async def main():
-    engine = create_async_engine('postgresql+asyncpg://pinesphere_db_wtx9_user:2g5tX4aZ40Y8w3R9M2S5H6P1L3Y5F1M6@dpg-cpl1o75a730s73et3fag-a.singapore-postgres.render.com/pinesphere_db_wtx9?ssl=require', connect_args={'timeout': 5})
-    async with engine.connect() as conn:
-        res = await conn.execute(text("SELECT email FROM users WHERE email = 'admin@pinesphere.com'"))
-        print(res.fetchall())
-asyncio.run(main())
+async def test():
+    async with engine.begin() as conn:
+        res = await conn.execute(text("SELECT id, email, role_id, property_id FROM users;"))
+        users = res.fetchall()
+        print("USERS:", users)
+        
+        for u in users:
+            uid = u.id
+            access = await conn.execute(text(f"SELECT * FROM user_property_access WHERE user_id = '{uid}';"))
+            print(f"Access for {uid}:", access.fetchall())
+                
+        props = await conn.execute(text("SELECT property_id, property_name, owner_id FROM properties;"))
+        print("PROPERTIES:", props.fetchall())
+        
+        owners = await conn.execute(text("SELECT owner_id, full_name FROM owners;"))
+        print("OWNERS TABLE:", owners.fetchall())
+
+asyncio.run(test())

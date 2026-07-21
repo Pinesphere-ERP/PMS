@@ -62,7 +62,7 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
       ),
       body: SafeArea(

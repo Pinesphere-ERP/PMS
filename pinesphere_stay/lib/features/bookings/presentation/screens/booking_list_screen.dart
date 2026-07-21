@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../../../../core/permissions/user_role.dart';
@@ -132,14 +133,22 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
       elevation: 0,
       title: Row(
         children: [
-          const Icon(Icons.calendar_month, color: AppColors.primary),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
+          ),
           const SizedBox(width: 12),
           Text(
-            'Booking Management',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+            'Bookings',
+            style: GoogleFonts.outfit(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
           ),
         ],
       ),
@@ -159,13 +168,13 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
         children: [
           Expanded(
             child: PineCard(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Active Stay', style: TextStyle(color: AppColors.outline, fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Text('$activeCount Guests', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('Active', style: GoogleFonts.inter(color: AppColors.outline, fontSize: 13, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  Text('$activeCount', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
                 ],
               ),
             ),
@@ -173,13 +182,13 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: PineCard(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Completed', style: TextStyle(color: AppColors.outline, fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Text('$completedCount Stays', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('Completed', style: GoogleFonts.inter(color: AppColors.outline, fontSize: 13, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  Text('$completedCount', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.onSurface)),
                 ],
               ),
             ),
@@ -187,13 +196,13 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: PineCard(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Revenue', style: TextStyle(color: AppColors.outline, fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Text('\$${totalRevenue.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  Text('Revenue', style: GoogleFonts.inter(color: AppColors.outline, fontSize: 13, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  Text('₹${totalRevenue.toStringAsFixed(0)}', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
                 ],
               ),
             ),

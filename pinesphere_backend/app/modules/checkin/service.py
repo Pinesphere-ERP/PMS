@@ -11,6 +11,8 @@ from app.infra.models import (
     CheckIn, Booking, Room, RoomCategory, Guest, Invoice, InvoiceItem,
     RoomAssignment, Property
 )
+from app.core.notifications import whatsapp
+from app.core.config import settings
 from app.modules.documents.router import create_form_c_on_checkin
 from app.modules.audit.logger import AuditLogger
 from app.modules.checkin.schemas import (
@@ -214,6 +216,28 @@ async def perform_checkin(
     )
     await db.commit()
     await db.refresh(checkin)
+
+    # Automate WhatsApp Welcome & Check-In message to guest with portal URL
+    if guest_record and guest_record.mobile:
+        prop_stmt = select(Property).where(Property.property_id == booking.property_id)
+        prop_res = await db.execute(prop_stmt)
+        prop_record = prop_res.scalar_one_or_none()
+        property_name = prop_record.property_name if prop_record else "Resort"
+        portal_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+
+        try:
+            await whatsapp.send_checkin_welcome_message(
+                phone_number=guest_record.mobile,
+                guest_name=guest_record.full_name,
+                room_number=room.room_number,
+                property_name=property_name,
+                check_in_date=str(booking.check_in_date),
+                check_out_date=str(booking.check_out_date),
+                portal_url=portal_url,
+            )
+        except Exception as err:
+            print(f"[WhatsApp Trigger Warning]: {err}")
+
     return await _enrich_checkin_response(db, checkin)
 
 

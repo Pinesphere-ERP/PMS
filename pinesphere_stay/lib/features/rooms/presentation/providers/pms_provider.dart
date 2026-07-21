@@ -370,7 +370,11 @@ class PmsNotifier extends Notifier<PmsState> {
           final id = json['id'].toString();
           
           String descText = json['description'] ?? '';
-          String locVal = json['city'] ?? 'Unknown';
+          String locVal = (json['location'] != null && json['location'].toString().isNotEmpty)
+              ? json['location'].toString()
+              : ((json['address'] != null && json['address'].toString().isNotEmpty)
+                  ? json['address'].toString()
+                  : (json['city']?.toString() ?? 'Location Not Specified'));
           String imgVal = json['image'] ?? 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80';
 
           try {
@@ -553,11 +557,7 @@ class PmsNotifier extends Notifier<PmsState> {
 
       // Save to local ObjectBox DB for persistence
       try {
-        final resolvedPropertyId = booking.resortId == 'resort-1' 
-            ? '33333333-3333-3333-3333-333333333333' 
-            : (booking.resortId == 'resort-2'
-                ? '44444444-4444-4444-4444-444444444444'
-                : booking.resortId);
+        final resolvedPropertyId = booking.resortId;
 
         final bookingEntity = BookingEntity(
           serverId: booking.id,
@@ -811,9 +811,7 @@ class PmsNotifier extends Notifier<PmsState> {
   Future<void> updateResort(ResortModel resort) async {
     try {
       final dio = ref.read(dioClientProvider);
-      final String resolvedId = resort.id == 'resort-1' 
-          ? '33333333-3333-3333-3333-333333333333' 
-          : (resort.id == 'resort-2' ? '44444444-4444-4444-4444-444444444444' : resort.id);
+      final String resolvedId = resort.id;
 
       final users = databaseService.userDao.getAll();
       final currentUser = users.isNotEmpty ? users.first : null;
@@ -859,9 +857,7 @@ class PmsNotifier extends Notifier<PmsState> {
       }
 
       final dio = ref.read(dioClientProvider);
-      final String resolvedId = resortId == 'resort-1' 
-          ? '33333333-3333-3333-3333-333333333333' 
-          : (resortId == 'resort-2' ? '44444444-4444-4444-4444-444444444444' : resortId);
+      final String resolvedId = resortId;
 
       await dio.delete('/properties/$resolvedId');
       await loadResorts();

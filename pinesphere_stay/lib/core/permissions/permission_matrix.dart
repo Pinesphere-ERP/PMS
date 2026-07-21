@@ -102,13 +102,24 @@ class PermissionMatrix {
         // Assume everyone can view a personalized dashboard
         return AccessLevel.view;
         
-      case Module.settings:
-      case Module.guestManagement:
-      case Module.staffManagement:
       case Module.housekeeping:
-        // General fallbacks for newly added modules if not strictly defined in matrix
+        if (role == UserRole.owner || role == UserRole.manager || role == UserRole.housekeeping) return AccessLevel.full;
+        return AccessLevel.none;
+
+      case Module.staffManagement:
+        if (role == UserRole.owner) return AccessLevel.full;
+        if (role == UserRole.manager) return AccessLevel.limited;
+        return AccessLevel.none;
+
+      case Module.guestManagement:
+        if (role == UserRole.owner || role == UserRole.manager || role == UserRole.reception) return AccessLevel.full;
+        if (role == UserRole.guest) return AccessLevel.limited;
+        return AccessLevel.none;
+
+      case Module.settings:
         if (role == UserRole.owner || role == UserRole.manager) return AccessLevel.full;
-        return AccessLevel.limited;
+        if (role == UserRole.reception) return AccessLevel.view;
+        return AccessLevel.none;
     }
   }
 

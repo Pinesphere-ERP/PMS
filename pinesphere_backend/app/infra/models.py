@@ -357,6 +357,8 @@ class RoomType(Base, TimestampMixin):
     ac: Mapped[bool] = mapped_column(Boolean, default=True)
     description: Mapped[Optional[str]] = mapped_column(Text)
 
+RoomCategory = RoomType
+
 class RoomInventory(Base, TimestampMixin):
     __tablename__ = "room_inventory"
     __table_args__ = {'extend_existing': True}

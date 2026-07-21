@@ -10,6 +10,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../bookings/presentation/screens/create_booking_sheet.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
+import '../../../../core/permissions/user_role.dart';
 
 class RoomGridScreen extends ConsumerStatefulWidget {
   const RoomGridScreen({super.key});
@@ -325,9 +327,33 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
+    final canAddEdit = role == UserRole.superAdmin || role == UserRole.owner || role == UserRole.manager;
+    final isReceptionist = !canAddEdit;
+    final assignedPropertyId = authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
+
     final pmsState = ref.watch(pmsProvider);
-    final resorts = pmsState.resorts;
-    final rooms = pmsState.rooms;
+    var resorts = pmsState.resorts;
+    var rooms = pmsState.rooms;
+
+    // Restrict Receptionist to ONLY view their assigned resort and its rooms
+    if (isReceptionist) {
+      if (assignedPropertyId != null && assignedPropertyId.isNotEmpty) {
+        final matches = resorts.where((r) {
+          final rid = r.id.toString().trim().toLowerCase();
+          final aid = assignedPropertyId.toString().trim().toLowerCase();
+          return rid == aid || rid.contains(aid) || aid.contains(rid);
+        }).toList();
+        if (matches.isNotEmpty) {
+          resorts = matches;
+        } else if (resorts.isNotEmpty) {
+          resorts = [resorts.first];
+        }
+      } else if (resorts.isNotEmpty) {
+        resorts = [resorts.first];
+      }
+    }
 
     // Dynamically parse unique cities from resort location
     final cities = {'All', ...resorts.map((r) {
@@ -470,47 +496,48 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                                               ),
                                       ),
                                     ),
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: PopupMenuButton<String>(
-                                        icon: const CircleAvatar(
-                                          backgroundColor: Colors.black45,
-                                          radius: 14,
-                                          child: Icon(Icons.more_vert, size: 16, color: Colors.white),
+                                    if (!isReceptionist)
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: PopupMenuButton<String>(
+                                          icon: const CircleAvatar(
+                                            backgroundColor: Colors.black45,
+                                            radius: 14,
+                                            child: Icon(Icons.more_vert, size: 16, color: Colors.white),
+                                          ),
+                                          padding: EdgeInsets.zero,
+                                          onSelected: (val) {
+                                            if (val == 'edit') {
+                                              _showEditResortDialog(context, resort);
+                                            } else if (val == 'delete') {
+                                              _showDeleteResortConfirmation(context, resort);
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            const PopupMenuItem(
+                                              value: 'edit',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit_rounded, size: 16),
+                                                  SizedBox(width: 8),
+                                                  Text('Edit Property'),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'delete',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.delete_rounded, size: 16, color: AppColors.error),
+                                                  SizedBox(width: 8),
+                                                  Text('Delete Property', style: TextStyle(color: AppColors.error)),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        padding: EdgeInsets.zero,
-                                        onSelected: (val) {
-                                          if (val == 'edit') {
-                                            _showEditResortDialog(context, resort);
-                                          } else if (val == 'delete') {
-                                            _showDeleteResortConfirmation(context, resort);
-                                          }
-                                        },
-                                        itemBuilder: (context) => [
-                                          const PopupMenuItem(
-                                            value: 'edit',
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.edit_rounded, size: 16),
-                                                SizedBox(width: 8),
-                                                Text('Edit Property'),
-                                              ],
-                                            ),
-                                          ),
-                                          const PopupMenuItem(
-                                            value: 'delete',
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.delete_rounded, size: 16, color: AppColors.error),
-                                                SizedBox(width: 8),
-                                                Text('Delete Property', style: TextStyle(color: AppColors.error)),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -570,13 +597,15 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
         ],
       ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddResortDialog(context),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        icon: const Icon(Icons.add_home_work),
-        label: const Text('Add Resort'),
-      ),
+      floatingActionButton: isReceptionist
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _showAddResortDialog(context),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              icon: const Icon(Icons.add_home_work),
+              label: const Text('Add Resort'),
+            ),
     );
   }
 
@@ -636,6 +665,11 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
+    final canAddEdit = role == UserRole.superAdmin || role == UserRole.owner || role == UserRole.manager;
+    final isReceptionist = !canAddEdit;
+
     ref.read(pmsProvider.notifier).autoVacateExpiredBookings();
     final pmsState = ref.watch(pmsProvider);
     final rooms = pmsState.rooms.where((r) => r.resortId == widget.resort.id).toList();
@@ -685,29 +719,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                   child: const Icon(Icons.share, color: Colors.white, size: 20),
                 ),
                 onPressed: () {
-                  final resortName = Uri.encodeComponent(widget.resort.name);
-                  final serializedRooms = rooms.map((r) {
-                    final cleanType = r.type.replaceAll('|', ' ');
-                    final allImgs = r.images.join(',');
-                    return '${r.roomNumber}|$cleanType|${r.price.toStringAsFixed(0)}|$allImgs|${r.id}';
-                  }).join(';');
-                  
-                  final encodedRooms = Uri.encodeComponent(serializedRooms);
-                  const portalBaseUrl = String.fromEnvironment('PORTAL_URL', defaultValue: 'https://portal.pinesphere.com');
-                  final portalUrl = '$portalBaseUrl/share/resort/${widget.resort.id}?name=$resortName&rooms=$encodedRooms';
-                      
-                  Clipboard.setData(ClipboardData(text: portalUrl));
-                  
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Resort catalog link copied to clipboard!\n${widget.resort.name} catalog ready.'),
-                      action: SnackBarAction(
-                        label: 'OK',
-                        onPressed: () {},
-                        textColor: Colors.white,
-                      ),
-                    ),
-                  );
+                  _showGlobalResortShareModal(context, widget.resort, rooms);
                 },
               ),
               const SizedBox(width: 8),
@@ -852,13 +864,15 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
         ],
       ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddRoomDialog(context),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Room'),
-      ),
+      floatingActionButton: isReceptionist
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _showAddRoomDialog(context),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Room'),
+            ),
     );
   }
 
@@ -1883,6 +1897,8 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
         return Consumer(
           builder: (context, ref, child) {
             final pmsState = ref.watch(pmsProvider);
+            final authState = ref.watch(authProvider);
+            final isReceptionist = authState.maybeWhen(authenticated: (u) => u.role == UserRole.reception, orElse: () => true);
             final liveRoom = pmsState.rooms.firstWhere((r) => r.id == room.id, orElse: () => room);
             
             BookingModel? activeBooking;
@@ -1933,45 +1949,47 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                       ),
                       Row(
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
-                            onPressed: () {
-                              Navigator.pop(context); // Close actions sheet
-                              _showEditRoomDialog(context, liveRoom); // Open edit dialog
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (dialogCtx) => AlertDialog(
-                                  title: const Text('Delete Room'),
-                                  content: Text('Are you sure you want to delete Room ${liveRoom.roomNumber}? This cannot be undone.'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(dialogCtx),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      style: TextButton.styleFrom(foregroundColor: AppColors.error),
-                                      onPressed: () async {
-                                        Navigator.pop(dialogCtx); // Close confirm dialog
-                                        Navigator.pop(context); // Close actions sheet
-                                        await ref.read(pmsProvider.notifier).deleteRoom(liveRoom.id);
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text('Room ${liveRoom.roomNumber} deleted successfully!')),
-                                          );
-                                        }
-                                      },
-                                      child: const Text('Delete'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                          if (!isReceptionist) ...[
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                              onPressed: () {
+                                Navigator.pop(context); // Close actions sheet
+                                _showEditRoomDialog(context, liveRoom); // Open edit dialog
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (dialogCtx) => AlertDialog(
+                                    title: const Text('Delete Room'),
+                                    content: Text('Are you sure you want to delete Room ${liveRoom.roomNumber}? This cannot be undone.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(dialogCtx),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                                        onPressed: () async {
+                                          Navigator.pop(dialogCtx); // Close confirm dialog
+                                          Navigator.pop(context); // Close actions sheet
+                                          await ref.read(pmsProvider.notifier).deleteRoom(liveRoom.id);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Room ${liveRoom.roomNumber} deleted successfully!')),
+                                            );
+                                          }
+                                        },
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                           IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: () => Navigator.pop(context),
@@ -2342,5 +2360,142 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
   String _getMonth(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[date.month - 1];
+  }
+
+  void _showGlobalResortShareModal(BuildContext context, dynamic resort, List<dynamic> rooms) {
+    final resortName = resort.name ?? 'Resort';
+    final location = resort.location ?? 'Main Property';
+
+    final vacantRooms = rooms.where((r) => r.status.toString().toLowerCase() == 'vacant').toList();
+    final listToShare = vacantRooms.isNotEmpty ? vacantRooms : rooms;
+
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln('🏡 *$resortName* - Available Rooms Catalog');
+    buffer.writeln('📍 Location: $location\n');
+    buffer.writeln('Hello! Here are the current available rooms open for booking:\n');
+
+    for (final r in listToShare) {
+      final cleanType = r.type.toString().replaceAll('|', ' ');
+      buffer.writeln('• *Room ${r.roomNumber}* - $cleanType');
+      buffer.writeln('  Price: ₹${r.price.toStringAsFixed(0)} / night');
+      buffer.writeln('  Status: ${r.status}');
+      if (r.amenities != null && r.amenities.isNotEmpty) {
+        final amenitiesList = (r.amenities as List).map((a) => a['name']?.toString() ?? a.toString()).take(3).join(', ');
+        buffer.writeln('  Amenities: $amenitiesList');
+      }
+      buffer.writeln('');
+    }
+
+    const portalBaseUrl = String.fromEnvironment('PORTAL_URL', defaultValue: 'http://localhost:3000');
+    final portalUrl = '$portalBaseUrl/guest-portal?property_id=${resort.id}';
+
+    buffer.writeln('🔗 View photos & book online: $portalUrl');
+    buffer.writeln('\nContact receptionist to complete your booking!');
+
+    final catalogText = buffer.toString();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.share, color: AppColors.primary, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Global Room Share',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '${listToShare.length} room(s) available at $resortName',
+                            style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.outlineVariant),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      catalogText,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.chat, color: Colors.white),
+                  label: const Text('Share via WhatsApp', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: catalogText));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Room catalog copied to clipboard! Ready to paste & send on WhatsApp!'),
+                        backgroundColor: Color(0xFF25D366),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.copy),
+                  label: const Text('Copy Catalog Text & Link'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: catalogText));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Catalog text & guest portal link copied to clipboard!')),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

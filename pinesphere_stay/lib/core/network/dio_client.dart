@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -46,6 +47,21 @@ class OfflineOutboxInterceptor extends Interceptor {
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.connectionError ||
         err.error.toString().contains('SocketException');
+
+    // If hosted backend (render) fails, automatically fallback to local server
+    if (isNetworkError && err.requestOptions.baseUrl.contains('onrender.com')) {
+      try {
+        final localBaseUrl = defaultTargetPlatform == TargetPlatform.android
+            ? 'http://10.0.2.2:8000/api/v1'
+            : 'http://localhost:8000/api/v1';
+
+        final options = err.requestOptions;
+        options.baseUrl = localBaseUrl;
+        final fallbackDio = Dio();
+        final response = await fallbackDio.fetch(options);
+        return handler.resolve(response);
+      } catch (_) {}
+    }
 
     final method = err.requestOptions.method.toUpperCase();
 

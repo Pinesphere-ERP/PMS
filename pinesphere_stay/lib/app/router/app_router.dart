@@ -139,6 +139,7 @@ GoRouter appRouter(Ref ref) {
       // ── Layer 3: Role-based redirect from auth screens ─────────────────────
       if (isAuth && isAuthRoute) {
         return authState.maybeWhen(
+          authenticated: (user) {
             final roleCode = (user.roleCode ?? user.role.name).toUpperCase();
             // Role-specific home screens
             if (roleCode == 'HOUSEKEEPING') return '/housekeeper-dashboard';

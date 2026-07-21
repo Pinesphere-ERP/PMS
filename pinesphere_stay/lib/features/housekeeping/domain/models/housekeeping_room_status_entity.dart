@@ -1,8 +1,7 @@
 import 'package:objectbox/objectbox.dart';
-import '../../../sync/models/sync_entity.dart';
 
 @Entity()
-class HousekeepingRoomStatusEntity implements SyncEntity {
+class HousekeepingRoomStatusEntity {
   @Id()
   int id = 0;
 
@@ -31,22 +30,17 @@ class HousekeepingRoomStatusEntity implements SyncEntity {
   String? createdBy;
   String? updatedBy;
 
-  @override
   @Property(type: PropertyType.date)
   DateTime createdAt;
 
-  @override
   @Property(type: PropertyType.date)
   DateTime lastModifiedHlc;
 
-  @override
   bool isDeleted;
 
-  @override
   @Transient()
   bool get hasUnsyncedChanges => false; 
 
-  @override
   String get syncId => serverId;
 
   HousekeepingRoomStatusEntity({
@@ -71,7 +65,6 @@ class HousekeepingRoomStatusEntity implements SyncEntity {
     this.isDeleted = false,
   });
 
-  @override
   Map<String, dynamic> toJson() {
     return {
       'id': serverId,

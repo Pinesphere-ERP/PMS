@@ -5,7 +5,7 @@ part 'housekeeping_room_status_model.freezed.dart';
 part 'housekeeping_room_status_model.g.dart';
 
 @freezed
-class HousekeepingRoomStatusModel with _$HousekeepingRoomStatusModel {
+abstract class HousekeepingRoomStatusModel with _$HousekeepingRoomStatusModel {
   const HousekeepingRoomStatusModel._();
 
   const factory HousekeepingRoomStatusModel({

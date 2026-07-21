@@ -1,9 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
-import '../data/housekeeping_room_service.dart';
-import '../domain/models/housekeeping_room_status_model.dart';
+import '../../data/housekeeping_room_service.dart';
+import '../../domain/models/housekeeping_room_status_model.dart';
 import '../../../../main.dart'; // for databaseService
-import '../domain/models/housekeeping_room_status_entity.dart';
 
 final housekeeperRoomsProvider = FutureProvider.autoDispose<List<HousekeepingRoomStatusModel>>((ref) async {
   final service = ref.watch(housekeepingRoomServiceProvider);

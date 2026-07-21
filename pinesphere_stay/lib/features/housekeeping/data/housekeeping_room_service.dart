@@ -5,8 +5,8 @@ import '../../../../core/utils/logger.dart';
 import '../../../../main.dart'; // To access databaseService
 import '../domain/models/housekeeping_room_status_model.dart';
 import '../domain/models/housekeeping_room_status_entity.dart';
-import '../../../sync/data/sync_service.dart';
-import '../../../audit/data/audit_service.dart';
+import '../../sync/data/sync_service.dart';
+import '../../audit/data/audit_service.dart';
 
 part 'housekeeping_room_service.g.dart';
 
@@ -22,6 +22,7 @@ class HousekeepingRoomService {
   late final SyncService _syncService;
   late final AuditService _audit;
 
+  // ignore: prefer_initializing_formals
   HousekeepingRoomService({required Dio dio}) : _dio = dio;
 
   void initialize(SyncService syncService, AuditService audit) {

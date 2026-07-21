@@ -31,6 +31,8 @@ import 'dao/role_perm_dao.dart';
 import 'dao/role_perm_dao_web.dart';
 import 'dao/perm_dao.dart';
 import 'dao/perm_dao_web.dart';
+import 'dao/housekeeping_room_status_dao.dart';
+import 'dao/housekeeping_room_status_dao_web.dart';
 
 class DatabaseService implements IDatabaseService {
   late final IGuestDao _guestDao;
@@ -39,6 +41,7 @@ class DatabaseService implements IDatabaseService {
   late final ICheckinDao _checkinDao;
   late final ICheckoutDao _checkoutDao;
   late final IHousekeepingDao _housekeepingDao;
+  late final IHousekeepingRoomStatusDao _housekeepingRoomStatusDao;
   late final IMaintenanceDao _maintenanceDao;
   late final ISettingsDao _settingsDao;
   late final IKpiDao _kpiDao;
@@ -58,6 +61,7 @@ class DatabaseService implements IDatabaseService {
     _checkinDao = CheckinDaoWeb();
     _checkoutDao = CheckoutDaoWeb();
     _housekeepingDao = HousekeepingDaoWeb();
+    _housekeepingRoomStatusDao = HousekeepingRoomStatusDaoWeb();
     _maintenanceDao = MaintenanceDaoWeb();
     _settingsDao = SettingsDaoWeb();
     _kpiDao = KpiDaoWeb();
@@ -97,6 +101,9 @@ class DatabaseService implements IDatabaseService {
 
   @override
   IHousekeepingDao get housekeepingDao => _housekeepingDao;
+
+  @override
+  IHousekeepingRoomStatusDao get housekeepingRoomStatusDao => _housekeepingRoomStatusDao;
 
   @override
   IMaintenanceDao get maintenanceDao => _maintenanceDao;

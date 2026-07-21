@@ -80,12 +80,31 @@ class AuthRepository {
       final userId = payload['sub']?.toString() ?? 'unknown_id';
       final propertyId = payload['tenant_id']?.toString();
 
+      final accessibleProps = (rawProperties ?? [])
+          .map((p) => AccessiblePropertyModel.fromJson(p as Map<String, dynamic>))
+          .toList();
+      
+      String? primaryPropertyId = propertyId;
+      String? onboardingStatus;
+      String? subscriptionStatus;
+      
+      if (accessibleProps.isNotEmpty) {
+        final firstProp = accessibleProps.first;
+        primaryPropertyId ??= firstProp.propertyId;
+        onboardingStatus = firstProp.onboardingStatus;
+        subscriptionStatus = firstProp.subscriptionStatus;
+      }
+
       final user = UserModel(
         id: userId,
         name: email.split('@')[0], // Placeholder until /me is added
         email: email,
         role: UserRole.owner, // Placeholder
-        propertyId: propertyId,
+        propertyId: primaryPropertyId,
+        roleCode: tokenResponse.roleCode,
+        onboardingStatus: onboardingStatus,
+        subscriptionStatus: subscriptionStatus,
+        accessibleProperties: accessibleProps,
       );
       
       await _secureStorage.write(key: 'cached_user', value: jsonEncode(user.toJson()));

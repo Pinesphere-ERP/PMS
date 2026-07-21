@@ -89,16 +89,16 @@ class _PropertyWizardScreenState extends ConsumerState<PropertyWizardScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.onBackground),
           onPressed: () => _prevPage(wizardState, wizardNotifier),
         ),
         title: Text(
           'Setup Property',
-          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+          style: GoogleFonts.outfit(color: AppColors.onBackground, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white70),
+            icon: const Icon(Icons.close, color: AppColors.onBackground),
             onPressed: () => context.go('/dashboard'),
           ),
         ],
@@ -143,7 +143,7 @@ class _PropertyWizardScreenState extends ConsumerState<PropertyWizardScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 4.0),
               height: 6,
               decoration: BoxDecoration(
-                color: isActive ? AppColors.primary : Colors.white24,
+                color: isActive ? AppColors.primary : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: isActive ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.5), blurRadius: 4)] : [],
               ),
@@ -212,9 +212,9 @@ class _PropertyWizardScreenState extends ConsumerState<PropertyWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(title, style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.onBackground)),
           const SizedBox(height: 8),
-          Text(subtitle, style: GoogleFonts.inter(fontSize: 16, color: Colors.white70)),
+          Text(subtitle, style: GoogleFonts.inter(fontSize: 16, color: AppColors.onSurfaceVariant)),
           const SizedBox(height: 32),
           Container(
             padding: const EdgeInsets.all(24),

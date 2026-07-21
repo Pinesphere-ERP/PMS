@@ -5,16 +5,9 @@ from typing import Optional
 import uuid
 
 from app.infra.database import get_db
-from app.infra.models import Room, RoomType
+from app.infra.models import Room, RoomCategory
 from app.core.dependencies import get_current_user
 from app.infra.models import User
-
-# If there's a RoomTypePricing model, we should import it. Since we don't know the exact class name, we'll try to find it or query it if possible.
-# Actually, the base_price is on RoomTypePricing. Let's try importing it. If it fails we'll adjust.
-try:
-    from app.infra.models import RoomTypePricing
-except ImportError:
-    RoomTypePricing = None
 
 router = APIRouter()
 
@@ -27,12 +20,7 @@ async def get_inventory_rooms(
     Get rooms inventory data. Cross-property view based on role matrix.
     If tenantId is provided, filter by property_id.
     """
-    # Join Room with RoomType
-    q = select(Room, RoomType).join(RoomType, Room.room_type_id == RoomType.id)
-    
-    if RoomTypePricing:
-        q = q.outerjoin(RoomTypePricing, RoomType.id == RoomTypePricing.room_type_id)
-        q = q.add_columns(RoomTypePricing)
+    q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
     
     if tenantId:
         q = q.where(Room.property_id == tenantId)
@@ -41,20 +29,14 @@ async def get_inventory_rooms(
     rows = result.all()
     
     data = []
-    for row in rows:
-        if RoomTypePricing:
-            room_obj, room_type_obj, pricing_obj = row
-        else:
-            room_obj, room_type_obj = row
-            pricing_obj = None
-            
+    for room_obj, cat_obj in rows:
         data.append({
             "id": str(room_obj.room_id),
             "room_number": room_obj.room_number,
-            "category_id": room_type_obj.name or room_type_obj.category,
-            "category": {"name": room_type_obj.name or room_type_obj.category},
+            "category_id": str(cat_obj.room_category_id),
+            "category": {"name": cat_obj.room_name},
             "status": "Available" if room_obj.occupancy_status == "vacant" else ("Occupied" if room_obj.occupancy_status == "occupied" else room_obj.occupancy_status),
-            "base_price": float(pricing_obj.base_price) if pricing_obj and pricing_obj.base_price else 0
+            "base_price": float(cat_obj.base_price) if cat_obj.base_price else 0
         })
         
     return {"data": data}

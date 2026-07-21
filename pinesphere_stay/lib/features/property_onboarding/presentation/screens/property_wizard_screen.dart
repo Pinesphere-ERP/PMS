@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/property_wizard_model.dart';
 import '../providers/property_wizard_notifier.dart';
 import '../../../../core/auth/session_context.dart';
+import '../../../../core/auth/owner_onboarding_status.dart';
 
 
 class PropertyWizardScreen extends ConsumerWidget {
@@ -61,8 +62,13 @@ class PropertyWizardScreen extends ConsumerWidget {
     );
 
     // Call submit
+<<<<<<< HEAD
     final session = ref.read(sessionContextProvider);
     final propertyId = session.activePropertyId ?? session.user?.propertyId;
+=======
+    // Note: We read the real propertyId from the sessionContext
+    final propertyId = ref.read(sessionContextProvider).activePropertyId;
+>>>>>>> 573fd2550a14b3209a0e03e0956bc40f5ab36712
     if (propertyId == null) {
       if (context.mounted) {
         Navigator.pop(context);
@@ -73,12 +79,13 @@ class PropertyWizardScreen extends ConsumerWidget {
       return;
     }
     
-    final success = await notifier.submitForApproval(propertyId);
+    final success = await notifier.completeOnboarding(propertyId);
 
     if (context.mounted) {
       Navigator.pop(context); // Dismiss loading
       if (success) {
-        context.go('/onboarding/pending-approval');
+        ref.read(sessionContextProvider.notifier).overrideOwnerStatus(OwnerOnboardingStatus.paymentPending);
+        context.go('/subscription');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Submission failed. Please try again.')),

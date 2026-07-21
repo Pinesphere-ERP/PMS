@@ -16,6 +16,8 @@ import '../../features/reports/presentation/screens/reports_dashboard_screen.dar
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/settings/presentation/screens/property_settings_screen.dart';
 import '../../features/bookings/presentation/screens/booking_list_screen.dart';
+import '../../features/accountant/presentation/screens/accountant_dashboard_screen.dart';
+import '../../features/accountant/presentation/screens/accountant_guest_detail_screen.dart';
 import '../../features/bookings/presentation/screens/pending_checkouts_screen.dart';
 import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart';
 import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
@@ -42,8 +44,7 @@ import '../../features/housekeeping/presentation/screens/housekeeper_image_uploa
 
 // Owner Platform screens
 import '../../features/property_onboarding/presentation/screens/property_wizard_screen.dart';
-import '../../features/property_onboarding/presentation/screens/pending_approval_screen.dart';
-import '../../features/property_onboarding/presentation/screens/property_rejected_screen.dart';
+
 import '../../features/subscription_management/presentation/screens/subscription_screen.dart';
 import '../../features/subscription_management/presentation/screens/subscription_expired_screen.dart';
 import '../../features/staff/presentation/screens/staff_management_screen.dart';
@@ -144,6 +145,7 @@ GoRouter appRouter(Ref ref) {
             // Role-specific home screens
             if (roleCode == 'HOUSEKEEPING') return '/housekeeper-dashboard';
             if (roleCode == 'KITCHEN') return '/kitchen';
+            if (roleCode == 'ACCOUNTANT') return '/accountant-dashboard';
             // All other roles land on dashboard (which has its own state guard)
             return '/dashboard';
           },
@@ -161,29 +163,19 @@ GoRouter appRouter(Ref ref) {
 
           switch (ownerStatus) {
             case OwnerOnboardingStatus.draft:
-              if (location != '/dashboard' &&
-                  !location.startsWith('/onboarding')) {
+              if (!location.startsWith('/onboarding')) {
                 return '/onboarding/property';
               }
               break;
 
-            case OwnerOnboardingStatus.pendingApproval:
-              // Owner can go to dashboard (shows limited trial view) or pending screen
-              // Force them to pending screen unless they're going to dashboard
-              if (location != '/dashboard' &&
-                  !location.startsWith('/onboarding')) {
-                return '/onboarding/pending-approval';
-              }
-              break;
-
-            case OwnerOnboardingStatus.rejected:
-              if (!location.startsWith('/onboarding')) {
-                return '/onboarding/rejected';
+            case OwnerOnboardingStatus.paymentPending:
+              // Force to subscription screen
+              if (location != '/subscription' && location != '/subscription/expired') {
+                return '/subscription';
               }
               break;
 
             case OwnerOnboardingStatus.subscriptionExpired:
-            case OwnerOnboardingStatus.trialExpired:
               // Only allow settings & subscription screen
               if (location != '/subscription' &&
                   location != '/subscription/expired' &&
@@ -193,10 +185,7 @@ GoRouter appRouter(Ref ref) {
               }
               break;
 
-            case OwnerOnboardingStatus.live:
-            case OwnerOnboardingStatus.trial:
-            case OwnerOnboardingStatus.pastDue:
-            case OwnerOnboardingStatus.approved:
+            case OwnerOnboardingStatus.active:
             case OwnerOnboardingStatus.suspended:
             case OwnerOnboardingStatus.unknown:
               break;
@@ -248,16 +237,7 @@ GoRouter appRouter(Ref ref) {
         path: '/onboarding/property',
         builder: (context, state) => const PropertyWizardScreen(),
       ),
-      GoRoute(
-        path: '/onboarding/pending-approval',
-        builder: (context, state) => const PendingApprovalScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/rejected',
-        builder: (context, state) => PropertyRejectedScreen(
-          reason: state.extra as String?,
-        ),
-      ),
+
       GoRoute(
         path: '/subscription',
         builder: (context, state) => const SubscriptionScreen(),
@@ -369,6 +349,14 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/payment-collection',
                 builder: (context, state) => const PaymentCollectionScreen(),
+              ),
+              GoRoute(
+                path: '/accountant-dashboard',
+                builder: (context, state) => const AccountantDashboardScreen(),
+              ),
+              GoRoute(
+                path: '/accountant-guest/:id',
+                builder: (context, state) => AccountantGuestDetailScreen(bookingId: state.pathParameters['id']!),
               ),
             ],
           ),

@@ -16,6 +16,8 @@ import '../../features/reports/presentation/screens/reports_dashboard_screen.dar
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/settings/presentation/screens/property_settings_screen.dart';
 import '../../features/bookings/presentation/screens/booking_list_screen.dart';
+import '../../features/accountant/presentation/screens/accountant_dashboard_screen.dart';
+import '../../features/accountant/presentation/screens/accountant_guest_detail_screen.dart';
 import '../../features/bookings/presentation/screens/pending_checkouts_screen.dart';
 import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart';
 import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
@@ -144,6 +146,7 @@ GoRouter appRouter(Ref ref) {
             // Role-specific home screens
             if (roleCode == 'HOUSEKEEPING') return '/housekeeper-dashboard';
             if (roleCode == 'KITCHEN') return '/kitchen';
+            if (roleCode == 'ACCOUNTANT') return '/accountant-dashboard';
             // All other roles land on dashboard (which has its own state guard)
             return '/dashboard';
           },
@@ -369,6 +372,14 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/payment-collection',
                 builder: (context, state) => const PaymentCollectionScreen(),
+              ),
+              GoRoute(
+                path: '/accountant-dashboard',
+                builder: (context, state) => const AccountantDashboardScreen(),
+              ),
+              GoRoute(
+                path: '/accountant-guest/:id',
+                builder: (context, state) => AccountantGuestDetailScreen(bookingId: state.pathParameters['id']!),
               ),
             ],
           ),

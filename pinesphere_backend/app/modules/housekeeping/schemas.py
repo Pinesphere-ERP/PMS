@@ -124,3 +124,77 @@ class HousekeepingDashboard(BaseModel):
     completed_today_count: int = 0
     inspection_pending_count: int = 0
     maintenance_open_count: int = 0
+
+
+# ─── Housekeeping Room Status Schemas ──────────────────────────────
+
+class HousekeepingRoomCardResponse(BaseModel):
+    """Response for GET /housekeeping/rooms — room card data."""
+    id: uuid.UUID
+    property_id: uuid.UUID
+    room_id: uuid.UUID
+    room_number: str
+    room_type: Optional[str] = None
+    floor: Optional[str] = None
+    description: Optional[str] = None
+    occupancy_status: str = "vacant"
+    clean_status: str = "clean"
+    priority: Optional[str] = None
+    last_cleaned_at: Optional[datetime] = None
+    estimated_cleaning_time: Optional[datetime] = None
+    image_urls: Optional[List[str]] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class HousekeepingRoomDetailResponse(HousekeepingRoomCardResponse):
+    """Extended response for GET /housekeeping/rooms/{room_id}."""
+    created_by: Optional[uuid.UUID] = None
+    updated_by: Optional[uuid.UUID] = None
+
+
+class CleaningCompleteRequest(BaseModel):
+    """Request for POST /housekeeping/{room_id}/complete."""
+    image_urls: List[str] = Field(
+        default_factory=list,
+        description="Cloud storage URLs of cleaning completion photos",
+    )
+
+
+class CleaningScheduleRequest(BaseModel):
+    """Request for POST /housekeeping/{room_id}/schedule."""
+    estimated_cleaning_time: datetime = Field(
+        ..., description="When the housekeeper will complete cleaning"
+    )
+
+
+class HousekeepingStatusUpdate(BaseModel):
+    """Request for PATCH /housekeeping/{room_id}/status."""
+    clean_status: str = Field(
+        ...,
+        pattern=r"^(clean|cleaning_requested|in_progress|not_cleaned|scheduled|verified)$",
+        description="New clean status value",
+    )
+    priority: Optional[str] = Field(
+        None,
+        pattern=r"^(low|medium|high|urgent)$",
+        description="Priority level",
+    )
+
+
+class HousekeepingNotificationResponse(BaseModel):
+    """Response for GET /housekeeping/notifications."""
+    notification_id: uuid.UUID
+    title: str
+    message: str
+    channel: str = "in_app"
+    priority: str = "normal"
+    status: str = "unread"
+    payload: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

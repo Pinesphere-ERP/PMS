@@ -295,6 +295,38 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
 
 
+@router.patch("/{property_id}/approve", status_code=200, dependencies=[Depends(require_super_admin)])
+async def approve_property(property_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+        
+    stmt = select(Property).where(Property.property_id == pid)
+    result = await db.execute(stmt)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+        
+    prop.onboarding_status = "completed"
+    db.add(prop)
+    
+    await AuditLogger.log(
+        db,
+        property_id=prop.property_id,
+        user_id=None,
+        module_name="Properties",
+        action_type="Approved",
+        target_entity="Property",
+        target_record_id=prop.property_id,
+        new_value={"onboarding_status": "completed"}
+    )
+    
+    await db.commit()
+    return {"message": "Property approved successfully"}
+
+
 @router.put("/{property_id}", status_code=200)
 async def update_property(property_id: str, payload: PropertyCreateInput, db: AsyncSession = Depends(get_db)):
     import uuid as _uuid

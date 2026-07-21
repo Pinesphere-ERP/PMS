@@ -45,6 +45,7 @@ enum OwnerOnboardingStatus {
       case 'rejected':
         return OwnerOnboardingStatus.rejected;
       case 'approved':
+      case 'completed':
         // Approved but what's the sub?
         if (sub == 'trial') return OwnerOnboardingStatus.trial;
         if (sub == 'expired') return OwnerOnboardingStatus.trialExpired;

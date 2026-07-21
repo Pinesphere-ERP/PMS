@@ -553,3 +553,331 @@ async def get_housekeeping_dashboard(
         inspection_pending_count=inspection_pending_res.scalar() or 0,
         maintenance_open_count=maintenance_open_res.scalar() or 0,
     )
+
+
+# ─── Cloud Storage Abstraction ─────────────────────────────────────
+
+import abc
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class CloudStorageService(abc.ABC):
+    """Abstract base for cloud image storage. Swap implementation for S3/GCS."""
+
+    @abc.abstractmethod
+    async def upload_images(self, files: list) -> list[str]:
+        """Upload image files and return their cloud URLs."""
+        ...
+
+    @abc.abstractmethod
+    async def delete_images(self, urls: list[str]) -> None:
+        """Delete images by their cloud URLs."""
+        ...
+
+
+class PlaceholderCloudStorage(CloudStorageService):
+    """
+    Placeholder implementation — returns fake URLs.
+    Replace with real S3/GCS/Azure Blob integration later.
+    The interface is designed so swapping requires zero business logic changes.
+    """
+
+    async def upload_images(self, files: list) -> list[str]:
+        logger.info(f"[PlaceholderCloud] Would upload {len(files)} images")
+        return [f"https://cloud.placeholder.pinesphere.com/housekeeping/{uuid.uuid4()}.jpg" for _ in files]
+
+    async def delete_images(self, urls: list[str]) -> None:
+        logger.info(f"[PlaceholderCloud] Would delete {len(urls)} images: {urls}")
+
+
+# Singleton — swap this for a real implementation later
+cloud_storage = PlaceholderCloudStorage()
+
+
+# ─── Housekeeping Room Status Service ──────────────────────────────
+
+from app.infra.models import HousekeepingRoomStatus, Notification, Role
+from app.modules.housekeeping import repository as hk_repo
+from app.modules.housekeeping.schemas import (
+    HousekeepingRoomCardResponse,
+    HousekeepingRoomDetailResponse,
+    CleaningCompleteRequest,
+    CleaningScheduleRequest,
+    HousekeepingStatusUpdate,
+    HousekeepingNotificationResponse,
+)
+from app.modules.notifications.service import NotificationDispatchService
+
+
+async def get_housekeeper_rooms(
+    db: AsyncSession, user: "User"
+) -> List[HousekeepingRoomCardResponse]:
+    """Get all rooms for the housekeeper's assigned property."""
+    property_id = user.property_id
+    if not property_id:
+        raise HTTPException(status_code=403, detail="No property assigned")
+
+    # Auto-sync: ensure housekeeping_room_status is populated
+    records = await hk_repo.get_rooms_by_property(db, property_id)
+    if not records:
+        await hk_repo.sync_rooms_for_property(db, property_id, user.id)
+        await db.flush()
+        records = await hk_repo.get_rooms_by_property(db, property_id)
+
+    return [
+        HousekeepingRoomCardResponse.model_validate(r, from_attributes=True)
+        for r in records
+    ]
+
+
+async def get_housekeeper_room_detail(
+    db: AsyncSession, room_id: uuid.UUID, user: "User"
+) -> HousekeepingRoomDetailResponse:
+    """Get detailed housekeeping status for a single room."""
+    record = await hk_repo.get_room_status_or_404(db, room_id)
+    # Verify property access
+    if record.property_id != user.property_id:
+        # Check if user has broader access (owner/admin)
+        from app.core.dependencies import get_current_role
+        role = await get_current_role(user, db)
+        if role.role_code not in ("SUPER_ADMIN", "OWNER"):
+            raise HTTPException(status_code=403, detail="Access denied to this room")
+    return HousekeepingRoomDetailResponse.model_validate(record, from_attributes=True)
+
+
+async def complete_cleaning(
+    db: AsyncSession,
+    room_id: uuid.UUID,
+    req: CleaningCompleteRequest,
+    user: "User",
+) -> HousekeepingRoomDetailResponse:
+    """Mark cleaning as completed: update status, replace image URLs."""
+    record = await hk_repo.get_room_status_or_404(db, room_id)
+
+    # Verify property access
+    if record.property_id != user.property_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Delete old images from cloud (placeholder)
+    if record.image_urls:
+        await cloud_storage.delete_images(record.image_urls)
+
+    # Store new image URLs
+    await hk_repo.update_image_urls(db, room_id, req.image_urls, user.id)
+
+    # Update status to clean
+    await hk_repo.update_clean_status(db, room_id, "clean", user.id)
+
+    # Also update the Room table's housekeeping_status
+    room_stmt = select(Room).where(Room.room_id == room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        room.housekeeping_status = "clean"
+
+    await AuditLogger.log(
+        db,
+        property_id=record.property_id,
+        user_id=user.id,
+        module_name="housekeeping",
+        action_type="complete_cleaning",
+        target_entity="housekeeping_room_status",
+        target_record_id=record.id,
+        new_value={
+            "clean_status": "clean",
+            "image_urls": req.image_urls,
+            "room_number": record.room_number,
+        },
+    )
+
+    await db.commit()
+    await db.refresh(record)
+    return HousekeepingRoomDetailResponse.model_validate(record, from_attributes=True)
+
+
+async def schedule_cleaning(
+    db: AsyncSession,
+    room_id: uuid.UUID,
+    req: CleaningScheduleRequest,
+    user: "User",
+) -> HousekeepingRoomDetailResponse:
+    """Schedule cleaning for later: update estimated time and status."""
+    record = await hk_repo.get_room_status_or_404(db, room_id)
+
+    if record.property_id != user.property_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    await hk_repo.set_estimated_cleaning_time(
+        db, room_id, req.estimated_cleaning_time, user.id
+    )
+
+    # Also update Room table
+    room_stmt = select(Room).where(Room.room_id == room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        room.housekeeping_status = "scheduled"
+
+    await AuditLogger.log(
+        db,
+        property_id=record.property_id,
+        user_id=user.id,
+        module_name="housekeeping",
+        action_type="schedule_cleaning",
+        target_entity="housekeeping_room_status",
+        target_record_id=record.id,
+        new_value={
+            "clean_status": "scheduled",
+            "estimated_cleaning_time": str(req.estimated_cleaning_time),
+            "room_number": record.room_number,
+        },
+    )
+
+    await db.commit()
+    await db.refresh(record)
+    return HousekeepingRoomDetailResponse.model_validate(record, from_attributes=True)
+
+
+async def update_housekeeping_status(
+    db: AsyncSession,
+    room_id: uuid.UUID,
+    req: HousekeepingStatusUpdate,
+    user: "User",
+) -> HousekeepingRoomDetailResponse:
+    """Update clean status (and optionally priority) for a room."""
+    record = await hk_repo.get_room_status_or_404(db, room_id)
+
+    old_status = record.clean_status
+    record.clean_status = req.clean_status
+    record.updated_by = user.id
+    if req.priority is not None:
+        record.priority = req.priority
+    if req.clean_status == "clean":
+        record.last_cleaned_at = datetime.utcnow()
+    if req.clean_status == "in_progress":
+        record.estimated_cleaning_time = None
+
+    # Sync to Room table
+    room_stmt = select(Room).where(Room.room_id == room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        status_map = {
+            "clean": "clean",
+            "cleaning_requested": "dirty",
+            "in_progress": "cleaning",
+            "not_cleaned": "dirty",
+            "scheduled": "scheduled",
+            "verified": "clean",
+        }
+        room.housekeeping_status = status_map.get(req.clean_status, "dirty")
+
+    # Trigger notifications for statuses that require housekeeping attention
+    if req.clean_status in ("not_cleaned", "cleaning_requested"):
+        await _notify_housekeepers(db, record)
+
+    await AuditLogger.log(
+        db,
+        property_id=record.property_id,
+        user_id=user.id,
+        module_name="housekeeping",
+        action_type="update_housekeeping_status",
+        target_entity="housekeeping_room_status",
+        target_record_id=record.id,
+        old_value={"clean_status": old_status},
+        new_value={"clean_status": req.clean_status, "priority": req.priority},
+    )
+
+    await db.commit()
+    await db.refresh(record)
+    return HousekeepingRoomDetailResponse.model_validate(record, from_attributes=True)
+
+
+async def get_housekeeper_notifications(
+    db: AsyncSession, user: "User"
+) -> List[HousekeepingNotificationResponse]:
+    """Get pending housekeeping notifications for the logged-in housekeeper."""
+    query = (
+        select(Notification)
+        .where(
+            Notification.recipient_id == user.id,
+            Notification.status == "unread",
+        )
+        .order_by(Notification.created_at.desc())
+    )
+    result = await db.execute(query)
+    notifications = result.scalars().all()
+    return [
+        HousekeepingNotificationResponse.model_validate(n, from_attributes=True)
+        for n in notifications
+    ]
+
+
+async def sync_room_statuses(
+    db: AsyncSession, property_id: uuid.UUID, user_id: Optional[uuid.UUID] = None
+) -> int:
+    """Sync housekeeping_room_status from the rooms table for a property."""
+    count = await hk_repo.sync_rooms_for_property(db, property_id, user_id)
+    await db.commit()
+    return count
+
+
+# ─── Internal: Notification Helper ─────────────────────────────────
+
+async def _notify_housekeepers(
+    db: AsyncSession, record: HousekeepingRoomStatus
+) -> None:
+    """Send in-app notification to all housekeepers of the property."""
+    # Find all housekeeping users for this property
+    housekeeper_role_query = select(Role).where(
+        Role.property_id == record.property_id,
+        Role.role_code == "HOUSEKEEPING",
+    )
+    role_res = await db.execute(housekeeper_role_query)
+    hk_role = role_res.scalar_one_or_none()
+
+    if not hk_role:
+        # Try system-level housekeeping role (no property_id)
+        housekeeper_role_query = select(Role).where(
+            Role.role_code == "HOUSEKEEPING",
+            Role.property_id.is_(None),
+        )
+        role_res = await db.execute(housekeeper_role_query)
+        hk_role = role_res.scalar_one_or_none()
+
+    if not hk_role:
+        logger.warning(f"No HOUSEKEEPING role found for property {record.property_id}")
+        return
+
+    housekeepers_query = select(User).where(
+        User.property_id == record.property_id,
+        User.role_id == hk_role.id,
+        User.status == "ACTIVE",
+    )
+    hk_result = await db.execute(housekeepers_query)
+    housekeepers = hk_result.scalars().all()
+
+    if not housekeepers:
+        logger.info(f"No active housekeepers for property {record.property_id}")
+        return
+
+    notification_service = NotificationDispatchService(db)
+    for hk in housekeepers:
+        await notification_service.dispatch(
+            recipient_id=hk.id,
+            title="Room Cleaning Required",
+            message=f"Room {record.room_number} requires cleaning.",
+            channel="in_app",
+            priority="high",
+            payload={
+                "type": "housekeeping",
+                "room_id": str(record.room_id),
+                "room_number": record.room_number,
+                "clean_status": record.clean_status,
+            },
+        )
+    logger.info(
+        f"Notified {len(housekeepers)} housekeepers for room {record.room_number}"
+    )

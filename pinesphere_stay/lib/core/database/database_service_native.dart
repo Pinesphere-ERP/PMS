@@ -15,6 +15,8 @@ import 'dao/checkout_dao.dart';
 import 'dao/checkout_dao_native.dart';
 import 'dao/housekeeping_dao.dart';
 import 'dao/housekeeping_dao_native.dart';
+import 'dao/housekeeping_room_status_dao.dart';
+import 'dao/housekeeping_room_status_dao_native.dart';
 import 'dao/maintenance_dao.dart';
 import 'dao/maintenance_dao_native.dart';
 import 'dao/settings_dao.dart';
@@ -41,6 +43,7 @@ import '../../../features/rooms/domain/models/room_entity.dart';
 import '../../../features/checkin/domain/models/checkin_entity.dart';
 import '../../../features/checkout/domain/models/checkout_entity.dart';
 import '../../../features/housekeeping/domain/models/housekeeping_task_entity.dart';
+import '../../../features/housekeeping/domain/models/housekeeping_room_status_entity.dart';
 import '../../../features/housekeeping/domain/models/maintenance_ticket_entity.dart';
 import '../../../features/settings/domain/models/property_setting_entity.dart';
 import '../../../features/reports/domain/models/kpi_snapshot_entity.dart';
@@ -57,6 +60,7 @@ class DatabaseService implements IDatabaseService {
   late final ICheckinDao _checkinDao;
   late final ICheckoutDao _checkoutDao;
   late final IHousekeepingDao _housekeepingDao;
+  late final IHousekeepingRoomStatusDao _housekeepingRoomStatusDao;
   late final IMaintenanceDao _maintenanceDao;
   late final ISettingsDao _settingsDao;
   late final IKpiDao _kpiDao;
@@ -96,6 +100,7 @@ class DatabaseService implements IDatabaseService {
     _checkinDao = CheckinDaoNative(_store.box<CheckInEntity>());
     _checkoutDao = CheckoutDaoNative(_store.box<CheckOutEntity>());
     _housekeepingDao = HousekeepingDaoNative(_store.box<HousekeepingTaskEntity>());
+    _housekeepingRoomStatusDao = HousekeepingRoomStatusDaoNative(_store.box<HousekeepingRoomStatusEntity>());
     _maintenanceDao = MaintenanceDaoNative(_store.box<MaintenanceTicketEntity>());
     _settingsDao = SettingsDaoNative(_store.box<PropertySettingEntity>());
     _kpiDao = KpiDaoNative(_store.box<KpiSnapshotEntity>());
@@ -131,10 +136,10 @@ class DatabaseService implements IDatabaseService {
 
   @override
   ICheckoutDao get checkoutDao => _checkoutDao;
-
   @override
   IHousekeepingDao get housekeepingDao => _housekeepingDao;
-
+  @override
+  IHousekeepingRoomStatusDao get housekeepingRoomStatusDao => _housekeepingRoomStatusDao;
   @override
   IMaintenanceDao get maintenanceDao => _maintenanceDao;
 

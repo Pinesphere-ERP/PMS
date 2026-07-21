@@ -26,6 +26,15 @@ class StaffResponse(StaffBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class StaffStatusUpdate(BaseModel):
+    status: str = Field(..., description="ACTIVE, SUSPENDED, TERMINATED")
+
+class StaffInvite(BaseModel):
+    mobile_number: str
+    name: str
+    role_id: uuid.UUID
+    property_id: uuid.UUID
+
 # Attendance
 class StaffAttendanceBase(BaseModel):
     property_id: uuid.UUID

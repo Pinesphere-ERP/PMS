@@ -70,6 +70,65 @@ class StaffService:
         
         return new_staff
 
+    async def invite_staff(self, invite_in: schemas.StaffInvite, current_user_id: uuid.UUID) -> User:
+        # Check if mobile_number already exists
+        result = await self.db.execute(select(User).filter(
+            User.property_id == invite_in.property_id,
+            User.mobile_number == invite_in.mobile_number
+        ))
+        if result.scalars().first():
+            raise HTTPException(status_code=400, detail="Mobile number already registered for this property")
+            
+        new_staff = User(
+            property_id=invite_in.property_id,
+            role_id=invite_in.role_id,
+            name=invite_in.name,
+            mobile_number=invite_in.mobile_number,
+            status="PENDING_ONBOARDING",
+            created_by=current_user_id
+        )
+        self.db.add(new_staff)
+        await self.db.commit()
+        await self.db.refresh(new_staff)
+        
+        await AuditLogger.log(
+            self.db,
+            module_name="StaffManagement",
+            action_type="Invited",
+            target_entity="User",
+            target_record_id=new_staff.id,
+            user_id=current_user_id,
+            property_id=invite_in.property_id
+        )
+        # Here we would typically trigger SMS integration
+        return new_staff
+
+    async def update_status(self, staff_id: uuid.UUID, status: str, current_user_id: uuid.UUID) -> User:
+        result = await self.db.execute(select(User).filter(User.id == staff_id))
+        staff = result.scalars().first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff member not found")
+            
+        staff.status = status
+        staff.updated_at = datetime.utcnow()
+        staff.updated_by = current_user_id
+        
+        await self.db.commit()
+        await self.db.refresh(staff)
+        
+        await AuditLogger.log(
+            self.db,
+            module_name="StaffManagement",
+            action_type="StatusUpdated",
+            target_entity="User",
+            target_record_id=staff.id,
+            user_id=current_user_id,
+            property_id=staff.property_id,
+            changes={"new_status": status}
+        )
+        return staff
+
+
     async def get_staff_by_property(self, property_id: uuid.UUID) -> List[User]:
         result = await self.db.execute(select(User).filter(User.property_id == property_id))
         return result.scalars().all()

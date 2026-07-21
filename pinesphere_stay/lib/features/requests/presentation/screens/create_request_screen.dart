@@ -38,7 +38,7 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
         authenticated: (user) => user.id,
         orElse: () => '',
       );
-      final currentPropertyId = authState.maybeWhen<String>(
+      final currentPropertyId = authState.maybeWhen(
         authenticated: (user) => user.propertyId ?? '',
         orElse: () => '',
       );

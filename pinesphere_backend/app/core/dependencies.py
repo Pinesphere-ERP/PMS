@@ -70,7 +70,7 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
         device_fp = payload.get("device_fp")
         # Skip device check for the guest portal token and system tokens
         if device_fp and device_fp not in ("portal", "system", None):
-            requested_property_id_str = request.headers.get("x-tenant-id") or str(user.property_id or "")
+            requested_property_id_str = request.headers.get("x-active-property-id") or request.headers.get("x-tenant-id") or str(user.property_id or "")
             if requested_property_id_str:
                 try:
                     requested_property_uuid = uuid.UUID(requested_property_id_str)
@@ -90,7 +90,7 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
                 except ValueError:
                     pass  # invalid UUID in header — caught below by assert_property_access
 
-        tenant_id_str = request.headers.get("x-tenant-id")
+        tenant_id_str = request.headers.get("x-active-property-id") or request.headers.get("x-tenant-id")
         if not tenant_id_str:
             user.active_property_id = user.property_id
             user.active_role_id = user.role_id
@@ -98,7 +98,7 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
             try:
                 requested_tenant = uuid.UUID(tenant_id_str)
             except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid X-Tenant-ID format")
+                raise HTTPException(status_code=400, detail="Invalid X-Active-Property-Id format")
             
             if user.property_id == requested_tenant:
                 user.active_property_id = requested_tenant

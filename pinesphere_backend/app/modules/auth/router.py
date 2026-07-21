@@ -15,6 +15,7 @@ from app.core.security import verify_password, create_access_token, create_refre
 from app.modules.audit.logger import AuditLogger
 from app.modules.notifications.service import NotificationDispatchService
 import jwt
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -156,7 +157,9 @@ async def _build_token_response(db: AsyncSession, user: User, device_id_str: Opt
 # ──────────────────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     payload: LoginRequest,
     db: AsyncSession = Depends(get_db),
     x_client_platform: Optional[str] = Header(None, alias="X-Client-Platform"),
@@ -288,7 +291,12 @@ async def heartbeat(
 # ──────────────────────────────────────────────────────────────────────────────
 
 @router.post("/request-unlock-otp")
-async def request_unlock_otp(payload: OTPRequestPayload, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def request_unlock_otp(
+    request: Request,
+    payload: OTPRequestPayload, 
+    db: AsyncSession = Depends(get_db)
+):
     """Request an OTP to unlock a locked account. OTP is 6-digits, valid 10 minutes."""
     user = await _resolve_user(db, payload.identifier)
     if not user:

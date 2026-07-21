@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/permissions/permission_matrix.dart';
 import '../../core/presentation/widgets/role_guard.dart';
 import '../../features/auth/presentation/providers/auth_notifier.dart';
+import '../../core/presentation/widgets/connectivity_banner.dart';
 
 class AppScaffold extends ConsumerWidget {
   const AppScaffold({
@@ -28,7 +29,7 @@ class AppScaffold extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: AppColors.background,
         drawer: _buildDrawer(context, authState, ref),
-        body: navigationShell,
+        body: ConnectivityBanner(child: navigationShell),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -101,7 +102,7 @@ class AppScaffold extends ConsumerWidget {
                 _buildDrawerItem(context, Module.housekeeping, Icons.cleaning_services, 'Housekeeping', () => context.push('/housekeeping')),
                 _buildDrawerItem(context, Module.guestManagement, Icons.people, 'Guest Management', () => _showComingSoon(context)),
                 _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Devices & Connectivity', () => context.push('/devices')),
-                _buildDrawerItem(context, Module.serviceRequests, Icons.assignment, 'Request Management', () => context.push('/requests')),
+                _buildDrawerItem(context, Module.housekeeping, Icons.assignment, 'Request Management', () => context.push('/requests')),
                 const Divider(),
                 _buildDrawerItem(context, Module.payments, Icons.payments, 'Payments', () => context.push('/payments')),
                 _buildDrawerItem(context, Module.reports, Icons.analytics, 'Reports', () => navigationShell.goBranch(3)),
@@ -109,7 +110,7 @@ class AppScaffold extends ConsumerWidget {
                 const Divider(),
                 _buildDrawerItem(context, Module.propertyOnboarding, Icons.business, 'Property Settings', () => context.push('/property-settings')),
                 _buildDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts, 'User & Role Management', () => _showComingSoon(context)),
-                _buildDrawerItem(context, Module.staffManagement, Icons.badge, 'Staff Management', () => _showComingSoon(context)),
+                _buildDrawerItem(context, Module.staffManagement, Icons.badge, 'Staff Management', () => context.push('/staff')),
                 _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Device Management', () => context.push('/device-registration')),
                 _buildDrawerItem(context, Module.subscriptionManagement, Icons.subscriptions, 'Subscription Management', () => _showComingSoon(context)),
                 _buildDrawerItem(context, Module.settings, Icons.settings, 'Settings', () => navigationShell.goBranch(4)),

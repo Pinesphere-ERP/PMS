@@ -80,12 +80,21 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    import uuid
+    request_id = str(uuid.uuid4())
+    
+    failed_fields = [err.get("loc")[-1] if err.get("loc") else "unknown" for err in exc.errors()]
+    
     with open("validation_error.log", "a") as f:
-        f.write(f"Validation Error: {exc.errors()}\n")
-        f.write(f"Body: {exc.body}\n")
+        f.write(f"[{request_id}] Validation Error on fields: {failed_fields}\n")
+        
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "body": exc.body},
+        content={
+            "detail": "Validation error",
+            "request_id": request_id,
+            "errors": failed_fields
+        },
     )
 
 @app.exception_handler(Exception)

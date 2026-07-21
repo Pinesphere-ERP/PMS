@@ -24,38 +24,38 @@ def get_dashboard_metrics(property_id: str = None, db: Session = Depends(get_db)
     # 1. Arrivals today
     arrivals = bookings_query.filter(
         func.date(Booking.check_in_date) == today,
-        Booking.status != 'Cancelled'
+        Booking.booking_status != 'Cancelled'
     ).count()
 
     # 2. Departures today
     departures = bookings_query.filter(
         func.date(Booking.check_out_date) == today,
-        Booking.status != 'Cancelled'
+        Booking.booking_status != 'Cancelled'
     ).count()
 
     # 3. Occupied and Vacant Rooms
-    occupied = rooms_query.filter(func.lower(Room.status) == 'occupied').count()
-    vacant = rooms_query.filter(func.lower(Room.status) == 'vacant').count()
+    occupied = rooms_query.filter(func.lower(Room.occupancy_status) == 'occupied').count()
+    vacant = rooms_query.filter(func.lower(Room.occupancy_status) == 'vacant').count()
     housekeeping = rooms_query.filter(
-        Room.status.ilike('cleaning') | Room.status.ilike('maintenance')
+        Room.housekeeping_status.ilike('cleaning') | Room.housekeeping_status.ilike('maintenance')
     ).count()
 
     # 4. Pending Checkouts (Active bookings where checkout is today or earlier)
     pending_checkouts = bookings_query.filter(
-        Booking.status == 'Active',
+        Booking.booking_status == 'Active',
         func.date(Booking.check_out_date) <= today
     ).count()
 
     # 5. Pending Payments (Bookings where payment status is pending or partial)
     pending_payments = bookings_query.filter(
         Booking.payment_status.in_(['Pending', 'Partial']),
-        Booking.status != 'Cancelled'
+        Booking.booking_status != 'Cancelled'
     ).count()
 
     # 6. Revenue Today (Sum of payments made today)
     revenue_today = payments_query.filter(
-        func.date(Payment.payment_date) == today,
-        Payment.status == 'Completed'
+        func.date(Payment.created_at) == today,
+        func.lower(Payment.status) == 'completed'
     ).with_entities(func.coalesce(func.sum(Payment.amount), 0.0)).scalar()
 
     return {

@@ -55,14 +55,8 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> with SingleTick
   }
 
   void _handleLogin() {
-    if (_pin == '1234') {
-      ref.read(authProvider.notifier).unlockPin();
-    } else {
-      _shakeController.forward(from: 0).then((_) {
-        setState(() => _pin = '');
-      });
-      HapticFeedback.heavyImpact();
-    }
+    // Forward the pin to the actual offline/online auth notifier
+    ref.read(authProvider.notifier).loginWithPin(_pin);
   }
 
   @override

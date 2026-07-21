@@ -26,8 +26,8 @@ from app.infra.models import SubscriptionTransaction, Invoice, PendingDue, Prope
 from app.modules.reports.service import update_daily_kpi_snapshot
 
 # Subscription finance is a cross-property platform administration surface.
-# It must not be exposed to property staff, owners, or guests.
-router = APIRouter(dependencies=[Depends(require_super_admin)])
+# It must not be exposed to property staff, owners, or guests for certain endpoints.
+router = APIRouter()
 
 # Dependency for service
 def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
@@ -62,7 +62,12 @@ async def create_payment(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import uuid
+        corr_id = str(uuid.uuid4())
+        # Log the traceback internally
+        import logging
+        logging.getLogger(__name__).error(f"[{corr_id}] Payment creation error", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error (Ref: {corr_id})")
 
 @router.get("/", response_model=PaymentListResponse)
 async def list_payments(
@@ -106,6 +111,9 @@ async def create_razorpay_order(
 ):
     try:
         order = await service.create_razorpay_order(request.amount)
+        with open("payment_mock.log", "a") as f:
+            from datetime import datetime
+            f.write(f"{datetime.utcnow().isoformat()} - [RAZORPAY ORDER] Amount: {request.amount}, Order ID: {order['id']}\n")
         return RazorpayOrderResponse(
             razorpay_order_id=order["id"],
             amount=order["amount"]
@@ -163,14 +171,16 @@ async def verify_razorpay_payment(
             )
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        import traceback
-        error_detail = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-        raise HTTPException(status_code=500, detail=error_detail)
+        import uuid
+        corr_id = str(uuid.uuid4())
+        import logging
+        logging.getLogger(__name__).error(f"[{corr_id}] Razorpay verification error", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error (Ref: {corr_id})")
 
 def _fmt(amount) -> str:
     return f"${float(amount):,.2f}"
 
-@router.get("/transactions")
+@router.get("/transactions", dependencies=[Depends(require_super_admin)])
 async def get_transactions(db: AsyncSession = Depends(get_db)):
     q = (
         select(SubscriptionTransaction, Property, Owner, Subscription)
@@ -208,7 +218,7 @@ async def get_transactions(db: AsyncSession = Depends(get_db)):
     return {"data": data}
 
 
-@router.get("/pending")
+@router.get("/pending", dependencies=[Depends(require_super_admin)])
 async def get_pending_dues(db: AsyncSession = Depends(get_db)):
     q = (
         select(PendingDue, Property, Owner)
@@ -237,7 +247,7 @@ async def get_pending_dues(db: AsyncSession = Depends(get_db)):
     return {"data": data}
 
 
-@router.get("/invoices")
+@router.get("/invoices", dependencies=[Depends(require_super_admin)])
 async def get_invoices(db: AsyncSession = Depends(get_db)):
     q = (
         select(Invoice, Property, Owner)
@@ -267,7 +277,7 @@ async def get_invoices(db: AsyncSession = Depends(get_db)):
     return {"data": data}
 
 
-@router.get("/kpis")
+@router.get("/kpis", dependencies=[Depends(require_super_admin)])
 async def get_payment_kpis(db: AsyncSession = Depends(get_db)):
     # Total revenue (paid)
     total_rev_q = await db.execute(
@@ -321,7 +331,7 @@ async def get_payment_kpis(db: AsyncSession = Depends(get_db)):
     ]}
 
 
-@router.get("/dashboard")
+@router.get("/dashboard", dependencies=[Depends(require_super_admin)])
 async def get_dashboard_data(db: AsyncSession = Depends(get_db)):
     # Monthly trend
     trend_q = await db.execute(
@@ -388,31 +398,6 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)):
     }}
 
 
-@router.post("/pending/{due_id}/mark-paid")
-async def mark_due_as_paid(due_id: str, db: AsyncSession = Depends(get_db)):
-    return JSONResponse(
-        status_code=501,
-        content={
-            "success": False,
-            "status": "not_implemented",
-            "message": "Payment provider integration is not configured",
-        },
-    )
-
-
-@router.post("/pending/{due_id}/remind")
-async def send_reminder(due_id: str, db: AsyncSession = Depends(get_db)):
-    return JSONResponse(
-        status_code=501,
-        content={
-            "success": False,
-            "status": "not_implemented",
-            "message": "Payment provider integration is not configured",
-        },
-    )
-
-
-
 @router.get("/{payment_id}", response_model=PaymentRead)
 async def get_payment(
     payment_id: uuid.UUID,
@@ -422,15 +407,3 @@ async def get_payment(
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
     return payment
-
-
-@router.post("/pending/{due_id}/link")
-async def send_payment_link(due_id: str, db: AsyncSession = Depends(get_db)):
-    return JSONResponse(
-        status_code=501,
-        content={
-            "success": False,
-            "status": "not_implemented",
-            "message": "Payment provider integration is not configured",
-        },
-    )

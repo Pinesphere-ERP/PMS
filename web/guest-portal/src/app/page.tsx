@@ -15,46 +15,42 @@ export default function Home() {
   const [status, setStatus] = useState("Pending");
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [roomNumber, setRoomNumber] = useState("TBD");
+  const [roomType, setRoomType] = useState("Standard");
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
 
   useEffect(() => {
-    const savedStatus = localStorage.getItem("checkinStatus");
-    const savedData = localStorage.getItem("checkinData");
-    const savedBalance = localStorage.getItem("paymentBalance");
-
-    if (savedStatus === "Pending") {
-      setStatus("Pending Approval");
-    } else if (savedStatus === "Approved") {
-      setStatus("Checked In");
-    }
-
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (parsed.firstName) {
-          setGuestName(parsed.firstName);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    if (savedBalance !== null && savedBalance !== undefined) {
-      setBalance(Number(savedBalance));
-    }
-
-    // Fetch real user data
-    fetchAPI('/portal/me')
-      .then((data) => {
-        if (data.name) {
-          setGuestName(data.name);
-        }
-      })
-      .catch((err) => {
+    Promise.all([
+      fetchAPI('/portal/me').catch(err => {
         console.error("Failed to fetch user:", err);
+        return null;
+      }),
+      fetchAPI('/portal/folio').catch(err => {
+        console.error("Failed to fetch folio:", err);
+        return null;
       })
-      .finally(() => {
-        setLoading(false);
-      });
+    ]).then(([meData, folioData]) => {
+      if (meData) {
+        setGuestName(meData.name || "Guest");
+        setRoomNumber(meData.room_number || "TBD");
+        setRoomType(meData.room_type || "Standard");
+        setCheckIn(meData.check_in || "");
+        setCheckOut(meData.check_out || "");
+        
+        let displayStatus = "Pending Approval";
+        if (meData.status === "confirmed") displayStatus = "Confirmed";
+        if (meData.status === "checked_in") displayStatus = "Checked In";
+        if (meData.status === "checked_out") displayStatus = "Checked Out";
+        setStatus(displayStatus);
+      }
+      
+      if (folioData && folioData.balance_due !== undefined) {
+        setBalance(folioData.balance_due);
+      }
+    }).finally(() => {
+      setLoading(false);
+    });
   }, []);
 
   if (loading) {
@@ -72,16 +68,16 @@ export default function Home() {
         <StayCard
           guestName={guestName}
           propertyName="Pinesphere Stay"
-          roomNumber="101"
-          roomType="Deluxe Suite"
-          checkIn="2026-07-20"
-          checkOut="2026-07-25"
+          roomNumber={roomNumber}
+          roomType={roomType}
+          checkIn={checkIn}
+          checkOut={checkOut}
           status={status}
         />
         <QuickActions status={status} />
         <RoomInfo
-          roomNumber="101"
-          roomType="Deluxe Suite"
+          roomNumber={roomNumber}
+          roomType={roomType}
         />
         <BalanceCard balance={balance} />
       </AppContainer>

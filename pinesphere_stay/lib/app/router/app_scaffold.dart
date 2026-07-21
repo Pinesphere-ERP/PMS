@@ -101,7 +101,7 @@ class AppScaffold extends ConsumerWidget {
                 _buildDrawerItem(context, Module.housekeeping, Icons.cleaning_services, 'Housekeeping', () => context.push('/housekeeping')),
                 _buildDrawerItem(context, Module.guestManagement, Icons.people, 'Guest Management', () => _showComingSoon(context)),
                 _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Devices & Connectivity', () => context.push('/devices')),
-                _buildDrawerItem(context, Module.taskManagement, Icons.assignment, 'Request Management', () => context.push('/requests')),
+                _buildDrawerItem(context, Module.serviceRequests, Icons.assignment, 'Request Management', () => context.push('/requests')),
                 const Divider(),
                 _buildDrawerItem(context, Module.payments, Icons.payments, 'Payments', () => context.push('/payments')),
                 _buildDrawerItem(context, Module.reports, Icons.analytics, 'Reports', () => navigationShell.goBranch(3)),

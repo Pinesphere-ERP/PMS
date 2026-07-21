@@ -15,7 +15,8 @@ enum Module {
   guestManagement,
   staffManagement,
   housekeeping,
-  dashboard
+  dashboard,
+  serviceRequests
 }
 
 enum AccessLevel {
@@ -98,6 +99,12 @@ class PermissionMatrix {
         if (role == UserRole.accountant) return AccessLevel.limited; // Financial
         return AccessLevel.none;
         
+      case Module.serviceRequests:
+        if (role == UserRole.owner || role == UserRole.manager) return AccessLevel.full;
+        if (role == UserRole.reception || role == UserRole.housekeeping) return AccessLevel.limited;
+        if (role == UserRole.guest) return AccessLevel.view;
+        return AccessLevel.none;
+
       case Module.dashboard:
         // Assume everyone can view a personalized dashboard
         return AccessLevel.view;

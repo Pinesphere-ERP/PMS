@@ -89,7 +89,7 @@ class BookingService {
     } on DioException catch (e) {
       AppLogger.w('createBooking network failed, storing locally and queuing sync', e);
       final localUuid = data['server_id'] ?? const Uuid().v4();
-      final _ = BookingEntity(
+      final entity = BookingEntity(
         serverId: localUuid.toString(),
         propertyId: data['property_id'] ?? '',
         roomId: data['room_id'] ?? '',

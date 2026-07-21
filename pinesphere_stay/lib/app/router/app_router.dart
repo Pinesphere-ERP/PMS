@@ -8,6 +8,8 @@ import '../../features/auth/presentation/providers/auth_notifier.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/pin_login_screen.dart';
 import '../../features/auth/presentation/screens/owner_registration_screen.dart';
+import '../../features/requests/presentation/screens/requests_screen.dart';
+import '../../features/requests/presentation/screens/create_request_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';

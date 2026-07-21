@@ -99,7 +99,7 @@ class GuestService {
     } on DioException catch (e) {
       AppLogger.w('createGuest network failed, storing locally and queuing sync', e);
       final localUuid = data['server_id'] ?? const Uuid().v4();
-      final _ = GuestEntity(
+      final entity = GuestEntity(
         serverId: localUuid.toString(),
         propertyId: data['property_id'] ?? '',
         fullName: data['full_name'] ?? '',

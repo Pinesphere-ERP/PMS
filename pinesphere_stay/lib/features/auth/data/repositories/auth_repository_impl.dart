@@ -10,6 +10,7 @@ import '../../../../core/utils/device_info.dart';
 import '../../../../core/permissions/user_role.dart';
 import 'dart:convert';
 import '../../domain/models/user_model.dart';
+import '../../domain/models/accessible_property_model.dart';
 import '../models/login_request_dto.dart';
 import '../../../../main.dart';
 import '../../../../features/bookings/domain/models/booking_entity.dart';
@@ -102,7 +103,7 @@ class AuthRepository {
           email: data['email'] ?? email,
           role: UserRole.owner, // Derived primarily via roleCode
           propertyId: propertyId,
-          roleCode: data['role_code'] ?? tokenResponse.roleCode,
+          roleCode: data['role_code'] ?? response.data['role_code'],
           onboardingStatus: data['onboarding_status'],
           subscriptionStatus: data['subscription_status'],
           accessibleProperties: accessibleProps,
@@ -115,7 +116,7 @@ class AuthRepository {
           email: email,
           role: UserRole.owner,
           propertyId: propertyId,
-          roleCode: tokenResponse.roleCode,
+          roleCode: response.data['role_code'],
         );
       }
 

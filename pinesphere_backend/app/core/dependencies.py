@@ -35,6 +35,12 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
             active_session = session_res.scalars().first()
             if active_session is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
+            
+            # Security 3: Check session expiry on every request
+            from datetime import datetime, timezone
+            if active_session.expires_at and active_session.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has expired")
+
 
         result = await db.execute(select(User).filter(User.id == uuid.UUID(user_id_str)))
         user = result.scalars().first()
@@ -304,7 +310,8 @@ def require_permission(permission_code: str, required_level: str = "VIEW"):
         from app.infra.models import Permission, Role
         
         # Fetch the role to check for superAdmin/owner bypass
-        role_res = await db.execute(select(Role).filter(Role.id == user.active_role_id_resolved))
+        active_role_id = getattr(user, 'active_role_id', user.role_id)
+        role_res = await db.execute(select(Role).filter(Role.id == active_role_id))
         role = role_res.scalars().first()
         if role and role.role_code in ("SUPER_ADMIN", "OWNER"):
             return user
@@ -313,7 +320,7 @@ def require_permission(permission_code: str, required_level: str = "VIEW"):
             select(RolePermission)
             .join(Permission, RolePermission.permission_id == Permission.id)
             .filter(
-                RolePermission.role_id == user.active_role_id_resolved,
+                RolePermission.role_id == active_role_id,
                 Permission.permission_code == permission_code
             )
         )

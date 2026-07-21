@@ -130,6 +130,20 @@ async def portal_request_otp(
     if not guest or guest.mobile != req.mobile_number:
         return {"message": "If the booking reference is valid, an OTP has been sent."}
 
+    # Rate limiting: 3 requests per hour
+    from sqlalchemy import func
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    recent_otps = await db.execute(
+        select(func.count(OTPRequest.id))
+        .where(
+            OTPRequest.booking_id == booking.booking_id,
+            OTPRequest.purpose == "guest_portal",
+            OTPRequest.created_at >= one_hour_ago,
+        )
+    )
+    if recent_otps.scalar() >= 3:
+        raise HTTPException(status_code=429, detail="Too many OTP requests. Please try again later.")
+
     # Invalidate old OTPs
     await db.execute(
         update(OTPRequest)
@@ -154,8 +168,12 @@ async def portal_request_otp(
     )
     db.add(otp_rec)
 
-    # TODO: send via WhatsApp/SMS
-    print(f"[PORTAL OTP] Booking {req.booking_reference}: {otp_plain}")
+    # Mock SMS provider
+    with open("otp_mock.log", "a") as f:
+        f.write(f"{datetime.utcnow().isoformat()} - [PORTAL OTP] Booking {req.booking_reference}: {otp_plain}\n")
+    
+    # Redacted log for console
+    print(f"[PORTAL OTP] Booking {req.booking_reference}: [REDACTED]")
 
     return {"message": "If the booking reference is valid, an OTP has been sent."}
 

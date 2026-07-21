@@ -17,6 +17,16 @@ class AppScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final isHousekeeper = authState.maybeWhen(
+      authenticated: (user) => user.role.name.toLowerCase() == 'housekeeping',
+      orElse: () => false,
+    );
+
+    // If housekeeping role, we don't use this scaffold at all (no bottom nav)
+    // The HousekeeperDashboardScreen provides its own Scaffold + Drawer
+    if (isHousekeeper) {
+      return navigationShell;
+    }
 
     return PopScope(
       canPop: navigationShell.currentIndex == 0,

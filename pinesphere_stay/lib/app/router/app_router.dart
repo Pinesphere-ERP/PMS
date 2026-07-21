@@ -33,6 +33,9 @@ import '../../features/audit/presentation/screens/audit_logs_screen.dart';
 import '../../features/splash/presentation/custom_splash_screen.dart';
 import '../../features/portal/presentation/screens/portal_login_screen.dart';
 import '../../features/portal/presentation/screens/guest_dashboard_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_dashboard_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_room_detail_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_image_upload_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -104,7 +107,7 @@ GoRouter appRouter(Ref ref) {
       if (isAuth && (isGoingToLogin || isGoingToPinLogin)) {
         return authState.maybeWhen(
           authenticated: (user) {
-            if (user.role.name == 'housekeeping') return '/housekeeping';
+            if (user.role.name == 'housekeeping' || user.role.name == 'HOUSEKEEPING') return '/housekeeper-dashboard';
             if (user.role.name == 'kitchen') return '/kitchen';
             return '/dashboard';
           },
@@ -158,6 +161,18 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/portal/dashboard',
         builder: (context, state) => const GuestDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/housekeeper-dashboard',
+        builder: (context, state) => const HousekeeperDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/housekeeper/room/:id',
+        builder: (context, state) => HousekeeperRoomDetailScreen(roomId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/housekeeper/room/:id/upload',
+        builder: (context, state) => HousekeeperImageUploadScreen(roomId: state.pathParameters['id']!),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

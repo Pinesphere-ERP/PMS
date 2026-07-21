@@ -336,3 +336,13 @@ def require_permission(permission_code: str, required_level: str = "VIEW"):
             
         return user
     return permission_checker
+
+
+async def require_housekeeper_or_manager(
+    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> User:
+    """Allow housekeepers, managers, owners, and super admins."""
+    role = await get_current_role(user, db)
+    if role.role_code not in ("SUPER_ADMIN", "OWNER", "PROPERTY_MANAGER", "HOUSEKEEPING"):
+        raise HTTPException(status_code=403, detail="Housekeeping access required")
+    return user

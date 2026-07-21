@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/property_wizard_model.dart';
 import '../providers/property_wizard_notifier.dart';
-import '../../../core/auth/session_context.dart';
+import '../../../../core/auth/session_context.dart';
 
 
 class PropertyWizardScreen extends ConsumerWidget {

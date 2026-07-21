@@ -7,10 +7,16 @@ from fastapi import HTTPException
 
 from app.infra.models import (
     CheckOut, CheckIn, Booking, Room, RoomCategory, Guest,
+<<<<<<< HEAD
     Invoice, InvoiceItem, User, Property,
 )
 from app.core.notifications import whatsapp
 from app.core.config import settings
+=======
+    Invoice, InvoiceItem, User, HousekeepingRoomStatus,
+)
+from app.modules.housekeeping.service import _notify_housekeepers
+>>>>>>> 7da586ee8781e8ad603d5bdbcc1bbb38829b45ca
 from app.modules.audit.logger import AuditLogger
 from app.modules.checkout.schemas import (
     CheckOutRequest, CheckOutResponse,
@@ -174,6 +180,17 @@ async def perform_checkout(
 
     room.occupancy_status = "vacant"
     room.housekeeping_status = "dirty"
+    
+    # Update new housekeeping_room_status table
+    hk_stmt = select(HousekeepingRoomStatus).where(HousekeepingRoomStatus.room_id == room.room_id)
+    hk_res = await db.execute(hk_stmt)
+    hk_status = hk_res.scalar_one_or_none()
+    if hk_status:
+        hk_status.clean_status = "not_cleaned"
+        if current_user_id:
+            hk_status.updated_by = current_user_id
+        await _notify_housekeepers(db, hk_status)
+
     await db.flush()
 
     booking.booking_status = "completed"

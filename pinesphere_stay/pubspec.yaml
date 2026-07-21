@@ -61,6 +61,9 @@ dependencies:
   printing: ^5.14.3
   flutter_native_splash: ^2.4.4
   web: ^1.1.1
+  url_launcher: ^6.3.2
+  timeago: ^3.7.1
+ 
 
 dev_dependencies:
   flutter_test:

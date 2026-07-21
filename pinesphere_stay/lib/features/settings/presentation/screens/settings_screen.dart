@@ -28,6 +28,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
+    final authState = ref.watch(authProvider);
+    
+    final isHousekeeper = authState.maybeWhen(
+      authenticated: (user) => user.role.name.toLowerCase() == 'housekeeping',
+      orElse: () => false,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -42,51 +48,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   _buildProfileCard(context),
                   const SizedBox(height: 32),
-                  _buildSectionTitle(context, 'Account & Property'),
-                  _buildMenuGroup(context, [
-                    _buildMenuItem(context, Icons.domain, 'Property Information'),
-                    _buildMenuItem(
-                      context, 
-                      Icons.badge_outlined, 
-                      'Staff Management',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const OwnerStaffDashboardScreen()),
-                        );
-                      },
-                    ),
-                    _buildMenuItem(context, Icons.credit_card, 'Subscription', isLast: true),
-                  ]),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(context, 'Property Settings'),
-                  _buildPropertySettingsSection(context, settingsState),
-                  const SizedBox(height: 24),
+                  
+                  if (!isHousekeeper) ...[
+                    _buildSectionTitle(context, 'Account & Property'),
+                    _buildMenuGroup(context, [
+                      _buildMenuItem(context, Icons.domain, 'Property Information'),
+                      _buildMenuItem(
+                        context, 
+                        Icons.badge_outlined, 
+                        'Staff Management',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const OwnerStaffDashboardScreen()),
+                          );
+                        },
+                      ),
+                      _buildMenuItem(context, Icons.credit_card, 'Subscription', isLast: true),
+                    ]),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle(context, 'Property Settings'),
+                    _buildPropertySettingsSection(context, settingsState),
+                    const SizedBox(height: 24),
+                  ],
+
                   _buildSectionTitle(context, 'App Preferences'),
                   _buildDeviceSettingsSection(context, settingsState),
                   const SizedBox(height: 24),
-                  _buildSectionTitle(context, 'Hardware & Device Management'),
-                  _buildMenuGroup(context, [
-                    _buildMenuItem(
-                      context,
-                      Icons.devices_other,
-                      'Hardware Sync & Security Console',
-                      onTap: () => context.push('/device-status'),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(color: AppColors.secondaryContainer, borderRadius: BorderRadius.circular(999)),
-                        child: Text('Active', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSecondaryFixedVariant, fontWeight: FontWeight.bold)),
+
+                  if (!isHousekeeper) ...[
+                    _buildSectionTitle(context, 'Hardware & Device Management'),
+                    _buildMenuGroup(context, [
+                      _buildMenuItem(
+                        context,
+                        Icons.devices_other,
+                        'Hardware Sync & Security Console',
+                        onTap: () => context.push('/device-status'),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(color: AppColors.secondaryContainer, borderRadius: BorderRadius.circular(999)),
+                          child: Text('Active', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSecondaryFixedVariant, fontWeight: FontWeight.bold)),
+                        ),
                       ),
-                    ),
-                    _buildMenuItem(
-                      context,
-                      Icons.phonelink_setup,
-                      'Register / Bind Hardware Unit',
-                      onTap: () => context.push('/device-registration'),
-                      isLast: true,
-                    ),
-                  ]),
-                  const SizedBox(height: 24),
+                      _buildMenuItem(
+                        context,
+                        Icons.phonelink_setup,
+                        'Register / Bind Hardware Unit',
+                        onTap: () => context.push('/device-registration'),
+                        isLast: true,
+                      ),
+                    ]),
+                    const SizedBox(height: 24),
+                  ],
+
                   _buildSectionTitle(context, 'Data Management'),
                   _buildMenuGroup(context, [
                     _buildMenuItem(

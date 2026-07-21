@@ -42,6 +42,18 @@ async def get_staff_by_property(property_id: uuid.UUID, db: AsyncSession = Depen
     service = StaffService(db)
     return await service.get_staff_by_property(property_id)
 
+@router.post("/invite", response_model=schemas.StaffResponse, status_code=status.HTTP_201_CREATED)
+async def invite_staff(invite_in: schemas.StaffInvite, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await check_tenant(invite_in.property_id, current_user, db)
+    service = StaffService(db)
+    return await service.invite_staff(invite_in, current_user.id)
+
+@router.patch("/{staff_id}/status", response_model=schemas.StaffResponse)
+async def update_staff_status(staff_id: uuid.UUID, status_update: schemas.StaffStatusUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await check_staff_tenant(staff_id, current_user, db)
+    service = StaffService(db)
+    return await service.update_status(staff_id, status_update.status, current_user.id)
+
 @router.post("/attendance/punch", response_model=schemas.StaffAttendanceResponse)
 async def punch_attendance(attendance_in: schemas.StaffAttendanceCreate, staff_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     await check_tenant(attendance_in.property_id, current_user, db)

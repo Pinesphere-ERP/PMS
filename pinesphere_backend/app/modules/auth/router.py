@@ -1,7 +1,7 @@
 import uuid
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Header, status, Request
 from pydantic import BaseModel, Field
@@ -9,12 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, update
 
 from app.infra.database import get_db
-from app.infra.models import User, Role, RolePermission, Permission, UserSession, OTPRequest, DeviceBlacklist, Device
+from app.infra.models import User, Role, RolePermission, Permission, UserSession, OTPRequest, DeviceBlacklist, Device, Property, Subscription, UserPropertyAccess
 from app.core.dependencies import get_current_user
 from app.core.security import verify_password, create_access_token, create_refresh_token, get_password_hash
 from app.modules.audit.logger import AuditLogger
 from app.modules.notifications.service import NotificationDispatchService
 import jwt
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -48,13 +49,27 @@ class PermissionSnapshot(BaseModel):
     permission_code: str
     access_level: str
 
+class AccessiblePropertySnapshot(BaseModel):
+    property_id: str
+    property_name: str
+    onboarding_status: str
+    subscription_status: Optional[str] = None
+    trial_ends_at: Optional[str] = None
+    is_primary: bool = False
+
 class OfflineBootstrapResponse(BaseModel):
     user_id: uuid.UUID
     name: str
+    email: Optional[str] = None
     mobile_number: Optional[str] = None
     role_code: str
     pin_hash: Optional[str] = None
     permissions: List[PermissionSnapshot]
+    # Onboarding & subscription context for state machine routing
+    onboarding_status: Optional[str] = None
+    subscription_status: Optional[str] = None
+    trial_ends_at: Optional[str] = None
+    accessible_properties: List[AccessiblePropertySnapshot] = []
 
 class OTPRequestPayload(BaseModel):
     identifier: str  # email, mobile, or username
@@ -142,7 +157,9 @@ async def _build_token_response(db: AsyncSession, user: User, device_id_str: Opt
 # ──────────────────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     payload: LoginRequest,
     db: AsyncSession = Depends(get_db),
     x_client_platform: Optional[str] = Header(None, alias="X-Client-Platform"),
@@ -274,7 +291,12 @@ async def heartbeat(
 # ──────────────────────────────────────────────────────────────────────────────
 
 @router.post("/request-unlock-otp")
-async def request_unlock_otp(payload: OTPRequestPayload, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def request_unlock_otp(
+    request: Request,
+    payload: OTPRequestPayload, 
+    db: AsyncSession = Depends(get_db)
+):
     """Request an OTP to unlock a locked account. OTP is 6-digits, valid 10 minutes."""
     user = await _resolve_user(db, payload.identifier)
     if not user:
@@ -381,13 +403,89 @@ async def offline_bootstrap(
         for row in perm_res.all()
     ]
 
+    # ── Resolve onboarding & subscription context ────────────────────────────
+    onboarding_status: Optional[str] = None
+    subscription_status: Optional[str] = None
+    trial_ends_at: Optional[str] = None
+    accessible_properties: List[AccessiblePropertySnapshot] = []
+
+    # Gather all properties this user can access
+    property_ids: List[uuid.UUID] = []
+    if current_user.property_id:
+        property_ids.append(current_user.property_id)
+
+    # Also fetch cross-property access
+    access_stmt = select(UserPropertyAccess).where(
+        UserPropertyAccess.user_id == current_user.id,
+        UserPropertyAccess.status == "ACTIVE",
+    )
+    access_res = await db.execute(access_stmt)
+    for acc in access_res.scalars().all():
+        if acc.property_id not in property_ids:
+            property_ids.append(acc.property_id)
+
+    for pid in property_ids:
+        prop_res = await db.execute(select(Property).where(Property.property_id == pid))
+        prop = prop_res.scalar_one_or_none()
+        if not prop:
+            continue
+
+        sub_res = await db.execute(
+            select(Subscription)
+            .where(Subscription.property_id == pid)
+            .order_by(Subscription.expiry_date.desc())
+        )
+        sub = sub_res.scalars().first()
+
+        # Determine effective subscription status
+        eff_sub_status: Optional[str] = None
+        eff_trial_ends: Optional[str] = None
+        if sub:
+            if sub.status == "Trial":
+                eff_sub_status = "trial"
+                eff_trial_ends = str(sub.expiry_date)
+            elif sub.status in ("Active", "active"):
+                if sub.expiry_date < date.today():
+                    eff_sub_status = "expired"
+                else:
+                    eff_sub_status = "active"
+            elif sub.status == "Grace Period":
+                eff_sub_status = "past_due"
+            elif sub.status in ("Disabled", "Expired"):
+                eff_sub_status = "expired"
+            else:
+                eff_sub_status = sub.status.lower()
+        elif not (sub) and prop.onboarding_status not in ("draft", "pending_approval"):
+            eff_sub_status = "none"
+
+        prop_snap = AccessiblePropertySnapshot(
+            property_id=str(prop.property_id),
+            property_name=prop.property_name,
+            onboarding_status=prop.onboarding_status or "draft",
+            subscription_status=eff_sub_status,
+            trial_ends_at=eff_trial_ends,
+            is_primary=(prop.property_id == current_user.property_id),
+        )
+        accessible_properties.append(prop_snap)
+
+        # Use the primary property's status as the top-level status
+        if prop.property_id == current_user.property_id:
+            onboarding_status = prop.onboarding_status or "draft"
+            subscription_status = eff_sub_status
+            trial_ends_at = eff_trial_ends
+
     return OfflineBootstrapResponse(
         user_id=current_user.id,
         name=current_user.name,
+        email=current_user.email,
         mobile_number=current_user.mobile_number,
         role_code=role.role_code,
         pin_hash=current_user.pin_hash,
         permissions=permissions_list,
+        onboarding_status=onboarding_status,
+        subscription_status=subscription_status,
+        trial_ends_at=trial_ends_at,
+        accessible_properties=accessible_properties,
     )
 
 

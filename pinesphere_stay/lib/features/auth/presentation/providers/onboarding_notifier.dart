@@ -27,17 +27,43 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     required String password,
     required String businessName,
     required String propertyName,
+    String propertyType = 'HOTEL',
+    int starCategory = 3,
   }) async {
     state = const OnboardingState.loading();
 
     final result = await ref.read(onboardingRepositoryProvider).registerOwner(
-      ownerName: ownerName,
-      email: email,
-      mobileNumber: mobileNumber,
-      password: password,
-      businessName: businessName,
-      propertyName: propertyName,
+          ownerName: ownerName,
+          email: email,
+          mobileNumber: mobileNumber,
+          password: password,
+          businessName: businessName,
+          propertyName: propertyName,
+          propertyType: propertyType,
+          starCategory: starCategory,
+        );
+
+    result.fold(
+      (failure) => state = OnboardingState.error(failure.message),
+      (_) => state = const OnboardingState.success(),
     );
+  }
+
+  Future<void> acceptInvitation({
+    required String token,
+    required String password,
+    required String confirmPassword,
+    required String pin,
+  }) async {
+    state = const OnboardingState.loading();
+
+    final result =
+        await ref.read(onboardingRepositoryProvider).acceptInvitation(
+              token: token,
+              password: password,
+              confirmPassword: confirmPassword,
+              pin: pin,
+            );
 
     result.fold(
       (failure) => state = OnboardingState.error(failure.message),

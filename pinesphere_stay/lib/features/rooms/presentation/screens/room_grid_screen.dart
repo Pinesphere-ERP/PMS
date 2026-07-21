@@ -1378,7 +1378,6 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
     final descriptionCtrl = TextEditingController();
     
     String initialStatus = 'Vacant';
-    final List<String> uploadedImages = [];
 
     showModalBottomSheet(
       context: context,
@@ -1426,7 +1425,7 @@ class _ResortRoomsDetailScreenState extends ConsumerState<ResortRoomsDetailScree
                         const SizedBox(width: 16),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: initialStatus,
+                            initialValue: initialStatus,
                             decoration: InputDecoration(
                               labelText: 'Status',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

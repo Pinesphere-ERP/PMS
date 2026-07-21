@@ -54,3 +54,6 @@ vine==5.1.0
 wcwidth==0.8.2
 aiosqlite
 aiohttp
+structlog==24.4.0
+slowapi==0.1.9
+stripe==11.4.0

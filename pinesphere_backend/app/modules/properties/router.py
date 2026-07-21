@@ -124,7 +124,7 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     await db.flush()
 
     # 1. Insert Property Address
-    from app.infra.models import PropertyAddress, RoomType, RoomInventory, RoomPricing, Room, Amenity, RoomAmenity, select
+    from app.infra.models import PropertyAddress, RoomCategory, Room, select
     
     address = PropertyAddress(
         property_id=new_property.property_id,
@@ -139,68 +139,25 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
 
     if payload.rooms:
         for r in payload.rooms:
-            # Create Room Type
-            room_type = RoomType(
+            # Create Room Category
+            total_rooms = int(r.get('totalRooms') or 1)
+            room_category = RoomCategory(
                 property_id=new_property.property_id,
-                name=r.get('name') or r.get('category') or 'Standard',
-                category=r.get('category') or 'Standard',
-                occupancy=int(r.get('occupancy') or 2),
-                bed_type=r.get('bedType'),
-                room_size=r.get('size'),
-                smoking=bool(r.get('smoking')),
-                balcony=bool(r.get('balcony')),
-                view=r.get('view'),
-                ac=bool(r.get('ac')),
-                description=r.get('description', '')
+                room_name=r.get('name') or r.get('category') or 'Standard',
+                number_of_rooms=total_rooms,
+                base_price=float(r.get('basePrice') or r.get('price') or 1000.0)
             )
-            db.add(room_type)
+            db.add(room_category)
             await db.flush()
             
-            # Create Room Inventory
-            total_rooms = int(r.get('totalRooms') or 1)
-            inventory = RoomInventory(
-                room_type_id=room_type.id,
-                total_rooms=total_rooms,
-                available_rooms=total_rooms
-            )
-            db.add(inventory)
-            
-            # Create Room Pricing
-            pricing = RoomPricing(
-                room_type_id=room_type.id,
-                base_price=float(r.get('basePrice') or r.get('price') or 1000.0),
-                weekend_price=float(r.get('weekendPrice')) if r.get('weekendPrice') else None,
-                extra_adult=float(r.get('extraAdult')) if r.get('extraAdult') else None,
-                extra_child=float(r.get('extraChild')) if r.get('extraChild') else None,
-                tax=str(r.get('taxPercent')) if r.get('taxPercent') else None,
-                meal_plan=r.get('mealPlan')
-            )
-            db.add(pricing)
-            
-            # Create Amenities
-            amenities_list = r.get('amenities') or []
-            for am_name in amenities_list:
-                stmt = select(Amenity).where(Amenity.name == am_name)
-                res = await db.execute(stmt)
-                am_obj = res.scalar_one_or_none()
-                if not am_obj:
-                    am_obj = Amenity(name=am_name, category='room')
-                    db.add(am_obj)
-                    await db.flush()
-                ra = RoomAmenity(room_type_id=room_type.id, amenity_id=am_obj.id)
-                db.add(ra)
-            
-            # Create individual rooms
+            # Create individual Rooms
             for i in range(total_rooms):
-                room_number = f"{(room_type.name[:3] if room_type.name else 'STD').upper()}-{i+101}"
-                new_room = Room(
+                room = Room(
                     property_id=new_property.property_id,
-                    room_type_id=room_type.id,
-                    room_number=room_number,
-                    housekeeping_status="clean",
-                    occupancy_status="vacant",
+                    room_category_id=room_category.room_category_id,
+                    room_number=f"{room_category.room_name[:3].upper()}-{i+101}"
                 )
-                db.add(new_room)
+                db.add(room)
         await db.flush()
 
     if target_user:
@@ -293,6 +250,38 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     await db.commit()
     
     return {"message": "Property created successfully", "property_id": str(new_property.property_id)}
+
+
+@router.patch("/{property_id}/approve", status_code=200, dependencies=[Depends(require_super_admin)])
+async def approve_property(property_id: str, db: AsyncSession = Depends(get_db)):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+        
+    stmt = select(Property).where(Property.property_id == pid)
+    result = await db.execute(stmt)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+        
+    prop.onboarding_status = "completed"
+    db.add(prop)
+    
+    await AuditLogger.log(
+        db,
+        property_id=prop.property_id,
+        user_id=None,
+        module_name="Properties",
+        action_type="Approved",
+        target_entity="Property",
+        target_record_id=prop.property_id,
+        new_value={"onboarding_status": "completed"}
+    )
+    
+    await db.commit()
+    return {"message": "Property approved successfully"}
 
 
 @router.put("/{property_id}", status_code=200)
@@ -1022,3 +1011,66 @@ async def get_property_audit_logs(
 
     return logs
 
+
+@router.patch("/{property_id}/wizard-step")
+async def update_wizard_step(
+    property_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+
+    q = select(Property).where(Property.property_id == pid)
+    result = await db.execute(q)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    if payload.get("name"):
+        prop.property_name = payload["name"]
+    if payload.get("property_type"):
+        prop.property_type = payload["property_type"]
+    if payload.get("star_category"):
+        prop.star_category = int(payload["star_category"])
+        
+    db.add(prop)
+    await db.commit()
+    return {"message": "Wizard step saved successfully"}
+
+
+@router.post("/{property_id}/submit-for-approval")
+async def submit_for_approval(
+    property_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property ID format")
+
+    q = select(Property).where(Property.property_id == pid)
+    result = await db.execute(q)
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    if payload.get("name"):
+        prop.property_name = payload["name"]
+    if payload.get("property_type"):
+        prop.property_type = payload["property_type"]
+    if payload.get("star_category"):
+        prop.star_category = int(payload["star_category"])
+
+    prop.onboarding_status = "pending_approval"
+    
+    db.add(prop)
+    await db.commit()
+    return {"message": "Property submitted for approval"}

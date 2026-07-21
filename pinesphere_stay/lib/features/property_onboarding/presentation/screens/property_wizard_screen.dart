@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/property_wizard_model.dart';
 import '../providers/property_wizard_notifier.dart';
 import '../../../../core/auth/session_context.dart';
+import '../../../../core/auth/owner_onboarding_status.dart';
 
 
 class PropertyWizardScreen extends ConsumerWidget {

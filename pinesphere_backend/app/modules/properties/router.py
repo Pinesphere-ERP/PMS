@@ -384,16 +384,22 @@ async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
 
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
+from typing import Optional, Any
 
 class RoomCreateInput(BaseModel):
     room_number: str
     type: str
     price: float
     resort_id: str
-    description: Optional[str] = ""
+    description: Any = ""
     image_url: Optional[str] = ""
 
+    @validator("description", pre=True, always=True)
+    def validate_description(cls, v):
+        if isinstance(v, dict):
+            raise ValueError("description must be a string")
+        return v
 
 @router.get("/rooms")
 async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -557,30 +563,28 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
     cat_q = select(RoomCategory).where(
         and_(
             RoomCategory.property_id == resort_uuid,
-            RoomCategory.room_name == payload.type
+            RoomCategory.name == payload.type
         )
     )
     cat_result = await db.execute(cat_q)
     category = cat_result.scalar_one_or_none()
     
     if not category:
-        # Create a new category
-        category = RoomCategory(
-            property_id=resort_uuid,
-            room_name=payload.type,
-            base_price=payload.price,
-            number_of_rooms=1
-        )
-        db.add(category)
-        await db.flush()
+        try:
+            # Create a new category
+            category = RoomCategory(
+                property_id=resort_uuid,
+                name=payload.type,
+                category=payload.type,
+                description=str(payload.description) if payload.description else ""
+            )
+            db.add(category)
+            await db.flush()
+        except TypeError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     else:
-        # Increment room count, but do NOT overwrite existing price and amenities
-        if category.number_of_rooms:
-            category.number_of_rooms += 1
-        else:
-            category.number_of_rooms = 1
-        db.add(category)
-        await db.flush()
+        # RoomType doesn't track number_of_rooms directly in this model anymore
+        pass
         
     new_room = Room(
         property_id=resort_uuid,

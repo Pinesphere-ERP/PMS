@@ -35,10 +35,10 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.background,
       textTheme: baseTextTheme.copyWith(
-        displayLarge: GoogleFonts.inter(fontSize: 48, fontWeight: FontWeight.w700, letterSpacing: -0.02 * 48),
-        headlineLarge: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w600, letterSpacing: -0.01 * 32),
-        titleLarge: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600), // Map to headline-lg-mobile
-        titleMedium: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600),
+        displayLarge: GoogleFonts.outfit(fontSize: 48, fontWeight: FontWeight.w700, letterSpacing: -0.02 * 48),
+        headlineLarge: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w600, letterSpacing: -0.01 * 32),
+        titleLarge: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w600), // Map to headline-lg-mobile
+        titleMedium: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600),
         bodyLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w400),
         bodyMedium: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400),
         labelLarge: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
@@ -50,7 +50,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         iconTheme: IconThemeData(color: AppColors.onSurface),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.outfit(
           color: AppColors.onSurface,
           fontSize: 20,
           fontWeight: FontWeight.w600,

@@ -1,4 +1,4 @@
-aiohttp==3.14.1
+﻿aiohttp==3.14.1
 alembic==1.18.5
 amqp==5.3.1
 annotated-doc==0.0.4
@@ -54,6 +54,9 @@ vine==5.1.0
 wcwidth==0.8.2
 aiosqlite
 aiohttp
-structlog==24.4.0
-slowapi==0.1.9
-stripe==11.4.0
+pytest==8.2.2
+pytest-asyncio==0.23.7
+httpx==0.27.0
+stripe
+structlog
+slowapi

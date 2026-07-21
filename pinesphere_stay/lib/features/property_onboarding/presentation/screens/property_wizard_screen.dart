@@ -62,13 +62,8 @@ class PropertyWizardScreen extends ConsumerWidget {
     );
 
     // Call submit
-<<<<<<< HEAD
     final session = ref.read(sessionContextProvider);
     final propertyId = session.activePropertyId ?? session.user?.propertyId;
-=======
-    // Note: We read the real propertyId from the sessionContext
-    final propertyId = ref.read(sessionContextProvider).activePropertyId;
->>>>>>> 573fd2550a14b3209a0e03e0956bc40f5ab36712
     if (propertyId == null) {
       if (context.mounted) {
         Navigator.pop(context);

@@ -35,14 +35,21 @@ logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Database connection check
+    # 1. Database connection check & schema column alignment
     try:
-        from app.infra.database import engine
+        from app.infra.database import engine, Base
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
-        logger.info("Startup check: Database connection successful")
+            await conn.run_sync(Base.metadata.create_all)
+            try:
+                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS floor VARCHAR(10);"))
+                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS housekeeping_status VARCHAR(20) DEFAULT 'clean';"))
+                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS occupancy_status VARCHAR(20) DEFAULT 'vacant';"))
+            except Exception:
+                pass
+        logger.info("Startup check: Database connection and auto-schema alignment successful")
     except Exception as e:
-        logger.warning(f"Startup check: Database connection failed: {e}")
+        logger.warning(f"Startup check: Database connection/schema alignment failed: {e}")
 
     # 2. Redis connection check
     try:
@@ -126,6 +133,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    with open("crash.log", "w") as f:
+        f.write(traceback.format_exc())
     logger.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,

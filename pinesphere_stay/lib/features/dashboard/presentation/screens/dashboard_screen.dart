@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
+import '../../../auth/domain/models/accessible_property_model.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../../core/presentation/widgets/app_drawer.dart';
 import '../../../../core/network/connectivity_provider.dart';
@@ -118,40 +119,71 @@ class DashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
     final isReceptionist = role == UserRole.reception;
-    final userPropertyId = authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
+    final session = ref.watch(sessionContextProvider);
+    final String? assignedPropertyId = session.activePropertyId ??
+        authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
 
-    ResortModel? assignedResort;
-    if (userPropertyId != null && userPropertyId.isNotEmpty && pmsState.resorts.isNotEmpty) {
+    String resortName = '';
+    String resortLocation = '';
+
+    // Step 1: Match from user's assigned accessible properties in session/auth
+    final userProps = authState.maybeWhen(
+      authenticated: (u) => u.accessibleProperties,
+      orElse: () => session.accessibleProperties,
+    );
+
+    AccessiblePropertyModel? matchedUserProp;
+    if (userProps.isNotEmpty) {
       try {
-        assignedResort = pmsState.resorts.firstWhere(
-          (r) => r.id.toString().trim() == userPropertyId.toString().trim() ||
-                 r.id.toString().contains(userPropertyId.toString()) ||
-                 userPropertyId.toString().contains(r.id.toString()),
+        matchedUserProp = userProps.firstWhere(
+          (p) => p.propertyId == assignedPropertyId,
+          orElse: () => userProps.first,
         );
       } catch (_) {}
     }
 
-    if (assignedResort == null && pmsState.resorts.isNotEmpty) {
-      assignedResort = pmsState.resorts.first;
+    if (matchedUserProp != null) {
+      resortName = matchedUserProp.propertyName;
     }
 
-    final String resortName = assignedResort?.name ??
-        (pmsState.resorts.isNotEmpty ? pmsState.resorts.first.name : 'Loading property from DB...');
+    // Step 2: Match from loaded pmsState.resorts by property ID
+    ResortModel? matchedResort;
+    if (assignedPropertyId != null && assignedPropertyId.isNotEmpty && pmsState.resorts.isNotEmpty) {
+      try {
+        matchedResort = pmsState.resorts.firstWhere(
+          (r) => r.id.toString().trim() == assignedPropertyId.toString().trim() ||
+                 r.id.toString().contains(assignedPropertyId.toString()) ||
+                 assignedPropertyId.toString().contains(r.id.toString()),
+        );
+      } catch (_) {}
+    }
 
-    final String resortLocation = (assignedResort != null && assignedResort.location.isNotEmpty && assignedResort.location != 'Unknown')
-        ? assignedResort.location
-        : (pmsState.resorts.isNotEmpty && pmsState.resorts.first.location.isNotEmpty ? pmsState.resorts.first.location : 'Loading location from DB...');
+    if (matchedResort != null) {
+      if (matchedResort.name.isNotEmpty && matchedResort.name != 'Unnamed Property') {
+        resortName = matchedResort.name;
+      }
+      if (matchedResort.location.isNotEmpty && matchedResort.location != 'Unknown') {
+        resortLocation = matchedResort.location;
+      }
+    }
+
+    // Step 3: Only if user has NO assigned properties at all, fallback to first resort
+    if (resortName.isEmpty && assignedPropertyId == null && pmsState.resorts.isNotEmpty) {
+      resortName = pmsState.resorts.first.name;
+      resortLocation = pmsState.resorts.first.location;
+    }
 
     void sharePropertyLocation() {
-      final encodedLocation = Uri.encodeComponent(resortLocation);
+      final loc = resortLocation.isNotEmpty ? resortLocation : resortName;
+      final encodedLocation = Uri.encodeComponent(loc);
       final mapsUrl = 'https://maps.google.com/?q=$encodedLocation';
       final shareText = '📍 *$resortName*\n'
-          '📌 Location: $resortLocation\n'
+          '📌 Location: ${resortLocation.isNotEmpty ? resortLocation : "Property Address"}\n'
           '🗺️ Google Maps Directions: $mapsUrl\n'
           '🌐 Guest Web Portal: http://localhost:3000\n'
           '📞 Reception Desk Helpline Available';
 
-      _showShareLocationModal(context, resortName, resortLocation, mapsUrl, shareText);
+      _showShareLocationModal(context, resortName, resortLocation.isNotEmpty ? resortLocation : "Property Address", mapsUrl, shareText);
     }
 
     return Column(
@@ -207,7 +239,7 @@ class DashboardScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          resortName,
+                          resortName.isNotEmpty ? resortName : 'Property',
                           style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -223,7 +255,7 @@ class DashboardScreen extends ConsumerWidget {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                resortLocation,
+                                resortLocation.isNotEmpty ? resortLocation : 'Property Location',
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
                                   color: AppColors.onSurfaceVariant,
@@ -511,8 +543,8 @@ class DashboardScreen extends ConsumerWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _buildKPICard(context, 'Todays arrival', '${dashboardState.todaysArrivals}', AppColors.primary, Icons.luggage, onTap: () => context.push('/todays-arrivals')),
-              _buildKPICard(context, 'Todays departures', '${dashboardState.todaysDepartures}', AppColors.onSurface, Icons.flight_takeoff, onTap: () => context.push('/todays-departures')),
+              _buildKPICard(context, 'Today Check-in', '${dashboardState.todaysArrivals}', AppColors.primary, Icons.login, onTap: () => context.push('/todays-arrivals')),
+              _buildKPICard(context, 'Today Check-outs', '${dashboardState.todaysDepartures}', AppColors.onSurface, Icons.logout, onTap: () => context.push('/todays-departures')),
               _buildKPICard(context, 'Occupied Rooms', '${dashboardState.occupiedRooms}', AppColors.primary, Icons.hotel, onTap: () => context.push('/occupied-rooms')),
               _buildKPICard(context, 'Vacant Rooms', '${dashboardState.vacantRooms}', AppColors.outline, Icons.vpn_key, onTap: () => context.push('/vacant-rooms')),
               _buildKPICard(context, 'Pending Checkouts', '${dashboardState.pendingCheckouts}', AppColors.secondary, Icons.hourglass_bottom, onTap: () => context.push('/pending-checkouts')),

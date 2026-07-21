@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
+import '../../../../core/permissions/user_role.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
@@ -20,10 +22,26 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
   @override
   Widget build(BuildContext context) {
     final pmsState = ref.watch(pmsProvider);
-    final bookings = pmsState.bookings;
+    final authState = ref.watch(authProvider);
+    final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
+    final isReceptionist = role == UserRole.reception;
+    final userPropertyId = authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
 
-    // Filter bookings
-    final filteredBookings = bookings.where((booking) {
+    // Filter bookings by receptionist's assigned property
+    var propertyBookings = pmsState.bookings;
+    if (isReceptionist && userPropertyId != null && userPropertyId.isNotEmpty) {
+      final matches = pmsState.bookings.where((b) {
+        final rid = b.resortId.toString().trim().toLowerCase();
+        final uid = userPropertyId.toString().trim().toLowerCase();
+        return rid == uid || rid.contains(uid) || uid.contains(rid);
+      }).toList();
+      if (matches.isNotEmpty) {
+        propertyBookings = matches;
+      }
+    }
+
+    // Filter bookings based on search & dropdown selections
+    final filteredBookings = propertyBookings.where((booking) {
       final matchesSearch = booking.guestName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           booking.roomNumber.contains(_searchQuery) ||
           booking.guestPhone.contains(_searchQuery);
@@ -48,7 +66,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStats(bookings),
+                _buildStats(propertyBookings),
                 _buildSearchAndFilters(),
               ],
             ),
@@ -177,8 +195,8 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
   }
 
   Widget _buildSearchAndFilters() {
-    final tabs = ['All', 'Active', 'Upcoming', 'Completed'];
-    final sources = ['All', 'Walk-in', 'Phone', 'WhatsApp', 'Online'];
+    final statusOptions = ['All', 'Active', 'Upcoming', 'Completed'];
+    final modeOptions = ['All', 'Walk-in', 'Phone', 'WhatsApp', 'Online'];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -199,56 +217,96 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: tabs.map((tab) {
-                final isActive = _activeTab == tab;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(
-                      tab,
-                      style: TextStyle(
-                        color: isActive ? AppColors.onPrimary : AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    selected: isActive,
-                    onSelected: (_) => setState(() => _activeTab = tab),
-                    selectedColor: AppColors.primary,
-                    backgroundColor: AppColors.surfaceContainerHigh,
-                    checkmarkColor: AppColors.onPrimary,
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
                   ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: sources.map((src) {
-                final isActive = _activeSourceFilter == src;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(
-                      src,
-                      style: TextStyle(
-                        color: isActive ? AppColors.onPrimary : AppColors.onSurfaceVariant,
-                      ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _activeTab,
+                      isExpanded: true,
+                      icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                      style: const TextStyle(color: AppColors.onSurface, fontWeight: FontWeight.w600, fontSize: 13),
+                      items: statusOptions.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Row(
+                            children: [
+                              Icon(
+                                value == 'All' ? Icons.filter_alt : (value == 'Active' ? Icons.play_circle : (value == 'Upcoming' ? Icons.schedule : Icons.check_circle)),
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  value == 'All' ? 'Booking: All' : value,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _activeTab = val);
+                      },
                     ),
-                    selected: isActive,
-                    onSelected: (_) => setState(() => _activeSourceFilter = src),
-                    selectedColor: AppColors.secondary,
-                    backgroundColor: AppColors.surfaceContainerHigh,
-                    checkmarkColor: AppColors.onPrimary,
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _activeSourceFilter,
+                      isExpanded: true,
+                      icon: const Icon(Icons.arrow_drop_down, color: AppColors.secondary),
+                      style: const TextStyle(color: AppColors.onSurface, fontWeight: FontWeight.w600, fontSize: 13),
+                      items: modeOptions.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Row(
+                            children: [
+                              Icon(
+                                value == 'All' ? Icons.devices : (value == 'Walk-in' ? Icons.directions_walk : (value == 'Phone' ? Icons.phone : (value == 'WhatsApp' ? Icons.chat : Icons.language))),
+                                size: 16,
+                                color: AppColors.secondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  value == 'All' ? 'Mode: All' : value,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _activeSourceFilter = val);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );

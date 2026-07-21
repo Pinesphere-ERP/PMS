@@ -8,6 +8,7 @@ import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../../core/presentation/widgets/app_drawer.dart';
 import '../../../../core/network/connectivity_provider.dart';
+import '../../../../core/presentation/widgets/property_switcher_widget.dart';
 import '../../../audit/data/audit_service.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -73,15 +74,8 @@ class DashboardScreen extends ConsumerWidget {
             },
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'PineStay',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.primary,
-                  ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+          const Expanded(
+            child: PropertySwitcherWidget(),
           ),
         ],
       ),

@@ -190,7 +190,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
         );
       },
       loading: () => _staticMetricsGrid(context),
-      error: (_, __) => _staticMetricsGrid(context),
+      error: (_, _) => _staticMetricsGrid(context),
     );
   }
 

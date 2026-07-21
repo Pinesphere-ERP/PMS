@@ -114,6 +114,7 @@ class CheckInService {
         lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
         syncStatus: 'Pending',
       );
+      _checkinDao.put(entity);
 
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
       _syncService.enqueueMutation(

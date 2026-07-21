@@ -32,6 +32,46 @@ def _fmt_amount(amount: float) -> str:
     return f"${amount:,.2f}"
 
 
+# ── Owner: get my subscription ────────────────────────────────────────────────
+
+@router.get("/my-subscription")
+async def get_my_subscription(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Returns the subscription for the current user's active property."""
+    property_id = current_user.property_id
+    if not property_id:
+        return {"data": None, "message": "No property associated with this user."}
+
+    sub_res = await db.execute(
+        select(Subscription)
+        .where(Subscription.property_id == property_id)
+        .order_by(Subscription.expiry_date.desc())
+    )
+    sub = sub_res.scalars().first()
+    if not sub:
+        return {"data": None, "message": "No subscription found."}
+
+    remaining = _days_remaining(sub.expiry_date)
+    return {
+        "data": {
+            "id": str(sub.id),
+            "plan": sub.plan,
+            "status": sub.status,
+            "billing_cycle": sub.billing_cycle,
+            "start_date": str(sub.start_date),
+            "expiry_date": str(sub.expiry_date),
+            "days_remaining": remaining,
+            "device_limit": sub.device_limit,
+            "registered_devices": sub.registered_devices,
+            "subscription_required": sub.subscription_required,
+            "is_trial": sub.plan == "Trial",
+            "is_active": sub.status in ("Active", "Trial") and sub.expiry_date >= date.today(),
+        }
+    }
+
+
 # ── List all subscriptions ─────────────────────────────────────────────────────
 
 @router.get("/plans")

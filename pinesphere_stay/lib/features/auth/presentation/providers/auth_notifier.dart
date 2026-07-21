@@ -6,6 +6,8 @@ import '../../../user_role_management/data/repository/user_repository.dart';
 import '../../../user_role_management/domain/permission_set.dart';
 import '../../domain/models/user_model.dart';
 import '../../../sync/data/sync_service.dart';
+import '../../../../core/auth/session_context.dart';
+import '../../../../core/network/dio_client.dart';
 
 part 'auth_notifier.freezed.dart';
 part 'auth_notifier.g.dart';
@@ -70,6 +72,11 @@ class AuthNotifier extends _$AuthNotifier {
           userId: user.id,
           newValue: {'email': email, 'role': user.role.name},
         );
+        // Populate session context for state-machine routing
+        ref.read(sessionContextProvider.notifier).setFromUser(
+          user,
+          ref.read(secureStorageProvider),
+        );
         state = AuthState.authenticated(user);
         ref.read(syncServiceProvider).triggerSync();
       },
@@ -102,6 +109,11 @@ class AuthNotifier extends _$AuthNotifier {
           userId: user.id,
           newValue: {'role': user.role.name, 'auth_type': 'offline_pin'},
         );
+        // Populate session context for PIN login too
+        ref.read(sessionContextProvider.notifier).setFromUser(
+          user,
+          ref.read(secureStorageProvider),
+        );
         state = AuthState.authenticated(user);
       },
     );
@@ -121,6 +133,8 @@ class AuthNotifier extends _$AuthNotifier {
     );
 
     _permissions = null;
+    // Clear session context
+    ref.read(sessionContextProvider.notifier).clear();
     state = const AuthState.unauthenticated();
   }
 
@@ -137,6 +151,11 @@ class AuthNotifier extends _$AuthNotifier {
         userId: cachedUser.id,
       );
       state = AuthState.authenticated(cachedUser);
+      // Restore session context from cached user (biometric)
+      ref.read(sessionContextProvider.notifier).setFromUser(
+        cachedUser,
+        ref.read(secureStorageProvider),
+      );
       return true;
     }
     

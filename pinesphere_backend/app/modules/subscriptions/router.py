@@ -623,6 +623,50 @@ async def create_checkout_session(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/activate-placeholder")
+async def activate_placeholder(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    plan_name = payload.get("plan", "Professional")
+    property_id = current_user.property_id
+    if not property_id:
+        raise HTTPException(status_code=400, detail="No property associated with user")
+
+    # 1. Update Property status
+    q = select(Property).where(Property.property_id == property_id)
+    result = await db.execute(q)
+    prop = result.scalars().first()
+    if prop:
+        prop.onboarding_status = "active"
+
+    # 2. Create or update Subscription
+    q_sub = select(Subscription).where(Subscription.property_id == property_id)
+    res_sub = await db.execute(q_sub)
+    sub = res_sub.scalars().first()
+
+    from datetime import date, timedelta
+    if not sub:
+        sub = Subscription(
+            property_id=property_id,
+            plan=plan_name,
+            status="Active",
+            billing_cycle="Monthly",
+            start_date=date.today(),
+            expiry_date=date.today() + timedelta(days=30),
+            device_limit=5,
+            subscription_required=True
+        )
+        db.add(sub)
+    else:
+        sub.plan = plan_name
+        sub.status = "Active"
+        sub.expiry_date = date.today() + timedelta(days=30)
+    
+    await db.commit()
+    return {"message": "Subscription activated successfully"}
+
 @router.post("/cancel")
 async def cancel_subscription(
     db: AsyncSession = Depends(get_db),

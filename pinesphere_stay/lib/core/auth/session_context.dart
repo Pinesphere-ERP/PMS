@@ -100,6 +100,17 @@ class SessionContextNotifier extends _$SessionContextNotifier {
     );
   }
 
+  void overrideOwnerStatus(OwnerOnboardingStatus newStatus) {
+    state = SessionContext(
+      user: state.user,
+      activePropertyId: state.activePropertyId,
+      ownerStatus: newStatus,
+      isOwner: state.isOwner,
+      isSuperAdmin: state.isSuperAdmin,
+      accessibleProperties: state.accessibleProperties,
+    );
+  }
+
   void clear() {
     state = const SessionContext();
   }

@@ -173,10 +173,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: primaryGreen,
                         borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                           Text(
                             'Login',
                             style: GoogleFonts.outfit(
@@ -293,7 +294,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ],
                           ),
                           
-                          const Spacer(),
+                          const SizedBox(height: 24),
                           
                           // Sign Up
                           Center(
@@ -318,13 +319,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSocialButton(IconData icon, Color color, {double iconSize = 24}) {

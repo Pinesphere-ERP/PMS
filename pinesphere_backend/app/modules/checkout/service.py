@@ -7,8 +7,10 @@ from fastapi import HTTPException
 
 from app.infra.models import (
     CheckOut, CheckIn, Booking, Room, RoomCategory, Guest,
-    Invoice, InvoiceItem, User, HousekeepingRoomStatus,
+    Invoice, InvoiceItem, User, Property, HousekeepingRoomStatus,
 )
+from app.core.notifications import whatsapp
+from app.core.config import settings
 from app.modules.housekeeping.service import _notify_housekeepers
 from app.modules.audit.logger import AuditLogger
 from app.modules.checkout.schemas import (
@@ -225,6 +227,37 @@ async def perform_checkout(
     )
     await db.commit()
     await db.refresh(checkout)
+
+    # Automate WhatsApp Thank You & Financial Summary message on checkout
+    try:
+        guest_stmt = select(Guest).where(Guest.guest_id == booking.guest_id)
+        guest_res = await db.execute(guest_stmt)
+        guest_record = guest_res.scalar_one_or_none()
+
+        if guest_record and guest_record.mobile:
+            prop_stmt = select(Property).where(Property.property_id == checkin.property_id)
+            prop_res = await db.execute(prop_stmt)
+            prop_record = prop_res.scalar_one_or_none()
+            property_name = prop_record.property_name if prop_record else "Resort"
+            portal_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+            inv_id = str(invoice.invoice_id) if invoice else str(booking.booking_id)
+            invoice_url = f"{portal_url}/invoice/{inv_id}"
+
+            await whatsapp.send_checkout_thankyou_message(
+                phone_number=guest_record.mobile,
+                guest_name=guest_record.full_name,
+                property_name=property_name,
+                room_number=room.room_number,
+                room_charges=float(room_charges),
+                restaurant_charges=float(req.restaurant_charges),
+                other_charges=float(req.laundry_charges + req.minibar_charges + req.damage_charges + req.miscellaneous_charges),
+                taxes=float(req.gst),
+                total_amount=float(total_amount),
+                total_paid=float(advance_paid),
+                invoice_url=invoice_url,
+            )
+    except Exception as err:
+        print(f"[WhatsApp Checkout Trigger Warning]: {err}")
 
     return await _enrich_checkout_response(db, checkout)
 

@@ -39,7 +39,7 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
         orElse: () => '',
       );
       final currentPropertyId = authState.maybeWhen(
-        authenticated: (user) => user.propertyId,
+        authenticated: (user) => user.propertyId ?? '',
         orElse: () => '',
       );
 
@@ -91,7 +91,7 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
                   child: Column(
                     children: [
                       DropdownButtonFormField<String>(
-                        value: _requestCategory,
+                        initialValue: _requestCategory,
                         decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
                         items: const [
                           DropdownMenuItem(value: 'housekeeping', child: Text('Housekeeping')),
@@ -109,7 +109,7 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _priority,
+                        initialValue: _priority,
                         decoration: const InputDecoration(labelText: 'Priority', border: OutlineInputBorder()),
                         items: const [
                           DropdownMenuItem(value: 'low', child: Text('Low')),

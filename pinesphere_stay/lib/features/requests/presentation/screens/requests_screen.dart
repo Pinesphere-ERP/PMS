@@ -41,7 +41,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
       orElse: () => '',
     );
     final propertyId = authState.maybeWhen(
-      authenticated: (user) => user.propertyId,
+      authenticated: (user) => user.propertyId ?? '',
       orElse: () => '',
     );
 
@@ -248,7 +248,7 @@ class _RequestCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(request.status).withOpacity(0.1),
+                    color: _getStatusColor(request.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

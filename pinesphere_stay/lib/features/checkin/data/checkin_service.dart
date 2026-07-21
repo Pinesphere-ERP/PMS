@@ -91,7 +91,7 @@ class CheckInService {
     } on DioException catch (e) {
       AppLogger.w('performCheckIn network failed, storing locally and queuing sync', e);
       final localUuid = data['server_id'] ?? const Uuid().v4();
-      final _ = CheckInEntity(
+      final entity = CheckInEntity(
         serverId: localUuid.toString(),
         bookingId: data['booking_id'] ?? '',
         roomId: data['room_id'] ?? '',

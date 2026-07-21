@@ -14,11 +14,14 @@ from app.modules.onboarding.schemas import (
 )
 from app.modules.audit.logger import AuditLogger
 from app.core.dependencies import get_current_user, require_super_admin
+from app.core.limiter import limiter
+from fastapi import Request
 
 router = APIRouter()
 
 @router.post("/register", response_model=OwnerRegistrationResponse, status_code=status.HTTP_201_CREATED)
-async def register_owner(payload: OwnerRegistrationRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register_owner(request: Request, payload: OwnerRegistrationRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """
     Public endpoint for self-service owner registration and property creation.
     """

@@ -429,7 +429,7 @@ async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Dep
             "price": float(cat.base_price or 1000.0),
             "status": room.occupancy_status or "vacant",
             "resort_id": str(cat.property_id),
-            "description": cat.description or "",
+            "description": getattr(cat, "description", ""),
              "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]

@@ -349,6 +349,7 @@ class RoomCategory(Base, TimestampMixin):
     room_name: Mapped[Optional[str]] = mapped_column(String(100))
     number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
     base_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    description: Mapped[Optional[str]] = mapped_column(Text)
 
 class Room(Base, TimestampMixin, SyncMixin):
     __tablename__ = "rooms"
@@ -662,6 +663,9 @@ from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, Schedul
 
 # ── Settings (Module 15) ──
 from app.modules.settings.models import SystemConfiguration, PropertySetting
+
+# ── Manager Module ──────────────────────────────────────────────────────────
+from app.modules.manager.models import ManagerNote, RoomBlock, ManagerDailyChecklist, StaffShift
 
 class Task(Base, TimestampMixin, SyncMixin):
     __tablename__ = "tasks"

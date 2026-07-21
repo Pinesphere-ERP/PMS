@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/pms_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
@@ -73,76 +74,76 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
       body: PineBackground(
         child: CustomScrollView(
           slivers: [
-          // Banner Sliver AppBar
+          // Premium Banner Sliver AppBar
           SliverAppBar(
-            expandedHeight: 180,
+            expandedHeight: 220,
             pinned: true,
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: Colors.black45,
-                  shape: BoxShape.circle,
+            elevation: 0,
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
                 ),
-                child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
               ),
-              onPressed: () => Navigator.pop(context),
             ),
             actions: [
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Colors.black45,
-                    shape: BoxShape.circle,
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.ios_share_rounded, color: Colors.white, size: 18),
                   ),
-                  child: const Icon(Icons.share, color: Colors.white, size: 20),
+                  onPressed: () {
+                    _showGlobalResortShareModal(context, activePropertyName, activePropertyId, rooms);
+                  },
                 ),
-                onPressed: () {
-                  _showGlobalResortShareModal(context, activePropertyName, activePropertyId, rooms);
-                },
               ),
               const SizedBox(width: 8),
             ],
             flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 16, right: 16),
               title: Text(
                 activePropertyName,
-                style: const TextStyle(
+                style: GoogleFonts.outfit(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                  fontSize: 24,
+                  shadows: [const Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2))],
                 ),
               ),
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  const SizedBox(
-                    width: double.infinity,
-                    height: double.infinity,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black54,
-                            Colors.black26,
-                            Colors.transparent,
-                            Colors.black87,
-                          ],
-                        ),
-                      ),
-                    ),
+                  Image.network(
+                    'https://images.unsplash.com/photo-1542314831-c6a4d142104d?auto=format&fit=crop&w=1200&q=80',
+                    fit: BoxFit.cover,
                   ),
                   Container(
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.black54, Colors.transparent],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.4),
+                          Colors.transparent,
+                          AppColors.primary.withValues(alpha: 0.8),
+                          AppColors.primary,
+                        ],
+                        stops: const [0.0, 0.4, 0.8, 1.0],
                       ),
                     ),
                   ),
@@ -429,33 +430,63 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    room.roomNumber,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  Expanded(
+                    child: Text(
+                      room.roomNumber,
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.onSurface),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: chipBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       room.status == 'Maintenance' ? 'MAINT' : room.status.toUpperCase(),
-                      style: TextStyle(color: chipText, fontWeight: FontWeight.bold, fontSize: 8, letterSpacing: 0.5),
+                      style: GoogleFonts.inter(color: chipText, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 room.type,
-                style: const TextStyle(color: AppColors.outline, fontSize: 11, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(color: AppColors.outline, fontSize: 13, fontWeight: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '₹${room.price.toStringAsFixed(0)}',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  if (activeBooking != null)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          activeBooking.guestName,
+                          style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               if (room.description.isNotEmpty) ...[
                 const SizedBox(height: 2),

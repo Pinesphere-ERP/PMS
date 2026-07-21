@@ -160,6 +160,13 @@ GoRouter appRouter(Ref ref) {
           final ownerStatus = session.ownerStatus;
 
           switch (ownerStatus) {
+            case OwnerOnboardingStatus.draft:
+              if (location != '/dashboard' &&
+                  !location.startsWith('/onboarding')) {
+                return '/onboarding/property';
+              }
+              break;
+
             case OwnerOnboardingStatus.pendingApproval:
               // Owner can go to dashboard (shows limited trial view) or pending screen
               // Force them to pending screen unless they're going to dashboard

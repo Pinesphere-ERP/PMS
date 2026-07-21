@@ -396,6 +396,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     room_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_type_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_types.id"), nullable=False)
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
+    floor: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')
     occupancy_status: Mapped[Optional[str]] = mapped_column(String(20), default='vacant')
     image_url: Mapped[Optional[str]] = mapped_column(Text)
@@ -1040,6 +1041,36 @@ class PropertyIncidentReport(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+# ── S. Housekeeping Room Status ───────────────────────────────────────────────
+
+class HousekeepingRoomStatus(Base, TimestampMixin):
+    """Dedicated housekeeping state for each room. One row per room."""
+    __tablename__ = "housekeeping_room_status"
+    __table_args__ = (
+        UniqueConstraint('property_id', 'room_id', name='uq_hk_room_status_property_room'),
+        Index('ix_hk_room_status_property', 'property_id'),
+        Index('ix_hk_room_status_clean_status', 'clean_status'),
+        {'extend_existing': True},
+    )
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
+    room_number: Mapped[str] = mapped_column(String(20), nullable=False)
+    room_type: Mapped[Optional[str]] = mapped_column(String(100))
+    floor: Mapped[Optional[str]] = mapped_column(String(10))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    occupancy_status: Mapped[str] = mapped_column(String(20), default='vacant')
+    clean_status: Mapped[str] = mapped_column(String(30), default='clean')
+    priority: Mapped[Optional[str]] = mapped_column(String(10))
+    last_cleaned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    estimated_cleaning_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    image_urls: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    updated_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+
+
+# ── T. Service Requests ───────────────────────────────────────────────────────
+
 class ServiceRequest(Base, TimestampMixin, SyncMixin):
     __tablename__ = "service_requests"
     __table_args__ = (
@@ -1057,7 +1088,7 @@ class ServiceRequest(Base, TimestampMixin, SyncMixin):
         Index("idx_service_requests_property_status", "property_id", "status"),
         {'extend_existing': True},
     )
-
+    
     request_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id", ondelete="SET NULL"), nullable=True)
@@ -1069,6 +1100,7 @@ class ServiceRequest(Base, TimestampMixin, SyncMixin):
     request_category: Mapped[str] = mapped_column(String(30), nullable=False)
     title: Mapped[str] = mapped_column(String(150), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
+    
     priority: Mapped[str] = mapped_column(String(20), default='normal', nullable=False)
     status: Mapped[str] = mapped_column(String(20), default='pending', nullable=False)
     

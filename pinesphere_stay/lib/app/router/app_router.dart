@@ -8,6 +8,8 @@ import '../../features/auth/presentation/providers/auth_notifier.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/pin_login_screen.dart';
 import '../../features/auth/presentation/screens/owner_registration_screen.dart';
+import '../../features/requests/presentation/screens/requests_screen.dart';
+import '../../features/requests/presentation/screens/create_request_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
@@ -34,6 +36,9 @@ import '../../features/audit/presentation/screens/audit_logs_screen.dart';
 import '../../features/splash/presentation/custom_splash_screen.dart';
 import '../../features/portal/presentation/screens/portal_login_screen.dart';
 import '../../features/portal/presentation/screens/guest_dashboard_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_dashboard_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_room_detail_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeper_image_upload_screen.dart';
 
 // Owner Platform screens
 import '../../features/property_onboarding/presentation/screens/property_wizard_screen.dart';
@@ -135,10 +140,9 @@ GoRouter appRouter(Ref ref) {
       // ── Layer 3: Role-based redirect from auth screens ─────────────────────
       if (isAuth && isAuthRoute) {
         return authState.maybeWhen(
-          authenticated: (user) {
             final roleCode = (user.roleCode ?? user.role.name).toUpperCase();
             // Role-specific home screens
-            if (roleCode == 'HOUSEKEEPING') return '/housekeeping';
+            if (roleCode == 'HOUSEKEEPING') return '/housekeeper-dashboard';
             if (roleCode == 'KITCHEN') return '/kitchen';
             // All other roles land on dashboard (which has its own state guard)
             return '/dashboard';
@@ -280,6 +284,18 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/staff',
         builder: (context, state) => const StaffManagementScreen(),
+      ),
+      GoRoute(
+        path: '/housekeeper-dashboard',
+        builder: (context, state) => const HousekeeperDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/housekeeper/room/:id',
+        builder: (context, state) => HousekeeperRoomDetailScreen(roomId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/housekeeper/room/:id/upload',
+        builder: (context, state) => HousekeeperImageUploadScreen(roomId: state.pathParameters['id']!),
       ),
 
       // ── Main App Shell (StatefulShellRoute) ────────────────────────────────

@@ -36,7 +36,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
       authenticated: (user) => user.role.name == 'manager' || user.role.name == 'owner',
       orElse: () => false,
     );
-    final currentUserId = authState.maybeWhen(
+    final currentUserId = authState.maybeWhen<String>(
       authenticated: (user) => user.id,
       orElse: () => '',
     );

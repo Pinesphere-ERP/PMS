@@ -34,7 +34,7 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
       final repo = ref.read(serviceRequestRepositoryProvider);
       final authState = ref.read(authProvider);
       
-      final currentUserId = authState.maybeWhen(
+      final currentUserId = authState.maybeWhen<String>(
         authenticated: (user) => user.id,
         orElse: () => '',
       );

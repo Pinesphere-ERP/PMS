@@ -399,8 +399,8 @@ class RoomCreateInput(BaseModel):
 async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     role = await get_current_role(current_user, db)
     
-    # Select all rooms joined with their category
-    q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
+    # Select all rooms outer joined with their category
+    q = select(Room, RoomCategory).outerjoin(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
     
     if role.role_code != "SUPER_ADMIN":
         from app.infra.models import UserPropertyAccess, Property, Owner
@@ -425,12 +425,49 @@ async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Dep
         data.append({
             "id": str(room.room_id),
             "room_number": room.room_number,
-            "type": cat.room_name or "Standard",
-            "price": float(cat.base_price or 1000.0),
+            "type": cat.room_name if cat else "Standard",
+            "price": float(cat.base_price if cat else 1000.0),
             "status": room.occupancy_status or "vacant",
-            "resort_id": str(cat.property_id),
-            "description": cat.description or "",
-             "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
+            "resort_id": str(cat.property_id) if cat else str(current_user.property_id or ""),
+            "description": cat.description if cat else "",
+            "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
+                "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
+            ]
+        })
+    return data
+
+
+@router.get("/{property_id}/rooms")
+async def get_property_rooms(property_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    import uuid as _uuid
+    try:
+        p_uuid = _uuid.UUID(property_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid property_id format")
+
+    await assert_property_access(p_uuid, current_user, db)
+
+    q = select(Room, RoomCategory).outerjoin(
+        RoomCategory, Room.room_category_id == RoomCategory.room_category_id
+    ).where(RoomCategory.property_id == p_uuid)
+
+    result = await db.execute(q)
+    rows = result.unique().all()
+    data = []
+    for room, cat in rows:
+        data.append({
+            "id": str(room.room_id),
+            "room_id": str(room.room_id),
+            "room_number": room.room_number,
+            "type": cat.room_name if cat else "Standard",
+            "category": cat.room_name if cat else "Standard",
+            "price": float(cat.base_price if cat else 1000.0),
+            "base_price": float(cat.base_price if cat else 1000.0),
+            "status": room.occupancy_status or "vacant",
+            "resort_id": str(p_uuid),
+            "property_id": str(p_uuid),
+            "description": cat.description if cat else "",
+            "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
         })
@@ -496,10 +533,27 @@ async def upload_image(file: UploadFile = File(...)):
 @router.post("/rooms", status_code=201)
 async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     import uuid as _uuid
-    resort_uuid = _uuid.UUID(payload.resort_id)
+    resort_uuid = None
+    if payload.resort_id:
+        try:
+            resort_uuid = _uuid.UUID(payload.resort_id)
+        except Exception:
+            pass
+
+    if not resort_uuid:
+        if current_user.property_id:
+            resort_uuid = current_user.property_id
+        else:
+            first_prop = (await db.execute(select(Property))).scalars().first()
+            if first_prop:
+                resort_uuid = first_prop.property_id
+
+    if not resort_uuid:
+        raise HTTPException(status_code=400, detail="Invalid resort_id format")
+
     await assert_property_access(resort_uuid, current_user, db)
     
-    # 0. Check if property/resort exists. If not, auto-create a mock property
+    # 0. Check if property/resort exists. If not, return error
     prop_q = select(Property).where(Property.property_id == resort_uuid)
     prop_result = await db.execute(prop_q)
     prop = prop_result.scalar_one_or_none()

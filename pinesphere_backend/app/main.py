@@ -90,11 +90,11 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# CORS - allow configured origins only
+# CORS - allow all origins for web and local dev
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -117,6 +117,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         
     return JSONResponse(
         status_code=422,
+        headers={"Access-Control-Allow-Origin": "*"},
         content={
             "detail": exc.errors(),
             "request_id": request_id,
@@ -129,7 +130,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error"},
+        headers={"Access-Control-Allow-Origin": "*"},
+        content={"detail": str(exc)},
     )
 
 @app.get("/health")

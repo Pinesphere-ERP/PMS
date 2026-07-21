@@ -49,12 +49,27 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
     final isReceptionist = !canAddEdit;
 
     final sessionContext = ref.watch(sessionContextProvider);
-    final activePropertyId = sessionContext.activePropertyId ?? 'default';
-    final activePropertyName = sessionContext.activeProperty?.propertyName ?? 'My Property';
+    final userPropertyId = authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
 
     ref.read(pmsProvider.notifier).autoVacateExpiredBookings();
     final pmsState = ref.watch(pmsProvider);
-    final rooms = pmsState.rooms.where((r) => r.resortId == activePropertyId).toList();
+
+    String activePropertyId = sessionContext.activePropertyId ?? userPropertyId ?? '';
+    if (activePropertyId.isEmpty || activePropertyId == 'default') {
+      if (pmsState.resorts.isNotEmpty) {
+        activePropertyId = pmsState.resorts.first.id;
+      }
+    }
+
+    final activePropertyName = sessionContext.activeProperty?.propertyName ??
+        (pmsState.resorts.isNotEmpty ? pmsState.resorts.first.name : 'Property');
+
+    final rooms = pmsState.rooms.where((r) {
+      if (activePropertyId.isEmpty || activePropertyId == 'default') return true;
+      final rid = r.resortId.toString().trim().toLowerCase();
+      final target = activePropertyId.toString().trim().toLowerCase();
+      return rid.isEmpty || rid == target || rid.contains(target) || target.contains(rid);
+    }).toList();
 
     // Filter rooms
     final filteredRooms = rooms.where((room) {
@@ -756,8 +771,19 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
 
   void _showAddRoomDialog(BuildContext context, WidgetRef ref) {
     final sessionContext = ref.read(sessionContextProvider);
-    final activePropertyId = sessionContext.activePropertyId ?? 'default';
-    final activePropertyName = sessionContext.activeProperty?.propertyName ?? 'My Property';
+    final authState = ref.read(authProvider);
+    final pmsState = ref.read(pmsProvider);
+
+    final userPropertyId = authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
+    String targetPropertyId = sessionContext.activePropertyId ?? userPropertyId ?? '';
+    if (targetPropertyId.isEmpty || targetPropertyId == 'default') {
+      if (pmsState.resorts.isNotEmpty) {
+        targetPropertyId = pmsState.resorts.first.id;
+      }
+    }
+
+    final activePropertyName = sessionContext.activeProperty?.propertyName ??
+        (pmsState.resorts.isNotEmpty ? pmsState.resorts.first.name : 'Property');
 
     final roomNumCtrl = TextEditingController();
     final typeCtrl = TextEditingController();
@@ -885,7 +911,7 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                             {'name': 'Air Conditioning', 'price': 0.0}
                           ],
                           status: initialStatus,
-                          resortId: activePropertyId,
+                          resortId: targetPropertyId,
                           images: ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80'],
                           description: descriptionCtrl.text,
                         );

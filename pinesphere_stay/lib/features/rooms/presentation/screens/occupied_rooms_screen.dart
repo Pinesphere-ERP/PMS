@@ -31,7 +31,7 @@ class _OccupiedRoomsScreenState extends ConsumerState<OccupiedRoomsScreen> {
         iconTheme: const IconThemeData(color: AppColors.primary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
       ),
       body: PineBackground(

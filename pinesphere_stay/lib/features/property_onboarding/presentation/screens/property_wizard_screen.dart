@@ -7,6 +7,7 @@ import '../../domain/models/property_wizard_model.dart';
 import '../providers/property_wizard_notifier.dart';
 import '../../../../core/auth/session_context.dart';
 import '../../../../core/auth/owner_onboarding_status.dart';
+import '../../../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 
@@ -97,6 +98,17 @@ class _PropertyWizardScreenState extends ConsumerState<PropertyWizardScreen> {
           style: GoogleFonts.outfit(color: AppColors.onBackground, fontWeight: FontWeight.bold),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: AppColors.error),
+            tooltip: 'Log out',
+            onPressed: () async {
+              await ref.read(authRepositoryProvider).logout();
+              ref.read(sessionContextProvider.notifier).clear();
+              if (context.mounted) {
+                context.go('/login');
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.close, color: AppColors.onBackground),
             onPressed: () => context.go('/dashboard'),

@@ -104,6 +104,11 @@ class PropertyWizardNotifier extends _$PropertyWizardNotifier {
       }
       return false;
     } catch (e) {
+      debugPrint("API Error in completeOnboarding: $e");
+      if (e is DioException) {
+        debugPrint("Response data: ${e.response?.data}");
+        debugPrint("Response status: ${e.response?.statusCode}");
+      }
       return false;
     }
   }

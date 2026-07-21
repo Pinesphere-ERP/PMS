@@ -692,6 +692,9 @@ from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, Schedul
 # ── Settings (Module 15) ──
 from app.modules.settings.models import SystemConfiguration, PropertySetting
 
+# ── Manager Module ──────────────────────────────────────────────────────────
+from app.modules.manager.models import ManagerNote, RoomBlock, ManagerDailyChecklist, StaffShift
+
 class Task(Base, TimestampMixin, SyncMixin):
     __tablename__ = "tasks"
     __table_args__ = (

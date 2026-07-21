@@ -11,6 +11,7 @@ import '../../features/auth/presentation/screens/owner_registration_screen.dart'
 import '../../features/requests/presentation/screens/requests_screen.dart';
 import '../../features/requests/presentation/screens/create_request_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/manager/screens/manager_dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
@@ -297,6 +298,10 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/dashboard',
                 builder: (context, state) => const DashboardScreen(),
+              ),
+              GoRoute(
+                path: '/manager-dashboard',
+                builder: (context, state) => const ManagerDashboardScreen(),
               ),
               GoRoute(
                 path: '/checkin',

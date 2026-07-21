@@ -29,6 +29,7 @@ enum OwnerOnboardingStatus {
 
     switch (ob) {
       case 'draft':
+      case 'pending_approval':
         return OwnerOnboardingStatus.draft;
       case 'payment_pending':
         return OwnerOnboardingStatus.paymentPending;

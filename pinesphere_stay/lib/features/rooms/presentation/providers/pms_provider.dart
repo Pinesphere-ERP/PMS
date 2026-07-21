@@ -414,7 +414,10 @@ class PmsNotifier extends Notifier<PmsState> {
       final dio = ref.read(dioClientProvider);
       final response = await dio.get('/bookings');
       if (response.statusCode == 200) {
-        final List<dynamic> items = response.data['items'] ?? [];
+        final dynamic rawData = response.data;
+        final List<dynamic> items = rawData is Map
+            ? (rawData['items'] as List<dynamic>? ?? [])
+            : (rawData is List ? rawData : []);
         final loadedBookings = items.map((json) {
           final parsedCheckOutDate = json['check_out_date'] != null ? DateTime.tryParse(json['check_out_date'].toString()) ?? DateTime.now().add(const Duration(days: 1)) : DateTime.now().add(const Duration(days: 1));
 

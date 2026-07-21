@@ -16,14 +16,18 @@ FlutterSecureStorage secureStorage(Ref ref) {
 
 @riverpod
 Dio dioClient(Ref ref) {
-  // Use dart-define for physical device IP, fallback to hosted backend
-  const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://pms-bvko.onrender.com/api/v1');
+  final defaultLocal = defaultTargetPlatform == TargetPlatform.android
+      ? 'http://10.97.143.65:8000/api/v1'
+      : 'http://127.0.0.1:8000/api/v1';
+
+  const configuredUrl = String.fromEnvironment('API_URL');
+  final baseUrl = configuredUrl.isNotEmpty ? configuredUrl : defaultLocal;
 
   final dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 90),
-      receiveTimeout: const Duration(seconds: 90),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
       contentType: 'application/json',
     ),
   );
@@ -48,19 +52,28 @@ class OfflineOutboxInterceptor extends Interceptor {
         err.type == DioExceptionType.connectionError ||
         err.error.toString().contains('SocketException');
 
-    // If hosted backend (render) fails, automatically fallback to local server
-    if (isNetworkError && err.requestOptions.baseUrl.contains('onrender.com')) {
-      try {
-        final localBaseUrl = defaultTargetPlatform == TargetPlatform.android
-            ? 'http://10.0.2.2:8000/api/v1'
-            : 'http://localhost:8000/api/v1';
+    // Auto-retry across local IPs (10.97.143.65, 192.168.56.1, 127.0.0.1, and Render cloud)
+    if (isNetworkError) {
+      final fallbackUrls = [
+        'http://10.97.143.65:8000/api/v1',
+        'http://192.168.56.1:8000/api/v1',
+        'http://127.0.0.1:8000/api/v1',
+        'https://pms-bvko.onrender.com/api/v1',
+      ];
 
-        final options = err.requestOptions;
-        options.baseUrl = localBaseUrl;
-        final fallbackDio = Dio();
-        final response = await fallbackDio.fetch(options);
-        return handler.resolve(response);
-      } catch (_) {}
+      for (final url in fallbackUrls) {
+        if (err.requestOptions.baseUrl == url) continue;
+        try {
+          final options = err.requestOptions;
+          options.baseUrl = url;
+          final fallbackDio = Dio(BaseOptions(
+            connectTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+          ));
+          final response = await fallbackDio.fetch(options);
+          return handler.resolve(response);
+        } catch (_) {}
+      }
     }
 
     final method = err.requestOptions.method.toUpperCase();

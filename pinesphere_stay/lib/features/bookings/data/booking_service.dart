@@ -155,7 +155,12 @@ class BookingService {
       if (status != null) queryParams['status'] = status;
       if (date != null) queryParams['date'] = date;
       final response = await _dio.get('/bookings', queryParameters: queryParams);
-      final List<dynamic> dataList = response.data as List<dynamic>;
+      List<dynamic> dataList = [];
+      if (response.data is List) {
+        dataList = response.data as List<dynamic>;
+      } else if (response.data is Map && response.data['items'] is List) {
+        dataList = response.data['items'] as List<dynamic>;
+      }
       
       // Cache data locally for offline use
       final entities = dataList.map<BookingEntity>((data) => BookingEntity(

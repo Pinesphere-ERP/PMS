@@ -45,6 +45,34 @@ async def lifespan(app: FastAPI):
                 await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS floor VARCHAR(10);"))
                 await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS housekeeping_status VARCHAR(20) DEFAULT 'clean';"))
                 await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS occupancy_status VARCHAR(20) DEFAULT 'vacant';"))
+                
+                await conn.execute(text("ALTER TABLE guests ADD COLUMN IF NOT EXISTS id_type VARCHAR(30);"))
+                await conn.execute(text("ALTER TABLE guests ADD COLUMN IF NOT EXISTS id_number VARCHAR(50);"))
+                await conn.execute(text("ALTER TABLE guests ADD COLUMN IF NOT EXISTS address TEXT;"))
+                await conn.execute(text("ALTER TABLE guests ADD COLUMN IF NOT EXISTS city VARCHAR(80);"))
+                await conn.execute(text("ALTER TABLE guests ADD COLUMN IF NOT EXISTS state VARCHAR(80);"))
+                await conn.execute(text("ALTER TABLE guests ADD COLUMN IF NOT EXISTS country VARCHAR(80);"))
+                await conn.execute(text("ALTER TABLE guests ADD COLUMN IF NOT EXISTS nationality VARCHAR(80);"))
+                await conn.execute(text("ALTER TABLE guests ADD COLUMN IF NOT EXISTS gender VARCHAR(20);"))
+                
+                await conn.execute(text("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS broker_user_id UUID;"))
+                await conn.execute(text("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS booking_reference VARCHAR(30);"))
+                await conn.execute(text("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS infants INTEGER DEFAULT 0;"))
+                await conn.execute(text("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS vehicle_number VARCHAR(20);"))
+                await conn.execute(text("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS parking_required BOOLEAN DEFAULT FALSE;"))
+
+                await conn.execute(text("ALTER TABLE check_ins ADD COLUMN IF NOT EXISTS vehicle_number VARCHAR(20);"))
+                await conn.execute(text("ALTER TABLE check_ins ADD COLUMN IF NOT EXISTS parking_required BOOLEAN DEFAULT FALSE;"))
+                await conn.execute(text("ALTER TABLE check_ins ADD COLUMN IF NOT EXISTS id_verification_notes TEXT;"))
+                await conn.execute(text("ALTER TABLE check_ins ADD COLUMN IF NOT EXISTS offline_id VARCHAR(128);"))
+
+                await conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS grand_total NUMERIC(10, 2) DEFAULT 0;"))
+                await conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS total_paid NUMERIC(10, 2) DEFAULT 0;"))
+                await conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS balance_due NUMERIC(10, 2) DEFAULT 0;"))
+                await conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS generated_at TIMESTAMPTZ;"))
+                await conn.execute(text("ALTER TABLE invoices ALTER COLUMN date DROP NOT NULL;"))
+                await conn.execute(text("ALTER TABLE invoices ALTER COLUMN due_date DROP NOT NULL;"))
+                await conn.execute(text("ALTER TABLE invoices ALTER COLUMN amount DROP NOT NULL;"))
             except Exception:
                 pass
         logger.info("Startup check: Database connection and auto-schema alignment successful")

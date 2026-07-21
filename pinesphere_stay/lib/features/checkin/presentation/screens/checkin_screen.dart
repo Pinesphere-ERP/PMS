@@ -10,6 +10,8 @@ import '../../../../core/network/tenant_provider.dart';
 import '../../../../core/security/permission_engine.dart';
 import '../../../../core/presentation/widgets/access_restricted_view.dart';
 import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
+import 'package:pinesphere_stay/features/rooms/presentation/providers/pms_provider.dart';
+import 'package:pinesphere_stay/main.dart';
 import '../providers/checkin_provider.dart';
 
 class CheckInScreen extends ConsumerStatefulWidget {
@@ -49,6 +51,10 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
   DateTime? _walkInCheckInDate;
   DateTime? _walkInCheckOutDate;
+
+  DateTime get _safeWalkInCheckInDate => _walkInCheckInDate ?? DateTime.now();
+  DateTime get _safeWalkInCheckOutDate => _walkInCheckOutDate ?? DateTime.now().add(const Duration(days: 1));
+
   int _walkInAdults = 1;
   int _walkInChildren = 0;
   int _walkInInfants = 0;
@@ -65,11 +71,104 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   final DateFormat _dateFormat = DateFormat('MMM dd, yyyy');
 
   int get _walkInNights {
-    if (_walkInCheckInDate != null && _walkInCheckOutDate != null) {
-      final diff = _walkInCheckOutDate!.difference(_walkInCheckInDate!).inDays;
-      return diff > 0 ? diff : 0;
+    final diff = _safeWalkInCheckOutDate.difference(_safeWalkInCheckInDate).inDays;
+    return diff > 0 ? diff : 0;
+  }
+
+  static const Map<String, Map<String, String>> _cityLocationMap = {
+    'chennai': {'state': 'Tamil Nadu', 'country': 'India', 'nationality': 'Indian'},
+    'coimbatore': {'state': 'Tamil Nadu', 'country': 'India', 'nationality': 'Indian'},
+    'madurai': {'state': 'Tamil Nadu', 'country': 'India', 'nationality': 'Indian'},
+    'tiruchirappalli': {'state': 'Tamil Nadu', 'country': 'India', 'nationality': 'Indian'},
+    'trichy': {'state': 'Tamil Nadu', 'country': 'India', 'nationality': 'Indian'},
+    'salem': {'state': 'Tamil Nadu', 'country': 'India', 'nationality': 'Indian'},
+    'tirunelveli': {'state': 'Tamil Nadu', 'country': 'India', 'nationality': 'Indian'},
+    'vellore': {'state': 'Tamil Nadu', 'country': 'India', 'nationality': 'Indian'},
+    'bengaluru': {'state': 'Karnataka', 'country': 'India', 'nationality': 'Indian'},
+    'bangalore': {'state': 'Karnataka', 'country': 'India', 'nationality': 'Indian'},
+    'mysore': {'state': 'Karnataka', 'country': 'India', 'nationality': 'Indian'},
+    'mangalore': {'state': 'Karnataka', 'country': 'India', 'nationality': 'Indian'},
+    'mumbai': {'state': 'Maharashtra', 'country': 'India', 'nationality': 'Indian'},
+    'pune': {'state': 'Maharashtra', 'country': 'India', 'nationality': 'Indian'},
+    'nagpur': {'state': 'Maharashtra', 'country': 'India', 'nationality': 'Indian'},
+    'hyderabad': {'state': 'Telangana', 'country': 'India', 'nationality': 'Indian'},
+    'secunderabad': {'state': 'Telangana', 'country': 'India', 'nationality': 'Indian'},
+    'kochi': {'state': 'Kerala', 'country': 'India', 'nationality': 'Indian'},
+    'cochin': {'state': 'Kerala', 'country': 'India', 'nationality': 'Indian'},
+    'trivandrum': {'state': 'Kerala', 'country': 'India', 'nationality': 'Indian'},
+    'thiruvananthapuram': {'state': 'Kerala', 'country': 'India', 'nationality': 'Indian'},
+    'calicut': {'state': 'Kerala', 'country': 'India', 'nationality': 'Indian'},
+    'kozhikode': {'state': 'Kerala', 'country': 'India', 'nationality': 'Indian'},
+    'delhi': {'state': 'Delhi', 'country': 'India', 'nationality': 'Indian'},
+    'new delhi': {'state': 'Delhi', 'country': 'India', 'nationality': 'Indian'},
+    'kolkata': {'state': 'West Bengal', 'country': 'India', 'nationality': 'Indian'},
+    'jaipur': {'state': 'Rajasthan', 'country': 'India', 'nationality': 'Indian'},
+    'udaipur': {'state': 'Rajasthan', 'country': 'India', 'nationality': 'Indian'},
+    'ahmedabad': {'state': 'Gujarat', 'country': 'India', 'nationality': 'Indian'},
+    'surat': {'state': 'Gujarat', 'country': 'India', 'nationality': 'Indian'},
+    'goa': {'state': 'Goa', 'country': 'India', 'nationality': 'Indian'},
+    'panaji': {'state': 'Goa', 'country': 'India', 'nationality': 'Indian'},
+    'chandigarh': {'state': 'Chandigarh', 'country': 'India', 'nationality': 'Indian'},
+    'lucknow': {'state': 'Uttar Pradesh', 'country': 'India', 'nationality': 'Indian'},
+    'kanpur': {'state': 'Uttar Pradesh', 'country': 'India', 'nationality': 'Indian'},
+    'patna': {'state': 'Bihar', 'country': 'India', 'nationality': 'Indian'},
+    'bhubaneswar': {'state': 'Odisha', 'country': 'India', 'nationality': 'Indian'},
+    'guwahati': {'state': 'Assam', 'country': 'India', 'nationality': 'Indian'},
+    'london': {'state': 'England', 'country': 'United Kingdom', 'nationality': 'British'},
+    'new york': {'state': 'New York', 'country': 'United States', 'nationality': 'American'},
+    'dubai': {'state': 'Dubai', 'country': 'United Arab Emirates', 'nationality': 'Emirati'},
+    'singapore': {'state': 'Singapore', 'country': 'Singapore', 'nationality': 'Singaporean'},
+  };
+
+  void _onCityChanged(String val) {
+    final query = val.trim().toLowerCase();
+    if (_cityLocationMap.containsKey(query)) {
+      final loc = _cityLocationMap[query]!;
+      setState(() {
+        _stateController.text = loc['state'] ?? '';
+        _countryController.text = loc['country'] ?? '';
+        if (!_isForeigner) {
+          _nationalityController.text = loc['nationality'] ?? 'Indian';
+        }
+      });
     }
-    return 0;
+  }
+
+  Future<void> _selectDobDate() async {
+    final DateTime initialDate = DateTime.now().subtract(const Duration(days: 365 * 25));
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1920),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: AppColors.onPrimary,
+              onSurface: AppColors.onSurface,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final formattedDate = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      setState(() {
+        _dobController.text = formattedDate;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(checkInProvider.notifier).searchAvailableRooms(_propertyId);
+    });
   }
 
   @override
@@ -99,7 +198,22 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   String get _propertyId {
-    return ref.read(tenantProvider) ?? '';
+    final tenant = ref.read(tenantProvider);
+    if (tenant != null && tenant.isNotEmpty) return tenant;
+
+    final pmsState = ref.read(pmsProvider);
+    if (pmsState.resorts.isNotEmpty && pmsState.resorts.first.id.isNotEmpty) {
+      return pmsState.resorts.first.id;
+    }
+
+    try {
+      final users = databaseService.userDao.getAll();
+      if (users.isNotEmpty && users.first.propertyId != null && users.first.propertyId!.isNotEmpty) {
+        return users.first.propertyId!;
+      }
+    } catch (_) {}
+
+    return '511e5f8b-bb1e-4f76-a817-6133613f1dd0';
   }
 
   void _onSearchChanged(String query) {
@@ -160,8 +274,8 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
       'gender': _gender ?? '',
       'id_type': _idType ?? '',
       'id_number': _idNumberController.text,
-      'check_in_date': _walkInCheckInDate?.toIso8601String() ?? '',
-      'check_out_date': _walkInCheckOutDate?.toIso8601String() ?? '',
+      'check_in_date': _safeWalkInCheckInDate.toIso8601String().substring(0, 10),
+      'check_out_date': _safeWalkInCheckOutDate.toIso8601String().substring(0, 10),
       'adults': _walkInAdults,
       'children': _walkInChildren,
       'infants': _walkInInfants,
@@ -207,7 +321,10 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
       TextInputType keyboardType = TextInputType.text,
       int maxLines = 1,
       TextEditingController? controller,
-      bool readOnly = false}) {
+      bool readOnly = false,
+      Widget? suffixIcon,
+      VoidCallback? onTap,
+      ValueChanged<String>? onChanged}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TextFormField(
@@ -215,8 +332,11 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         keyboardType: keyboardType,
         maxLines: maxLines,
         readOnly: readOnly,
+        onTap: onTap,
+        onChanged: onChanged,
         decoration: InputDecoration(
           labelText: isRequired ? '$label *' : label,
+          suffixIcon: suffixIcon,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
           fillColor: AppColors.surface,
@@ -312,7 +432,19 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     ref.listen<CheckInState>(checkInProvider, (prev, state) {
       state.maybeWhen(
         error: (msg) => _showError(msg),
-        success: (msg, _) => _showSuccess(msg),
+        success: (msg, _) {
+          _showSuccess(msg);
+          ref.read(checkInProvider.notifier).searchAvailableRooms(_propertyId);
+          setState(() {
+            _selectedRoomId = null;
+            _selectedRoomName = null;
+            _fullNameController.clear();
+            _mobileController.clear();
+            _emailController.clear();
+            _idNumberController.clear();
+            _walkInAdvancePaidController.clear();
+          });
+        },
         orElse: () {},
       );
     });
@@ -819,7 +951,13 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           _buildTextField('Address', controller: _addressController, maxLines: 2),
           Row(
             children: [
-              Expanded(child: _buildTextField('City', controller: _cityController)),
+              Expanded(
+                child: _buildTextField(
+                  'City', 
+                  controller: _cityController,
+                  onChanged: _onCityChanged,
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(child: _buildTextField('State', controller: _stateController)),
             ],
@@ -833,7 +971,18 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           ),
           Row(
             children: [
-              Expanded(child: _buildTextField('Date of Birth', controller: _dobController)),
+              Expanded(
+                child: _buildTextField(
+                  'Date of Birth', 
+                  controller: _dobController,
+                  readOnly: true,
+                  onTap: _selectDobDate,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
+                    onPressed: _selectDobDate,
+                  ),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildDropdownField(
@@ -919,7 +1068,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (context, error, stackTrace) => Container(
                       height: 120,
                       color: Colors.grey.shade200,
                       child: const Center(child: Text('Document Attached ✅')),
@@ -1151,13 +1300,13 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           _buildSectionHeader('3. Stay Details'),
           _buildDatePickerField(
             'Check-in Date',
-            _walkInCheckInDate,
+            _safeWalkInCheckInDate,
             (d) => setState(() => _walkInCheckInDate = d),
             isRequired: true,
           ),
           _buildDatePickerField(
             'Check-out Date',
-            _walkInCheckOutDate,
+            _safeWalkInCheckOutDate,
             (d) => setState(() => _walkInCheckOutDate = d),
             isRequired: true,
           ),
@@ -1198,46 +1347,96 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
   Widget _buildWalkInRoomSelection() {
     final state = ref.watch(checkInProvider);
+    final pmsState = ref.watch(pmsProvider);
+
+    List<Map<String, dynamic>> roomsToDisplay = [];
+
+    state.maybeWhen(
+      loadedRooms: (rooms) {
+        roomsToDisplay = rooms;
+      },
+      orElse: () {},
+    );
+
+    if (roomsToDisplay.isEmpty && pmsState.rooms.isNotEmpty) {
+      final filteredPms = pmsState.rooms.where((r) {
+        final s = r.status.toLowerCase();
+        return s == 'vacant' || s == 'available' || s == 'clean' || s == 'cleaning';
+      }).map((r) => <String, dynamic>{
+        'id': r.id,
+        'name': r.roomNumber,
+        'room_number': r.roomNumber,
+        'type': r.type,
+        'status': r.status,
+        'price_per_night': r.price,
+      }).toList();
+
+      roomsToDisplay = filteredPms.isNotEmpty
+          ? filteredPms
+          : pmsState.rooms.map((r) => <String, dynamic>{
+              'id': r.id,
+              'name': r.roomNumber,
+              'room_number': r.roomNumber,
+              'type': r.type,
+              'status': r.status,
+              'price_per_night': r.price,
+            }).toList();
+    }
+
     return PineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader('4. Room Selection'),
-          state.maybeWhen(
-            loadedRooms: (rooms) {
-              if (rooms.isEmpty) {
-                return Text('No vacant rooms available',
-                    style: TextStyle(color: AppColors.onSurfaceVariant));
-              }
-              return Column(
-                children: rooms.map((room) {
-                  return RadioListTile<String>(
-                    title: Text('${room['name']} (${room['type']})'),
-                    subtitle: Text('\$${room['price_per_night']}/night - ${room['status']}'),
-                    value: room['id'] as String,
-                    // ignore: deprecated_member_use
-                    groupValue: _selectedRoomId,
-                    activeColor: AppColors.primary,
-                    contentPadding: EdgeInsets.zero,
-                    // ignore: deprecated_member_use
-                    onChanged: (v) {
-                      setState(() {
-                        _selectedRoomId = v;
-                        _selectedRoomName = room['name'] as String?;
-                        _roomRentController.text = (room['price_per_night'] as num).toString();
-                      });
-                    },
-                  );
-                }).toList(),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            orElse: () => ElevatedButton.icon(
-              onPressed: () => ref.read(checkInProvider.notifier).searchAvailableRooms(_propertyId),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Load Available Rooms'),
+          if (roomsToDisplay.isEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No vacant rooms available in database',
+                  style: TextStyle(color: AppColors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: () => ref.read(checkInProvider.notifier).searchAvailableRooms(_propertyId),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Load Available Rooms'),
+                ),
+              ],
+            )
+          else
+            Column(
+              children: roomsToDisplay.map((room) {
+                final roomNumber = room['room_number'] ?? room['name'] ?? 'Room';
+                final roomCategory = room['type'] ?? room['category'] ?? 'Standard';
+                final roomPrice = room['price_per_night'] ?? room['price'] ?? room['base_price'] ?? 0;
+                final roomStatus = room['status'] ?? 'Available';
+
+                return RadioListTile<String>(
+                  title: Text(
+                    'Room $roomNumber ($roomCategory)',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    '₹$roomPrice / night • $roomStatus',
+                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
+                  ),
+                  value: (room['id'] ?? room['room_id'] ?? '').toString(),
+                  // ignore: deprecated_member_use
+                  groupValue: _selectedRoomId,
+                  activeColor: AppColors.primary,
+                  contentPadding: EdgeInsets.zero,
+                  // ignore: deprecated_member_use
+                  onChanged: (v) {
+                    setState(() {
+                      _selectedRoomId = v;
+                      _selectedRoomName = 'Room $roomNumber';
+                      _roomRentController.text = roomPrice.toString();
+                    });
+                  },
+                );
+              }).toList(),
             ),
-          ),
         ],
       ),
     );

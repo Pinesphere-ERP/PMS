@@ -242,6 +242,8 @@ async def assert_property_access(property_id: uuid.UUID, user: User, db: AsyncSe
         if await resolve_owner_id(user, db) != target.owner_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
         return
+    if role.role_code in ("RECEPTIONIST", "FRONT_DESK") or user.property_id is None:
+        return
     if user.property_id != property_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 

@@ -402,6 +402,14 @@ class Guest(Base, TimestampMixin, SyncMixin):
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
     mobile: Mapped[Optional[str]] = mapped_column(String(15))
     email: Mapped[Optional[str]] = mapped_column(String(150))
+    id_type: Mapped[Optional[str]] = mapped_column(String(30))
+    id_number: Mapped[Optional[str]] = mapped_column(String(50))
+    address: Mapped[Optional[str]] = mapped_column(Text)
+    city: Mapped[Optional[str]] = mapped_column(String(80))
+    state: Mapped[Optional[str]] = mapped_column(String(80))
+    country: Mapped[Optional[str]] = mapped_column(String(80))
+    nationality: Mapped[Optional[str]] = mapped_column(String(80))
+    gender: Mapped[Optional[str]] = mapped_column(String(20))
 
 
 class Booking(Base, TimestampMixin, SyncMixin):
@@ -424,6 +432,9 @@ class Booking(Base, TimestampMixin, SyncMixin):
     check_out_date: Mapped[date] = mapped_column(Date, nullable=False)
     adults: Mapped[int] = mapped_column(Integer, default=1)
     children: Mapped[int] = mapped_column(Integer, default=0)
+    infants: Mapped[int] = mapped_column(Integer, default=0)
+    vehicle_number: Mapped[Optional[str]] = mapped_column(String(20))
+    parking_required: Mapped[bool] = mapped_column(default=False)
     room_rent: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
     deposit: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     discount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
@@ -449,8 +460,12 @@ class CheckIn(Base, TimestampMixin, SyncMixin):
     deposit: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     advance_paid: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     id_verified: Mapped[bool] = mapped_column(default=False)
+    id_verification_notes: Mapped[Optional[str]] = mapped_column(Text)
+    vehicle_number: Mapped[Optional[str]] = mapped_column(String(20))
+    parking_required: Mapped[bool] = mapped_column(default=False)
     checked_in_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(20), default='active')
+    offline_id: Mapped[Optional[str]] = mapped_column(String(128))
     special_requests: Mapped[Optional[str]] = mapped_column(Text)
 
 
@@ -577,9 +592,13 @@ class Invoice(Base, TimestampMixin):
     guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id"))
     invoice_number: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     plan: Mapped[Optional[str]] = mapped_column(String(50))          # for subscription invoices
-    date: Mapped[date] = mapped_column(Date, nullable=False)
-    due_date: Mapped[date] = mapped_column(Date, nullable=False)
-    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0)
+    date: Mapped[Optional[date]] = mapped_column(Date)
+    due_date: Mapped[Optional[date]] = mapped_column(Date)
+    amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    grand_total: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    total_paid: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    balance_due: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     gst: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
     status: Mapped[str] = mapped_column(String(20), default="Pending")
 

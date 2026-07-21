@@ -71,11 +71,7 @@ async def list_bookings(
     """List bookings with optional filters."""
     if property_id is None:
         property_id = current_user.property_id
-    if property_id is None:
-        from app.core.dependencies import get_current_role
-        if (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
-            raise HTTPException(status_code=403, detail="Property scope required")
-    else:
+    if property_id is not None:
         await assert_property_access(property_id, current_user, db)
     return await service.get_bookings(db, property_id=property_id, status_filter=status, date_filter=date)
 

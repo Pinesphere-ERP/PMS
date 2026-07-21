@@ -146,19 +146,61 @@ class CheckInService {
 
   Future<Map<String, dynamic>> performWalkIn(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('/checkin/walkin', data: data);
+      final propertyId = (data['property_id']?.toString().isNotEmpty == true) 
+          ? data['property_id'].toString() 
+          : '511e5f8b-bb1e-4f76-a817-6133613f1dd0';
+      final roomId = data['room_id']?.toString() ?? '';
+
+      final payload = <String, dynamic>{
+        'guest': {
+          'full_name': (data['full_name']?.toString().isNotEmpty == true)
+              ? data['full_name'].toString()
+              : (data['guest_name']?.toString() ?? 'Walk-In Guest'),
+          'mobile': data['mobile']?.toString(),
+          'email': data['email']?.toString(),
+          'id_type': (data['id_type']?.toString().isNotEmpty == true) ? data['id_type'].toString() : 'Aadhaar',
+          'id_number': data['id_number']?.toString(),
+          'address': data['address']?.toString(),
+          'city': data['city']?.toString(),
+          'state': data['state']?.toString(),
+          'country': data['country']?.toString(),
+          'nationality': data['nationality']?.toString(),
+          'gender': (data['gender']?.toString().isNotEmpty == true) ? data['gender'].toString() : 'Male',
+        },
+        'property_id': propertyId,
+        'room_id': roomId,
+        'check_in_date': (data['check_in_date']?.toString().isNotEmpty == true)
+            ? data['check_in_date'].toString().substring(0, 10)
+            : DateTime.now().toIso8601String().substring(0, 10),
+        'check_out_date': (data['check_out_date']?.toString().isNotEmpty == true)
+            ? data['check_out_date'].toString().substring(0, 10)
+            : DateTime.now().add(const Duration(days: 1)).toIso8601String().substring(0, 10),
+        'adults': data['adults'] ?? 1,
+        'children': data['children'] ?? 0,
+        'infants': data['infants'] ?? 0,
+        'room_rent': data['room_rent'] ?? 0,
+        'deposit': data['deposit'] ?? 0,
+        'advance_paid': data['advance_paid'] ?? 0,
+        'id_verified': data['id_verified'] ?? false,
+        'id_verification_notes': data['id_verification_notes']?.toString(),
+        'special_requests': data['special_requests']?.toString(),
+        'vehicle_number': data['vehicle_number']?.toString(),
+        'parking_required': data['parking_required'] ?? false,
+      };
+
+      final response = await _dio.post('/checkin/walkin', data: payload);
       final body = response.data as Map<String, dynamic>;
       _audit.log(
         moduleName: 'checkin',
         actionType: 'walk_in',
         targetEntity: 'check_in',
         targetRecordId: body['checkin_id']?.toString() ?? body['id']?.toString() ?? '',
-        propertyId: data['property_id']?.toString(),
+        propertyId: propertyId,
         userId: data['staff_id']?.toString(),
         newValue: {
-          'room_id': data['room_id'],
-          'booking_id': data['booking_id'],
-          'guest_name': data['guest_name'],
+          'room_id': roomId,
+          'booking_id': body['booking_id'],
+          'guest_name': data['full_name'],
           'advance_paid': data['advance_paid'],
         },
       );

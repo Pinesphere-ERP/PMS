@@ -249,7 +249,8 @@ async def perform_walkin_checkin(
     room = room_res.scalar_one_or_none()
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
-    if room.occupancy_status != "vacant":
+    curr_status = (room.occupancy_status or "vacant").lower()
+    if curr_status not in ("vacant", "available", "clean"):
         raise HTTPException(
             status_code=400,
             detail=f"Room {room.room_number} is not vacant. Current status: '{room.occupancy_status}'."

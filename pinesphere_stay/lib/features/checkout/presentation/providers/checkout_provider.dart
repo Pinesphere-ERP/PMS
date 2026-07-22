@@ -23,22 +23,48 @@ sealed class CheckOutState with _$CheckOutState {
 
 @riverpod
 class CheckOutNotifier extends _$CheckOutNotifier {
+  String? _lastPropertyId;
+  String? _currentTab; // 'pending' or 'today'
+
   @override
-  CheckOutState build() => const CheckOutState.initial();
+  CheckOutState build() {
+    ref.listen(pmsProvider, (previous, next) {
+      final shouldUpdate = state.maybeWhen(
+        initial: () => true,
+        loadedPendingCheckouts: (_) => true,
+        loadedTodaysCheckouts: (_) => true,
+        orElse: () => false,
+      );
+      if (shouldUpdate && _lastPropertyId != null) {
+        _updateCheckoutsFromState(next);
+      }
+    });
+    return const CheckOutState.initial();
+  }
+
+  void _updateCheckoutsFromState(PmsState pmsState) {
+    if (_currentTab == 'pending') {
+      final checkouts = pmsState.bookings.where((b) {
+        return b.status == 'Active' || b.status == 'checked_in';
+      }).toList();
+      state = CheckOutState.loadedPendingCheckouts(checkouts.map((e) => _mapBookingModel(e)).toList());
+    } else if (_currentTab == 'today') {
+      final now = DateTime.now();
+      final checkouts = pmsState.bookings.where((b) {
+        if (b.status != 'Active' && b.status != 'checked_in') return false;
+        final co = b.checkOutDate;
+        return co.year == now.year && co.month == now.month && co.day == now.day;
+      }).toList();
+      state = CheckOutState.loadedTodaysCheckouts(checkouts.map((e) => _mapBookingModel(e)).toList());
+    }
+  }
 
   Future<void> getPendingCheckOuts(String propertyId) async {
-    state = const CheckOutState.loading();
-    try {
-      final service = ref.read(checkOutServiceProvider);
-      final result = await service.getPendingCheckOuts(propertyId);
-      final checkouts = result.cast<Map<String, dynamic>>().where((co) {
-        final status = co['booking_status']?.toString().toLowerCase() ?? co['status']?.toString().toLowerCase() ?? 'active';
-        return status == 'active' || status == 'checked_in';
-      }).toList();
-      state = CheckOutState.loadedPendingCheckouts(checkouts);
-    } catch (e) {
-      state = CheckOutState.error('Failed to load pending checkouts: $e');
-    }
+    _lastPropertyId = propertyId;
+    _currentTab = 'pending';
+    
+    final pmsState = ref.read(pmsProvider);
+    _updateCheckoutsFromState(pmsState);
   }
 
   Future<void> getBillingPreview(String checkinId) async {
@@ -84,15 +110,34 @@ class CheckOutNotifier extends _$CheckOutNotifier {
   }
 
   Future<void> getTodaysCheckOuts(String propertyId) async {
-    state = const CheckOutState.loading();
-    try {
-      final service = ref.read(checkOutServiceProvider);
-      final result = await service.getTodaysCheckOuts(propertyId);
-      final checkouts = result.cast<Map<String, dynamic>>();
-      state = CheckOutState.loadedTodaysCheckouts(checkouts);
-    } catch (e) {
-      state = CheckOutState.error('Failed to load today\'s checkouts: $e');
-    }
+    _lastPropertyId = propertyId;
+    _currentTab = 'today';
+    
+    final pmsState = ref.read(pmsProvider);
+    _updateCheckoutsFromState(pmsState);
+  }
+
+  Map<String, dynamic> _mapBookingModel(BookingModel b) {
+    final nights = b.checkOutDate.difference(b.checkInDate).inDays;
+    final validNights = nights > 0 ? nights : 1;
+    return {
+      'id': b.id,
+      'booking_id': b.id,
+      'checkin_id': b.id,
+      'guest_name': b.guestName,
+      'room_id': b.roomId,
+      'room_number': b.roomNumber,
+      'checkin_date': b.checkInDate.toIso8601String(),
+      'checkout_date': b.checkOutDate.toIso8601String(),
+      'checkout_time': b.checkOutDate.toIso8601String(),
+      'nights_stayed': validNights.toString(),
+      'total_amount': b.totalSum.toStringAsFixed(2),
+      'amount_due': (b.totalSum - b.depositPaid).toStringAsFixed(2),
+      'payment_status': b.depositPaid >= b.totalSum ? 'paid' : (b.depositPaid > 0 ? 'partial' : 'pending'),
+      'booking_status': b.status,
+      'advance_paid': b.depositPaid.toString(),
+      'rate_per_night': (b.totalSum / validNights).toStringAsFixed(2),
+    };
   }
 
   Future<void> getCheckOutDetail(String checkoutId) async {

@@ -6,9 +6,19 @@ import '../../../../core/presentation/widgets/access_restricted_view.dart';
 import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
 import '../data/payment_repository.dart';
 import '../domain/models/payment.dart';
+import 'payment_history_screen.dart';
 
 class PaymentCollectionScreen extends ConsumerStatefulWidget {
-  const PaymentCollectionScreen({super.key});
+  final String? bookingId;
+  final String? invoiceId;
+  final double? initialAmount;
+
+  const PaymentCollectionScreen({
+    super.key,
+    this.bookingId,
+    this.invoiceId,
+    this.initialAmount,
+  });
 
   @override
   ConsumerState<PaymentCollectionScreen> createState() => _PaymentCollectionScreenState();
@@ -37,6 +47,10 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+
+    if (widget.initialAmount != null) {
+      _amountController.text = widget.initialAmount!.toStringAsFixed(2);
+    }
   }
 
   @override
@@ -115,6 +129,8 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
         'amount': amount,
         'remarks': _remarksController.text.isNotEmpty ? _remarksController.text : null,
         'payment_mode': _selectedMode,
+        'booking_id': widget.bookingId,
+        'invoice_id': widget.invoiceId,
       };
 
       if (_selectedMode == 'split') {
@@ -122,6 +138,7 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
       }
 
       await repo.verifyRazorpayPayment(verifyPayload);
+      ref.invalidate(paymentsListProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment successfully recorded!')),
@@ -203,6 +220,8 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
         _razorpay.open(options);
       } else {
         final request = PaymentCreateRequest(
+          bookingId: widget.bookingId,
+          invoiceId: widget.invoiceId,
           paymentMode: effectiveMode,
           amount: amount,
           upiId: effectiveMode == 'upi' ? _upiController.text : null,
@@ -212,7 +231,7 @@ class _PaymentCollectionScreenState extends ConsumerState<PaymentCollectionScree
         );
 
         await repo.createPayment(request);
-        
+        ref.invalidate(paymentsListProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Payment successfully recorded!')),

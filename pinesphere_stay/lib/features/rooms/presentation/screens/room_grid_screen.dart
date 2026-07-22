@@ -412,7 +412,7 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
     }
 
     const portalBaseUrl = String.fromEnvironment('PORTAL_URL', defaultValue: 'http://localhost:3000');
-    final portalUrl = '$portalBaseUrl/guest-portal?property_id=$resortId';
+    final portalUrl = '$portalBaseUrl/share/resort/$resortId';
 
     buffer.writeln('🔗 View photos & book online: $portalUrl');
     buffer.writeln('\nContact receptionist to complete your booking!');

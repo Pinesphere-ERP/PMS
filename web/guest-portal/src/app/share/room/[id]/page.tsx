@@ -75,9 +75,13 @@ export default function SharedRoomPage() {
       try {
         setLoading(true);
         // Try fetching from database first
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://pms-bvko.onrender.com';
-        const res = await fetch(`${apiUrl}/api/v1/properties/rooms/${roomId}`);
-        if (!res.ok) {
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+        let res = await fetch(`${apiUrl}/api/v1/properties/rooms/${roomId}`).catch(() => null);
+        if (!res || !res.ok) {
+          apiUrl = 'https://pms-bvko.onrender.com';
+          res = await fetch(`${apiUrl}/api/v1/properties/rooms/${roomId}`).catch(() => null);
+        }
+        if (!res || !res.ok) {
           throw new Error("Could not load database details, using preview template.");
         }
         const data = await res.json();

@@ -154,13 +154,12 @@ class AccountantDashboardScreen extends ConsumerWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _buildKPICard(context, 'Accounting', '\$${dashboardState.accounting.toStringAsFixed(0)}', AppColors.primary, Icons.account_balance),
-              _buildKPICard(context, 'Income', '\$${dashboardState.income.toStringAsFixed(0)}', Colors.green.shade700, Icons.trending_up),
-              _buildKPICard(context, 'Expenses', '\$${dashboardState.expenses.toStringAsFixed(0)}', AppColors.error, Icons.trending_down),
-              _buildKPICard(context, 'Profit', '\$${dashboardState.profit.toStringAsFixed(0)}', AppColors.primaryContainer, Icons.monetization_on),
-              _buildKPICard(context, 'GST', '\$${dashboardState.gst.toStringAsFixed(0)}', AppColors.outline, Icons.receipt_long),
-              _buildKPICard(context, 'Invoices', '${dashboardState.invoices}', AppColors.secondary, Icons.description),
-              _buildKPICard(context, 'Reports', '${dashboardState.reports}', AppColors.onSurface, Icons.analytics),
+              _buildKPICard(context, 'Accounting', '₹${dashboardState.accounting.toStringAsFixed(0)}', AppColors.primary, Icons.account_balance, onTap: () => context.push('/payments')),
+              _buildKPICard(context, 'Income', '₹${dashboardState.income.toStringAsFixed(0)}', Colors.green.shade700, Icons.trending_up, onTap: () => context.push('/accountant/income')),
+              _buildKPICard(context, 'Expenses', '₹${dashboardState.expenses.toStringAsFixed(0)}', AppColors.error, Icons.trending_down, onTap: () => context.push('/accountant/expenses')),
+              _buildKPICard(context, 'Profit', '₹${dashboardState.profit.toStringAsFixed(0)}', AppColors.primaryContainer, Icons.monetization_on, onTap: () => context.push('/accountant/profit-loss')),
+              _buildKPICard(context, 'GST & Invoices', '${dashboardState.invoices} Invoices (GST: ₹${dashboardState.gst.toStringAsFixed(0)})', AppColors.secondary, Icons.description, onTap: () => context.push('/accountant/gst-invoices')),
+              _buildKPICard(context, 'Reports', '${dashboardState.reports}', AppColors.onSurface, Icons.analytics, onTap: () => context.push('/accountant/reports')),
             ],
           ),
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -171,12 +170,14 @@ class AccountantDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildKPICard(BuildContext context, String title, String value, Color color, IconData icon, {VoidCallback? onTap}) {
-    return Material(
-      color: Colors.transparent,
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
+        child: Ink(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -184,14 +185,6 @@ class AccountantDashboardScreen extends ConsumerWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              )
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,7 +277,7 @@ class AccountantDashboardScreen extends ConsumerWidget {
                     title: Text(guest['guest_name'] ?? 'Unknown Guest'),
                     subtitle: Text('Room: ${guest['room_number']} • Status: ${guest['status']}'),
                     trailing: Text(
-                      '\$${guest['amount_due']}',
+                      '₹${guest['amount_due']}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: (guest['amount_due'] ?? 0) > 0 ? AppColors.error : Colors.green.shade700,

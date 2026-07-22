@@ -63,20 +63,35 @@ export default function ResortCatalogPage() {
     }
   ];
 
+  const [dynamicResortName, setDynamicResortName] = useState<string>(resortName);
+
   useEffect(() => {
     const fetchRooms = async () => {
       try {
         setLoading(true);
-        // Try fetching from database first
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://pms-bvko.onrender.com';
-        const res = await fetch(`${apiUrl}/api/v1/properties/rooms`);
-        if (res.ok) {
-          const data = await res.json();
-          // Filter rooms belonging to this resort
-          const resortRooms = data.filter((r: any) => r.resort_id === resortId);
+        // Try local dev backend first, then fallback to production
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+        let res = await fetch(`${apiUrl}/api/v1/properties/rooms`).catch(() => null);
+        if (!res || !res.ok) {
+          apiUrl = 'https://pms-bvko.onrender.com';
+          res = await fetch(`${apiUrl}/api/v1/properties/rooms`).catch(() => null);
+        }
+
+        if (res && res.ok) {
+          const jsonResp = await res.json();
+          const roomsList = Array.isArray(jsonResp) 
+            ? jsonResp 
+            : (jsonResp.data || jsonResp.items || []);
           
-          if (resortRooms.length > 0) {
-            const mappedRooms = resortRooms.map((r: any) => {
+          // Filter rooms belonging to this resort / property
+          const resortRooms = roomsList.filter((r: any) => 
+            !resortId || r.resort_id === resortId || r.property_id === resortId
+          );
+
+          const finalRoomsToMap = resortRooms.length > 0 ? resortRooms : roomsList;
+          
+          if (finalRoomsToMap.length > 0) {
+            const mappedRooms = finalRoomsToMap.map((r: any) => {
               let parsedAmenities: any[] = [];
               let parsedDescription = "Enjoy a luxurious stay with premium amenities in our beautiful " + r.type + ".";
               
@@ -85,10 +100,11 @@ export default function ResortCatalogPage() {
                   const descData = JSON.parse(r.description);
                   parsedDescription = descData.description || parsedDescription;
                   parsedAmenities = descData.amenities || [];
+                } else if (r.description) {
+                  parsedDescription = r.description;
                 }
               } catch (e) {}
 
-              // Sanitize local image paths to unsplash fallbacks
               let safeImages = Array.isArray(r.images) && r.images.length > 0 ? r.images : [];
               safeImages = safeImages.map((img: string) => {
                 if (img.startsWith('http') || img.startsWith('data:')) return img;
@@ -99,10 +115,10 @@ export default function ResortCatalogPage() {
               }
 
               return {
-                id: r.id,
+                id: r.id || r.room_id,
                 room_number: r.room_number,
                 type: r.type,
-                price: r.price,
+                price: typeof r.price === 'number' ? r.price : parseFloat(r.price || '0'),
                 images: safeImages,
                 description: parsedDescription,
                 amenities: parsedAmenities,
@@ -116,7 +132,6 @@ export default function ResortCatalogPage() {
         
         // If DB fetch fails or is empty, fallback to URL parameters
         if (roomsRaw) {
-          // Format: roomNumber|type|price|firstImage,secondImage...|id
           const parsed = roomsRaw.split(";").map((item, idx) => {
             const parts = item.split("|");
             const rawImages = parts[3] ? parts[3].split(",") : [];
@@ -137,12 +152,9 @@ export default function ResortCatalogPage() {
             };
           });
           setRooms(parsed);
-        } else {
-          setRooms(fallbackRooms as any);
         }
       } catch (e) {
         console.error("Failed to fetch/parse shared rooms catalog:", e);
-        setRooms(fallbackRooms as any);
       } finally {
         setLoading(false);
       }

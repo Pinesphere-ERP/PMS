@@ -92,6 +92,12 @@ export default function CreateUserForProperty() {
       if (!payload.email) delete payload.email;
       if (!payload.username) delete payload.username;
 
+      // Fix for the UUID bug: if the role_id is actually a role_code (not a UUID)
+      if (payload.role_id && !payload.role_id.includes('-')) {
+        payload.role_code = payload.role_id;
+        delete payload.role_id;
+      }
+
       await fetchAPI('/users', {
         method: 'POST',
         body: JSON.stringify(payload),

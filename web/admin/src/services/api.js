@@ -33,8 +33,26 @@ export const fetchAPI = async (endpoint, options = {}) => {
       window.location.href = '/login';
     }
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || errorData.message || 'API request failed');
+    let errorMessage = 'API request failed';
+    if (errorData.detail) {
+      if (Array.isArray(errorData.detail) && errorData.detail.length > 0) {
+        errorMessage = errorData.detail[0].msg;
+      } else if (typeof errorData.detail === 'string') {
+        errorMessage = errorData.detail;
+      }
+    } else if (errorData.message) {
+      errorMessage = errorData.message;
+    }
+    
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  const json = await response.json();
+  if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
+    if (!json.success) {
+      throw new Error(json.message || 'API request failed');
+    }
+    return json.data;
+  }
+  return json;
 };

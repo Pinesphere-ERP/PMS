@@ -12,6 +12,7 @@ from app.infra.models import Property, Owner, Business, Subscription, AuditLog, 
 import uuid
 from app.modules.properties.schemas import PropertyCreateInput
 from app.modules.audit.logger import AuditLogger
+from app.core.responses import success_response, StandardResponse
 
 router = APIRouter()
 
@@ -382,7 +383,7 @@ async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
     
     return None
 
-
+    return None
 
 from pydantic import BaseModel
 
@@ -731,7 +732,7 @@ async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
     return {"message": "Room deleted successfully"}
 
 
-@router.get("")
+@router.get("", response_model=StandardResponse)
 async def get_properties(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """List properties. Super admins see all, owners see their own."""
     role = await get_current_role(current_user, db)
@@ -806,10 +807,10 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
             "onboarding": "100%" if prop.onboarding_status == "completed" else "50%",
             "lastSync": "N/A",
         })
-    return data
+    return success_response(data=data)
 
 
-@router.get("/kpis", dependencies=[Depends(require_super_admin)])
+@router.get("/kpis", response_model=StandardResponse, dependencies=[Depends(require_super_admin)])
 async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     """Aggregate KPI counts for the Property Management dashboard."""
     total_q = await db.execute(select(func.count(Property.property_id)))
@@ -833,12 +834,12 @@ async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     )
     suspended = suspended_q.scalar() or 0
 
-    return [
-        {"name": "Total Properties", "value": str(total), "icon": "Building2", "color": "text-pine-DEFAULT", "bg": "bg-pine-50"},
-        {"name": "Active", "value": str(active), "icon": "CheckCircle2", "color": "text-green-600", "bg": "bg-green-50"},
-        {"name": "Pending Verification", "value": str(pending), "icon": "Clock", "color": "text-yellow-600", "bg": "bg-yellow-50"},
-        {"name": "Suspended", "value": str(suspended), "icon": "Ban", "color": "text-red-500", "bg": "bg-red-50"},
-    ]
+    return success_response(data=[
+        { "name": 'Total Properties', "value": str(total), "icon": 'Building2', "color": 'text-pine-DEFAULT', "bg": 'bg-pine-50' },
+        { "name": 'Active', "value": str(active), "icon": 'CheckCircle2', "color": 'text-green-600', "bg": 'bg-green-50' },
+        { "name": 'Pending Verification', "value": str(pending), "icon": 'Clock', "color": 'text-yellow-600', "bg": 'bg-yellow-50' },
+        { "name": 'Suspended', "value": str(suspended), "icon": 'Ban', "color": 'text-red-500', "bg": 'bg-red-50' }
+    ])
 
 
 @router.get("/dashboard", dependencies=[Depends(require_super_admin)])

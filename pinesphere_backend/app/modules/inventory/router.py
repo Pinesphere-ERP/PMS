@@ -8,10 +8,11 @@ from app.infra.database import get_db
 from app.infra.models import Room, RoomCategory
 from app.core.dependencies import get_current_user
 from app.infra.models import User
+from app.core.responses import success_response, StandardResponse
 
 router = APIRouter()
 
-@router.get("/rooms")
+@router.get("/rooms", response_model=StandardResponse)
 async def get_inventory_rooms(
     tenantId: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db)
@@ -39,4 +40,4 @@ async def get_inventory_rooms(
             "base_price": float(cat_obj.base_price) if cat_obj.base_price else 0
         })
         
-    return {"data": data}
+    return success_response(data=data)

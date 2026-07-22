@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { fetchAPI } from '../../services/api';
 import { 
-  Users, Search, Plus, Shield, Mail, Phone, Lock, Hash, Eye, EyeOff
+  Users, Search, Plus, Shield, Mail, Phone, Lock, Hash, Eye, EyeOff, CheckCircle2, Clock
 } from 'lucide-react';
+import DataTable from '../../components/ui/DataTable';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -63,8 +64,18 @@ export default function UserManagement() {
     e.preventDefault();
     try {
       const payload = { ...formData };
-      if (!payload.property_id) delete payload.property_id; // Remove empty string if none selected
+      if (!payload.property_id) {
+        delete payload.property_id;
+      }
+      if (!payload.email) delete payload.email;
+      if (!payload.username) delete payload.username;
       
+      // Fix for the UUID bug: if the role_id is actually a role_code (not a UUID)
+      if (payload.role_id && !payload.role_id.includes('-')) {
+        payload.role_code = payload.role_id;
+        delete payload.role_id;
+      }
+
       await fetchAPI('/users', {
         method: 'POST',
         body: JSON.stringify(payload)
@@ -73,9 +84,70 @@ export default function UserManagement() {
       setFormData({ name: '', email: '', mobile_number: '', username: '', password: '', role_id: '', property_id: '' });
       fetchUsers();
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to create user');
+      alert(err.message || 'Failed to create user');
     }
   };
+
+  const columns = [
+    {
+      header: 'Name',
+      accessor: 'name',
+      sortable: true,
+      render: (row) => (
+        <div>
+          <div className="font-medium text-gray-900">{row.name}</div>
+          <div className="text-sm text-gray-500">@{row.username || 'N/A'}</div>
+        </div>
+      )
+    },
+    {
+      header: 'Contact',
+      accessor: 'email',
+      sortable: true,
+      render: (row) => (
+        <div>
+          <div className="text-sm text-gray-900 flex items-center">
+            <Mail className="h-4 w-4 mr-1 text-gray-400" /> {row.email || 'N/A'}
+          </div>
+          <div className="text-sm text-gray-500 flex items-center mt-1">
+            <Phone className="h-4 w-4 mr-1 text-gray-400" /> {row.mobile_number}
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Role',
+      accessor: 'role_id',
+      sortable: true,
+      render: (row) => (
+        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+          {roles.find(r => r.id === row.role_id)?.role_name || (row.role_id ? String(row.role_id).split('-')[0] : 'N/A')}
+        </span>
+      )
+    },
+    {
+      header: 'Status',
+      accessor: 'status',
+      sortable: true,
+      render: (row) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          row.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {row.status}
+        </span>
+      )
+    }
+  ];
+
+  const tableActions = (
+    <button
+      onClick={() => setShowModal(true)}
+      className="flex items-center px-4 py-2 bg-pine text-white rounded-lg hover:bg-pine-dark transition shadow-sm"
+    >
+      <Plus className="h-5 w-5 mr-1" />
+      Create User
+    </button>
+  );
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -87,68 +159,16 @@ export default function UserManagement() {
           </h1>
           <p className="text-gray-500 mt-1">Manage admin users, owners, and staff</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center px-4 py-2 bg-pine text-white rounded-lg hover:bg-pine-dark transition shadow-sm"
-        >
-          <Plus className="h-5 w-5 mr-1" />
-          Create User
-        </button>
       </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-10 text-center text-gray-500">Loading...</td>
-                </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-10 text-center text-gray-500">No users found</td>
-                </tr>
-              ) : (
-                users.map(user => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">@{user.username || 'N/A'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 flex items-center">
-                        <Mail className="h-4 w-4 mr-1 text-gray-400" /> {user.email || 'N/A'}
-                      </div>
-                      <div className="text-sm text-gray-500 flex items-center mt-1">
-                        <Phone className="h-4 w-4 mr-1 text-gray-400" /> {user.mobile_number}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {roles.find(r => r.id === user.role_id)?.role_name || (user.role_id ? String(user.role_id).split('-')[0] : 'N/A')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {user.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="flex-1">
+        <DataTable 
+          columns={columns}
+          data={users}
+          loading={loading}
+          emptyStateMessage="No users found."
+          searchPlaceholder="Search users..."
+          actions={tableActions}
+        />
       </div>
 
       {showModal && (
@@ -213,7 +233,7 @@ export default function UserManagement() {
                         <select name="role_id" required value={formData.role_id} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pine focus:ring-pine sm:text-sm p-2 border">
                           <option value="">Select Role</option>
                           {roles.map(r => (
-                            <option key={r.id} value={r.id}>{r.role_name}</option>
+                            <option key={r.id || r.role_code} value={r.id || r.role_code}>{r.role_name}</option>
                           ))}
                         </select>
                       </div>
@@ -222,7 +242,7 @@ export default function UserManagement() {
                         <select name="property_id" value={formData.property_id || ''} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pine focus:ring-pine sm:text-sm p-2 border">
                           <option value="">No Property / System-wide</option>
                           {properties.map(p => (
-                            <option key={p.property_id} value={p.property_id}>{p.property_name}</option>
+                            <option key={p.id} value={p.id}>{p.name}</option>
                           ))}
                         </select>
                       </div>

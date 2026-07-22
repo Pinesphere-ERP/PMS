@@ -24,6 +24,7 @@ import {
   AlertCircle,
   Trash2
 } from 'lucide-react';
+import DataTable from '../../components/ui/DataTable';
 import { propertyService } from '../../services/propertyService';
 import { utils, writeFile } from 'xlsx';
 import jsPDF from 'jspdf';
@@ -31,11 +32,20 @@ import 'jspdf-autotable';
 import { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 
+const ICON_MAP = {
+  Building2,
+  CheckCircle2,
+  Clock,
+  Ban,
+  AlertCircle,
+  CreditCard
+};
+
 const fallbackKpiStats = [
-  { name: 'Total Properties', value: '0', icon: Building2, color: 'text-pine-DEFAULT', bg: 'bg-pine-50' },
-  { name: 'Active', value: '0', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-  { name: 'Pending Verification', value: '0', icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  { name: 'Suspended', value: '0', icon: Ban, color: 'text-red-500', bg: 'bg-red-50' },
+  { name: 'Total Properties', value: '0', icon: 'Building2', color: 'text-pine-DEFAULT', bg: 'bg-pine-50' },
+  { name: 'Active', value: '0', icon: 'CheckCircle2', color: 'text-green-600', bg: 'bg-green-50' },
+  { name: 'Pending Verification', value: '0', icon: 'Clock', color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  { name: 'Suspended', value: '0', icon: 'Ban', color: 'text-red-500', bg: 'bg-red-50' },
 ];
 
 export default function PropertyDashboard() {
@@ -211,10 +221,9 @@ export default function PropertyDashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((stat, idx) => {
-          // If icon is a string from API, we'd need to map it, but we'll assume it's pre-mapped or we use the component directly if it's the fallback
-          const Icon = typeof stat.icon === 'string' ? Building2 : (stat.icon || Building2);
+          const Icon = typeof stat.icon === 'string' ? ICON_MAP[stat.icon] || Building2 : (stat.icon || Building2);
           return (
-            <div key={idx} className="saas-card p-5 flex items-start space-x-4">
+            <div key={idx} className={`saas-card p-5 flex items-start space-x-4 ${stat.glow ? stat.glow : ''}`}>
               <div className={`p-2.5 rounded-lg ${stat.bg || 'bg-gray-50'}`}>
                 <Icon className={`h-5 w-5 ${stat.color || 'text-gray-500'}`} />
               </div>
@@ -247,84 +256,80 @@ export default function PropertyDashboard() {
       </div>
 
       {/* Properties Table */}
-      <div className="saas-card overflow-hidden relative min-h-[400px]">
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
-             <Loader2 className="h-8 w-8 text-pine animate-spin mb-2" />
-             <p className="text-gray-500 text-sm">Loading properties...</p>
-          </div>
-        )}
-
-        {error && !loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
-             <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
-             <p className="text-gray-800 text-sm font-medium">Failed to load properties</p>
-             <p className="text-gray-500 text-xs mt-1 max-w-sm text-center">{error}</p>
-          </div>
-        )}
-
-        <div className="overflow-x-auto">
-          {!loading && !error && filteredProperties.length === 0 ? (
-            <div className="p-8 text-center text-sm text-gray-500">No properties found.</div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property Details</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner Info</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProperties.map((prop, idx) => (
-                  <tr key={prop.id || idx} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => handleOpenDrawer(prop)}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-pine/10 flex items-center justify-center">
-                          <Building className="h-5 w-5 text-pine" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{prop.name || prop.property_name}</div>
-                          <div className="text-sm text-gray-500">{prop.business || 'Unknown Business'} • {prop.type || prop.property_type}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{prop.owner}</div>
-                      <div className="text-sm text-gray-500">{prop.mobile}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{prop.city}</div>
-                      <div className="text-xs text-gray-500 mt-1">{prop.rooms || 0} Rooms</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col space-y-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${prop.verificationStatus === 'Verified' ? 'bg-green-100 text-green-800' : prop.verificationStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                          {prop.verificationStatus || 'Unknown'} Verification
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${prop.subscriptionStatus === 'Active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {prop.subscriptionStatus || prop.status || 'Unknown'} Sub
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(prop); }}>
-                        <MoreVertical className="h-5 w-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-        
-        {/* Pagination placeholder */}
-        <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 text-sm text-gray-500">
-          Showing {filteredProperties.length} records
-        </div>
+      <div className="flex-1 mt-6">
+        <DataTable 
+          columns={[
+            {
+              header: 'Property Details',
+              accessor: 'name',
+              sortable: true,
+              render: (row) => (
+                <div className="flex items-center">
+                  <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-pine/10 flex items-center justify-center">
+                    <Building className="h-5 w-5 text-pine" />
+                  </div>
+                  <div className="ml-4">
+                    <div className="text-sm font-medium text-gray-900">{row.name || row.property_name}</div>
+                    <div className="text-sm text-gray-500">{row.business || 'Unknown Business'} • {row.type || row.property_type}</div>
+                  </div>
+                </div>
+              )
+            },
+            {
+              header: 'Owner Info',
+              accessor: 'owner',
+              sortable: true,
+              render: (row) => (
+                <div>
+                  <div className="text-sm text-gray-900">{row.owner}</div>
+                  <div className="text-sm text-gray-500">{row.mobile}</div>
+                </div>
+              )
+            },
+            {
+              header: 'Location',
+              accessor: 'city',
+              sortable: true,
+              render: (row) => (
+                <div>
+                  <div className="text-sm text-gray-900">{row.city}</div>
+                  <div className="text-xs text-gray-500 mt-1">{row.rooms || 0} Rooms</div>
+                </div>
+              )
+            },
+            {
+              header: 'Status',
+              accessor: 'verificationStatus',
+              sortable: true,
+              render: (row) => (
+                <div className="flex flex-col space-y-1">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${row.verificationStatus === 'Verified' ? 'bg-green-100 text-green-800' : row.verificationStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                    {row.verificationStatus || 'Unknown'} Verification
+                  </span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${row.subscriptionStatus === 'Active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {row.subscriptionStatus || row.status || 'Unknown'} Sub
+                  </span>
+                </div>
+              )
+            },
+            {
+              header: '',
+              accessor: 'actions',
+              render: (row) => (
+                <div className="text-right">
+                  <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(row); }}>
+                    <MoreVertical className="h-5 w-5" />
+                  </button>
+                </div>
+              )
+            }
+          ]}
+          data={filteredProperties}
+          loading={loading}
+          emptyStateMessage="No properties found."
+          searchPlaceholder="Search by property, owner, city..."
+          onRowClick={handleOpenDrawer}
+        />
       </div>
 
       {/* Slide-over Drawer for Property Details */}

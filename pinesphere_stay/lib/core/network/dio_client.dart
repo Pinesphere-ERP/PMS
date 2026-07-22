@@ -31,7 +31,7 @@ Dio dioClient(Ref ref) {
   final storage = ref.watch(secureStorageProvider);
   
   dio.interceptors.addAll([
-    ApiInterceptor(storage),
+    ApiInterceptor(storage, ref),
     OfflineOutboxInterceptor(),
     LogInterceptor(requestBody: true, responseBody: true),
   ]);

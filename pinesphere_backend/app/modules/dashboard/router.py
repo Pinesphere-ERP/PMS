@@ -4,10 +4,11 @@ from sqlalchemy import func
 from datetime import date
 from ...infra.database import get_db
 from ...infra.models import Booking, Room, Payment, User
+from app.core.responses import success_response, StandardResponse
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
-@router.get("/")
+@router.get("/", response_model=StandardResponse)
 def get_dashboard_metrics(property_id: str = None, db: Session = Depends(get_db)):
     today = date.today()
     
@@ -58,7 +59,7 @@ def get_dashboard_metrics(property_id: str = None, db: Session = Depends(get_db)
         func.lower(Payment.status) == 'completed'
     ).with_entities(func.coalesce(func.sum(Payment.amount), 0.0)).scalar()
 
-    return {
+    return success_response(data={
         "todays_arrivals": arrivals,
         "todays_departures": departures,
         "occupied_rooms": occupied,
@@ -67,4 +68,4 @@ def get_dashboard_metrics(property_id: str = None, db: Session = Depends(get_db)
         "housekeeping_count": housekeeping,
         "pending_payments_count": pending_payments,
         "revenue_today": float(revenue_today)
-    }
+    })

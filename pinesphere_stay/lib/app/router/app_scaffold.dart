@@ -1,3 +1,4 @@
+import 'dart:ui' as dart_ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -72,96 +73,218 @@ class AppScaffold extends ConsumerWidget {
 }
 
   Widget _buildDrawer(BuildContext context, AuthState authState, WidgetRef ref) {
+    final user = authState.maybeWhen(
+      authenticated: (u) => u,
+      orElse: () => null,
+    );
+
+    final userName = user?.name ?? 'Guest';
+    final userRole = user?.role.displayName ?? 'Unknown Role';
+    final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'G';
+
     return Drawer(
-      child: Column(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      width: MediaQuery.of(context).size.width * 0.85 > 320 ? 320 : MediaQuery.of(context).size.width * 0.85,
+      child: Stack(
         children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primaryContainer,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const Icon(Icons.signal_wifi_off, color: AppColors.primary, size: 40),
-                const SizedBox(width: 16),
-                Expanded(
+          // Glassmorphic Background
+          ClipRRect(
+            borderRadius: const BorderRadius.horizontal(right: Radius.circular(32)),
+            child: BackdropFilter(
+              filter: dart_ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                color: AppColors.surface.withValues(alpha: 0.85),
+                child: SafeArea(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Pinesphere Stay', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.primary)),
-                      authState.maybeWhen(
-                        authenticated: (user) => Text(user.role.displayName, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                        orElse: () => const SizedBox.shrink(),
+                      // User Profile Header (Modern Floating Card style)
+                      Container(
+                        margin: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.1), width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.2),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 28,
+                                backgroundColor: AppColors.primary,
+                                child: Text(
+                                  initial,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userName,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      userRole.toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 8),
+                      const Divider(indent: 24, endIndent: 24, color: Colors.black12),
+                      
+                      // Drawer Items
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          physics: const BouncingScrollPhysics(),
+                          children: [
+                            _buildSectionHeader('CORE'),
+                            _buildPremiumDrawerItem(context, Module.dashboard, Icons.dashboard_rounded, 'Dashboard', () => navigationShell.goBranch(0)),
+                            _buildPremiumDrawerItem(context, Module.roomManagement, Icons.bed_rounded, 'Rooms', () => navigationShell.goBranch(1)),
+                            _buildPremiumDrawerItem(context, Module.bookingManagement, Icons.calendar_month_rounded, 'Bookings', () => navigationShell.goBranch(2)),
+                            _buildPremiumDrawerItem(context, Module.reports, Icons.analytics_rounded, 'Reports', () => navigationShell.goBranch(3)),
+                            
+                            const SizedBox(height: 12),
+                            _buildSectionHeader('OPERATIONS'),
+                            _buildPremiumDrawerItem(context, Module.checkInCheckOut, Icons.login_rounded, 'Check-in', () => context.push('/checkin')),
+                            _buildPremiumDrawerItem(context, Module.checkInCheckOut, Icons.logout_rounded, 'Check-out', () => context.push('/checkout')),
+                            _buildPremiumDrawerItem(context, Module.payments, Icons.payments_rounded, 'Payments', () => context.push('/payments')),
+                            _buildPremiumDrawerItem(context, Module.housekeeping, Icons.cleaning_services_rounded, 'Housekeeping', () => context.push('/housekeeping')),
+                            _buildPremiumDrawerItem(context, Module.housekeeping, Icons.assignment_rounded, 'Requests', () => context.push('/requests')),
+                            
+                            const SizedBox(height: 12),
+                            _buildSectionHeader('MANAGEMENT'),
+                            _buildPremiumDrawerItem(context, Module.propertyOnboarding, Icons.business_rounded, 'Property Settings', () => context.push('/property-settings')),
+                            _buildPremiumDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts_rounded, 'User & Roles', () => context.push('/user-roles')),
+                            _buildPremiumDrawerItem(context, Module.staffManagement, Icons.badge_rounded, 'Staff', () => context.push('/staff')),
+                            _buildPremiumDrawerItem(context, Module.deviceManagement, Icons.devices_rounded, 'Devices', () => context.push('/device-registration')),
+                            _buildPremiumDrawerItem(context, Module.auditLogs, Icons.history_rounded, 'Audit Logs', () => context.push('/audit-logs')),
+                          ],
+                        ),
+                      ),
+                      
+                      // Bottom Actions
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context); // close drawer
+                            ref.read(authProvider.notifier).logout();
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.errorContainer.withValues(alpha: 0.8),
+                            foregroundColor: AppColors.error,
+                            minimumSize: const Size.fromHeight(52),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.logout_rounded, size: 20),
+                          label: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildDrawerItem(context, Module.dashboard, Icons.dashboard, 'Dashboard', () => navigationShell.goBranch(0)),
-                _buildDrawerItem(context, Module.roomManagement, Icons.bed, 'Room Management', () => navigationShell.goBranch(1)),
-                _buildDrawerItem(context, Module.bookingManagement, Icons.book_online, 'Booking Management', () => navigationShell.goBranch(2)),
-                _buildDrawerItem(context, Module.checkInCheckOut, Icons.login, 'Check-in', () => context.push('/checkin')),
-                _buildDrawerItem(context, Module.checkInCheckOut, Icons.logout, 'Check-out', () => context.push('/checkout')),
-                _buildDrawerItem(context, Module.housekeeping, Icons.cleaning_services, 'Housekeeping', () => context.push('/housekeeping')),
-                _buildDrawerItem(context, Module.guestManagement, Icons.people, 'Guest Management', () => _showComingSoon(context)),
-                _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Devices & Connectivity', () => context.push('/devices')),
-                _buildDrawerItem(context, Module.housekeeping, Icons.assignment, 'Request Management', () => context.push('/requests')),
-                const Divider(),
-                _buildDrawerItem(context, Module.payments, Icons.payments, 'Payments', () => context.push('/payments')),
-                _buildDrawerItem(context, Module.reports, Icons.analytics, 'Reports', () => navigationShell.goBranch(3)),
-                _buildDrawerItem(context, Module.auditLogs, Icons.history, 'Audit Logs', () => context.push('/audit-logs')),
-                const Divider(),
-                _buildDrawerItem(context, Module.propertyOnboarding, Icons.business, 'Property Settings', () => context.push('/property-settings')),
-                _buildDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts, 'User & Role Management', () => _showComingSoon(context)),
-                _buildDrawerItem(context, Module.staffManagement, Icons.badge, 'Staff Management', () => context.push('/staff')),
-                _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Device Management', () => context.push('/device-registration')),
-                _buildDrawerItem(context, Module.subscriptionManagement, Icons.subscriptions, 'Subscription Management', () => _showComingSoon(context)),
-                _buildDrawerItem(context, Module.settings, Icons.settings, 'Settings', () => navigationShell.goBranch(4)),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextButton.icon(
-              onPressed: () {
-                ref.read(authProvider.notifier).logout();
-              },
-              icon: const Icon(Icons.logout, color: AppColors.error),
-              label: const Text('Logout', style: TextStyle(color: AppColors.error)),
-            ),
-          )
         ],
       ),
     );
   }
 
-  Widget _buildDrawerItem(BuildContext context, Module module, IconData icon, String title, VoidCallback onTap) {
-    return RoleGuard(
-      module: module,
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.onSurfaceVariant),
-        title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
-        onTap: () {
-          Navigator.pop(context); // close drawer
-          onTap();
-        },
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: AppColors.outline,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('This feature is currently in development.'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildPremiumDrawerItem(BuildContext context, Module module, IconData icon, String title, VoidCallback onTap) {
+    return RoleGuard(
+      module: module,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: InkWell(
+          onTap: () {
+            Navigator.pop(context);
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(12),
+          splashColor: AppColors.primary.withValues(alpha: 0.1),
+          highlightColor: AppColors.primary.withValues(alpha: 0.05),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, color: AppColors.primary, size: 22),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.outlineVariant, size: 18),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

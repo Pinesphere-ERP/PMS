@@ -44,6 +44,7 @@ import '../../features/housekeeping/presentation/screens/housekeeper_image_uploa
 
 // Owner Platform screens
 import '../../features/property_onboarding/presentation/screens/property_wizard_screen.dart';
+import '../../features/user_role_management/presentation/screens/user_role_dashboard_screen.dart';
 
 import '../../features/subscription_management/presentation/screens/subscription_screen.dart';
 import '../../features/subscription_management/presentation/screens/subscription_expired_screen.dart';
@@ -271,6 +272,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/staff',
         builder: (context, state) => const StaffManagementScreen(),
+      ),
+      GoRoute(
+        path: '/user-roles',
+        builder: (context, state) => const UserRoleDashboardScreen(),
       ),
       GoRoute(
         path: '/housekeeper-dashboard',

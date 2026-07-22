@@ -1,63 +1,21 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any
-import uuid
-
-from app.infra.database import get_db
-from app.core.dependencies import assert_property_access, get_current_role, get_current_user
-from app.infra.models import User
-from .schemas import AuditLogListResponse, AuditLogResponse
-from .service import AuditService
-
-router = APIRouter()
-
-def get_audit_service(db: AsyncSession = Depends(get_db)) -> AuditService:
-    return AuditService(db)
-
-@router.get("/", response_model=AuditLogListResponse)
-async def list_audit_logs(
-    property_id: uuid.UUID = None,
-    page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
-    service: AuditService = Depends(get_audit_service),
-    # Require authentication (in real app, use require_permission("AUDIT_LOGS"))
-    current_user: User = Depends(get_current_user)
-) -> Any:
-    if property_id is None:
-        property_id = current_user.property_id
-    if property_id is None and (await get_current_role(current_user, service.db)).role_code != "SUPER_ADMIN":
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="Property scope required")
-    if property_id is not None:
-        await assert_property_access(property_id, current_user, service.db)
-    skip = (page - 1) * size
-    logs, total = await service.list_audit_logs(property_id=property_id, skip=skip, limit=size)
-    
-    return {
-        "items": logs,
-        "total": total,
-        "page": page,
-        "size": size
-    }
 import uuid
 from typing import Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
 
 from app.infra.database import get_db
+from app.core.dependencies import assert_property_access, get_current_role, get_current_user
+from app.infra.models import User
 from app.modules.audit import service
-from app.modules.audit.schemas import (
-    AuditLogResponse,
-    AuditLogListResponse,
-    ChainVerificationResult,
-)
+from app.modules.audit.schemas import AuditLogResponse, ChainVerificationResult
+from app.core.responses import success_response, StandardResponse, Pagination
 
 router = APIRouter()
 
-
-@router.get("/", response_model=AuditLogListResponse)
+@router.get("", response_model=StandardResponse)
 async def list_audit_logs(
     property_id: Optional[uuid.UUID] = Query(None),
     module_name: Optional[str] = Query(None),
@@ -67,10 +25,21 @@ async def list_audit_logs(
     user_id: Optional[uuid.UUID] = Query(None),
     since: Optional[datetime] = Query(None),
     until: Optional[datetime] = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
-):
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    if property_id is None:
+        property_id = current_user.property_id
+    if property_id is None and (await get_current_role(current_user, db)).role_code != "SUPER_ADMIN":
+        raise HTTPException(status_code=403, detail="Property scope required")
+    if property_id is not None:
+        await assert_property_access(property_id, current_user, db)
+
+    skip = (page - 1) * size
+    limit = size
+
     logs, total = await service.query_logs(
         db,
         property_id=property_id,
@@ -84,18 +53,18 @@ async def list_audit_logs(
         skip=skip,
         limit=limit,
     )
-    return AuditLogListResponse(
-        items=[AuditLogResponse.model_validate(l) for l in logs],
-        total=total,
-        page=(skip // limit) + 1 if limit else 1,
-        size=limit,
+    
+    pages = (total + size - 1) // size
+    return success_response(
+        data=[AuditLogResponse.model_validate(l).model_dump() for l in logs],
+        pagination=Pagination(total=total, page=page, size=size, pages=pages)
     )
 
 
-@router.get("/verify", response_model=ChainVerificationResult)
+@router.get("/verify", response_model=StandardResponse)
 async def verify_hash_chain(
     property_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     result = await service.verify_chain(db, property_id=property_id)
-    return ChainVerificationResult(**result)
+    return success_response(data=result)

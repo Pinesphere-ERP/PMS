@@ -4,6 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.api import api_router
+from app.core.responses import error_response, MetaData
 
 from contextlib import asynccontextmanager
 import logging
@@ -118,11 +119,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=422,
         headers={"Access-Control-Allow-Origin": "*"},
-        content={
-            "detail": exc.errors(),
-            "request_id": request_id,
-            "errors": failed_fields
-        },
+        content=error_response(
+            message="Validation Error",
+            data={
+                "detail": exc.errors(),
+                "errors": failed_fields
+            },
+            meta=MetaData(requestId=request_id)
+        ).model_dump(),
     )
 
 @app.exception_handler(Exception)
@@ -131,7 +135,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         headers={"Access-Control-Allow-Origin": "*"},
-        content={"detail": str(exc)},
+        content=error_response(
+            message="Internal Server Error",
+            data={"detail": str(exc)}
+        ).model_dump(),
     )
 
 @app.get("/health")

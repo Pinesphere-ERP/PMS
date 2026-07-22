@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from app.infra.database import get_db
 from app.infra.models import ServiceRequest, User
-from app.infra.security import get_current_user
+from app.core.dependencies import get_current_user
 from app.modules.service_requests.schemas import (
     ServiceRequestCreate,
     ServiceRequestResponse,
@@ -16,10 +16,11 @@ from app.modules.service_requests.schemas import (
     ServiceRequestVerify
 )
 from app.modules.properties.dependencies import assert_property_access
+from app.core.responses import success_response, StandardResponse
 
 router = APIRouter()
 
-@router.post("/", response_model=ServiceRequestResponse, status_code=201)
+@router.post("/", response_model=StandardResponse, status_code=201)
 async def create_service_request(
     request_data: ServiceRequestCreate,
     db: AsyncSession = Depends(get_db),
@@ -32,9 +33,9 @@ async def create_service_request(
     db.add(new_request)
     await db.commit()
     await db.refresh(new_request)
-    return new_request
+    return success_response(data=new_request, message="Service request created successfully")
 
-@router.get("/", response_model=List[ServiceRequestResponse])
+@router.get("/", response_model=StandardResponse)
 async def list_service_requests(
     property_id: uuid.UUID,
     status: Optional[str] = None,
@@ -53,9 +54,9 @@ async def list_service_requests(
         
     result = await db.execute(query)
     requests = result.scalars().all()
-    return requests
+    return success_response(data=requests)
 
-@router.patch("/{request_id}/assign", response_model=ServiceRequestResponse)
+@router.patch("/{request_id}/assign", response_model=StandardResponse)
 async def assign_service_request(
     request_id: uuid.UUID,
     assign_data: ServiceRequestAssign,
@@ -78,9 +79,9 @@ async def assign_service_request(
     
     await db.commit()
     await db.refresh(service_request)
-    return service_request
+    return success_response(data=service_request, message="Service request assigned successfully")
 
-@router.patch("/{request_id}/complete", response_model=ServiceRequestResponse)
+@router.patch("/{request_id}/complete", response_model=StandardResponse)
 async def complete_service_request(
     request_id: uuid.UUID,
     complete_data: ServiceRequestComplete,
@@ -107,9 +108,9 @@ async def complete_service_request(
         
     await db.commit()
     await db.refresh(service_request)
-    return service_request
+    return success_response(data=service_request, message="Service request completed")
 
-@router.patch("/{request_id}/verify", response_model=ServiceRequestResponse)
+@router.patch("/{request_id}/verify", response_model=StandardResponse)
 async def verify_service_request(
     request_id: uuid.UUID,
     verify_data: ServiceRequestVerify,
@@ -135,4 +136,4 @@ async def verify_service_request(
         
     await db.commit()
     await db.refresh(service_request)
-    return service_request
+    return success_response(data=service_request, message="Service request verified")

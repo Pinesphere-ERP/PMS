@@ -12,6 +12,7 @@ from app.infra.models import Property, Owner, Business, Subscription, AuditLog, 
 import uuid
 from app.modules.properties.schemas import PropertyCreateInput
 from app.modules.audit.logger import AuditLogger
+from app.core.responses import success_response, StandardResponse
 
 router = APIRouter()
 
@@ -382,7 +383,7 @@ async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
     
     return None
 
-
+    return None
 
 from pydantic import BaseModel
 
@@ -395,7 +396,7 @@ class RoomCreateInput(BaseModel):
     image_url: Optional[str] = ""
 
 
-@router.get("/rooms")
+@router.get("/rooms", response_model=StandardResponse)
 async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     role = await get_current_role(current_user, db)
     
@@ -436,10 +437,10 @@ async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Dep
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
         })
-    return data
+    return success_response(data=data)
 
 
-@router.get("/{property_id}/rooms")
+@router.get("/{property_id}/rooms", response_model=StandardResponse)
 async def get_property_rooms(property_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     import uuid as _uuid
     from sqlalchemy import or_
@@ -474,10 +475,10 @@ async def get_property_rooms(property_id: str, db: AsyncSession = Depends(get_db
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
         })
-    return data
+    return success_response(data=data)
 
 
-@router.get("/rooms/{room_id}")
+@router.get("/rooms/{room_id}", response_model=StandardResponse)
 async def get_room_detail(room_id: str, db: AsyncSession = Depends(get_db)):
     import uuid
     try:
@@ -497,7 +498,7 @@ async def get_room_detail(room_id: str, db: AsyncSession = Depends(get_db)):
     images = [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
         "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
     ]
-    return {
+    return success_response(data={
         "id": str(room.room_id),
         "room_number": room.room_number,
         "type": cat.room_name or "Standard",
@@ -506,7 +507,7 @@ async def get_room_detail(room_id: str, db: AsyncSession = Depends(get_db)):
         "resort_id": str(cat.property_id),
         "description": cat.description or "",
         "images": images
-    }
+    })
 
 
 from fastapi import UploadFile, File
@@ -533,7 +534,7 @@ async def upload_image(file: UploadFile = File(...)):
     return {"url": f"{settings.BASE_URL}/api/v1/uploads/{filename}"}
 
 
-@router.post("/rooms", status_code=201)
+@router.post("/rooms", status_code=201, response_model=StandardResponse)
 async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     import uuid as _uuid
     resort_uuid = None
@@ -562,11 +563,8 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
     prop = prop_result.scalar_one_or_none()
     
     if not prop:
-        return {
-            "success": False,
-            "status": "property_not_found",
-            "message": "Property does not exist"
-        }
+        from fastapi import responses
+        return responses.JSONResponse(status_code=404, content={"success": False, "message": "Property does not exist"})
 
     # 1. Check if category with this name and resort exists
     cat_q = select(RoomCategory).where(
@@ -618,10 +616,10 @@ async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_d
         target_record_id=new_room.room_id
     )
     
-    return {"message": "Room created successfully", "room_id": str(new_room.room_id)}
+    return success_response(data={"room_id": str(new_room.room_id)}, message="Room created successfully")
 
 
-@router.post("/rooms/{room_id}/clean", dependencies=[Depends(require_room_access())])
+@router.post("/rooms/{room_id}/clean", dependencies=[Depends(require_room_access())], response_model=StandardResponse)
 async def clean_room(room_id: str, db: AsyncSession = Depends(get_db)):
     import uuid as _uuid
     try:
@@ -650,7 +648,7 @@ async def clean_room(room_id: str, db: AsyncSession = Depends(get_db)):
         new_value={"status": "clean"}
     )
     
-    return {"message": "Room status marked clean & vacant"}
+    return success_response(data=None, message="Room status marked clean & vacant")
 
 
 class RoomUpdateInput(BaseModel):
@@ -661,7 +659,7 @@ class RoomUpdateInput(BaseModel):
     description: Optional[str] = ""
 
 
-@router.put("/rooms/{room_id}", dependencies=[Depends(require_room_access())])
+@router.put("/rooms/{room_id}", dependencies=[Depends(require_room_access())], response_model=StandardResponse)
 async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession = Depends(get_db)):
     import uuid as _uuid
     try:
@@ -702,10 +700,10 @@ async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession =
         target_record_id=room.room_id
     )
     
-    return {"message": "Room updated successfully"}
+    return success_response(data=None, message="Room updated successfully")
 
 
-@router.delete("/rooms/{room_id}", dependencies=[Depends(require_room_access())])
+@router.delete("/rooms/{room_id}", dependencies=[Depends(require_room_access())], response_model=StandardResponse)
 async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
     import uuid as _uuid
     try:
@@ -731,10 +729,10 @@ async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
         target_record_id=room.room_id
     )
     
-    return {"message": "Room deleted successfully"}
+    return success_response(data=None, message="Room deleted successfully")
 
 
-@router.get("")
+@router.get("", response_model=StandardResponse)
 async def get_properties(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """List properties. Super admins see all, owners see their own."""
     role = await get_current_role(current_user, db)
@@ -809,10 +807,10 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
             "onboarding": "100%" if prop.onboarding_status == "completed" else "50%",
             "lastSync": "N/A",
         })
-    return data
+    return success_response(data=data)
 
 
-@router.get("/kpis", dependencies=[Depends(require_super_admin)])
+@router.get("/kpis", response_model=StandardResponse, dependencies=[Depends(require_super_admin)])
 async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     """Aggregate KPI counts for the Property Management dashboard."""
     total_q = await db.execute(select(func.count(Property.property_id)))
@@ -836,12 +834,12 @@ async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     )
     suspended = suspended_q.scalar() or 0
 
-    return [
-        {"name": "Total Properties", "value": str(total), "icon": "Building2", "color": "text-pine-DEFAULT", "bg": "bg-pine-50"},
-        {"name": "Active", "value": str(active), "icon": "CheckCircle2", "color": "text-green-600", "bg": "bg-green-50"},
-        {"name": "Pending Verification", "value": str(pending), "icon": "Clock", "color": "text-yellow-600", "bg": "bg-yellow-50"},
-        {"name": "Suspended", "value": str(suspended), "icon": "Ban", "color": "text-red-500", "bg": "bg-red-50"},
-    ]
+    return success_response(data=[
+        { "name": 'Total Properties', "value": str(total), "icon": 'Building2', "color": 'text-pine-DEFAULT', "bg": 'bg-pine-50' },
+        { "name": 'Active', "value": str(active), "icon": 'CheckCircle2', "color": 'text-green-600', "bg": 'bg-green-50' },
+        { "name": 'Pending Verification', "value": str(pending), "icon": 'Clock', "color": 'text-yellow-600', "bg": 'bg-yellow-50' },
+        { "name": 'Suspended', "value": str(suspended), "icon": 'Ban', "color": 'text-red-500', "bg": 'bg-red-50' }
+    ])
 
 
 @router.get("/dashboard", dependencies=[Depends(require_super_admin)])

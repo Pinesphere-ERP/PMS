@@ -10,7 +10,8 @@ from app.core.security import get_password_hash
 from app.infra.database import get_db
 from app.infra.models import Role, User, UserSession
 from app.modules.audit.logger import AuditLogger
-from app.modules.users.schemas import UserCreateRequest, UserResponse, UserUpdateRequest
+from app.modules.users.schemas import UserCreateRequest, UserResponse, UserUpdateRequest, RoleResponse
+from app.core.responses import success_response, StandardResponse
 
 router = APIRouter()
 
@@ -22,7 +23,7 @@ async def _require_target_access(user: User, current_user: User, db: AsyncSessio
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
 
-@router.get("", response_model=List[UserResponse])
+@router.get("", response_model=StandardResponse)
 async def list_users(
     property_id: Optional[uuid.UUID] = None,
     unassigned_only: bool = False,
@@ -48,10 +49,11 @@ async def list_users(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")
         stmt = stmt.where(User.property_id.is_(None))
         
-    return (await db.execute(stmt)).scalars().all()
+    users = (await db.execute(stmt)).scalars().all()
+    return success_response(data=[UserResponse.model_validate(u).model_dump(mode='json') for u in users])
 
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=StandardResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     payload: UserCreateRequest,
     current_user: User = Depends(require_permission("USERS", "FULL")),
@@ -127,12 +129,12 @@ async def create_user(
     db.add(user)
     await db.flush()
     await AuditLogger.log(db, module_name="userRoleManagement", action_type="user_create", target_entity="user", target_record_id=user.id, property_id=target_property_id, user_id=current_user.id, new_value={"name": user.name, "role": role.role_code})
-    return user
+    return success_response(data=user, message="User created successfully")
 
 
 
 
-@router.post("/roles", dependencies=[Depends(require_super_admin)])
+@router.post("/roles", response_model=StandardResponse, dependencies=[Depends(require_super_admin)])
 async def create_role(role_code: str, role_name: str, db: AsyncSession = Depends(get_db)):
     new_role = Role(id=uuid.uuid4(), role_code=role_code, role_name=role_name, is_system_role=True, description=f"{role_name} role")
     db.add(new_role)
@@ -146,17 +148,18 @@ async def create_role(role_code: str, role_name: str, db: AsyncSession = Depends
         new_value={"role_code": role_code}
     )
     
-    return {"status": "success"}
+    return success_response(message="Role created successfully")
 
 
-@router.get("/roles")
+@router.get("/roles", response_model=StandardResponse)
 async def list_roles(db: AsyncSession = Depends(get_db)):
     stmt = select(Role)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    roles = result.scalars().all()
+    return success_response(data=[RoleResponse.model_validate(r).model_dump(mode='json') for r in roles])
 
 
-@router.patch("/{user_id}", response_model=UserResponse)
+@router.patch("/{user_id}", response_model=StandardResponse)
 async def update_user(user_id: uuid.UUID, payload: UserUpdateRequest, current_user: User = Depends(require_permission("USERS", "FULL")), db: AsyncSession = Depends(get_db)):
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
@@ -179,10 +182,10 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdateRequest, current_us
         property_id=user.property_id, 
         user_id=current_user.id
     )
-    return user
+    return success_response(data=user, message="User updated successfully")
 
 
-@router.post("/{user_id}/deactivate")
+@router.post("/{user_id}/deactivate", response_model=StandardResponse)
 async def deactivate_user(user_id: uuid.UUID, current_user: User = Depends(require_permission("USERS", "FULL")), db: AsyncSession = Depends(get_db)):
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
@@ -203,10 +206,10 @@ async def deactivate_user(user_id: uuid.UUID, current_user: User = Depends(requi
         user_id=current_user.id
     )
     
-    return {"status": "success", "detail": "User deactivated successfully"}
+    return success_response(message="User deactivated successfully")
 
 
-@router.post("/{user_id}/reset-credential")
+@router.post("/{user_id}/reset-credential", response_model=StandardResponse)
 async def reset_credential(user_id: uuid.UUID, password: Optional[str] = None, pin: Optional[str] = None, current_user: User = Depends(require_permission("USERS", "FULL")), db: AsyncSession = Depends(get_db)):
     if not password and not pin:
         raise HTTPException(status_code=400, detail="Must provide password or PIN")
@@ -229,4 +232,4 @@ async def reset_credential(user_id: uuid.UUID, password: Optional[str] = None, p
         user_id=current_user.id
     )
         
-    return {"status": "success", "detail": "Credentials reset successfully"}
+    return success_response(message="Credentials reset successfully")

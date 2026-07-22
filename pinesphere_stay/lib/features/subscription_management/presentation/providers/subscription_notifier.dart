@@ -26,6 +26,15 @@ class SubscriptionNotifier extends _$SubscriptionNotifier {
     return repo.createCheckoutSession(planName);
   }
 
+  Future<bool> activateRazorpay(String paymentId, String planName) async {
+    final repo = ref.read(subscriptionRepositoryProvider);
+    final success = await repo.activateRazorpay(paymentId, planName);
+    if (success) {
+      await reload();
+    }
+    return success;
+  }
+
   Future<bool> cancelSubscription() async {
     final repo = ref.read(subscriptionRepositoryProvider);
     final success = await repo.cancelSubscription();

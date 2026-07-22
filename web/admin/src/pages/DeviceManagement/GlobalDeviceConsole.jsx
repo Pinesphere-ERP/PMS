@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import DataTable from '../../components/ui/DataTable';
 import { 
   Smartphone,
   CheckCircle2,
@@ -41,7 +42,6 @@ const fallbackKpiStats = [
 export default function GlobalDeviceConsole() {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
 
   // API State
   const [loading, setLoading] = useState(true);
@@ -97,11 +97,82 @@ export default function GlobalDeviceConsole() {
     }
   };
 
-  const filteredDevices = devices.filter(dev => 
-    (dev.name && dev.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (dev.model && dev.model.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (dev.property && dev.property.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (dev.uid && dev.uid.toLowerCase().includes(searchTerm.toLowerCase()))
+  const columns = [
+    {
+      header: 'Device & Model',
+      accessor: 'name',
+      sortable: true,
+      render: (row) => (
+        <div className="flex items-center">
+          <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
+            <Smartphone className="h-5 w-5 text-gray-600" />
+          </div>
+          <div className="ml-4">
+            <div className="text-sm font-medium text-gray-900">{row.name}</div>
+            <div className="text-xs text-gray-500">{row.model} • <span className="font-mono text-[10px]">{row.uid}</span></div>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Property',
+      accessor: 'property',
+      sortable: true,
+      render: (row) => (
+        <div>
+          <div className="text-sm font-medium text-gray-900">{row.property}</div>
+          <div className="text-xs text-gray-500 flex items-center mt-0.5">
+            <UserCheck className="h-3 w-3 mr-1"/> {row.primaryUser || 'Unassigned'}
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Status & Battery',
+      accessor: 'status',
+      sortable: true,
+      render: (row) => (
+        <div className="flex items-center space-x-2">
+          {row.status === 'active' && <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1"/> Active</span>}
+          {row.status === 'pending_approval' && <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1"/> Pending</span>}
+          {row.status === 'locked' && <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-red-100 text-red-800"><Lock className="w-3 h-3 mr-1"/> Locked</span>}
+          
+          <span className="flex items-center text-xs text-gray-500 ml-2 border border-gray-200 rounded px-1.5 py-0.5">
+            <BatteryCharging className={`h-3 w-3 mr-1 ${row.battery < 20 ? 'text-red-500' : 'text-green-500'}`} />
+            {row.battery}%
+          </span>
+        </div>
+      )
+    },
+    {
+      header: 'Last Sync',
+      accessor: 'lastSync',
+      sortable: true,
+      render: (row) => (
+        <div>
+          <div className="text-sm text-gray-900">{row.lastSync}</div>
+          <div className="text-xs text-gray-500">{row.appVersion}</div>
+        </div>
+      )
+    },
+    {
+      header: '',
+      accessor: 'actions',
+      render: (row) => (
+        <div className="text-right text-sm font-medium">
+          <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(row); }}>
+            <MoreVertical className="h-5 w-5" />
+          </button>
+        </div>
+      )
+    }
+  ];
+
+  const tableActions = (
+    <>
+      <button className="saas-button-secondary"><Filter className="h-4 w-4 mr-2"/> Filters</button>
+      <button className="saas-button-secondary" onClick={() => window.location.reload()}><RefreshCw className="h-4 w-4 mr-2"/> Refresh</button>
+    </>
   );
 
   return (
@@ -140,108 +211,16 @@ export default function GlobalDeviceConsole() {
       </div>
 
       {/* Main Table Area */}
-      <div className="saas-card overflow-hidden relative min-h-[400px]">
-        <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4 justify-between bg-gray-50/50">
-          <div className="relative flex-1 max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="saas-input pl-9 bg-white"
-              placeholder="Search by device name, model, property, or UID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
-            <button className="saas-button-secondary"><Filter className="h-4 w-4 mr-2"/> Filters</button>
-            <button className="saas-button-secondary"><RefreshCw className="h-4 w-4 mr-2"/> Refresh</button>
-          </div>
-        </div>
-
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
-             <Loader2 className="h-8 w-8 text-pine animate-spin mb-2" />
-             <p className="text-gray-500 text-sm">Loading devices...</p>
-          </div>
-        )}
-
-        {error && !loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
-             <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
-             <p className="text-gray-800 text-sm font-medium">Failed to load devices</p>
-             <p className="text-gray-500 text-xs mt-1 max-w-sm text-center">{error}</p>
-          </div>
-        )}
-
-        <div className="overflow-x-auto">
-          {!loading && !error && filteredDevices.length === 0 ? (
-            <div className="p-8 text-center text-sm text-gray-500">No devices found.</div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-white">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Device & Model</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Property</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status & Battery</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Sync</th>
-                  <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {filteredDevices.map((dev, idx) => (
-                  <tr key={dev.id || idx} className="hover:bg-gray-50/80 transition cursor-pointer" onClick={() => handleOpenDrawer(dev)}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
-                          <Smartphone className="h-5 w-5 text-gray-600" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{dev.name}</div>
-                          <div className="text-xs text-gray-500">{dev.model} • <span className="font-mono text-[10px]">{dev.uid}</span></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{dev.property}</div>
-                      <div className="text-xs text-gray-500 flex items-center mt-0.5">
-                        <UserCheck className="h-3 w-3 mr-1"/> {dev.primaryUser || 'Unassigned'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        {dev.status === 'active' && <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1"/> Active</span>}
-                        {dev.status === 'pending_approval' && <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1"/> Pending</span>}
-                        {dev.status === 'locked' && <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-red-100 text-red-800"><Lock className="w-3 h-3 mr-1"/> Locked</span>}
-                        
-                        <span className="flex items-center text-xs text-gray-500 ml-2 border border-gray-200 rounded px-1.5 py-0.5">
-                          <BatteryCharging className={`h-3 w-3 mr-1 ${dev.battery < 20 ? 'text-red-500' : 'text-green-500'}`} />
-                          {dev.battery}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{dev.lastSync}</div>
-                      <div className="text-xs text-gray-500">{dev.appVersion}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors" onClick={(e) => { e.stopPropagation(); handleOpenDrawer(dev); }}>
-                        <MoreVertical className="h-5 w-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-        
-        {/* Pagination placeholder */}
-        <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 text-sm text-gray-500">
-          Showing {filteredDevices.length} records
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={devices}
+        loading={loading}
+        error={error}
+        emptyStateMessage="No devices found."
+        searchPlaceholder="Search by device name, model, property, or UID..."
+        onRowClick={handleOpenDrawer}
+        actions={tableActions}
+      />
 
       {/* Slide-over Drawer */}
       {createPortal(

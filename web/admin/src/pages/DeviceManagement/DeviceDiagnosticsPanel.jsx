@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Smartphone,
   Search,
@@ -14,14 +15,16 @@ import {
   Clock,
   Send,
   HelpCircle,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 import { deviceService } from '../../services/deviceService';
+import DataTable from '../../components/ui/DataTable';
 
 export default function DeviceDiagnosticsPanel() {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [activeTab, setActiveTab] = useState('sync');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // API State
   const [loading, setLoading] = useState(true);
@@ -34,9 +37,6 @@ export default function DeviceDiagnosticsPanel() {
       try {
         const data = await deviceService.getDiagnostics();
         setDevices(Array.isArray(data) ? data : (data.data || []));
-        if (data && data.length > 0) {
-          setSelectedDevice(Array.isArray(data) ? data[0] : data.data[0]);
-        }
         setError(null);
       } catch (err) {
         setError(err.message || 'Failed to fetch diagnostic data');
@@ -57,11 +57,64 @@ export default function DeviceDiagnosticsPanel() {
     }
   };
 
-  const filteredDevices = devices.filter(dev => 
-    (dev.name && dev.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (dev.uid && dev.uid.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (dev.property && dev.property.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const handleOpenDrawer = (dev) => {
+    setSelectedDevice(dev);
+    setTimeout(() => setIsDrawerOpen(true), 10);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setTimeout(() => setSelectedDevice(null), 300);
+  };
+
+  const columns = [
+    {
+      header: 'Device',
+      accessor: 'name',
+      sortable: true,
+      render: (row) => (
+        <div>
+          <p className="text-sm font-medium text-gray-900">{row.name}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{row.property}</p>
+        </div>
+      )
+    },
+    {
+      header: 'UID',
+      accessor: 'uid',
+      sortable: true,
+      render: (row) => <span className="font-mono text-xs text-gray-500">{row.uid}</span>
+    },
+    {
+      header: 'Status',
+      accessor: 'syncStatus',
+      sortable: true,
+      render: (row) => (
+        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+          row.syncStatus === 'SYNC_ERROR' ? 'bg-red-50 text-red-700 border-red-200' :
+          row.syncStatus === 'OFFLINE' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+          'bg-emerald-50 text-emerald-700 border-emerald-200'
+        }`}>
+          {row.syncStatus === 'SYNC_ERROR' ? <AlertCircle className="w-3 h-3" /> :
+           row.syncStatus === 'OFFLINE' ? <Clock className="w-3 h-3" /> :
+           <CheckCircle className="w-3 h-3" />}
+          {row.syncStatus}
+        </span>
+      )
+    },
+    {
+      header: 'Battery',
+      accessor: 'battery',
+      sortable: true,
+      render: (row) => <span className="text-sm font-medium text-gray-900">{row.battery}%</span>
+    },
+    {
+      header: 'App Version',
+      accessor: 'appVersion',
+      sortable: true,
+      render: (row) => <span className="text-sm text-gray-600">{row.appVersion}</span>
+    }
+  ];
 
   return (
     <div className="space-y-6 animate-slide-up h-[calc(100vh-120px)] flex flex-col">
@@ -70,89 +123,31 @@ export default function DeviceDiagnosticsPanel() {
           <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Device Diagnostics</h1>
           <p className="text-sm text-gray-500 mt-1">Deep-dive into sync logs, errors, and remote troubleshooting.</p>
         </div>
-        <div className="flex space-x-3 mt-4 sm:mt-0">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search by name, UID..." 
-              className="saas-input pl-9 w-full bg-white shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
       </div>
-
-      <div className="flex flex-1 gap-6 overflow-hidden min-h-[400px]">
-        {/* Left List Pane */}
-        <div className="w-1/3 bg-white border border-gray-200 shadow-sm rounded-xl flex flex-col overflow-hidden shrink-0 relative">
-          <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
-            <h2 className="text-sm font-semibold text-gray-700">Diagnostic Queue</h2>
-            <button className="text-gray-400 hover:text-pine transition-colors p-1"><RefreshCw className="h-4 w-4" /></button>
-          </div>
-          
-          {loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 mt-14">
-               <Loader2 className="h-6 w-6 text-pine animate-spin mb-2" />
-               <p className="text-gray-500 text-xs">Loading devices...</p>
-            </div>
-          )}
-
-          {error && !loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 mt-14">
-               <AlertCircle className="h-6 w-6 text-red-500 mb-2" />
-               <p className="text-gray-800 text-xs font-medium px-4 text-center">Failed to load diagnostics</p>
-            </div>
-          )}
-
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {!loading && !error && filteredDevices.length === 0 && (
-              <div className="p-4 text-center text-xs text-gray-500">No devices match your search.</div>
-            )}
-            {filteredDevices.map((dev, idx) => (
-              <button 
-                key={dev.id || idx}
-                onClick={() => setSelectedDevice(dev)}
-                className={`w-full text-left p-3 rounded-lg transition-colors border ${
-                  selectedDevice?.id === dev.id 
-                    ? 'bg-pine-50 border-pine-100 ring-1 ring-pine/20' 
-                    : 'bg-white border-transparent hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="truncate pr-2">
-                    <p className={`text-sm font-medium truncate ${selectedDevice?.id === dev.id ? 'text-pine-dark' : 'text-gray-900'}`}>{dev.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">{dev.property}</p>
-                  </div>
-                  {dev.syncStatus === 'SYNC_ERROR' ? (
-                    <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
-                  ) : dev.syncStatus === 'OFFLINE' ? (
-                    <Clock className="h-4 w-4 text-amber-500 shrink-0" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                  )}
-                </div>
-                <div className="flex items-center mt-2 text-[10px] text-gray-400 font-mono">
-                  <span>{dev.uid}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Detail Pane */}
-        <div className="flex-1 bg-white border border-gray-200 shadow-sm rounded-xl flex flex-col overflow-hidden">
-          {selectedDevice ? (
-            <>
-              {/* Header */}
-              <div className="p-6 border-b border-gray-100 bg-gray-50/30 shrink-0">
-                <div className="flex justify-between items-start">
+      <div className="flex-1">
+        <DataTable 
+          columns={columns}
+          data={devices}
+          loading={loading}
+          error={error}
+          emptyStateMessage="No diagnostics found."
+          searchPlaceholder="Search by name, UID, property..."
+          onRowClick={handleOpenDrawer}
+        />
+      </div>
+      {/* Drawer */}
+      {createPortal(
+        <>
+          <div className={`saas-drawer-overlay ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={handleCloseDrawer} />
+          <div className={`saas-drawer flex flex-col w-[600px] max-w-full ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            {selectedDevice && (
+              <>
+                <div className="p-6 border-b border-gray-100 flex items-start justify-between bg-gray-50/50 shrink-0">
                   <div className="flex items-center">
                     <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
-                      selectedDevice.syncStatus === 'SYNC_ERROR' ? 'bg-red-50 text-red-600' :
-                      selectedDevice.syncStatus === 'OFFLINE' ? 'bg-amber-50 text-amber-600' :
-                      'bg-green-50 text-green-600'
+                      selectedDevice.syncStatus === 'SYNC_ERROR' ? 'bg-red-50 text-red-600 border border-red-100' :
+                      selectedDevice.syncStatus === 'OFFLINE' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                      'bg-green-50 text-green-600 border border-green-100'
                     }`}>
                       <Smartphone className="h-6 w-6" />
                     </div>
@@ -167,10 +162,13 @@ export default function DeviceDiagnosticsPanel() {
                   </div>
                   <div className="flex gap-2">
                     <button className="saas-button-secondary py-1.5 px-3 text-xs"><RefreshCw className="h-3 w-3 mr-1.5"/> Force Sync</button>
+                    <button onClick={handleCloseDrawer} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-4 gap-4 mt-6">
+
+                <div className="px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
                     <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Battery</p>
                     <p className="text-lg font-bold text-gray-900 mt-1">{selectedDevice.battery}%</p>
@@ -192,7 +190,6 @@ export default function DeviceDiagnosticsPanel() {
                     }`}>{selectedDevice.syncStatus}</p>
                   </div>
                 </div>
-              </div>
 
               {/* Tabs */}
               <div className="px-6 pt-4 border-b border-gray-100 flex gap-6 shrink-0">
@@ -278,16 +275,12 @@ export default function DeviceDiagnosticsPanel() {
                   </div>
                 )}
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
-              <HelpCircle className="h-16 w-16 mb-4 text-gray-200" />
-              <p className="text-lg font-medium text-gray-600">No device selected</p>
-              <p className="text-sm text-gray-400 mt-2 text-center max-w-sm">Select a device from the diagnostic queue on the left to view detailed logs and perform remote troubleshooting.</p>
-            </div>
-          )}
-        </div>
-      </div>
+              </>
+            )}
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   );
 }

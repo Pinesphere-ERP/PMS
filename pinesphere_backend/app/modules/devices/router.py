@@ -14,30 +14,31 @@ from app.modules.devices.schemas import (
 )
 from app.modules.devices import service
 from app.infra.models import Device, User
+from app.core.responses import success_response, StandardResponse
 
 router = APIRouter(dependencies=[Depends(require_optional_resource_property_access(Device, Device.id, "id"))])
 
-@router.get("/kpis", dependencies=[Depends(require_super_admin)])
+@router.get("/kpis", response_model=StandardResponse, dependencies=[Depends(require_super_admin)])
 async def get_device_kpis(db: AsyncSession = Depends(get_db)):
     """Global KPI counts for device management console."""
     query = select(Device.status, func.count(Device.id)).group_by(Device.status)
     result = await db.execute(query)
     status_counts = {row[0]: row[1] for row in result.all()}
     total = sum(status_counts.values())
-    return [
+    return success_response(data=[
         { "name": "Total Registered Devices", "value": str(total), "icon": "Smartphone", "color": "text-pine-DEFAULT", "bg": "bg-pine-50" },
         { "name": "Pending Approval", "value": str(status_counts.get("pending_approval", 0)), "icon": "Clock", "color": "text-yellow-600", "bg": "bg-yellow-50" },
         { "name": "Active & Synced", "value": str(status_counts.get("active", 0)), "icon": "CheckCircle2", "color": "text-green-600", "bg": "bg-green-50" },
         { "name": "Locked / Disabled", "value": str(status_counts.get("locked", 0) + status_counts.get("disabled", 0)), "icon": "Lock", "color": "text-purple-600", "bg": "bg-purple-50" },
         { "name": "Offline (> 24h)", "value": "0", "icon": "WifiOff", "color": "text-amber-600", "bg": "bg-amber-50" },
         { "name": "Failed Syncs (24h)", "value": "0", "icon": "AlertTriangle", "color": "text-red-600", "bg": "bg-red-50" },
-    ]
+    ])
 
-@router.get("/diagnostics", dependencies=[Depends(require_super_admin)])
+@router.get("/diagnostics", response_model=StandardResponse, dependencies=[Depends(require_super_admin)])
 async def get_device_diagnostics(db: AsyncSession = Depends(get_db)):
     """Return device list enriched with sync diagnostics for the diagnostics panel."""
     devices = await service.list_devices(db)
-    return [
+    return success_response(data=[
         {
             "id": str(d.id),
             "name": d.device_name or "Unnamed Device",
@@ -53,7 +54,7 @@ async def get_device_diagnostics(db: AsyncSession = Depends(get_db)):
             "syncAttempts": []
         }
         for d in devices
-    ]
+    ])
 
 @router.get("/my")
 async def get_my_devices(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -93,11 +94,12 @@ async def sync_checkin(
     """Called by the Flutter app on every sync cycle; also delivers queued remote commands."""
     return await service.sync_checkin(db, req)
 
-@router.get("", response_model=List[DeviceResponse])
+@router.get("", response_model=StandardResponse)
 async def get_devices(
     property_id: Optional[uuid.UUID] = Query(None, description="Scope query by property ID"),
     status: Optional[str] = Query(None, description="Filter by status (pending_approval, active, locked, disabled, revoked)"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """List registered devices (scoped by role: global for Super Admin, property-scoped for Owner)."""
     property_id = property_id or current_user.property_id
@@ -105,7 +107,8 @@ async def get_devices(
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Property scope required")
     await assert_property_access(property_id, current_user, db)
-    return await service.list_devices(db, property_id=property_id, status_filter=status)
+    data = await service.list_devices(db, property_id=property_id, status_filter=status)
+    return success_response(data=data)
 
 @router.get("/{id}", response_model=DeviceDetailResponse)
 async def get_device_detail(

@@ -1,10 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../auth/session_context.dart';
 
 class ApiInterceptor extends Interceptor {
   final FlutterSecureStorage secureStorage;
+  final Ref ref;
 
-  ApiInterceptor(this.secureStorage);
+  ApiInterceptor(this.secureStorage, this.ref);
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
@@ -34,6 +37,8 @@ class ApiInterceptor extends Interceptor {
     if (err.response?.statusCode == 401) {
       // TODO: Implement token refresh logic
       // Attempt refresh, if it fails clear session and redirect to login
+    } else if (err.response?.statusCode == 402) {
+      ref.read(sessionContextProvider.notifier).forcePaymentPending();
     }
     super.onError(err, handler);
   }

@@ -44,7 +44,11 @@ class CheckInService {
 
   Future<Map<String, dynamic>> performCheckIn(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('/checkin', data: data);
+      final bookingId = data['booking_id'] ?? data['server_id'];
+      if (bookingId == null || bookingId.toString().isEmpty) {
+        throw Exception('Booking ID is required for check-in');
+      }
+      final response = await _dio.post('/bookings/$bookingId/check-in', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = CheckInEntity(
         serverId: body['id']?.toString() ?? data['server_id'] ?? '',

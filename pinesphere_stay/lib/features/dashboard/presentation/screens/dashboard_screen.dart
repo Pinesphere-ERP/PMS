@@ -514,7 +514,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildKPIsGrid(BuildContext context, WidgetRef ref) {
-    final dashboardAsync = ref.watch(dashboardProvider);
+    final dashboardAsync = ref.watch(dashboardMetricsProvider);
     final authState = ref.watch(authProvider);
     final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
     final canHousekeeping = PermissionMatrix.hasAccess(role, Module.housekeeping);

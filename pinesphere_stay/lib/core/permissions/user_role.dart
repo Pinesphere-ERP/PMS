@@ -26,6 +26,9 @@ enum UserRole {
     if (cleanRole == 'receptionist' || cleanRole == 'reception' || cleanRole == 'frontdesk') {
       return UserRole.reception;
     }
+    if (cleanRole == 'housekeeper' || cleanRole == 'housekeeping') {
+      return UserRole.housekeeping;
+    }
     if (cleanRole == 'superadmin' || cleanRole == 'super_admin') {
       return UserRole.superAdmin;
     }

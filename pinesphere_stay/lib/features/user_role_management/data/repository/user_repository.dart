@@ -44,92 +44,6 @@ class UserRepository {
     required String password,
     required String pin,
   }) async {
-    final lowerEmail = email.toLowerCase();
-    
-    // Helper to generate a fully functioning mock/bypass session
-    Future<Either<Failure, UserModel>> createMockSession({
-      required UserRole role,
-      required String roleCode,
-      required String name,
-    }) async {
-      final userId = '${role.name}-user-1';
-      final pinHashLocal = _hashPin(pin);
-      await _secureStorage.write(key: 'offline_pin_hash', value: pinHashLocal);
-      await _secureStorage.write(key: 'cached_user_id', value: userId);
-
-      final userModel = UserModel(
-        id: userId,
-        name: name,
-        email: email,
-        role: role,
-        roleCode: roleCode,
-        propertyId: '1',
-        onboardingStatus: 'active',
-        subscriptionStatus: 'active',
-        isEmailVerified: true,
-      );
-      await _secureStorage.write(key: 'cached_user', value: jsonEncode(userModel.toJson()));
-      await _secureStorage.write(key: 'accessible_property_count', value: '1');
-
-      try {
-        final userDao = databaseService.userDao;
-        final userEntity = UserEntity(
-          id: 0,
-          serverId: userId,
-          propertyId: '1',
-          roleId: roleCode,
-          name: name,
-          email: email,
-          pinHash: pinHashLocal,
-          isPrimaryOwner: role == UserRole.owner,
-          status: 'ACTIVE',
-        );
-        userDao.put(userEntity);
-
-        final rpDao = databaseService.rolePermDao;
-        final existingRPs = rpDao.getByRoleId(roleCode);
-        for (final rp in existingRPs) {
-          rpDao.remove(rp.id);
-        }
-
-        final List<String> permissions;
-        if (role == UserRole.accountant) {
-          permissions = ['property.view', 'bookings.view', 'reports.view', 'billing.manage'];
-        } else if (role == UserRole.reception) {
-          permissions = ['property.view', 'bookings.manage', 'bookings.view', 'rooms.view', 'staff.view', 'billing.manage'];
-        } else if (role == UserRole.owner || role == UserRole.superAdmin) {
-          permissions = ['property.manage', 'property.view', 'bookings.manage', 'bookings.view', 'rooms.manage', 'rooms.view', 'staff.manage', 'staff.view', 'reports.view', 'billing.manage', 'housekeeping.manage', 'kitchen.manage'];
-        } else {
-          permissions = ['property.view'];
-        }
-
-        for (final pCode in permissions) {
-          final rpEntity = RolePermissionEntity(
-            serverId: _uuid.v4(),
-            roleId: roleCode,
-            permissionId: pCode,
-            accessLevel: pCode.contains('manage') ? 'write' : 'read',
-          );
-          rpDao.put(rpEntity);
-        }
-      } catch (_) {}
-
-      return Right(userModel);
-    }
-
-    // Direct password bypass check
-    if (password == '1234' || password == 'password123') {
-      if (lowerEmail.contains('accountant')) {
-        return createMockSession(role: UserRole.accountant, roleCode: 'ACCOUNTANT', name: 'Assigned Accountant');
-      } else if (lowerEmail.contains('reception')) {
-        return createMockSession(role: UserRole.reception, roleCode: 'RECEPTIONIST', name: 'Assigned Receptionist');
-      } else if (lowerEmail.contains('manager')) {
-        return createMockSession(role: UserRole.manager, roleCode: 'MANAGER', name: 'Property Manager');
-      } else {
-        return createMockSession(role: UserRole.owner, roleCode: 'OWNER', name: 'Admin User');
-      }
-    }
-
     try {
       final deviceInfo = DeviceInfoService(_secureStorage);
       final deviceName = await deviceInfo.getDeviceName();
@@ -191,6 +105,9 @@ class UserRepository {
         isEmailVerified: true, // If they can log in, email is considered verified
       );
       await _secureStorage.write(key: 'cached_user', value: jsonEncode(userModel.toJson()));
+      if (propertyId != null) {
+        await _secureStorage.write(key: 'tenant_id', value: propertyId);
+      }
       // Store accessible properties count for router
       await _secureStorage.write(
         key: 'accessible_property_count',
@@ -253,16 +170,8 @@ class UserRepository {
 
       return Right(userModel);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401 || e.response?.statusCode == 404) {
-        if (lowerEmail.contains('accountant')) {
-          return createMockSession(role: UserRole.accountant, roleCode: 'ACCOUNTANT', name: 'Assigned Accountant');
-        } else if (lowerEmail.contains('reception') || lowerEmail == 'sample@gmail.com') {
-          return createMockSession(role: UserRole.reception, roleCode: 'RECEPTIONIST', name: 'Assigned Receptionist');
-        } else if (lowerEmail.contains('manager')) {
-          return createMockSession(role: UserRole.manager, roleCode: 'MANAGER', name: 'Property Manager');
-        } else {
-          return createMockSession(role: UserRole.owner, roleCode: 'OWNER', name: 'Admin User');
-        }
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 400) {
+        return Left(Failure.auth(e.response?.data['detail'] ?? 'Invalid credentials'));
       }
       return Left(Failure.auth(formatError(e)));
     } catch (e, stack) {

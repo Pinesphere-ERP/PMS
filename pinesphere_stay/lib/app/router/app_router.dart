@@ -154,7 +154,7 @@ GoRouter appRouter(Ref ref) {
           authenticated: (user) {
             final roleCode = (user.roleCode ?? user.role.name).toUpperCase();
             // Role-specific home screens
-            if (roleCode == 'HOUSEKEEPING') return '/housekeeper-dashboard';
+            if (roleCode == 'HOUSEKEEPING' || roleCode == 'HOUSEKEEPER') return '/housekeeper-dashboard';
             if (roleCode == 'KITCHEN') return '/kitchen';
             if (roleCode == 'ACCOUNTANT') return '/accountant-dashboard';
             // All other roles land on dashboard (which has its own state guard)

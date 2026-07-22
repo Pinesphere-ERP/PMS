@@ -17,7 +17,7 @@ class HousekeeperDashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Rooms'),
+        title: const Text('My Cleaning'),
         backgroundColor: AppColors.surface,
         leading: Builder(
           builder: (context) => IconButton(

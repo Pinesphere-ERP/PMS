@@ -23,6 +23,16 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
   String _activeFilter = 'All';
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(pmsProvider.notifier).loadResorts();
+      ref.read(pmsProvider.notifier).loadRooms();
+      ref.read(pmsProvider.notifier).loadBookings();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);

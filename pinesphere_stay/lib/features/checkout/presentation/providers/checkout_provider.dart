@@ -31,7 +31,10 @@ class CheckOutNotifier extends _$CheckOutNotifier {
     try {
       final service = ref.read(checkOutServiceProvider);
       final result = await service.getPendingCheckOuts(propertyId);
-      final checkouts = result.cast<Map<String, dynamic>>();
+      final checkouts = result.cast<Map<String, dynamic>>().where((co) {
+        final status = co['booking_status']?.toString().toLowerCase() ?? co['status']?.toString().toLowerCase() ?? 'active';
+        return status == 'active';
+      }).toList();
       state = CheckOutState.loadedPendingCheckouts(checkouts);
     } catch (e) {
       state = CheckOutState.error('Failed to load pending checkouts: $e');

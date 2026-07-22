@@ -32,14 +32,15 @@ class HousekeeperDashboardScreen extends ConsumerWidget {
           onRefresh: () async => ref.refresh(housekeeperRoomsProvider.future),
           child: roomsAsync.when(
             data: (rooms) {
-              if (rooms.isEmpty) {
+              final cleaningTasks = rooms.where((r) => r.cleanStatus == 'not_cleaned' || r.cleanStatus == 'cleaning_requested' || r.cleanStatus == 'in_progress').toList();
+              if (cleaningTasks.isEmpty) {
                 return _buildEmptyState(context);
               }
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: rooms.length,
+                itemCount: cleaningTasks.length,
                 itemBuilder: (context, index) {
-                  final room = rooms[index];
+                  final room = cleaningTasks[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: InkWell(

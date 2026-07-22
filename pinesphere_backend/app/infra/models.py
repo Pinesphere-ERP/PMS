@@ -1199,3 +1199,4 @@ class ServiceRequest(Base, TimestampMixin, SyncMixin):
 RoomCategory = RoomType
 Room.room_category_id = Room.room_type_id
 RoomCategory.room_category_id = RoomType.id
+RoomCategory.room_category_id = RoomType.id

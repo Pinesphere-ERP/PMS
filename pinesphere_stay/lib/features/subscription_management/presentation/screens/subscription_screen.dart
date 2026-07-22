@@ -41,7 +41,7 @@ class SubscriptionScreen extends ConsumerWidget {
           return const SizedBox.shrink();
         },
         loading: () => const SizedBox.shrink(),
-        error: (_, __) => const SizedBox.shrink(),
+        error: (error, stackTrace) => const SizedBox.shrink(),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),

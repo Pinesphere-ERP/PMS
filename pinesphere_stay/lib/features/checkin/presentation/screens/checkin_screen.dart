@@ -919,7 +919,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (context, error, stackTrace) => Container(
                       height: 120,
                       color: Colors.grey.shade200,
                       child: const Center(child: Text('Document Attached ✅')),

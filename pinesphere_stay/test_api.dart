@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   final dio = Dio();
@@ -38,10 +38,10 @@ void main() async {
         'content-type': 'application/json'
       }),
     );
-    print('SUCCESS: ${response.statusCode} - ${response.data}');
+    debugPrint('SUCCESS: ${response.statusCode} - ${response.data}');
   } on DioException catch (e) {
-    print('ERROR: ${e.response?.statusCode} - ${e.response?.data}');
+    debugPrint('ERROR: ${e.response?.statusCode} - ${e.response?.data}');
   } catch (e) {
-    print('UNKNOWN ERROR: $e');
+    debugPrint('UNKNOWN ERROR: $e');
   }
 }

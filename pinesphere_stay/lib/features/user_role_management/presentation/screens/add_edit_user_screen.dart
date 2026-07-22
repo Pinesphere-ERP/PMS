@@ -133,7 +133,7 @@ class _AddEditUserScreenState extends ConsumerState<AddEditUserScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(labelText: 'Role'),
-                value: _selectedRoleId,
+                initialValue: _selectedRoleId,
                 items: _allRoles.map((role) {
                   return DropdownMenuItem(
                     value: role.roleCode,

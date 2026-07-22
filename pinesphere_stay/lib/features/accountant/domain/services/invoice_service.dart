@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/services.dart';
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -40,7 +40,7 @@ class InvoiceService {
               // Payment Items
               pw.Text('Payment History', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 10),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 headers: ['Date', 'Mode', 'Transaction ID', 'Amount'],
                 data: payments.map((p) {
                   return [

@@ -225,7 +225,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -268,7 +268,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(

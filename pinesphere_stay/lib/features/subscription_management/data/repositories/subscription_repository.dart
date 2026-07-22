@@ -36,7 +36,7 @@ class SubscriptionRepository {
 
   Future<String?> createCheckoutSession(String planName) async {
     try {
-      final response = await _dio.post('/subscriptions/activate-placeholder', data: {
+      await _dio.post('/subscriptions/activate-placeholder', data: {
         'plan': planName,
       });
       // Return a special token to indicate direct success

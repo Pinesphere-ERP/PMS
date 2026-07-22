@@ -1,1 +1,0 @@
-class MaintenanceTicket { final String id; final String status; MaintenanceTicket({required this.id, required this.status}); factory MaintenanceTicket.fromJson(Map<String, dynamic> json) => MaintenanceTicket(id: json['id'] ?? '', status: json['status'] ?? ''); }

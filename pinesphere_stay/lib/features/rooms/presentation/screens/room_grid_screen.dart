@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/pms_provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
@@ -50,12 +49,27 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
     final isReceptionist = !canAddEdit;
 
     final sessionContext = ref.watch(sessionContextProvider);
-    final activePropertyId = sessionContext.activePropertyId ?? 'default';
-    final activePropertyName = sessionContext.activeProperty?.propertyName ?? 'My Property';
+    final userPropertyId = authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
 
     ref.read(pmsProvider.notifier).autoVacateExpiredBookings();
     final pmsState = ref.watch(pmsProvider);
-    final rooms = pmsState.rooms.where((r) => r.resortId == activePropertyId).toList();
+
+    String activePropertyId = sessionContext.activePropertyId ?? userPropertyId ?? '';
+    if (activePropertyId.isEmpty || activePropertyId == 'default') {
+      if (pmsState.resorts.isNotEmpty) {
+        activePropertyId = pmsState.resorts.first.id;
+      }
+    }
+
+    final activePropertyName = sessionContext.activeProperty?.propertyName ??
+        (pmsState.resorts.isNotEmpty ? pmsState.resorts.first.name : 'Property');
+
+    final rooms = pmsState.rooms.where((r) {
+      if (activePropertyId.isEmpty || activePropertyId == 'default') return true;
+      final rid = r.resortId.toString().trim().toLowerCase();
+      final target = activePropertyId.toString().trim().toLowerCase();
+      return rid.isEmpty || rid == target || rid.contains(target) || target.contains(rid);
+    }).toList();
 
     // Filter rooms
     final filteredRooms = rooms.where((room) {
@@ -74,76 +88,76 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
       body: PineBackground(
         child: CustomScrollView(
           slivers: [
-          // Premium Banner Sliver AppBar
+          // Banner Sliver AppBar
           SliverAppBar(
-            expandedHeight: 220,
+            expandedHeight: 180,
             pinned: true,
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-            elevation: 0,
-            leading: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+            leading: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Colors.black45,
+                  shape: BoxShape.circle,
                 ),
-                onPressed: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
               ),
+              onPressed: () => Navigator.pop(context),
             ),
             actions: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.ios_share_rounded, color: Colors.white, size: 18),
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black45,
+                    shape: BoxShape.circle,
                   ),
-                  onPressed: () {
-                    _showGlobalResortShareModal(context, activePropertyName, activePropertyId, rooms);
-                  },
+                  child: const Icon(Icons.share, color: Colors.white, size: 20),
                 ),
+                onPressed: () {
+                  _showGlobalResortShareModal(context, activePropertyName, activePropertyId, rooms);
+                },
               ),
               const SizedBox(width: 8),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16, right: 16),
               title: Text(
                 activePropertyName,
-                style: GoogleFonts.outfit(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  shadows: [const Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2))],
+                  fontSize: 15,
+                  shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
                 ),
               ),
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    'https://images.unsplash.com/photo-1542314831-c6a4d142104d?auto=format&fit=crop&w=1200&q=80',
-                    fit: BoxFit.cover,
+                  const SizedBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black54,
+                            Colors.black26,
+                            Colors.transparent,
+                            Colors.black87,
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                   Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.4),
-                          Colors.transparent,
-                          AppColors.primary.withValues(alpha: 0.8),
-                          AppColors.primary,
-                        ],
-                        stops: const [0.0, 0.4, 0.8, 1.0],
+                        colors: [Colors.black54, Colors.transparent],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
                       ),
                     ),
                   ),
@@ -430,63 +444,33 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Text(
-                      room.roomNumber,
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.onSurface),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  Text(
+                    room.roomNumber,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: chipBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       room.status == 'Maintenance' ? 'MAINT' : room.status.toUpperCase(),
-                      style: GoogleFonts.inter(color: chipText, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5),
+                      style: TextStyle(color: chipText, fontWeight: FontWeight.bold, fontSize: 8, letterSpacing: 0.5),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 room.type,
-                style: GoogleFonts.inter(color: AppColors.outline, fontSize: 13, fontWeight: FontWeight.w500),
+                style: const TextStyle(color: AppColors.outline, fontSize: 11, fontWeight: FontWeight.w600),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '₹${room.price.toStringAsFixed(0)}',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  if (activeBooking != null)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Text(
-                          activeBooking.guestName,
-                          style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w500),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                    ),
-                ],
               ),
               if (room.description.isNotEmpty) ...[
                 const SizedBox(height: 2),
@@ -787,8 +771,19 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
 
   void _showAddRoomDialog(BuildContext context, WidgetRef ref) {
     final sessionContext = ref.read(sessionContextProvider);
-    final activePropertyId = sessionContext.activePropertyId ?? 'default';
-    final activePropertyName = sessionContext.activeProperty?.propertyName ?? 'My Property';
+    final authState = ref.read(authProvider);
+    final pmsState = ref.read(pmsProvider);
+
+    final userPropertyId = authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
+    String targetPropertyId = sessionContext.activePropertyId ?? userPropertyId ?? '';
+    if (targetPropertyId.isEmpty || targetPropertyId == 'default') {
+      if (pmsState.resorts.isNotEmpty) {
+        targetPropertyId = pmsState.resorts.first.id;
+      }
+    }
+
+    final activePropertyName = sessionContext.activeProperty?.propertyName ??
+        (pmsState.resorts.isNotEmpty ? pmsState.resorts.first.name : 'Property');
 
     final roomNumCtrl = TextEditingController();
     final typeCtrl = TextEditingController();
@@ -916,7 +911,7 @@ class _RoomGridScreenState extends ConsumerState<RoomGridScreen> {
                             {'name': 'Air Conditioning', 'price': 0.0}
                           ],
                           status: initialStatus,
-                          resortId: activePropertyId,
+                          resortId: targetPropertyId,
                           images: ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80'],
                           description: descriptionCtrl.text,
                         );

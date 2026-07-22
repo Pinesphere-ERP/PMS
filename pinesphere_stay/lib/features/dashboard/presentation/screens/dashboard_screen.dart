@@ -139,7 +139,7 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     if (matchedUserProp != null) {
-      resortName = matchedUserProp.propertyName ?? 'Pinesphere Property';
+      resortName = matchedUserProp.propertyName;
     }
 
     // Step 2: Match from loaded pmsState.resorts by property ID

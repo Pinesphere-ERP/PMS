@@ -1,1 +1,0 @@
-class DailyChecklist { final String id; final String status; DailyChecklist({required this.id, required this.status}); factory DailyChecklist.fromJson(Map<String, dynamic> json) => DailyChecklist(id: json['checklist_id'] ?? '', status: json['status'] ?? ''); }

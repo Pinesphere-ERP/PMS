@@ -1,1 +1,0 @@
-class Booking { final String id; final String status; Booking({required this.id, required this.status}); factory Booking.fromJson(Map<String, dynamic> json) => Booking(id: json['id'] ?? '', status: json['status'] ?? ''); }

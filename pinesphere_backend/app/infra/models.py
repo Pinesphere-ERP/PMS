@@ -341,22 +341,14 @@ class UserSyncLog(Base):
     synced_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 # ── E. Rooms ──────────────────────────────────────────────────────────────────
 
-class RoomType(Base, TimestampMixin):
-    __tablename__ = "room_types"
+class RoomCategory(Base, TimestampMixin):
+    __tablename__ = "room_categories"
     __table_args__ = {'extend_existing': True}
-    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
-    name: Mapped[Optional[str]] = mapped_column(String(100))
-    category: Mapped[Optional[str]] = mapped_column(String(50))
-    occupancy: Mapped[int] = mapped_column(Integer, default=2)
-    bed_type: Mapped[Optional[str]] = mapped_column(String(50))
-    room_size: Mapped[Optional[str]] = mapped_column(String(50))
-    smoking: Mapped[bool] = mapped_column(Boolean, default=False)
-    balcony: Mapped[bool] = mapped_column(Boolean, default=False)
-    view: Mapped[Optional[str]] = mapped_column(String(100))
-    ac: Mapped[bool] = mapped_column(Boolean, default=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
-
+    room_category_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
+    room_name: Mapped[Optional[str]] = mapped_column(String(100))
+    number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
+    base_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
 class RoomInventory(Base, TimestampMixin):
     __tablename__ = "room_inventory"
     __table_args__ = {'extend_existing': True}
@@ -392,7 +384,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     __table_args__ = {'extend_existing': True}
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    room_type_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_types.id"), nullable=False)
+    room_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_categories.room_category_id"), nullable=False)
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     floor: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')
@@ -700,9 +692,6 @@ from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, Schedul
 # ── Settings (Module 15) ──
 from app.modules.settings.models import SystemConfiguration, PropertySetting
 
-# ── Manager Module ──────────────────────────────────────────────────────────
-from app.modules.manager.models import ManagerNote, RoomBlock, ManagerDailyChecklist, StaffShift
-
 class Task(Base, TimestampMixin, SyncMixin):
     __tablename__ = "tasks"
     __table_args__ = (
@@ -766,8 +755,6 @@ class OTPRequest(Base):
     purpose: Mapped[str] = mapped_column(String(40), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    client_ip: Mapped[Optional[str]] = mapped_column(String(45))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
@@ -1044,82 +1031,6 @@ class PropertyIncidentReport(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
-# ── U. Guest Portal ───────────────────────────────────────────────────────────
-
-class PortalSession(Base, TimestampMixin):
-    """Tracks active sessions for the guest portal to allow revocation."""
-    __tablename__ = "portal_sessions"
-    __table_args__ = {'extend_existing': True}
-    session_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
-    booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id", ondelete="CASCADE"), nullable=False)
-    guest_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("guests.guest_id", ondelete="CASCADE"), nullable=False)
-    device_info: Mapped[Optional[str]] = mapped_column(String(200))
-    last_ip: Mapped[Optional[str]] = mapped_column(String(45))
-    user_agent: Mapped[Optional[str]] = mapped_column(Text)
-    device_name: Mapped[Optional[str]] = mapped_column(String(100))
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    revocation_reason: Mapped[Optional[str]] = mapped_column(String(50))
-
-
-class PortalNotification(Base, TimestampMixin):
-    """Tenant-safe notifications exclusively for the guest portal."""
-    __tablename__ = "portal_notifications"
-    __table_args__ = {'extend_existing': True}
-    notification_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
-    booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id", ondelete="CASCADE"), nullable=False)
-    category: Mapped[str] = mapped_column(String(50), nullable=False)
-    title: Mapped[str] = mapped_column(String(150), nullable=False)
-    message: Mapped[str] = mapped_column(Text, nullable=False)
-    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-
-
-class MenuCategory(Base, TimestampMixin, SyncMixin):
-    """Categories for the property food menu."""
-    __tablename__ = "menu_categories"
-    __table_args__ = {'extend_existing': True}
-    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(String(255))
-    sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-
-
-class MenuItem(Base, TimestampMixin, SyncMixin):
-    """Individual food/beverage items linked to a category."""
-    __tablename__ = "menu_items"
-    __table_args__ = {'extend_existing': True}
-    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("menu_categories.id", ondelete="CASCADE"), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
-    name: Mapped[str] = mapped_column(String(150), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    veg_type: Mapped[str] = mapped_column(String(20), default="veg") # veg, non-veg, egg
-    is_available: Mapped[bool] = mapped_column(Boolean, default=True)
-    image_url: Mapped[Optional[str]] = mapped_column(String(500))
-
-class GuestFeedback(Base, TimestampMixin, SyncMixin):
-    """Guest feedback for their overall stay or specific orders/services."""
-    __tablename__ = "guest_feedback"
-    __table_args__ = {'extend_existing': True}
-    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
-    booking_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bookings.booking_id", ondelete="CASCADE"), nullable=False)
-    guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id", ondelete="CASCADE"), nullable=True)
-    task_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("tasks.task_id", ondelete="CASCADE"), nullable=True)
-    overall_rating: Mapped[Optional[int]] = mapped_column(Integer)
-    food_rating: Mapped[Optional[int]] = mapped_column(Integer)
-    service_rating: Mapped[Optional[int]] = mapped_column(Integer)
-    staff_rating: Mapped[Optional[int]] = mapped_column(Integer)
-    comments: Mapped[Optional[str]] = mapped_column(Text)
-    is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False)
-
-
 # ── S. Housekeeping Room Status ───────────────────────────────────────────────
 
 class HousekeepingRoomStatus(Base, TimestampMixin):
@@ -1194,8 +1105,3 @@ class ServiceRequest(Base, TimestampMixin, SyncMixin):
     verified_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     remarks: Mapped[Optional[str]] = mapped_column(Text)
-
-
-RoomCategory = RoomType
-Room.room_category_id = Room.room_type_id
-RoomCategory.room_category_id = RoomType.id

@@ -97,7 +97,7 @@ async def _resolve_user(db: AsyncSession, identifier: str) -> Optional[User]:
         )
     )
     result = await db.execute(stmt)
-    return result.scalars().first()
+    return result.scalar_one_or_none()
 
 
 async def _build_token_response(db: AsyncSession, user: User, device_id_str: Optional[str], device_fp: str) -> TokenResponse:

@@ -31,7 +31,7 @@ class PropertySwitcherWidget extends ConsumerWidget {
 
     if (!hasMultipleProperties) {
       return Text(
-        activeProperty.propertyName ?? 'PineStay',
+        activeProperty.propertyName,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: Theme.of(context).primaryColor,
             ),
@@ -87,7 +87,7 @@ class PropertySwitcherWidget extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        property.propertyName ?? 'Property',
+                        property.propertyName,
                         style: TextStyle(
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w500,
@@ -139,7 +139,7 @@ class PropertySwitcherWidget extends ConsumerWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 150),
               child: Text(
-                activeProperty.propertyName ?? 'PineStay',
+                activeProperty.propertyName,
                 style: TextStyle(
                   color: Theme.of(context).primaryColor,
                   fontWeight: FontWeight.w600,

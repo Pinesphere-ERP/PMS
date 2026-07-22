@@ -29,15 +29,12 @@ enum OwnerOnboardingStatus {
 
     switch (ob) {
       case 'draft':
-      case 'pending_approval':
         return OwnerOnboardingStatus.draft;
       case 'payment_pending':
         return OwnerOnboardingStatus.paymentPending;
       case 'active':
-      case 'completed':
         if (sub == 'expired') return OwnerOnboardingStatus.subscriptionExpired;
         if (sub == 'suspended') return OwnerOnboardingStatus.suspended;
-        if (sub != 'active' && sub != 'trial' && ob != 'completed') return OwnerOnboardingStatus.paymentPending;
         return OwnerOnboardingStatus.active;
       default:
         return OwnerOnboardingStatus.unknown;

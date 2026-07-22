@@ -1,1 +1,0 @@
-class ManagerNote { final String id; final String content; final bool isResolved; ManagerNote({required this.id, required this.content, required this.isResolved}); factory ManagerNote.fromJson(Map<String, dynamic> json) => ManagerNote(id: json['note_id'] ?? '', content: json['content'] ?? '', isResolved: json['is_resolved'] ?? false); }

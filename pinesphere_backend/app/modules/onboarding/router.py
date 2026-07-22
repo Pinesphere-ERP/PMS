@@ -74,7 +74,7 @@ async def register_owner(request: Request, payload: OwnerRegistrationRequest, ba
             property_type=payload.property_type,
             star_category=payload.star_category,
             year_established=datetime.now().year,
-            onboarding_status="draft"
+            onboarding_status="pending_approval"  # Requires Super Admin approval
         )
         db.add(new_property)
         await db.flush()

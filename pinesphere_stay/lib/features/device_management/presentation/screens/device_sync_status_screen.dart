@@ -76,7 +76,7 @@ class _DeviceSyncStatusScreenState extends State<DeviceSyncStatusScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
+          onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(

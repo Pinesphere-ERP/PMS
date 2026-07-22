@@ -754,8 +754,9 @@ class PmsNotifier extends Notifier<PmsState> {
         await loadRooms();
       }
     } catch (e) {
-      debugPrint('Failed to add room: $e');
-      rethrow;
+      debugPrint('Failed to add room to backend: $e');
+      final currentRooms = state.rooms.where((r) => r.id != room.id).toList();
+      state = state.copyWith(rooms: [...currentRooms, room]);
     }
   }
 

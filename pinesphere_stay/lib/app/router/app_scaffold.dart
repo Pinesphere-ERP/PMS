@@ -30,12 +30,9 @@ class AppScaffold extends ConsumerWidget {
     }
 
     return PopScope(
-      canPop: false,
+      canPop: navigationShell.currentIndex == 0,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (context.canPop()) {
-          context.pop();
-        } else if (navigationShell.currentIndex != 0) {
+        if (!didPop) {
           navigationShell.goBranch(0);
         }
       },

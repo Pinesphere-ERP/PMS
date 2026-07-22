@@ -54,7 +54,7 @@ class StaffService:
             new_staff.pin_hash = staff_in.pin
 
         self.db.add(new_staff)
-        await self.db.flush()
+        await self.db.commit()
         await self.db.refresh(new_staff)
         
         # Audit log

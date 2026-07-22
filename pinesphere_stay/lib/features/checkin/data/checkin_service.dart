@@ -176,13 +176,13 @@ class CheckInService {
     }
   }
 
-  Future<List<dynamic>> getTodaysCheckIns(String propertyId) async {
+  Future<List<Map<String, dynamic>>> getTodaysCheckIns(String propertyId) async {
     try {
       final response = await _dio.get('/checkin/today', queryParameters: {'property_id': propertyId});
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       final entities = dataList.map<CheckInEntity>((data) => CheckInEntity(
-        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
+        serverId: data['id']?.toString() ?? data['checkin_id']?.toString() ?? data['booking_id']?.toString() ?? data['server_id'] ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',
         guestId: data['guest_id']?.toString() ?? '',
@@ -208,13 +208,76 @@ class CheckInService {
       if (entities.isNotEmpty) {
         _checkinDao.putMany(entities);
       }
-      return dataList;
-    } on DioException catch (e) {
-      AppLogger.w('getTodaysCheckIns network failed, falling back to ObjectBox', e);
-      return _checkinDao.findByProperty(propertyId);
+      return dataList.cast<Map<String, dynamic>>();
     } catch (e) {
-      AppLogger.e('getTodaysCheckIns unexpected error', e);
-      return _checkinDao.findByProperty(propertyId);
+      AppLogger.w('getTodaysCheckIns network/type failed, falling back to ObjectBox', e);
+      final local = _checkinDao.findTodaysByProperty(propertyId);
+      return local.map((e) => _entityToMap(e)).toList();
+    }
+  }
+
+  Map<String, dynamic> _entityToMap(CheckInEntity entity) {
+    return {
+      'id': entity.serverId,
+      'checkin_id': entity.serverId,
+      'server_id': entity.serverId,
+      'booking_id': entity.bookingId,
+      'room_id': entity.roomId,
+      'guest_id': entity.guestId,
+      'property_id': entity.propertyId,
+      'staff_id': entity.staffId,
+      'guest_name': entity.guestName,
+      'room_number': entity.roomNumber,
+      'room_type': entity.roomType,
+      'deposit': entity.deposit,
+      'advance_paid': entity.advancePaid,
+      'id_verified': entity.idVerified,
+      'id_verification_notes': entity.idVerificationNotes,
+      'checked_in_at': entity.checkedInAt,
+      'status': entity.status,
+      'offline_id': entity.offlineId,
+      'sync_status': entity.syncStatus,
+      'last_modified_hlc': entity.lastModifiedHlc,
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> getExpectedCheckIns(String propertyId) async {
+    try {
+      final response = await _dio.get('/checkin/active', queryParameters: {'property_id': propertyId});
+      final List<dynamic> dataList = response.data as List<dynamic>;
+      
+      final entities = dataList.map<CheckInEntity>((data) => CheckInEntity(
+        serverId: data['id']?.toString() ?? data['checkin_id']?.toString() ?? data['booking_id']?.toString() ?? data['server_id'] ?? '',
+        bookingId: data['booking_id']?.toString() ?? '',
+        roomId: data['room_id']?.toString() ?? '',
+        guestId: data['guest_id']?.toString() ?? '',
+        propertyId: data['property_id']?.toString() ?? '',
+        staffId: data['staff_id']?.toString() ?? '',
+        guestName: data['guest_name']?.toString() ?? '',
+        roomNumber: data['room_number']?.toString() ?? '',
+        roomType: data['room_type']?.toString() ?? '',
+        deposit: (data['deposit'] ?? 0).toDouble(),
+        advancePaid: (data['advance_paid'] ?? 0).toDouble(),
+        idVerified: data['id_verified'] ?? false,
+        idVerificationNotes: data['id_verification_notes']?.toString() ?? '',
+        checkedInAt: data['checked_in_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        status: data['status']?.toString() ?? 'active',
+        offlineId: data['offline_id']?.toString() ?? '',
+        specialRequests: data['special_requests']?.toString() ?? '',
+        vehicleNumber: data['vehicle_number']?.toString() ?? '',
+        parkingRequired: data['parking_required'] ?? false,
+        lastModifiedHlc: data['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+        syncStatus: 'Synced',
+      )).toList();
+      
+      if (entities.isNotEmpty) {
+        _checkinDao.putMany(entities);
+      }
+      return dataList.cast<Map<String, dynamic>>();
+    } catch (e) {
+      AppLogger.w('getExpectedCheckIns network/type failed, falling back to ObjectBox', e);
+      final local = _checkinDao.findExpectedByProperty(propertyId);
+      return local.map((e) => _entityToMap(e)).toList();
     }
   }
 

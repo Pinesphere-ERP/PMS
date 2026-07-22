@@ -205,7 +205,7 @@ class CheckOutService {
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       final entities = dataList.map<CheckOutEntity>((data) => CheckOutEntity(
-        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
+        serverId: data['id']?.toString() ?? data['checkout_id']?.toString() ?? data['booking_id']?.toString() ?? data['server_id'] ?? '',
         checkinId: data['checkin_id']?.toString() ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',
@@ -264,7 +264,7 @@ class CheckOutService {
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       final entities = dataList.map<CheckOutEntity>((data) => CheckOutEntity(
-        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
+        serverId: data['id']?.toString() ?? data['checkout_id']?.toString() ?? data['booking_id']?.toString() ?? data['server_id'] ?? '',
         checkinId: data['checkin_id']?.toString() ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',

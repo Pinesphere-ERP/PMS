@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../payments/presentation/payment_history_screen.dart';
-import '../../../payments/data/payment_repository.dart';
 import '../../../payments/domain/models/payment.dart';
 
 class IncomeDetailScreen extends ConsumerStatefulWidget {

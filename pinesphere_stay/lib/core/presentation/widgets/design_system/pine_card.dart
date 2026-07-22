@@ -42,7 +42,10 @@ class PineCard extends StatelessWidget {
               : AppColors.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
-      child: child,
+      child: Material(
+        type: MaterialType.transparency,
+        child: child,
+      ),
     );
 
     if (isGlass) {

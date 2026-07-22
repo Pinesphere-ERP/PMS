@@ -211,7 +211,7 @@ class CheckInService {
       return dataList.cast<Map<String, dynamic>>();
     } catch (e) {
       AppLogger.w('getTodaysCheckIns network/type failed, falling back to ObjectBox', e);
-      final local = _checkinDao.findTodaysByProperty(propertyId);
+      final local = _checkinDao.findByProperty(propertyId);
       return local.map((e) => _entityToMap(e)).toList();
     }
   }
@@ -276,7 +276,7 @@ class CheckInService {
       return dataList.cast<Map<String, dynamic>>();
     } catch (e) {
       AppLogger.w('getExpectedCheckIns network/type failed, falling back to ObjectBox', e);
-      final local = _checkinDao.findExpectedByProperty(propertyId);
+      final local = _checkinDao.findByProperty(propertyId);
       return local.map((e) => _entityToMap(e)).toList();
     }
   }

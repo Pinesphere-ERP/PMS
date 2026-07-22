@@ -67,13 +67,13 @@ async def _enrich_checkin_response(db: AsyncSession, checkin: CheckIn) -> CheckI
         deposit=float(checkin.deposit) if checkin.deposit else None,
         advance_paid=float(checkin.advance_paid) if checkin.advance_paid else None,
         id_verified=checkin.id_verified,
-        id_verification_notes=checkin.id_verification_notes,
+        id_verification_notes=getattr(checkin, "id_verification_notes", None),
         checked_in_at=checkin.checked_in_at,
         status=checkin.status,
-        offline_id=checkin.offline_id,
+        offline_id=getattr(checkin, "offline_id", None),
         special_requests=checkin.special_requests,
-        vehicle_number=checkin.vehicle_number,
-        parking_required=checkin.parking_required,
+        vehicle_number=getattr(checkin, "vehicle_number", None),
+        parking_required=getattr(checkin, "parking_required", False),
         created_at=checkin.created_at,
         updated_at=checkin.updated_at,
         guest_name=guest_name,
@@ -90,10 +90,10 @@ async def perform_checkin(
     booking = booking_res.scalar_one_or_none()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
-    if booking.booking_status != "confirmed":
+    if booking.booking_status not in ["upcoming", "confirmed"]:
         raise HTTPException(
             status_code=400,
-            detail=f"Booking cannot be checked in. Current status is '{booking.booking_status}'. Must be 'confirmed'."
+            detail=f"Booking cannot be checked in. Current status is '{booking.booking_status}'. Must be 'upcoming' or 'confirmed'."
         )
 
     room_stmt = select(Room).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id).where(Room.room_id == booking.room_id, RoomCategory.property_id == property_id)
@@ -117,13 +117,9 @@ async def perform_checkin(
         deposit=Decimal(str(req.deposit)) if req.deposit is not None else booking.deposit,
         advance_paid=Decimal(str(req.advance_paid)) if req.advance_paid is not None else booking.advance_paid,
         id_verified=req.id_verified,
-        id_verification_notes=req.id_verification_notes,
         checked_in_at=now,
         status="active",
-        offline_id=req.offline_id,
         special_requests=req.special_requests,
-        vehicle_number=req.vehicle_number,
-        parking_required=req.parking_required,
     )
     db.add(checkin)
     await db.flush()
@@ -136,7 +132,8 @@ async def perform_checkin(
         booking.advance_paid = Decimal(str(req.advance_paid))
     if req.deposit is not None:
         booking.deposit = Decimal(str(req.deposit))
-    booking.vehicle_number = req.vehicle_number or booking.vehicle_number
+    if req.vehicle_number and hasattr(booking, 'vehicle_number'):
+        booking.vehicle_number = req.vehicle_number
 
     nights = max((booking.check_out_date - booking.check_in_date).days, 1)
     rc_stmt = select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id)
@@ -154,11 +151,10 @@ async def perform_checkin(
         property_id=booking.property_id,
         guest_id=booking.guest_id,
         invoice_number=invoice_number,
-        grand_total=Decimal(str(total_payable)),
-        total_paid=Decimal(str(advance)),
-        balance_due=Decimal(str(max(balance_due, 0))),
-        status="draft",
-        generated_at=now,
+        date=now.date(),
+        due_date=booking.check_out_date,
+        amount=Decimal(str(total_payable)),
+        status="Pending",
     )
     db.add(invoice)
     await db.flush()
@@ -187,7 +183,8 @@ async def perform_checkin(
     guest_res = await db.execute(guest_stmt)
     guest_record = guest_res.scalar_one_or_none()
     
-    if guest_record and guest_record.nationality and guest_record.nationality.lower() not in ("indian", "india"):
+    nationality_val = getattr(guest_record, "nationality", None)
+    if guest_record and nationality_val and str(nationality_val).lower() not in ("indian", "india"):
         # We auto-create the Form C record with a deadline
         await create_form_c_on_checkin(
             db=db,
@@ -211,7 +208,7 @@ async def perform_checkin(
             "deposit": str(checkin.deposit),
             "advance_paid": str(checkin.advance_paid),
             "id_verified": checkin.id_verified,
-            "offline_id": checkin.offline_id,
+            "offline_id": getattr(checkin, "offline_id", None),
         },
     )
     await db.commit()
@@ -254,6 +251,21 @@ async def perform_walkin_checkin(
             status_code=400,
             detail=f"Room {room.room_number} is not vacant. Current status: '{room.occupancy_status}'."
         )
+
+    c_in = req.check_in_date.date() if isinstance(req.check_in_date, datetime) else req.check_in_date
+    c_out = req.check_out_date.date() if isinstance(req.check_out_date, datetime) else req.check_out_date
+    overlap_stmt = select(Booking).where(
+        Booking.room_id == req.room_id,
+        Booking.booking_status.in_(["upcoming", "confirmed", "checked_in"]),
+        Booking.is_deleted == False,
+        and_(
+            Booking.check_in_date < c_out,
+            Booking.check_out_date > c_in,
+        ),
+    )
+    overlap_res = await db.execute(overlap_stmt)
+    if overlap_res.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Room is not available for the selected dates")
 
     guest = Guest(
         property_id=req.property_id,
@@ -499,7 +511,7 @@ async def cancel_checkin(db: AsyncSession, checkin_id: uuid.UUID, property_id: u
     booking_res = await db.execute(booking_stmt)
     booking = booking_res.scalar_one_or_none()
     if booking:
-        booking.booking_status = "confirmed"
+        booking.booking_status = "upcoming"
 
     assign_stmt = select(RoomAssignment).where(
         RoomAssignment.booking_id == checkin.booking_id,

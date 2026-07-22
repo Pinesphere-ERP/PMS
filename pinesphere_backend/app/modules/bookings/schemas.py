@@ -77,12 +77,14 @@ class BookingCreateRequest(BaseModel):
     guest_preferences: Optional[str] = None
     notes: Optional[str] = None
     vehicle_number: Optional[str] = Field(None, max_length=20)
+    booking_status: Optional[str] = Field("upcoming", max_length=20)
 
 
 class BookingUpdateRequest(BaseModel):
     room_id: Optional[uuid.UUID] = None
     booking_type: Optional[str] = Field(None, max_length=20)
     booking_source: Optional[str] = Field(None, max_length=30)
+    booking_status: Optional[str] = Field(None, max_length=20)
     check_in_date: Optional[date] = None
     check_out_date: Optional[date] = None
     adults: Optional[int] = Field(None, ge=0)
@@ -123,7 +125,7 @@ class BookingResponse(BaseModel):
     guest_preferences: Optional[str] = None
     notes: Optional[str] = None
     vehicle_number: Optional[str] = None
-    booking_status: Optional[str] = "confirmed"
+    booking_status: Optional[str] = "upcoming"
     payment_status: Optional[str] = "pending"
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

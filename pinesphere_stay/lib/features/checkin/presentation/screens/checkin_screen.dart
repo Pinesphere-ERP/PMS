@@ -626,6 +626,8 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
+      case 'upcoming':
+        return Colors.blue;
       case 'confirmed':
         return AppColors.primary;
       case 'pending':

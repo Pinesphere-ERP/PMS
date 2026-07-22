@@ -140,6 +140,7 @@ class DashboardScreen extends ConsumerWidget {
 
     if (matchedUserProp != null) {
       resortName = matchedUserProp.propertyName;
+      if (resortName.isEmpty) resortName = 'Unnamed Property';
     }
 
     // Step 2: Match from loaded pmsState.resorts by property ID

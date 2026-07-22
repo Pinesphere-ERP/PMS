@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/checkin_service.dart';
 import '../../../audit/data/audit_service.dart';
-import '../../../bookings/data/booking_service.dart';
+
 
 import '../../../guests/data/guest_service.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
@@ -27,35 +27,66 @@ sealed class CheckInState with _$CheckInState {
 
 @riverpod
 class CheckInNotifier extends _$CheckInNotifier {
+  String? _lastSearchQuery;
+  String? _lastPropertyId;
+
   @override
-  CheckInState build() => const CheckInState.initial();
+  CheckInState build() {
+    ref.listen(pmsProvider, (previous, next) {
+      final shouldUpdate = state.maybeWhen(
+        initial: () => true,
+        loadedBookings: (_) => true,
+        orElse: () => false,
+      );
+      if (shouldUpdate && _lastPropertyId != null) {
+        _updateBookingsFromState(next);
+      }
+    });
+    return const CheckInState.initial();
+  }
+
+  void _updateBookingsFromState(PmsState pmsState) {
+    final eligibleBookings = pmsState.bookings.where((b) => b.status == 'Upcoming').toList();
+
+    if (_lastSearchQuery != null && _lastSearchQuery!.isNotEmpty) {
+      final query = _lastSearchQuery!.toLowerCase();
+      final filtered = eligibleBookings.where((b) {
+        final name = b.guestName.toLowerCase();
+        final bookingId = b.id.toLowerCase();
+        final mobile = b.guestPhone.toLowerCase();
+        return name.contains(query) || bookingId.contains(query) || mobile.contains(query);
+      }).toList();
+      state = CheckInState.loadedBookings(filtered.map((e) => _mapBookingModel(e)).toList());
+    } else {
+      state = CheckInState.loadedBookings(eligibleBookings.map((e) => _mapBookingModel(e)).toList());
+    }
+  }
 
   Future<void> searchBookings(String propertyId, {String? search}) async {
-    state = const CheckInState.loading();
-    final bookingService = ref.read(bookingServiceProvider);
-    try {
-      final allBookings = await bookingService.getBookings(propertyId);
-      final eligibleBookings = allBookings.where((b) {
-        final status = (b as Map<String, dynamic>)['booking_status']?.toString().toLowerCase() ?? '';
-        return status == 'upcoming';
-      }).toList();
+    _lastPropertyId = propertyId;
+    _lastSearchQuery = search;
+    
+    final pmsState = ref.read(pmsProvider);
+    _updateBookingsFromState(pmsState);
+  }
 
-      if (search != null && search.isNotEmpty) {
-        final query = search.toLowerCase();
-        final filtered = eligibleBookings.where((b) {
-          final bMap = b as Map<String, dynamic>;
-          final name = (bMap['guest_name']?.toString() ?? '').toLowerCase();
-          final bookingId = (bMap['id']?.toString() ?? '').toLowerCase();
-          final mobile = (bMap['mobile']?.toString() ?? '').toLowerCase();
-          return name.contains(query) || bookingId.contains(query) || mobile.contains(query);
-        }).toList();
-        state = CheckInState.loadedBookings(filtered.cast<Map<String, dynamic>>());
-      } else {
-        state = CheckInState.loadedBookings(eligibleBookings.cast<Map<String, dynamic>>());
-      }
-    } catch (e) {
-      state = CheckInState.error(formatError(e));
-    }
+  Map<String, dynamic> _mapBookingModel(BookingModel b) {
+    return {
+      'id': b.id,
+      'booking_id': b.id,
+      'guest_name': b.guestName,
+      'guest_phone': b.guestPhone,
+      'guest_email': b.guestEmail,
+      'room_id': b.roomId,
+      'room_number': b.roomNumber,
+      'check_in_date': b.checkInDate.toIso8601String(),
+      'check_out_date': b.checkOutDate.toIso8601String(),
+      'booking_status': b.status,
+      'deposit': b.depositPaid,
+      'advance_paid': b.depositPaid,
+      'total_payable': b.totalSum,
+      'pending_amount': b.totalSum - b.depositPaid,
+    };
   }
 
   Future<void> searchAvailableRooms(String propertyId) async {

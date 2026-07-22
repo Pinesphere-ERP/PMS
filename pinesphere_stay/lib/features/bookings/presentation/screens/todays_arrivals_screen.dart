@@ -243,7 +243,7 @@ class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
                     const Divider(height: 32),
                     _buildDetailRow(Icons.access_time, 'Check-in Time', checkInTimeStr),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.group, 'Number of Guests', '1'), // Defaulting to 1
+                    _buildDetailRow(Icons.group, 'Number of Guests', '${arrival.adults} Adults, ${arrival.children} Children'),
                     const SizedBox(height: 16),
                     _buildDetailRow(Icons.bedtime, 'Nights', nights),
                     const SizedBox(height: 16),
@@ -257,15 +257,15 @@ class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
                     const SizedBox(height: 16),
                     _buildDetailRow(Icons.assignment_ind, 'ID Verification', 'Pending'),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.star, 'Special Requests', 'None'),
+                    _buildDetailRow(Icons.star, 'Special Requests', arrival.specialRequests.isNotEmpty ? arrival.specialRequests : 'None'),
                     const SizedBox(height: 16),
                     _buildDetailRow(Icons.cleaning_services, 'Cottage Ready', 'Ready'),
                     const SizedBox(height: 16),
                     _buildDetailRow(Icons.support_agent, 'Assigned Staff', '-'),
                     const Divider(height: 32),
-                    _buildDetailRow(Icons.local_parking, 'Parking Required', 'No'),
+                    _buildDetailRow(Icons.local_parking, 'Parking Required', arrival.parkingRequired ? 'Yes' : 'No'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.directions_car, 'Vehicle Number', '-'),
+                    _buildDetailRow(Icons.directions_car, 'Vehicle Number', arrival.vehicleNumber.isNotEmpty ? arrival.vehicleNumber : '-'),
                     const SizedBox(height: 24),
                     if (!isCheckedIn)
                       SizedBox(

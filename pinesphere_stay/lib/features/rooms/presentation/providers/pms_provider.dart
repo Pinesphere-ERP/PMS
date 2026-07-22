@@ -125,6 +125,13 @@ class BookingModel {
   final double restaurantBill;
   final bool isPaid;
 
+  final int adults;
+  final int children;
+  final int infants;
+  final String specialRequests;
+  final String vehicleNumber;
+  final bool parkingRequired;
+
   BookingModel({
     required this.id,
     required this.resortId,
@@ -152,6 +159,12 @@ class BookingModel {
     this.miniBarBill = 0,
     this.restaurantBill = 0,
     this.isPaid = false,
+    this.adults = 1,
+    this.children = 0,
+    this.infants = 0,
+    this.specialRequests = '',
+    this.vehicleNumber = '',
+    this.parkingRequired = false,
   });
 
   BookingModel copyWith({
@@ -188,6 +201,12 @@ class BookingModel {
       miniBarBill: miniBarBill ?? this.miniBarBill,
       restaurantBill: restaurantBill ?? this.restaurantBill,
       isPaid: isPaid ?? this.isPaid,
+      adults: adults,
+      children: children,
+      infants: infants,
+      specialRequests: specialRequests,
+      vehicleNumber: vehicleNumber,
+      parkingRequired: parkingRequired,
     );
   }
 }
@@ -362,6 +381,7 @@ class PmsNotifier extends Notifier<PmsState> {
         
         debugPrint('Final parsed rooms count: ${loadedRooms.length}');
         state = state.copyWith(rooms: loadedRooms);
+        _deriveRoomStatuses();
       }
     } catch (e) {
       debugPrint('Failed to load rooms: $e');
@@ -467,6 +487,12 @@ class PmsNotifier extends Notifier<PmsState> {
             extraBedCharge: 0.0,
             amenitiesCharge: double.tryParse(json['taxes']?.toString() ?? '0') ?? 0.0,
             totalSum: double.tryParse(json['total_payable']?.toString() ?? '0') ?? 0.0,
+            adults: int.tryParse(json['adults']?.toString() ?? '') ?? 1,
+            children: int.tryParse(json['children']?.toString() ?? '') ?? 0,
+            infants: int.tryParse(json['infants']?.toString() ?? '') ?? 0,
+            specialRequests: json['notes']?.toString() ?? '',
+            vehicleNumber: json['vehicle_number']?.toString() ?? '',
+            parkingRequired: json['parking_required'] == 'true' || json['parking_required'] == true,
           );
         }).toList();
         
@@ -496,6 +522,12 @@ class PmsNotifier extends Notifier<PmsState> {
                 extraBedCharge: 0.0,
                 amenitiesCharge: entity.taxes,
                 totalSum: entity.totalPayable,
+                adults: entity.adults,
+                children: entity.children,
+                infants: entity.infants,
+                specialRequests: entity.notes,
+                vehicleNumber: entity.vehicleNumber,
+                parkingRequired: false,
               ));
             }
           }
@@ -504,12 +536,34 @@ class PmsNotifier extends Notifier<PmsState> {
         }
 
         state = state.copyWith(bookings: loadedBookings);
+        _deriveRoomStatuses();
       }
     } catch (e) {
       debugPrint('Failed to load bookings: $e');
     }
   }
 
+
+  void _deriveRoomStatuses() {
+    final updatedRooms = state.rooms.map((room) {
+      final activeBookings = state.bookings.where((b) => b.roomId == room.id && b.status == 'Active');
+      final activeBooking = activeBookings.isNotEmpty ? activeBookings.first : null;
+      
+      String newStatus = room.status;
+      if (activeBooking != null) {
+        newStatus = 'Occupied';
+      } else if (newStatus == 'Occupied') {
+        newStatus = 'Vacant';
+      }
+      
+      return room.copyWith(
+        status: newStatus,
+        currentBookingId: activeBooking?.id,
+      );
+    }).toList();
+
+    state = state.copyWith(rooms: updatedRooms);
+  }
 
   static PmsState _initialState() {
     final resorts = <ResortModel>[];

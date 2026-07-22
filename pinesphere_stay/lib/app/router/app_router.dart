@@ -32,6 +32,11 @@ import '../../features/device_management/presentation/screens/device_sync_status
 import '../../features/checkin/presentation/screens/checkin_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/reports/presentation/screens/pl_report_screen.dart';
+import '../../features/reports/presentation/screens/daily_report_screen.dart';
+import '../../features/reports/presentation/screens/monthly_report_screen.dart';
+import '../../features/reports/presentation/screens/outstanding_report_screen.dart';
+import '../../features/reports/presentation/screens/revenue_report_screen.dart';
+import '../../features/reports/presentation/screens/placeholder_report_screen.dart';
 import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
@@ -389,6 +394,48 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/reports',
                 builder: (context, state) => const ReportsDashboardScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'daily',
+                    builder: (context, state) => const DailyReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'monthly',
+                    builder: (context, state) => const MonthlyReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'outstanding',
+                    builder: (context, state) => const OutstandingReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'revenue',
+                    builder: (context, state) => const RevenueReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'occupancy',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Occupancy Report'),
+                  ),
+                  GoRoute(
+                    path: 'collection',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Collection Report'),
+                  ),
+                  GoRoute(
+                    path: 'expenses',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Expenses Report'),
+                  ),
+                  GoRoute(
+                    path: 'best-customers',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Best Customers Report'),
+                  ),
+                  GoRoute(
+                    path: 'room-utilization',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Room Utilization Report'),
+                  ),
+                  GoRoute(
+                    path: 'staff-performance',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Staff Performance Report'),
+                  ),
+                ],
               ),
             ],
           ),

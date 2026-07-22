@@ -21,6 +21,8 @@ import DeviceDiagnosticsPanel from './pages/DeviceManagement/DeviceDiagnosticsPa
 
 // Audit Logs (New)
 import AuditLogs from './pages/AuditManagement/AuditLogs';
+// Global Reports
+import GlobalReports from './pages/GlobalReports/GlobalReports';
 // System Management
 import SystemSettings from './pages/SystemManagement/SystemSettings';
 
@@ -94,6 +96,8 @@ function App() {
 
           {/* Audit Logs */}
           <Route path="audit" element={<AuditLogs />} />
+          {/* Global Reports */}
+          <Route path="reports/global" element={<GlobalReports />} />
           {/* System Management */}
           <Route path="settings/system" element={<SystemSettings />} />
           {/* User Management */}

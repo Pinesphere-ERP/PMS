@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from typing import List, Optional
 
 from app.infra.database import get_db, provision_tenant_schema
-from app.core.dependencies import assert_property_access, get_current_user, require_room_access, require_super_admin, get_current_role
+from app.core.dependencies import assert_property_access, get_current_user, get_optional_user, require_room_access, require_super_admin, get_current_role
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User, Role
 import uuid
 from app.modules.properties.schemas import PropertyCreateInput
@@ -397,41 +397,42 @@ class RoomCreateInput(BaseModel):
 
 
 @router.get("/rooms", response_model=StandardResponse)
-async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    role = await get_current_role(current_user, db)
-    
-    # Select all rooms outer joined with their category
+async def get_rooms(db: AsyncSession = Depends(get_db), current_user: Optional[User] = Depends(get_optional_user)):
     q = select(Room, RoomCategory).outerjoin(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
     
-    if role.role_code != "SUPER_ADMIN":
-        from app.infra.models import UserPropertyAccess, Property, Owner
-        from sqlalchemy import or_
-        q = q.outerjoin(UserPropertyAccess, UserPropertyAccess.property_id == Room.property_id)
-        q = q.outerjoin(Property, Property.property_id == Room.property_id)
-        q = q.outerjoin(Owner, Owner.owner_id == Property.owner_id)
-        
-        conditions = [UserPropertyAccess.user_id == current_user.id]
-        if current_user.property_id:
-            conditions.append(Room.property_id == current_user.property_id)
-            conditions.append(RoomCategory.property_id == current_user.property_id)
-        if current_user.email:
-            from sqlalchemy import func
-            conditions.append(func.lower(Owner.email) == current_user.email.lower())
+    if current_user:
+        role = await get_current_role(current_user, db)
+        if role.role_code != "SUPER_ADMIN":
+            from app.infra.models import UserPropertyAccess, Property, Owner
+            from sqlalchemy import or_
+            q = q.outerjoin(UserPropertyAccess, UserPropertyAccess.property_id == Room.property_id)
+            q = q.outerjoin(Property, Property.property_id == Room.property_id)
+            q = q.outerjoin(Owner, Owner.owner_id == Property.owner_id)
             
-        q = q.where(or_(*conditions))
+            conditions = [UserPropertyAccess.user_id == current_user.id]
+            if current_user.property_id:
+                conditions.append(Room.property_id == current_user.property_id)
+                conditions.append(RoomCategory.property_id == current_user.property_id)
+            if current_user.email:
+                from sqlalchemy import func
+                conditions.append(func.lower(Owner.email) == current_user.email.lower())
+                
+            q = q.where(or_(*conditions))
         
     result = await db.execute(q)
     rows = result.unique().all()
     data = []
     for room, cat in rows:
-        prop_id_str = str(room.property_id) if room.property_id else (str(cat.property_id) if cat and cat.property_id else str(current_user.property_id or ""))
+        prop_id_str = str(room.property_id) if room.property_id else (str(cat.property_id) if cat and cat.property_id else str(current_user.property_id if current_user and current_user.property_id else ""))
         data.append({
             "id": str(room.room_id),
+            "room_id": str(room.room_id),
             "room_number": room.room_number,
             "type": cat.room_name if cat else "Standard",
             "price": float(cat.base_price if cat else 1000.0),
             "status": room.occupancy_status or "vacant",
             "resort_id": prop_id_str,
+            "property_id": prop_id_str,
             "description": getattr(cat, 'description', '') if cat else "",
             "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"

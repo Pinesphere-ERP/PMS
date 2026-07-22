@@ -2,9 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:pinesphere_stay/core/network/dio_client.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../domain/models/property_wizard_model.dart';
-
 part 'property_wizard_notifier.g.dart';
 
 @riverpod

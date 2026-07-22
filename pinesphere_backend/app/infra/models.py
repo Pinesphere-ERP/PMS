@@ -431,7 +431,7 @@ class Booking(Base, TimestampMixin, SyncMixin):
     total_payable: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
     advance_paid: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     pending_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
-    booking_status: Mapped[Optional[str]] = mapped_column(String(20), default='confirmed')
+    booking_status: Mapped[Optional[str]] = mapped_column(String(20), default='upcoming')
     payment_status: Mapped[Optional[str]] = mapped_column(String(20), default='pending')
     sync_status: Mapped[Optional[str]] = mapped_column(String(20), default='synced')
     notes: Mapped[Optional[str]] = mapped_column(Text)

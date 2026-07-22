@@ -305,7 +305,7 @@ GoRouter appRouter(Ref ref) {
               ),
               GoRoute(
                 path: '/checkin',
-                builder: (context, state) => const CheckInScreen(),
+                builder: (context, state) => CheckInScreen(initialBookingData: state.extra as Map<String, dynamic>?),
               ),
               GoRoute(
                 path: '/checkout',

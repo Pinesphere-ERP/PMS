@@ -10,10 +10,13 @@ import '../../../../core/network/tenant_provider.dart';
 import '../../../../core/security/permission_engine.dart';
 import '../../../../core/presentation/widgets/access_restricted_view.dart';
 import 'package:pinesphere_stay/features/auth/presentation/providers/auth_notifier.dart';
+import 'package:pinesphere_stay/features/rooms/presentation/providers/pms_provider.dart';
 import '../providers/checkin_provider.dart';
 
 class CheckInScreen extends ConsumerStatefulWidget {
-  const CheckInScreen({super.key});
+  final Map<String, dynamic>? initialBookingData;
+
+  const CheckInScreen({super.key, this.initialBookingData});
 
   @override
   ConsumerState<CheckInScreen> createState() => _CheckInScreenState();
@@ -63,6 +66,29 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   bool _walkInParkingRequired = false;
 
   final DateFormat _dateFormat = DateFormat('MMM dd, yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialBookingData != null) {
+      final data = widget.initialBookingData!;
+      _isWalkInMode = true;
+      _fullNameController.text = data['guest_name']?.toString() ?? '';
+      _mobileController.text = data['guest_phone']?.toString() ?? data['mobile']?.toString() ?? '';
+      _emailController.text = data['guest_email']?.toString() ?? data['email']?.toString() ?? '';
+      _selectedRoomId = data['room_id']?.toString();
+      _selectedRoomName = data['room_number']?.toString();
+      if (data['check_in_date'] != null) {
+        _walkInCheckInDate = DateTime.tryParse(data['check_in_date'].toString());
+      }
+      if (data['check_out_date'] != null) {
+        _walkInCheckOutDate = DateTime.tryParse(data['check_out_date'].toString());
+      }
+      if (data['deposit'] != null) {
+        _walkInDepositController.text = data['deposit'].toString();
+      }
+    }
+  }
 
   int get _walkInNights {
     if (_walkInCheckInDate != null && _walkInCheckOutDate != null) {
@@ -312,7 +338,11 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     ref.listen<CheckInState>(checkInProvider, (prev, state) {
       state.maybeWhen(
         error: (msg) => _showError(msg),
-        success: (msg, _) => _showSuccess(msg),
+        success: (msg, _) {
+          _showSuccess(msg);
+          ref.read(pmsProvider.notifier).loadRooms();
+          ref.read(pmsProvider.notifier).loadBookings();
+        },
         orElse: () {},
       );
     });
@@ -596,6 +626,8 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
+      case 'upcoming':
+        return Colors.blue;
       case 'confirmed':
         return AppColors.primary;
       case 'pending':

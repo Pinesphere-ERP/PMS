@@ -100,6 +100,7 @@ class BookingModel {
   final String roomNumber;
   final String guestName;
   final String guestPhone;
+  final String guestEmail;
   final String guestIdProof;
   final String guestIdNumber;
   final String bookingSource; // 'Walk-in', 'Phone', 'WhatsApp', 'Online'
@@ -131,6 +132,7 @@ class BookingModel {
     required this.roomNumber,
     required this.guestName,
     required this.guestPhone,
+    this.guestEmail = '',
     required this.guestIdProof,
     required this.guestIdNumber,
     required this.bookingSource,
@@ -441,6 +443,7 @@ class PmsNotifier extends Notifier<PmsState> {
             roomNumber: json['room_number']?.toString() ?? '',
             guestName: json['guest_name']?.toString() ?? 'Guest',
             guestPhone: json['guest_mobile']?.toString() ?? '',
+            guestEmail: json['guest_email']?.toString() ?? json['email']?.toString() ?? '',
             guestIdProof: 'Aadhaar Card',
             guestIdNumber: '',
             bookingSource: json['booking_source']?.toString() ?? 'Walk-in',
@@ -448,13 +451,13 @@ class PmsNotifier extends Notifier<PmsState> {
             checkOutDate: parsedCheckOutDate,
             status: statusVal,
             depositPaid: double.tryParse(json['deposit']?.toString() ?? '0') ?? 0.0,
-            basePriceSum: double.tryParse(json['room_rent']?.toString() ?? '100.0') ?? 100.0,
+            basePriceSum: double.tryParse(json['room_rent']?.toString() ?? '0') ?? 0.0,
             weekendSurcharge: 0.0,
             seasonSurcharge: 0.0,
             holidaySurcharge: 0.0,
             extraBedCharge: 0.0,
             amenitiesCharge: double.tryParse(json['taxes']?.toString() ?? '0') ?? 0.0,
-            totalSum: double.tryParse(json['total_payable']?.toString() ?? '100.0') ?? 100.0,
+            totalSum: double.tryParse(json['total_payable']?.toString() ?? '0') ?? 0.0,
           );
         }).toList();
         
@@ -522,6 +525,7 @@ class PmsNotifier extends Notifier<PmsState> {
         'property_id': resolvedPropertyId,
         'full_name': booking.guestName,
         'mobile': booking.guestPhone,
+        'email': booking.guestEmail,
         'id_type': booking.guestIdProof,
         'id_number': booking.guestIdNumber,
       });
@@ -532,7 +536,7 @@ class PmsNotifier extends Notifier<PmsState> {
         'property_id': resolvedPropertyId,
         'room_id': booking.roomId,
         'guest_id': guestUuid,
-        'booking_type': 'walkin',
+        'booking_type': 'phone',
         'booking_source': booking.bookingSource,
         'check_in_date': booking.checkInDate.toIso8601String().substring(0, 10),
         'check_out_date': booking.checkOutDate.toIso8601String().substring(0, 10),
@@ -546,11 +550,7 @@ class PmsNotifier extends Notifier<PmsState> {
         'extra_bed': false,
       });
       
-      if (response.statusCode == 201) {
-        // Re-check-in if needed or just reload
-        final newBookingId = response.data['booking_id'];
-        await dio.post('/bookings/$newBookingId/check-in');
-        
+      if (response.statusCode == 201 || response.statusCode == 200) {
         await loadRooms();
         await loadBookings();
       }

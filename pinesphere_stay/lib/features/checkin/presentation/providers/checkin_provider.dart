@@ -33,10 +33,15 @@ class CheckInNotifier extends _$CheckInNotifier {
     state = const CheckInState.loading();
     final bookingService = ref.read(bookingServiceProvider);
     try {
-      final bookings = await bookingService.getBookings(propertyId, status: 'confirmed');
+      final allBookings = await bookingService.getBookings(propertyId);
+      final eligibleBookings = allBookings.where((b) {
+        final status = (b as Map<String, dynamic>)['booking_status']?.toString().toLowerCase() ?? '';
+        return status == 'upcoming' || status == 'confirmed';
+      }).toList();
+
       if (search != null && search.isNotEmpty) {
         final query = search.toLowerCase();
-        final filtered = (bookings).where((b) {
+        final filtered = eligibleBookings.where((b) {
           final bMap = b as Map<String, dynamic>;
           final name = (bMap['guest_name']?.toString() ?? '').toLowerCase();
           final bookingId = (bMap['id']?.toString() ?? '').toLowerCase();
@@ -45,7 +50,7 @@ class CheckInNotifier extends _$CheckInNotifier {
         }).toList();
         state = CheckInState.loadedBookings(filtered.cast<Map<String, dynamic>>());
       } else {
-        state = CheckInState.loadedBookings(bookings.cast<Map<String, dynamic>>());
+        state = CheckInState.loadedBookings(eligibleBookings.cast<Map<String, dynamic>>());
       }
     } catch (e) {
       state = CheckInState.error(e.toString());

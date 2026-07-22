@@ -106,7 +106,7 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
 
     overlap_stmt = select(Booking).where(
         Booking.room_id == req.room_id,
-        Booking.booking_status.in_(["confirmed", "checked_in"]),
+        Booking.booking_status.in_(["upcoming", "confirmed", "checked_in"]),
         Booking.is_deleted == False,
         and_(
             Booking.check_in_date < req.check_out_date,
@@ -152,7 +152,6 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
         check_out_date=req.check_out_date,
         adults=req.adults,
         children=req.children,
-        infants=req.infants,
         room_rent=room_rent,
         deposit=deposit,
         discount=discount,
@@ -160,11 +159,8 @@ async def create_booking(db: AsyncSession, req: BookingCreateRequest) -> Booking
         total_payable=total_payable,
         advance_paid=advance_paid,
         pending_amount=pending_amount,
-        extra_bed=req.extra_bed,
-        guest_preferences=req.guest_preferences,
         notes=req.notes,
-        vehicle_number=req.vehicle_number,
-        booking_status="confirmed",
+        booking_status=getattr(req, "booking_status", None) or "upcoming",
         payment_status="partially_paid" if advance_paid > 0 else "pending",
     )
     db.add(booking)
@@ -274,24 +270,33 @@ async def update_booking(db: AsyncSession, booking_id: uuid.UUID, req: BookingUp
 
     update_data = req.model_dump(exclude_unset=True)
 
-    if "room_id" in update_data and update_data["room_id"] != booking.room_id:
-        room_stmt = select(Room).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id).where(Room.room_id == update_data["room_id"], RoomCategory.property_id == property_id)
-        room_res = await db.execute(room_stmt)
-        if not room_res.scalar_one_or_none():
-            raise HTTPException(status_code=404, detail="New room not found")
+    target_room_id = update_data.get("room_id", booking.room_id)
+    target_check_in = update_data.get("check_in_date", booking.check_in_date)
+    target_check_out = update_data.get("check_out_date", booking.check_out_date)
+
+    if target_check_in >= target_check_out:
+        raise HTTPException(status_code=400, detail="Check-out date must be after check-in date")
+
+    if "room_id" in update_data or "check_in_date" in update_data or "check_out_date" in update_data:
+        if "room_id" in update_data and update_data["room_id"] != booking.room_id:
+            room_stmt = select(Room).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id).where(Room.room_id == update_data["room_id"], RoomCategory.property_id == property_id)
+            room_res = await db.execute(room_stmt)
+            if not room_res.scalar_one_or_none():
+                raise HTTPException(status_code=404, detail="New room not found")
+
         overlap_stmt = select(Booking).where(
-            Booking.room_id == update_data["room_id"],
-            Booking.booking_status.in_(["confirmed", "checked_in"]),
+            Booking.room_id == target_room_id,
+            Booking.booking_status.in_(["upcoming", "confirmed", "checked_in"]),
             Booking.is_deleted == False,
             Booking.booking_id != booking_id,
             and_(
-                Booking.check_in_date < booking.check_out_date,
-                Booking.check_out_date > booking.check_in_date,
+                Booking.check_in_date < target_check_out,
+                Booking.check_out_date > target_check_in,
             ),
         )
         overlap_res = await db.execute(overlap_stmt)
         if overlap_res.scalar_one_or_none():
-            raise HTTPException(status_code=409, detail="New room is not available for the booking dates")
+            raise HTTPException(status_code=409, detail="Room is not available for the selected dates")
 
     for field, value in update_data.items():
         setattr(booking, field, value)
@@ -398,6 +403,11 @@ async def check_in_booking(db: AsyncSession, booking_id: uuid.UUID, property_id:
     booking = res.scalar_one_or_none()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
+    if booking.booking_status not in ["upcoming", "confirmed"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Booking cannot be checked in. Current status is '{booking.booking_status}'. Must be 'upcoming' or 'confirmed'."
+        )
         
     booking.booking_status = "checked_in"
     

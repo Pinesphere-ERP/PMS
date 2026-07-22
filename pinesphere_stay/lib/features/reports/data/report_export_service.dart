@@ -8,6 +8,7 @@ import 'package:excel/excel.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:intl/intl.dart';
 import '../domain/models/kpi_dto.dart';
+import '../domain/models/report_dtos.dart';
 
 final reportExportServiceProvider = Provider((ref) => ReportExportService());
 
@@ -234,5 +235,56 @@ class ReportExportService {
       await file.writeAsBytes(bytes);
       await OpenFilex.open(file.path);
     }
+  }
+
+  Future<void> exportDailyReportToPdf(DailyReportDto report) async {
+    final pdf = pw.Document();
+    final fontRegular = await PdfGoogleFonts.robotoRegular();
+    final fontBold = await PdfGoogleFonts.robotoBold();
+    
+    final primaryColor = PdfColor.fromHex('#004D40');
+
+    pdf.addPage(
+      pw.Page(
+        pageTheme: pw.PageTheme(
+          margin: const pw.EdgeInsets.all(32),
+          theme: pw.ThemeData.withFont(base: fontRegular, bold: fontBold),
+        ),
+        build: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text('Pinesphere Stay', style: pw.TextStyle(color: primaryColor, fontSize: 24, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Daily Report: ${report.reportDate}', style: pw.TextStyle(fontSize: 18, color: PdfColors.grey700)),
+              pw.SizedBox(height: 16),
+              pw.Divider(color: primaryColor, thickness: 2),
+              pw.SizedBox(height: 16),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildSummaryCard('Check-ins', report.totalCheckins.toDouble(), primaryColor),
+                  _buildSummaryCard('Check-outs', report.totalCheckouts.toDouble(), PdfColors.orange800),
+                  _buildSummaryCard('Revenue', report.revenueCollected, PdfColors.green800),
+                ],
+              ),
+              pw.SizedBox(height: 16),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildSummaryCard('Occupancy', report.occupancyPct, PdfColors.blue800),
+                  _buildSummaryCard('Pending', report.pendingPayments, PdfColors.red800),
+                  _buildSummaryCard('New Bookings', report.newBookings.toDouble(), primaryColor),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    final output = await FileStorageService().getTemporaryPath();
+    final file = File('$output/Daily_Report.pdf');
+    await file.writeAsBytes(await pdf.save());
+    await OpenFilex.open(file.path);
   }
 }

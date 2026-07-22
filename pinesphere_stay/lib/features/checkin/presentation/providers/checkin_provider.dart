@@ -8,6 +8,7 @@ import '../../../bookings/data/booking_service.dart';
 import '../../../guests/data/guest_service.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
+import 'package:pinesphere_stay/core/network/error_formatter.dart';
 
 part 'checkin_provider.freezed.dart';
 part 'checkin_provider.g.dart';
@@ -53,7 +54,7 @@ class CheckInNotifier extends _$CheckInNotifier {
         state = CheckInState.loadedBookings(eligibleBookings.cast<Map<String, dynamic>>());
       }
     } catch (e) {
-      state = CheckInState.error(e.toString());
+      state = CheckInState.error(formatError(e));
     }
   }
 
@@ -73,7 +74,7 @@ class CheckInNotifier extends _$CheckInNotifier {
       
       state = CheckInState.loadedRooms(vacantRooms);
     } catch (e) {
-      state = CheckInState.error(e.toString());
+      state = CheckInState.error(formatError(e));
     }
   }
 
@@ -84,7 +85,7 @@ class CheckInNotifier extends _$CheckInNotifier {
       final guests = await guestService.searchGuests(propertyId, search: search);
       state = CheckInState.loadedGuests(guests.cast<Map<String, dynamic>>());
     } catch (e) {
-      state = CheckInState.error(e.toString());
+      state = CheckInState.error(formatError(e));
     }
   }
 
@@ -114,7 +115,7 @@ class CheckInNotifier extends _$CheckInNotifier {
       ref.invalidate(pmsProvider);
       state = CheckInState.success('Check-in completed successfully', checkinId: result['id']?.toString());
     } catch (e) {
-      state = CheckInState.error(e.toString());
+      state = CheckInState.error(formatError(e));
     }
   }
 
@@ -141,7 +142,7 @@ class CheckInNotifier extends _$CheckInNotifier {
       final result = await checkinService.performWalkIn(data);
       state = CheckInState.success('Walk-in check-in completed successfully', checkinId: result['id']?.toString());
     } catch (e) {
-      state = CheckInState.error(e.toString());
+      state = CheckInState.error(formatError(e));
     }
   }
 
@@ -152,7 +153,7 @@ class CheckInNotifier extends _$CheckInNotifier {
       final checkins = await checkinService.getTodaysCheckIns(propertyId);
       state = CheckInState.loadedCheckIns(checkins.cast<Map<String, dynamic>>());
     } catch (e) {
-      state = CheckInState.error(e.toString());
+      state = CheckInState.error(formatError(e));
     }
   }
 
@@ -163,7 +164,7 @@ class CheckInNotifier extends _$CheckInNotifier {
       final checkins = await checkinService.getActiveCheckIns(propertyId);
       state = CheckInState.loadedCheckIns(checkins.cast<Map<String, dynamic>>());
     } catch (e) {
-      state = CheckInState.error(e.toString());
+      state = CheckInState.error(formatError(e));
     }
   }
 
@@ -183,7 +184,7 @@ class CheckInNotifier extends _$CheckInNotifier {
       await checkinService.cancelCheckIn(checkinId);
       state = const CheckInState.success('Check-in cancelled');
     } catch (e) {
-      state = CheckInState.error(e.toString());
+      state = CheckInState.error(formatError(e));
     }
   }
 }

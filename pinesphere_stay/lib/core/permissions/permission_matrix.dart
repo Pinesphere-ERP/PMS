@@ -88,7 +88,6 @@ class PermissionMatrix {
         if (role == UserRole.manager) return AccessLevel.limited; // Operational
         if (role == UserRole.reception) return AccessLevel.limited;
         if (role == UserRole.accountant) return AccessLevel.limited; // Financial
-        if (role == UserRole.guest) return AccessLevel.limited; // Own Stay
         return AccessLevel.none;
 
       case Module.auditLogs:

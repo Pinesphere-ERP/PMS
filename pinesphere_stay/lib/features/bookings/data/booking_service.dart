@@ -166,7 +166,7 @@ class BookingService {
       
       // Cache data locally for offline use
       final entities = dataList.map<BookingEntity>((data) => BookingEntity(
-        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
+        serverId: data['id']?.toString() ?? data['booking_id']?.toString() ?? data['server_id'] ?? '',
         propertyId: data['property_id'] ?? '',
         roomId: data['room_id'] ?? '',
         guestId: data['guest_id'] ?? '',
@@ -205,11 +205,49 @@ class BookingService {
       return dataList;
     } on DioException catch (e) {
       AppLogger.w('getBookings network failed, falling back to ObjectBox', e);
-      return getCachedBookings(propertyId);
+      final local = await getCachedBookings(propertyId);
+      return local.map((e) => _entityToMap(e)).toList();
     } catch (e) {
       AppLogger.e('getBookings unexpected error', e);
-      return getCachedBookings(propertyId);
+      final local = await getCachedBookings(propertyId);
+      return local.map((e) => _entityToMap(e)).toList();
     }
+  }
+
+  Map<String, dynamic> _entityToMap(BookingEntity entity) {
+    return {
+      'id': entity.serverId,
+      'booking_id': entity.serverId,
+      'server_id': entity.serverId,
+      'property_id': entity.propertyId,
+      'room_id': entity.roomId,
+      'guest_id': entity.guestId,
+      'guest_name': entity.guestName,
+      'room_number': entity.roomNumber,
+      'room_type': entity.roomType,
+      'booking_type': entity.bookingType,
+      'booking_source': entity.bookingSource,
+      'check_in_date': entity.checkInDate,
+      'check_out_date': entity.checkOutDate,
+      'adults': entity.adults,
+      'children': entity.children,
+      'infants': entity.infants,
+      'room_rent': entity.roomRent,
+      'deposit': entity.deposit,
+      'discount': entity.discount,
+      'taxes': entity.taxes,
+      'total_payable': entity.totalPayable,
+      'advance_paid': entity.advancePaid,
+      'pending_amount': entity.pendingAmount,
+      'extra_bed': entity.extraBed,
+      'guest_preferences': entity.guestPreferences,
+      'notes': entity.notes,
+      'vehicle_number': entity.vehicleNumber,
+      'booking_status': entity.bookingStatus,
+      'payment_status': entity.paymentStatus,
+      'sync_status': entity.syncStatus,
+      'last_modified_hlc': entity.lastModifiedHlc,
+    };
   }
 
   Future<Map<String, dynamic>> getBookingDetail(String bookingId) async {

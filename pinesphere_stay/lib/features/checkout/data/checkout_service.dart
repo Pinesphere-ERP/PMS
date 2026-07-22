@@ -164,13 +164,48 @@ class CheckOutService {
     }
   }
 
-  Future<List<dynamic>> getPendingCheckOuts(String propertyId) async {
+  Map<String, dynamic> _entityToMap(CheckOutEntity entity) {
+    return {
+      'id': entity.serverId,
+      'server_id': entity.serverId,
+      'checkin_id': entity.checkinId,
+      'booking_id': entity.bookingId,
+      'room_id': entity.roomId,
+      'property_id': entity.propertyId,
+      'staff_id': entity.staffId,
+      'guest_name': entity.guestName,
+      'room_number': entity.roomNumber,
+      'checkout_time': entity.checkoutTime,
+      'room_charges': entity.roomCharges,
+      'restaurant_charges': entity.restaurantCharges,
+      'laundry_charges': entity.laundryCharges,
+      'minibar_charges': entity.minibarCharges,
+      'damage_charges': entity.damageCharges,
+      'miscellaneous_charges': entity.miscellaneousCharges,
+      'discount': entity.discount,
+      'gst': entity.gst,
+      'total_amount': entity.totalAmount,
+      'advance_paid': entity.advancePaid,
+      'remaining_balance': entity.remainingBalance,
+      'refund_amount': entity.refundAmount,
+      'payment_status': entity.paymentStatus,
+      'key_returned': entity.keyReturned,
+      'id_returned': entity.idReturned,
+      'feedback_submitted': entity.feedbackSubmitted,
+      'remarks': entity.remarks,
+      'checkout_status': entity.checkoutStatus,
+      'sync_status': entity.syncStatus,
+      'last_modified_hlc': entity.lastModifiedHlc,
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingCheckOuts(String propertyId) async {
     try {
       final response = await _dio.get('/checkout/pending', queryParameters: {'property_id': propertyId});
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       final entities = dataList.map<CheckOutEntity>((data) => CheckOutEntity(
-        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
+        serverId: data['id']?.toString() ?? data['checkout_id']?.toString() ?? data['booking_id']?.toString() ?? data['server_id'] ?? '',
         checkinId: data['checkin_id']?.toString() ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',
@@ -202,13 +237,11 @@ class CheckOutService {
       )).toList();
       
         _checkoutDao.putMany(entities);
-      return dataList;
-    } on DioException catch (e) {
-      AppLogger.w('getPendingCheckOuts network failed, falling back to ObjectBox', e);
-      return _checkoutDao.findPendingByProperty(propertyId);
+      return dataList.cast<Map<String, dynamic>>();
     } catch (e) {
-      AppLogger.e('getPendingCheckOuts unexpected error', e);
-      return _checkoutDao.findPendingByProperty(propertyId);
+      AppLogger.w('getPendingCheckOuts network/type failed, falling back to ObjectBox', e);
+      final local = _checkoutDao.findPendingByProperty(propertyId);
+      return local.map((e) => _entityToMap(e)).toList();
     }
   }
 
@@ -225,13 +258,13 @@ class CheckOutService {
     }
   }
 
-  Future<List<dynamic>> getTodaysCheckOuts(String propertyId) async {
+  Future<List<Map<String, dynamic>>> getTodaysCheckOuts(String propertyId) async {
     try {
       final response = await _dio.get('/checkout/today', queryParameters: {'property_id': propertyId});
       final List<dynamic> dataList = response.data as List<dynamic>;
       
       final entities = dataList.map<CheckOutEntity>((data) => CheckOutEntity(
-        serverId: data['id']?.toString() ?? data['server_id'] ?? '',
+        serverId: data['id']?.toString() ?? data['checkout_id']?.toString() ?? data['booking_id']?.toString() ?? data['server_id'] ?? '',
         checkinId: data['checkin_id']?.toString() ?? '',
         bookingId: data['booking_id']?.toString() ?? '',
         roomId: data['room_id']?.toString() ?? '',
@@ -263,13 +296,11 @@ class CheckOutService {
       )).toList();
       
         _checkoutDao.putMany(entities);
-      return dataList;
-    } on DioException catch (e) {
-      AppLogger.w('getTodaysCheckOuts network failed, falling back to ObjectBox', e);
-      return _checkoutDao.findByProperty(propertyId);
+      return dataList.cast<Map<String, dynamic>>();
     } catch (e) {
-      AppLogger.e('getTodaysCheckOuts unexpected error', e);
-      return _checkoutDao.findByProperty(propertyId);
+      AppLogger.w('getTodaysCheckOuts network/type failed, falling back to ObjectBox', e);
+      final local = _checkoutDao.findByProperty(propertyId);
+      return local.map((e) => _entityToMap(e)).toList();
     }
   }
 

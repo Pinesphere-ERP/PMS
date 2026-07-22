@@ -10,18 +10,6 @@ import '../../../../core/presentation/widgets/role_guard.dart';
 import '../../../../core/permissions/permission_matrix.dart';
 
 import '../../data/kpi_aggregation_service.dart';
-import '../../../rooms/data/room_service.dart';
-import '../../../rooms/domain/models/room_entity.dart';
-import '../../data/report_export_service.dart';
-import 'pl_report_screen.dart';
-
-final topRoomsProvider = FutureProvider.autoDispose<List<RoomEntity>>((ref) async {
-  final propertyId = ref.watch(tenantProvider) ?? '';
-  if (propertyId.isEmpty) return [];
-  final rooms = await ref.read(roomServiceProvider).getRooms(propertyId);
-  rooms.sort((a, b) => b.pricePerNight.compareTo(a.pricePerNight));
-  return rooms.take(3).toList();
-});
 
 class ReportsDashboardScreen extends ConsumerWidget {
   const ReportsDashboardScreen({super.key});
@@ -32,40 +20,35 @@ class ReportsDashboardScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: PineBackground(
         child: CustomScrollView(
-        slivers: [
-          _buildAppBar(context),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context),
-                  const SizedBox(height: 24),
-                  _buildMetricsGrid(context, ref),
-                  const SizedBox(height: 16),
-                  _buildRevenueGraph(context, ref),
-                  const SizedBox(height: 16),
-                  _buildOccupancyDonut(context, ref),
-                  const SizedBox(height: 16),
-                  RoleGuard(
-                    module: Module.reports,
-                    minimumLevel: AccessLevel.full,
-                    fallback: const SizedBox.shrink(),
-                    child: _buildPNLSection(context, ref),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTopRooms(context, ref),
-                  const SizedBox(height: 100),
-                ],
+          slivers: [
+            _buildAppBar(context),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context),
+                    const SizedBox(height: 24),
+                    _buildMetricsGrid(context, ref),
+                    const SizedBox(height: 32),
+                    Text(
+                      'Report Gallery',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppColors.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildReportGrid(context),
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      ),
-      floatingActionButton: _buildExportBar(context, ref),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -79,28 +62,13 @@ class ReportsDashboardScreen extends ConsumerWidget {
         onPressed: () => context.go('/dashboard'),
       ),
       title: Text(
-        'Pinesphere Stay',
+        'Reports Hub',
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),
       ),
       centerTitle: false,
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16.0),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surfaceVariant,
-              border: Border.all(color: AppColors.outlineVariant),
-            ),
-            child: const Icon(Icons.person, color: AppColors.primary),
-          ),
-        ),
-      ],
     );
   }
 
@@ -111,7 +79,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Reports Overview',
+          'Overview',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: AppColors.onSurface,
                 fontWeight: FontWeight.bold,
@@ -120,7 +88,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Performance data for $dateStr',
+          'Key metrics for $dateStr',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
@@ -129,12 +97,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  Metrics grid — reads live from KPI stream
-  // ─────────────────────────────────────────────────────────
-
   Widget _buildMetricsGrid(BuildContext context, WidgetRef ref) {
-    // Use a placeholder property ID; in production, derive from auth state.
     final propertyId = ref.watch(tenantProvider) ?? '';
 
     if (propertyId.isEmpty) {
@@ -240,6 +203,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
               Text(value,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: textColor ?? iconColor,
+                        fontWeight: FontWeight.bold,
                       )),
             ],
           ),
@@ -248,447 +212,167 @@ class ReportsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  Revenue graph — reads 7-day KPI range from ObjectBox
-  // ─────────────────────────────────────────────────────────
-
-  Widget _buildRevenueGraph(BuildContext context, WidgetRef ref) {
-    final propertyId = ref.watch(tenantProvider) ?? '';
-
-    List<double> weekRevenues = List.filled(7, 0);
-    if (propertyId.isNotEmpty) {
-      final service = ref.read(kpiAggregationServiceProvider);
-      final now = DateTime.now();
-      final start = now.subtract(const Duration(days: 6));
-      final snapshots = service.getRange(propertyId, start, now);
-      for (final snap in snapshots) {
-        final dayIndex = DateTime.parse(snap.snapshotDate).difference(start).inDays;
-        if (dayIndex >= 0 && dayIndex < 7) {
-          weekRevenues[dayIndex] = snap.revenueRoomRent + snap.revenueAddons;
-        }
-      }
-    }
-
-    final maxRevenue = weekRevenues.reduce((a, b) => a > b ? a : b);
-    final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-    return PineCard(
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Revenue Trend',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.onSurface)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('Weekly',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelMedium
-                        ?.copyWith(color: AppColors.primary)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 160,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(7, (i) {
-                final pct = maxRevenue > 0 ? weekRevenues[i] / maxRevenue : 0.0;
-                return _buildBar(context, days[i], pct);
-              }),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBar(BuildContext context, String day, double percentage) {
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Expanded(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: FractionallySizedBox(
-                heightFactor: percentage.clamp(0.0, 1.0),
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(day,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(color: AppColors.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────
-  //  Occupancy donut — from live KPI data
-  // ─────────────────────────────────────────────────────────
-
-  Widget _buildOccupancyDonut(BuildContext context, WidgetRef ref) {
-    final propertyId = ref.watch(tenantProvider) ?? '';
-
-    int occupied = 0;
-    int vacant = 0;
-    if (propertyId.isNotEmpty) {
-      final service = ref.read(kpiAggregationServiceProvider);
-      final kpi = service.getTodaySnapshot(propertyId);
-      if (kpi != null) {
-        occupied = kpi.occupiedRooms;
-        vacant = kpi.vacantRooms;
-      }
-    }
-
-    final total = occupied + vacant;
-    final occupancyRate = total > 0 ? occupied / total : 0.0;
-
-    return PineCard(
-      child: Row(
-        children: [
-          SizedBox(
-            width: 96,
-            height: 96,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CircularProgressIndicator(
-                  value: 1.0,
-                  strokeWidth: 12,
-                  color: AppColors.surfaceContainerHigh,
-                ),
-                CircularProgressIndicator(
-                  value: occupancyRate,
-                  strokeWidth: 12,
-                  color: AppColors.secondary,
-                  strokeCap: StrokeCap.round,
-                ),
-                Center(
-                  child: Text(
-                    '${(occupancyRate * 100).toInt()}%',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: AppColors.onSurface),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Occupancy Rate',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: AppColors.onSurface)),
-                const SizedBox(height: 8),
-                Text(
-                  '$occupied of $total units are currently occupied.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: AppColors.onSurfaceVariant),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _buildLegendItem(context, AppColors.secondary, 'Occupied'),
-                    const SizedBox(width: 16),
-                    _buildLegendItem(
-                        context, AppColors.surfaceContainerHigh, 'Vacant'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(BuildContext context, Color color, String label) {
-    return Row(
+  Widget _buildReportGrid(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 0.9,
       children: [
-        Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .labelMedium
-                ?.copyWith(color: AppColors.onSurfaceVariant)),
-      ],
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────
-  //  P&L section — owner only (AccessLevel.full)
-  // ─────────────────────────────────────────────────────────
-
-  Widget _buildPNLSection(BuildContext context, WidgetRef ref) {
-    return PineCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Profit & Loss',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: AppColors.onSurface)),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('Owner Only',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelMedium
-                        ?.copyWith(color: AppColors.error)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Navigate to the P&L report for multi-month breakdown, net profit, and GST data.',
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: AppColors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => context.push('/pl-report'),
-              icon: const Icon(Icons.receipt_long, size: 18),
-              label: const Text('View Full P&L Report'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopRooms(BuildContext context, WidgetRef ref) {
-    final topRoomsAsync = ref.watch(topRoomsProvider);
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Top Performing Units',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(color: AppColors.onSurface)),
-            Row(
-              children: [
-                Text('View All',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelMedium
-                        ?.copyWith(color: AppColors.primary)),
-                const Icon(Icons.chevron_right, color: AppColors.primary, size: 16),
-              ],
-            ),
-          ],
+        _buildReportNavCard(
+          context,
+          title: 'Daily Report',
+          desc: 'Check-ins, check-outs & daily ops',
+          icon: Icons.today_outlined,
+          color: AppColors.primary,
+          route: '/reports/daily',
+          minAccess: AccessLevel.limited,
         ),
-        const SizedBox(height: 16),
-        topRoomsAsync.when(
-          data: (rooms) {
-            if (rooms.isEmpty) return const Text('No rooms found.');
-            return Column(
-              children: rooms.map<Widget>((room) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildRoomRow(context, Icons.hotel, 'Room ${room.name}', room.type, _formatCurrency(room.pricePerNight), room.status),
-              )).toList(),
-            );
-          },
-          loading: () => const CircularProgressIndicator(),
-          error: (err, stack) => const Text('Error loading top units'),
+        _buildReportNavCard(
+          context,
+          title: 'Monthly Report',
+          desc: 'Month-over-month performance',
+          icon: Icons.calendar_month_outlined,
+          color: Colors.blue,
+          route: '/reports/monthly',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Occupancy',
+          desc: 'Room utilization & forecasts',
+          icon: Icons.bedroom_parent_outlined,
+          color: AppColors.secondary,
+          route: '/reports/occupancy',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Revenue',
+          desc: 'Income breakdown by source',
+          icon: Icons.account_balance_wallet_outlined,
+          color: Colors.green,
+          route: '/reports/revenue',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Collections',
+          desc: 'Cash flow & payment modes',
+          icon: Icons.payments_outlined,
+          color: Colors.teal,
+          route: '/reports/collection',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Outstanding',
+          desc: 'Pending payments & ageing',
+          icon: Icons.warning_amber_rounded,
+          color: AppColors.error,
+          route: '/reports/outstanding',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Expenses',
+          desc: 'Categorized property expenses',
+          icon: Icons.receipt_long_outlined,
+          color: Colors.deepOrange,
+          route: '/reports/expenses',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Best Customers',
+          desc: 'Top guests by revenue & stays',
+          icon: Icons.star_border_rounded,
+          color: Colors.amber.shade700,
+          route: '/reports/best-customers',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Room Utilization',
+          desc: 'Performance per room',
+          icon: Icons.meeting_room_outlined,
+          color: Colors.indigo,
+          route: '/reports/room-utilization',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Staff Performance',
+          desc: 'Task completion & productivity',
+          icon: Icons.badge_outlined,
+          color: Colors.purple,
+          route: '/reports/staff-performance',
+          minAccess: AccessLevel.limited,
+        ),
+        _buildReportNavCard(
+          context,
+          title: 'Profit & Loss',
+          desc: 'Comprehensive financial statement',
+          icon: Icons.insert_chart_outlined_rounded,
+          color: Colors.blueGrey,
+          route: '/pl-report',
+          minAccess: AccessLevel.full,
         ),
       ],
     );
   }
 
-  Widget _buildRoomRow(BuildContext context, IconData icon, String title,
-      String subtitle, String rev, String occ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+  Widget _buildReportNavCard(
+    BuildContext context, {
+    required String title,
+    required String desc,
+    required IconData icon,
+    required Color color,
+    required String route,
+    required AccessLevel minAccess,
+  }) {
+    return RoleGuard(
+      module: Module.reports,
+      minimumLevel: minAccess,
+      fallback: const SizedBox.shrink(),
+      child: InkWell(
+        onTap: () => context.push(route),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppColors.primary),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: AppColors.onSurface)),
-                Text(subtitle,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: AppColors.onSurfaceVariant)),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+        child: PineCard(
+          backgroundColor: AppColors.surfaceContainerLowest,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(rev,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: AppColors.primary)),
-              const SizedBox(height: 4),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                    color: AppColors.secondaryContainer,
-                    borderRadius: BorderRadius.circular(999)),
-                child: Text(occ,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.onSecondaryContainer)),
+                  color: color.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                desc,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExportBar(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.outlineVariant),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  try {
-                    final report = await ref.read(plReportProvider.future);
-                    await ref.read(reportExportServiceProvider).exportToPdf(report);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF exported successfully')));
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
-                    }
-                  }
-                },
-                icon: const Icon(Icons.picture_as_pdf, size: 20),
-                label: const Text('Export PDF'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  try {
-                    final report = await ref.read(plReportProvider.future);
-                    await ref.read(reportExportServiceProvider).exportToExcel(report);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Excel exported successfully')));
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
-                    }
-                  }
-                },
-                icon: const Icon(Icons.table_chart, size: 20),
-                label: const Text('Export Excel'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondaryContainer,
-                  foregroundColor: AppColors.onSecondaryContainer,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

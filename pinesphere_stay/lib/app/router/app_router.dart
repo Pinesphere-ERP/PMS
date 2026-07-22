@@ -18,6 +18,11 @@ import '../../features/settings/presentation/screens/property_settings_screen.da
 import '../../features/bookings/presentation/screens/booking_list_screen.dart';
 import '../../features/accountant/presentation/screens/accountant_dashboard_screen.dart';
 import '../../features/accountant/presentation/screens/accountant_guest_detail_screen.dart';
+import '../../features/accountant/presentation/screens/income_detail_screen.dart';
+import '../../features/accountant/presentation/screens/expense_detail_screen.dart';
+import '../../features/accountant/presentation/screens/profit_loss_screen.dart';
+import '../../features/accountant/presentation/screens/gst_invoice_screen.dart';
+import '../../features/accountant/presentation/screens/reports_manager_screen.dart';
 import '../../features/bookings/presentation/screens/pending_checkouts_screen.dart';
 import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart';
 import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
@@ -32,6 +37,11 @@ import '../../features/device_management/presentation/screens/device_sync_status
 import '../../features/checkin/presentation/screens/checkin_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/reports/presentation/screens/pl_report_screen.dart';
+import '../../features/reports/presentation/screens/daily_report_screen.dart';
+import '../../features/reports/presentation/screens/monthly_report_screen.dart';
+import '../../features/reports/presentation/screens/outstanding_report_screen.dart';
+import '../../features/reports/presentation/screens/revenue_report_screen.dart';
+import '../../features/reports/presentation/screens/placeholder_report_screen.dart';
 import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
@@ -293,7 +303,7 @@ GoRouter appRouter(Ref ref) {
       // ── Main App Shell (StatefulShellRoute) ────────────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return AppScaffold(navigationShell: navigationShell);
+          return AppScaffold(navigationShell: navigationShell, routerState: state);
         },
         branches: [
           // Branch 0: Dashboard & operations
@@ -353,7 +363,18 @@ GoRouter appRouter(Ref ref) {
               ),
               GoRoute(
                 path: '/payment-collection',
-                builder: (context, state) => const PaymentCollectionScreen(),
+                builder: (context, state) {
+                  final extra = state.extra as Map<String, dynamic>?;
+                  final bookingId = extra?['bookingId'] as String? ?? state.uri.queryParameters['bookingId'];
+                  final invoiceId = extra?['invoiceId'] as String? ?? state.uri.queryParameters['invoiceId'];
+                  final amountStr = extra?['amount'] as String? ?? state.uri.queryParameters['amount'];
+                  final initialAmount = amountStr != null ? double.tryParse(amountStr) : null;
+                  return PaymentCollectionScreen(
+                    bookingId: bookingId,
+                    invoiceId: invoiceId,
+                    initialAmount: initialAmount,
+                  );
+                },
               ),
               GoRoute(
                 path: '/accountant-dashboard',
@@ -362,6 +383,26 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/accountant-guest/:id',
                 builder: (context, state) => AccountantGuestDetailScreen(bookingId: state.pathParameters['id']!),
+              ),
+              GoRoute(
+                path: '/accountant/income',
+                builder: (context, state) => const IncomeDetailScreen(),
+              ),
+              GoRoute(
+                path: '/accountant/expenses',
+                builder: (context, state) => const ExpenseDetailScreen(),
+              ),
+              GoRoute(
+                path: '/accountant/profit-loss',
+                builder: (context, state) => const ProfitLossScreen(),
+              ),
+              GoRoute(
+                path: '/accountant/gst-invoices',
+                builder: (context, state) => const GSTInvoiceScreen(),
+              ),
+              GoRoute(
+                path: '/accountant/reports',
+                builder: (context, state) => const ReportsManagerScreen(),
               ),
             ],
           ),
@@ -389,6 +430,48 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/reports',
                 builder: (context, state) => const ReportsDashboardScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'daily',
+                    builder: (context, state) => const DailyReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'monthly',
+                    builder: (context, state) => const MonthlyReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'outstanding',
+                    builder: (context, state) => const OutstandingReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'revenue',
+                    builder: (context, state) => const RevenueReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'occupancy',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Occupancy Report'),
+                  ),
+                  GoRoute(
+                    path: 'collection',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Collection Report'),
+                  ),
+                  GoRoute(
+                    path: 'expenses',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Expenses Report'),
+                  ),
+                  GoRoute(
+                    path: 'best-customers',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Best Customers Report'),
+                  ),
+                  GoRoute(
+                    path: 'room-utilization',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Room Utilization Report'),
+                  ),
+                  GoRoute(
+                    path: 'staff-performance',
+                    builder: (context, state) => const PlaceholderReportScreen(title: 'Staff Performance Report'),
+                  ),
+                ],
               ),
             ],
           ),

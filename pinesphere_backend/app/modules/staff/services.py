@@ -124,7 +124,7 @@ class StaffService:
             target_record_id=staff.id,
             user_id=current_user_id,
             property_id=staff.property_id,
-            changes={"new_status": status}
+            new_value={"new_status": status}
         )
         return staff
 

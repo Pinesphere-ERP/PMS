@@ -10,7 +10,7 @@ from app.core.security import get_password_hash
 from app.infra.database import get_db
 from app.infra.models import Role, User, UserSession
 from app.modules.audit.logger import AuditLogger
-from app.modules.users.schemas import UserCreateRequest, UserResponse, UserUpdateRequest
+from app.modules.users.schemas import UserCreateRequest, UserResponse, UserUpdateRequest, RoleResponse
 from app.core.responses import success_response, StandardResponse
 
 router = APIRouter()
@@ -50,7 +50,7 @@ async def list_users(
         stmt = stmt.where(User.property_id.is_(None))
         
     users = (await db.execute(stmt)).scalars().all()
-    return success_response(data=users)
+    return success_response(data=[UserResponse.model_validate(u).model_dump(mode='json') for u in users])
 
 
 @router.post("", response_model=StandardResponse, status_code=status.HTTP_201_CREATED)
@@ -156,7 +156,7 @@ async def list_roles(db: AsyncSession = Depends(get_db)):
     stmt = select(Role)
     result = await db.execute(stmt)
     roles = result.scalars().all()
-    return success_response(data=roles)
+    return success_response(data=[RoleResponse.model_validate(r).model_dump(mode='json') for r in roles])
 
 
 @router.patch("/{user_id}", response_model=StandardResponse)

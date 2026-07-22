@@ -28,15 +28,15 @@ async def register_owner(request: Request, payload: OwnerRegistrationRequest, ba
     # 1. Check if owner with email or mobile already exists
     owner_stmt = select(Owner).where(
         or_(Owner.email == payload.email, Owner.mobile_number == payload.mobile_number)
-    )
-    existing_owner = (await db.execute(owner_stmt)).scalar_one_or_none()
+    ).order_by(Owner.created_at.desc())
+    existing_owner = (await db.execute(owner_stmt)).scalars().first()
     
     if existing_owner:
         raise HTTPException(status_code=400, detail="An owner with this email or mobile number already exists.")
 
     # 2. Check if User with email already exists
-    user_stmt = select(User).where(User.email == payload.email)
-    existing_user = (await db.execute(user_stmt)).scalar_one_or_none()
+    user_stmt = select(User).where(User.email == payload.email).order_by(User.created_at.desc())
+    existing_user = (await db.execute(user_stmt)).scalars().first()
     if existing_user:
         raise HTTPException(status_code=400, detail="A user with this email already exists.")
 

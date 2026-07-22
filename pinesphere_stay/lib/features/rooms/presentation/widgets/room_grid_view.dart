@@ -14,9 +14,9 @@ class RoomGridView extends StatelessWidget {
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 280,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          mainAxisExtent: 420, // Increased height to prevent overflow
+          mainAxisSpacing: 20,
+          crossAxisSpacing: 20,
+          mainAxisExtent: 440, // Increased height for more spacious cards
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {

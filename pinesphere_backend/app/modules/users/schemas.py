@@ -35,3 +35,14 @@ class UserUpdateRequest(BaseModel):
     status: Optional[str] = None
     role_id: Optional[uuid.UUID] = None
 
+class RoleResponse(BaseModel):
+    id: uuid.UUID
+    property_id: Optional[uuid.UUID]
+    role_code: str
+    role_name: str
+    is_system_role: bool
+    description: Optional[str]
+    
+    class Config:
+        from_attributes = True
+

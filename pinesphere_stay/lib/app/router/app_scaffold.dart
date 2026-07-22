@@ -1,3 +1,4 @@
+import 'dart:ui' as dart_ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -82,127 +83,151 @@ class AppScaffold extends ConsumerWidget {
     final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'G';
 
     return Drawer(
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
-      ),
-      child: Column(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      width: MediaQuery.of(context).size.width * 0.85 > 320 ? 320 : MediaQuery.of(context).size.width * 0.85,
+      child: Stack(
         children: [
-          // Premium Header
-          Container(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 24,
-              bottom: 24,
-              left: 24,
-              right: 24,
-            ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, Color(0xFF1E3A8A)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: Colors.white,
-                  child: Text(
-                    initial,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
+          // Glassmorphic Background
+          ClipRRect(
+            borderRadius: const BorderRadius.horizontal(right: Radius.circular(32)),
+            child: BackdropFilter(
+              filter: dart_ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                color: AppColors.surface.withValues(alpha: 0.85),
+                child: SafeArea(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        userName,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
+                      // User Profile Header (Modern Floating Card style)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        margin: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.primaryContainer.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.1), width: 1),
                         ),
-                        child: Text(
-                          userRole.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
+                        child: Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.2),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 28,
+                                backgroundColor: AppColors.primary,
+                                child: Text(
+                                  initial,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userName,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      userRole.toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 8),
+                      const Divider(indent: 24, endIndent: 24, color: Colors.black12),
+                      
+                      // Drawer Items
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          physics: const BouncingScrollPhysics(),
+                          children: [
+                            _buildSectionHeader('CORE'),
+                            _buildPremiumDrawerItem(context, Module.dashboard, Icons.dashboard_rounded, 'Dashboard', () => navigationShell.goBranch(0)),
+                            _buildPremiumDrawerItem(context, Module.roomManagement, Icons.bed_rounded, 'Rooms', () => navigationShell.goBranch(1)),
+                            _buildPremiumDrawerItem(context, Module.bookingManagement, Icons.calendar_month_rounded, 'Bookings', () => navigationShell.goBranch(2)),
+                            _buildPremiumDrawerItem(context, Module.reports, Icons.analytics_rounded, 'Reports', () => navigationShell.goBranch(3)),
+                            
+                            const SizedBox(height: 12),
+                            _buildSectionHeader('OPERATIONS'),
+                            _buildPremiumDrawerItem(context, Module.checkInCheckOut, Icons.login_rounded, 'Check-in', () => context.push('/checkin')),
+                            _buildPremiumDrawerItem(context, Module.checkInCheckOut, Icons.logout_rounded, 'Check-out', () => context.push('/checkout')),
+                            _buildPremiumDrawerItem(context, Module.payments, Icons.payments_rounded, 'Payments', () => context.push('/payments')),
+                            _buildPremiumDrawerItem(context, Module.housekeeping, Icons.cleaning_services_rounded, 'Housekeeping', () => context.push('/housekeeping')),
+                            _buildPremiumDrawerItem(context, Module.housekeeping, Icons.assignment_rounded, 'Requests', () => context.push('/requests')),
+                            
+                            const SizedBox(height: 12),
+                            _buildSectionHeader('MANAGEMENT'),
+                            _buildPremiumDrawerItem(context, Module.propertyOnboarding, Icons.business_rounded, 'Property Settings', () => context.push('/property-settings')),
+                            _buildPremiumDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts_rounded, 'User & Roles', () => context.push('/user-roles')),
+                            _buildPremiumDrawerItem(context, Module.staffManagement, Icons.badge_rounded, 'Staff', () => context.push('/staff')),
+                            _buildPremiumDrawerItem(context, Module.deviceManagement, Icons.devices_rounded, 'Devices', () => context.push('/device-registration')),
+                            _buildPremiumDrawerItem(context, Module.auditLogs, Icons.history_rounded, 'Audit Logs', () => context.push('/audit-logs')),
+                          ],
+                        ),
+                      ),
+                      
+                      // Bottom Actions
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context); // close drawer
+                            ref.read(authProvider.notifier).logout();
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.errorContainer.withValues(alpha: 0.8),
+                            foregroundColor: AppColors.error,
+                            minimumSize: const Size.fromHeight(52),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
                           ),
+                          icon: const Icon(Icons.logout_rounded, size: 20),
+                          label: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          
-          // Drawer Items
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-              children: [
-                _buildSectionHeader('CORE'),
-                _buildPremiumDrawerItem(context, Module.dashboard, Icons.dashboard_rounded, 'Dashboard', () => navigationShell.goBranch(0)),
-                _buildPremiumDrawerItem(context, Module.roomManagement, Icons.bed_rounded, 'Rooms', () => navigationShell.goBranch(1)),
-                _buildPremiumDrawerItem(context, Module.bookingManagement, Icons.calendar_month_rounded, 'Bookings', () => navigationShell.goBranch(2)),
-                _buildPremiumDrawerItem(context, Module.reports, Icons.analytics_rounded, 'Reports', () => navigationShell.goBranch(3)),
-                
-                _buildSectionHeader('OPERATIONS'),
-                _buildPremiumDrawerItem(context, Module.checkInCheckOut, Icons.login_rounded, 'Check-in', () => context.push('/checkin')),
-                _buildPremiumDrawerItem(context, Module.checkInCheckOut, Icons.logout_rounded, 'Check-out', () => context.push('/checkout')),
-                _buildPremiumDrawerItem(context, Module.payments, Icons.payments_rounded, 'Payments', () => context.push('/payments')),
-                _buildPremiumDrawerItem(context, Module.housekeeping, Icons.cleaning_services_rounded, 'Housekeeping', () => context.push('/housekeeping')),
-                _buildPremiumDrawerItem(context, Module.housekeeping, Icons.assignment_rounded, 'Requests', () => context.push('/requests')),
-                
-                _buildSectionHeader('MANAGEMENT'),
-                _buildPremiumDrawerItem(context, Module.propertyOnboarding, Icons.business_rounded, 'Property Settings', () => context.push('/property-settings')),
-                _buildPremiumDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts_rounded, 'User & Roles', () => context.push('/user-roles')),
-                _buildPremiumDrawerItem(context, Module.staffManagement, Icons.badge_rounded, 'Staff', () => context.push('/staff')),
-                _buildPremiumDrawerItem(context, Module.deviceManagement, Icons.devices_rounded, 'Devices', () => context.push('/device-registration')),
-                _buildPremiumDrawerItem(context, Module.auditLogs, Icons.history_rounded, 'Audit Logs', () => context.push('/audit-logs')),
-              ],
-            ),
-          ),
-          
-          // Bottom Actions
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SafeArea(
-              top: false,
-              child: FilledButton.icon(
-                onPressed: () {
-                  Navigator.pop(context); // close drawer
-                  ref.read(authProvider.notifier).logout();
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.errorContainer,
-                  foregroundColor: AppColors.onErrorContainer,
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.logout_rounded),
-                label: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
           ),

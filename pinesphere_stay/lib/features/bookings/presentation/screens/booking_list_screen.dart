@@ -339,75 +339,115 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
     }
 
     return PineCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(0), // Padding inside the stack
       onTap: () => _showBookingDetailsSheet(context, booking),
-      child: Row(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 20),
-                const SizedBox(height: 4),
-                Text(
-                  booking.roomNumber,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          Positioned(
+            left: 0,
+            top: 16,
+            bottom: 16,
+            child: Container(
+              width: 6,
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(8),
+                  bottomRight: Radius.circular(8),
                 ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               children: [
-                Row(
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerHigh.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 22),
+                      const SizedBox(height: 6),
+                      Text(
+                        booking.roomNumber,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              booking.guestName,
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(sourceIcon, size: 16, color: AppColors.outline),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.outline),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${booking.checkInDate.day} ${_getMonth(booking.checkInDate)} - ${booking.checkOutDate.day} ${_getMonth(booking.checkOutDate)}',
+                            style: const TextStyle(color: AppColors.outline, fontSize: 13, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.phone_outlined, size: 14, color: AppColors.outline),
+                          const SizedBox(width: 6),
+                          Text(
+                            booking.guestPhone,
+                            style: const TextStyle(color: AppColors.outline, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      booking.guestName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        booking.status.toUpperCase(),
+                        style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(sourceIcon, size: 16, color: AppColors.outline),
+                    const SizedBox(height: 12),
+                    Text(
+                      '\$${booking.depositPaid.toStringAsFixed(0)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${booking.checkInDate.day} ${_getMonth(booking.checkInDate)} - ${booking.checkOutDate.day} ${_getMonth(booking.checkOutDate)}',
-                  style: const TextStyle(color: AppColors.outline, fontSize: 13),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  booking.guestPhone,
-                  style: const TextStyle(color: AppColors.outline, fontSize: 12),
-                ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  booking.status.toUpperCase(),
-                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '\$${booking.depositPaid.toStringAsFixed(0)}',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
-              ),
-            ],
           ),
         ],
       ),

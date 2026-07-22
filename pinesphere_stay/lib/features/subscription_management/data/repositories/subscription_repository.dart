@@ -45,7 +45,17 @@ class SubscriptionRepository {
       return null;
     }
   }
-
+  Future<bool> activateRazorpay(String paymentId, String planName) async {
+    try {
+      final response = await _dio.post('/subscriptions/activate-razorpay', data: {
+        'payment_id': paymentId,
+        'plan': planName,
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
   Future<bool> cancelSubscription() async {
     try {
       final response = await _dio.post('/subscriptions/cancel');

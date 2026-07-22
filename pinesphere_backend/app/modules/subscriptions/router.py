@@ -29,7 +29,7 @@ async def require_super_admin(
         raise HTTPException(status_code=403, detail="Super Admin access required")
     return user
 
-PLAN_PRICE = {"Basic": 199.0, "Professional": 499.0, "Enterprise": 999.0}
+PLAN_PRICE = {"Basic": 199.0, "Professional": 499.0, "Enterprise": 999.0, "Standard": 1000.0}
 
 def _days_remaining(expiry: date) -> int:
     return max(0, (expiry - date.today()).days)
@@ -87,7 +87,10 @@ async def get_subscription_plans(db: AsyncSession = Depends(get_db)):
     rows = result.scalars().all()
     
     data = []
+    has_standard = False
     for plan in rows:
+        if plan.name == "Standard":
+            has_standard = True
         data.append({
             "id": str(plan.plan_id),
             "name": plan.name,
@@ -96,6 +99,17 @@ async def get_subscription_plans(db: AsyncSession = Depends(get_db)):
             "duration": plan.duration_months,
             "status": plan.status
         })
+    
+    if not has_standard:
+        data.append({
+            "id": "std_1000",
+            "name": "Standard",
+            "features": "Access to all core features, Property management, Role Management",
+            "amount": "1000.0",
+            "duration": 1,
+            "status": "Active"
+        })
+        
     return {"data": data}
 
 @router.post("/plans")
@@ -666,6 +680,64 @@ async def activate_placeholder(
     
     await db.commit()
     return {"message": "Subscription activated successfully"}
+
+@router.post("/activate-razorpay")
+async def activate_razorpay(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    payment_id = payload.get("payment_id")
+    plan_name = payload.get("plan", "Standard")
+    if not payment_id:
+        raise HTTPException(status_code=400, detail="Missing payment ID")
+        
+    property_id = current_user.property_id
+    if not property_id:
+        raise HTTPException(status_code=400, detail="No property associated with user")
+
+    # 1. Update Property status
+    q = select(Property).where(Property.property_id == property_id)
+    result = await db.execute(q)
+    prop = result.scalars().first()
+    if prop:
+        prop.onboarding_status = "active"
+
+    # 2. Create or update Subscription
+    q_sub = select(Subscription).where(Subscription.property_id == property_id)
+    res_sub = await db.execute(q_sub)
+    sub = res_sub.scalars().first()
+
+    from datetime import date, timedelta
+    if not sub:
+        sub = Subscription(
+            property_id=property_id,
+            plan=plan_name,
+            status="Active",
+            billing_cycle="Monthly",
+            start_date=date.today(),
+            expiry_date=date.today() + timedelta(days=30),
+            device_limit=5,
+            subscription_required=True
+        )
+        db.add(sub)
+    else:
+        sub.plan = plan_name
+        sub.status = "Active"
+        sub.expiry_date = date.today() + timedelta(days=30)
+    
+    # 3. Add Transaction Log
+    tx = SubscriptionTransaction(
+        property_id=property_id,
+        amount=str(PLAN_PRICE.get(plan_name, 1000.0)),
+        status="Success",
+        payment_method="Razorpay",
+        transaction_id=payment_id
+    )
+    db.add(tx)
+    
+    await db.commit()
+    return {"message": "Subscription activated via Razorpay successfully"}
 
 @router.post("/cancel")
 async def cancel_subscription(

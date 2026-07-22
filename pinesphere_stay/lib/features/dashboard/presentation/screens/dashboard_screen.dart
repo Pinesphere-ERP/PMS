@@ -513,48 +513,75 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0, bottom: 12.0, top: 16.0),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: AppColors.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+    );
+  }
+
   Widget _buildKPIsGrid(BuildContext context, WidgetRef ref) {
     final dashboardAsync = ref.watch(dashboardMetricsProvider);
     final authState = ref.watch(authProvider);
     final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
     final canHousekeeping = PermissionMatrix.hasAccess(role, Module.housekeeping);
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4.0, bottom: 12.0),
-          child: Text(
-            'Overview',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.onSurface,
-                ),
-          ),
-        ),
-        dashboardAsync.when(
-          data: (dashboardState) => GridView.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.0,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _buildKPICard(context, 'Today Check-in', '${dashboardState.todaysArrivals}', AppColors.primary, Icons.login, onTap: () => context.push('/todays-arrivals')),
-              _buildKPICard(context, 'Today Check-outs', '${dashboardState.todaysDepartures}', AppColors.onSurface, Icons.logout, onTap: () => context.push('/todays-departures')),
-              _buildKPICard(context, 'Occupied Rooms', '${dashboardState.occupiedRooms}', AppColors.primary, Icons.hotel, onTap: () => context.push('/occupied-rooms')),
-              _buildKPICard(context, 'Vacant Rooms', '${dashboardState.vacantRooms}', AppColors.outline, Icons.vpn_key, onTap: () => context.push('/vacant-rooms')),
-              _buildKPICard(context, 'Pending Checkouts', '${dashboardState.pendingCheckouts}', AppColors.secondary, Icons.hourglass_bottom, onTap: () => context.push('/pending-checkouts')),
-              if (canHousekeeping)
-                _buildKPICard(context, 'House Keeping', '${dashboardState.housekeepingCount}', AppColors.error, Icons.cleaning_services, onTap: () => context.push('/housekeeping')),
-              _buildKPICard(context, 'Pending payments', '${dashboardState.pendingPaymentsCount}', AppColors.error, Icons.receipt_long, onTap: () => context.push('/pending-payments')),
-              _buildKPICard(context, 'Revenue today', '\$${dashboardState.revenueToday.toStringAsFixed(0)}', AppColors.primaryContainer, Icons.monetization_on, onTap: () => context.push('/todays-revenue')),
-            ],
-          ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(child: Text('Error loading dashboard: $error')),
-        ),
-      ],
+    return dashboardAsync.when(
+      data: (dashboardState) {
+        final totalRooms = dashboardState.occupiedRooms + dashboardState.vacantRooms;
+        final occupancy = totalRooms > 0 ? (dashboardState.occupiedRooms / totalRooms * 100).toStringAsFixed(0) : '0';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle(context, 'Financial Performance'),
+            GridView.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 1.1,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildKPICard(context, 'Revenue Today', '\$${dashboardState.revenueToday.toStringAsFixed(0)}', const Color(0xFF10B981), Icons.monetization_on_rounded, onTap: () => context.push('/todays-revenue')),
+                _buildKPICard(context, 'Pending Payments', '${dashboardState.pendingPaymentsCount}', AppColors.error, Icons.receipt_long_rounded, onTap: () => context.push('/pending-payments')),
+                _buildKPICard(context, 'Occupancy', '$occupancy%', const Color(0xFF3B82F6), Icons.analytics_rounded, onTap: () => context.push('/reports')),
+                _buildKPICard(context, 'Occupied Rooms', '${dashboardState.occupiedRooms}', AppColors.primary, Icons.hotel_rounded, onTap: () => context.push('/occupied-rooms')),
+              ],
+            ),
+            _buildSectionTitle(context, 'Daily Operations'),
+            GridView.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 1.1,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildKPICard(context, 'Arrivals', '${dashboardState.todaysArrivals}', const Color(0xFF8B5CF6), Icons.login_rounded, onTap: () => context.push('/todays-arrivals')),
+                _buildKPICard(context, 'Departures', '${dashboardState.todaysDepartures}', const Color(0xFFF59E0B), Icons.logout_rounded, onTap: () => context.push('/todays-departures')),
+                _buildKPICard(context, 'Vacant Rooms', '${dashboardState.vacantRooms}', const Color(0xFF64748B), Icons.vpn_key_rounded, onTap: () => context.push('/vacant-rooms')),
+                if (canHousekeeping)
+                  _buildKPICard(context, 'Housekeeping', '${dashboardState.housekeepingCount}', const Color(0xFFEC4899), Icons.cleaning_services_rounded, onTap: () => context.push('/housekeeping')),
+              ],
+            ),
+          ],
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Center(child: Text('Error loading dashboard: $error')),
+      ),
     );
   }
 
@@ -664,20 +691,65 @@ class DashboardScreen extends ConsumerWidget {
             itemCount: recentLogs.length,
             itemBuilder: (context, index) {
               final log = recentLogs[index];
-              return Card(
-                elevation: 0,
-                margin: const EdgeInsets.only(bottom: 8.0),
-                shape: RoundedRectangleBorder(
-                  side: const BorderSide(color: AppColors.outlineVariant),
-                  borderRadius: BorderRadius.circular(12),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12.0),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
                 ),
-                child: ListTile(
-                  leading: const Icon(Icons.history, color: AppColors.primary),
-                  title: Text(log.actionType ?? 'Unknown Action'),
-                  subtitle: Text('By: ${log.userId}'),
-                  trailing: Text(
-                    DateFormat('HH:mm').format(log.timestamp),
-                    style: Theme.of(context).textTheme.bodySmall,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.history_toggle_off, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              log.actionType ?? 'Unknown Action',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'By: ${log.userId}',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppColors.outline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        DateFormat('HH:mm').format(log.timestamp),
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );

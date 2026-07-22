@@ -500,8 +500,8 @@ function RoomsTab({ propertyId }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAPI('/properties/rooms')
-      .then(d => setRooms((Array.isArray(d) ? d : []).filter(r => r.resort_id === propertyId)))
+    fetchAPI(`/properties/${propertyId}/rooms`)
+      .then(d => setRooms(Array.isArray(d) ? d : []))
       .catch(() => setRooms([]))
       .finally(() => setLoading(false));
   }, [propertyId]);

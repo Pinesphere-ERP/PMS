@@ -7,3 +7,4 @@ Body: {'mobile_number': '9999999999', 'password': 'password123'}
 [89dd924f-554c-4042-804d-4ddf9959ed14] Validation Error on fields: ['password', 'property_type']
 [1cace74e-5a80-45b2-b2b1-cf233155c3ce] Validation Error on fields: ['password', 'property_type']
 [28ed937e-3c4f-4b18-a0e5-eae25fdfcebd] Validation Error on fields: ['password', 'property_type']
+[2b13cc3e-e67f-4ffb-bc85-b237e422b4f2] Validation Error on fields: ['property_id']

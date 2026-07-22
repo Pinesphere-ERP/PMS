@@ -24,6 +24,12 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    Future.microtask(() {
+      ref.read(pmsProvider.notifier).loadResorts();
+      ref.read(pmsProvider.notifier).loadRooms();
+      ref.read(pmsProvider.notifier).loadBookings();
+    });
+
     final authState = ref.watch(authProvider);
     final userName = authState.maybeWhen(
       authenticated: (user) => user.name,

@@ -35,8 +35,7 @@ class ApiInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      // TODO: Implement token refresh logic
-      // Attempt refresh, if it fails clear session and redirect to login
+      await secureStorage.delete(key: 'access_token');
     } else if (err.response?.statusCode == 402) {
       ref.read(sessionContextProvider.notifier).forcePaymentPending();
     }

@@ -115,7 +115,7 @@ class RoomCard extends ConsumerWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
-                  height: 70,
+                  height: 90,
                   width: double.infinity,
                   child: Stack(
                     children: [
@@ -271,7 +271,7 @@ class RoomCard extends ConsumerWidget {
                   );
                 }).toList(),
               ),
-              const Spacer(),
+              const SizedBox(height: 6),
               if (room.status == 'Vacant')
                 Container(
                   width: double.infinity,

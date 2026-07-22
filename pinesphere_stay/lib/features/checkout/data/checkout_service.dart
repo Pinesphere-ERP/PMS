@@ -289,7 +289,17 @@ class CheckOutService {
   void _updateRoomToDirty(String roomId) {
     final room = _roomDao.getByServerId(roomId);
     if (room != null) {
+      room.status = 'Cleaning';
+      room.lastModifiedHlc = DateTime.now().toUtc().toIso8601String();
+      room.syncStatus = 'Pending';
       _roomDao.put(room);
+    }
+    
+    final housekeepingRoom = databaseService.housekeepingRoomStatusDao.getByRoomId(roomId);
+    if (housekeepingRoom != null) {
+      housekeepingRoom.cleanStatus = 'not_cleaned';
+      housekeepingRoom.occupancyStatus = 'vacant';
+      databaseService.housekeepingRoomStatusDao.put(housekeepingRoom);
     }
   }
 }

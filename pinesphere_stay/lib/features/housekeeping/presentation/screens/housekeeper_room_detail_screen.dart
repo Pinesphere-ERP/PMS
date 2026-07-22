@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -92,39 +93,64 @@ class _HousekeeperRoomDetailScreenState extends ConsumerState<HousekeeperRoomDet
                             ),
                           ),
                         ],
+                        if (room.imageUrls != null && room.imageUrls!.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          Text('Cleaning Photos', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 16),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                            ),
+                            itemCount: room.imageUrls!.length,
+                            itemBuilder: (context, index) {
+                              final path = room.imageUrls![index];
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: path.startsWith('http') 
+                                    ? Image.network(path, fit: BoxFit.cover)
+                                    : Image.file(File(path), fit: BoxFit.cover),
+                              );
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5)),
-                    ],
+                if (room.cleanStatus != 'clean' && room.cleanStatus != 'verified')
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5)),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildActionButton(
+                          context,
+                          icon: Icons.close,
+                          color: Colors.red,
+                          label: 'Schedule',
+                          onTap: () => _showScheduleDialog(context, room.roomId),
+                        ),
+                        _buildActionButton(
+                          context,
+                          icon: Icons.check,
+                          color: Colors.green,
+                          label: 'Complete',
+                          onTap: () => context.push('/housekeeper/room/${room.roomId}/upload'),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildActionButton(
-                        context,
-                        icon: Icons.close,
-                        color: Colors.red,
-                        label: 'Schedule',
-                        onTap: () => _showScheduleDialog(context, room.roomId),
-                      ),
-                      _buildActionButton(
-                        context,
-                        icon: Icons.check,
-                        color: Colors.green,
-                        label: 'Complete',
-                        onTap: () => context.push('/housekeeper/room/${room.roomId}/upload'),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             );
           },

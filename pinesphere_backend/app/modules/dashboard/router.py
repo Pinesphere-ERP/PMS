@@ -1,6 +1,8 @@
+import uuid
+from typing import Optional
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, or_, and_
 from datetime import date
 from ...infra.database import get_db
 from ...infra.models import Booking, Room, Payment, User
@@ -8,56 +10,82 @@ from app.core.responses import success_response, StandardResponse
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
-@router.get("/", response_model=StandardResponse)
-def get_dashboard_metrics(property_id: str = None, db: Session = Depends(get_db)):
-    today = date.today()
-    
-    # Base queries
-    bookings_query = db.query(Booking)
-    rooms_query = db.query(Room)
-    payments_query = db.query(Payment)
-    
-    if property_id:
-        bookings_query = bookings_query.filter(Booking.property_id == property_id)
-        rooms_query = rooms_query.filter(Room.property_id == property_id)
-        payments_query = payments_query.join(Booking).filter(Booking.property_id == property_id)
 
+@router.get("", response_model=StandardResponse)
+@router.get("/", response_model=StandardResponse)
+async def get_dashboard_metrics(property_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    today = date.today()
+    prop_uuid = None
+    if property_id:
+        try:
+            prop_uuid = uuid.UUID(property_id)
+        except ValueError:
+            pass
+    
     # 1. Arrivals today
-    arrivals = bookings_query.filter(
+    arrivals_stmt = select(func.count()).select_from(Booking).where(
         func.date(Booking.check_in_date) == today,
-        Booking.booking_status != 'Cancelled'
-    ).count()
+        Booking.booking_status != 'Cancelled',
+        Booking.is_deleted == False
+    )
+    if prop_uuid:
+        arrivals_stmt = arrivals_stmt.where(Booking.property_id == prop_uuid)
+    arrivals = (await db.execute(arrivals_stmt)).scalar() or 0
 
     # 2. Departures today
-    departures = bookings_query.filter(
+    departures_stmt = select(func.count()).select_from(Booking).where(
         func.date(Booking.check_out_date) == today,
-        Booking.booking_status != 'Cancelled'
-    ).count()
+        Booking.booking_status != 'Cancelled',
+        Booking.is_deleted == False
+    )
+    if prop_uuid:
+        departures_stmt = departures_stmt.where(Booking.property_id == prop_uuid)
+    departures = (await db.execute(departures_stmt)).scalar() or 0
 
-    # 3. Occupied and Vacant Rooms
-    occupied = rooms_query.filter(func.lower(Room.occupancy_status) == 'occupied').count()
-    vacant = rooms_query.filter(func.lower(Room.occupancy_status) == 'vacant').count()
-    housekeeping = rooms_query.filter(
-        Room.housekeeping_status.ilike('cleaning') | Room.housekeeping_status.ilike('maintenance')
-    ).count()
+    # 3. Occupied, Vacant, and Housekeeping Rooms
+    occ_stmt = select(func.count()).select_from(Room).where(func.lower(Room.occupancy_status) == 'occupied', Room.is_deleted == False)
+    vac_stmt = select(func.count()).select_from(Room).where(func.lower(Room.occupancy_status) == 'vacant', Room.is_deleted == False)
+    hk_stmt = select(func.count()).select_from(Room).where(
+        or_(Room.housekeeping_status.ilike('cleaning'), Room.housekeeping_status.ilike('maintenance')),
+        Room.is_deleted == False
+    )
+    if prop_uuid:
+        occ_stmt = occ_stmt.where(Room.property_id == prop_uuid)
+        vac_stmt = vac_stmt.where(Room.property_id == prop_uuid)
+        hk_stmt = hk_stmt.where(Room.property_id == prop_uuid)
 
-    # 4. Pending Checkouts (Active bookings where checkout is today or earlier)
-    pending_checkouts = bookings_query.filter(
-        Booking.booking_status == 'Active',
-        func.date(Booking.check_out_date) <= today
-    ).count()
+    occupied = (await db.execute(occ_stmt)).scalar() or 0
+    vacant = (await db.execute(vac_stmt)).scalar() or 0
+    housekeeping = (await db.execute(hk_stmt)).scalar() or 0
 
-    # 5. Pending Payments (Bookings where payment status is pending or partial)
-    pending_payments = bookings_query.filter(
-        Booking.payment_status.in_(['Pending', 'Partial']),
-        Booking.booking_status != 'Cancelled'
-    ).count()
+    # 4. Pending Checkouts (Active or checked_in bookings where checkout is today or earlier)
+    pending_co_stmt = select(func.count()).select_from(Booking).where(
+        Booking.booking_status.in_(['Active', 'checked_in']),
+        func.date(Booking.check_out_date) <= today,
+        Booking.is_deleted == False
+    )
+    if prop_uuid:
+        pending_co_stmt = pending_co_stmt.where(Booking.property_id == prop_uuid)
+    pending_checkouts = (await db.execute(pending_co_stmt)).scalar() or 0
 
-    # 6. Revenue Today (Sum of payments made today)
-    revenue_today = payments_query.filter(
+    # 5. Pending Payments
+    pending_pay_stmt = select(func.count()).select_from(Booking).where(
+        Booking.payment_status.in_(['Pending', 'Partial', 'pending']),
+        Booking.booking_status != 'Cancelled',
+        Booking.is_deleted == False
+    )
+    if prop_uuid:
+        pending_pay_stmt = pending_pay_stmt.where(Booking.property_id == prop_uuid)
+    pending_payments = (await db.execute(pending_pay_stmt)).scalar() or 0
+
+    # 6. Revenue Today
+    revenue_stmt = select(func.coalesce(func.sum(Payment.amount), 0.0)).select_from(Payment).join(Booking, Payment.booking_id == Booking.booking_id).where(
         func.date(Payment.created_at) == today,
         func.lower(Payment.status) == 'completed'
-    ).with_entities(func.coalesce(func.sum(Payment.amount), 0.0)).scalar()
+    )
+    if prop_uuid:
+        revenue_stmt = revenue_stmt.where(Booking.property_id == prop_uuid)
+    revenue_today = (await db.execute(revenue_stmt)).scalar() or 0.0
 
     return success_response(data={
         "todays_arrivals": arrivals,

@@ -298,7 +298,12 @@ class PmsNotifier extends Notifier<PmsState> {
       final dio = ref.read(dioClientProvider);
       final response = await dio.get('/properties/rooms');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final rawData = response.data;
+        final List<dynamic> data = rawData is List
+            ? rawData
+            : ((rawData is Map && rawData['data'] is List)
+                ? rawData['data']
+                : ((rawData is Map && rawData['items'] is List) ? rawData['items'] : []));
         final loadedRooms = data.map((json) {
           final double baseRent = (json['price'] as num).toDouble();
           String descText = json['description'] ?? '';
@@ -355,6 +360,7 @@ class PmsNotifier extends Notifier<PmsState> {
           );
         }).where((room) => !_locallyDeletedRoomIds.contains(room.id)).toList();
         
+        debugPrint('Final parsed rooms count: ${loadedRooms.length}');
         state = state.copyWith(rooms: loadedRooms);
       }
     } catch (e) {
@@ -367,7 +373,12 @@ class PmsNotifier extends Notifier<PmsState> {
       final dio = ref.read(dioClientProvider);
       final response = await dio.get('/properties');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final rawData = response.data;
+        final List<dynamic> data = rawData is List
+            ? rawData
+            : ((rawData is Map && rawData['data'] is List)
+                ? rawData['data']
+                : ((rawData is Map && rawData['items'] is List) ? rawData['items'] : []));
         final loadedResorts = data.map((json) {
           final id = json['id'].toString();
           

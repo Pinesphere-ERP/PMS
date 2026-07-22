@@ -4,8 +4,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../data/checkin_service.dart';
 import '../../../audit/data/audit_service.dart';
 import '../../../bookings/data/booking_service.dart';
-import '../../../rooms/data/room_service.dart';
+
 import '../../../guests/data/guest_service.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../../rooms/presentation/providers/pms_provider.dart';
 
 part 'checkin_provider.freezed.dart';
 part 'checkin_provider.g.dart';
@@ -52,16 +54,18 @@ class CheckInNotifier extends _$CheckInNotifier {
 
   Future<void> searchAvailableRooms(String propertyId) async {
     state = const CheckInState.loading();
-    final roomService = ref.read(roomServiceProvider);
     try {
-      final rooms = await roomService.getRooms(propertyId);
-      final vacantRooms = rooms.where((r) => r.status == 'Vacant').map((r) => <String, dynamic>{
-        'id': r.serverId,
-        'name': r.name,
+      final pmsState = ref.read(pmsProvider);
+      final vacantRooms = pmsState.rooms
+          .where((r) => r.status.toLowerCase() == 'vacant')
+          .map((r) => <String, dynamic>{
+        'id': r.id,
+        'name': r.roomNumber,
         'type': r.type,
         'status': r.status,
-        'price_per_night': r.pricePerNight,
+        'price_per_night': r.price,
       }).toList();
+      
       state = CheckInState.loadedRooms(vacantRooms);
     } catch (e) {
       state = CheckInState.error(e.toString());
@@ -101,6 +105,8 @@ class CheckInNotifier extends _$CheckInNotifier {
     final checkinService = ref.read(checkInServiceProvider);
     try {
       final result = await checkinService.performCheckIn(data);
+      ref.invalidate(dashboardMetricsProvider);
+      ref.invalidate(pmsProvider);
       state = CheckInState.success('Check-in completed successfully', checkinId: result['id']?.toString());
     } catch (e) {
       state = CheckInState.error(e.toString());

@@ -3,6 +3,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/checkout_service.dart';
 import '../../../audit/data/audit_service.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../../rooms/presentation/providers/pms_provider.dart';
 
 part 'checkout_provider.freezed.dart';
 part 'checkout_provider.g.dart';
@@ -69,6 +71,8 @@ class CheckOutNotifier extends _$CheckOutNotifier {
     try {
       final service = ref.read(checkOutServiceProvider);
       final result = await service.performCheckOut(data);
+      ref.invalidate(dashboardMetricsProvider);
+      ref.invalidate(pmsProvider);
       final checkoutId = result['id']?.toString();
       state = CheckOutState.success('Checkout completed successfully', checkoutId: checkoutId);
     } catch (e) {

@@ -1209,26 +1209,90 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                 return Text('No vacant rooms available',
                     style: TextStyle(color: AppColors.onSurfaceVariant));
               }
-              return Column(
-                children: rooms.map((room) {
-                  return RadioListTile<String>(
-                    title: Text('${room['name']} (${room['type']})'),
-                    subtitle: Text('\$${room['price_per_night']}/night - ${room['status']}'),
-                    value: room['id'] as String,
-                    // ignore: deprecated_member_use
-                    groupValue: _selectedRoomId,
-                    activeColor: AppColors.primary,
-                    contentPadding: EdgeInsets.zero,
-                    // ignore: deprecated_member_use
-                    onChanged: (v) {
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 2.2,
+                ),
+                itemCount: rooms.length,
+                itemBuilder: (context, index) {
+                  final room = rooms[index];
+                  final isSelected = _selectedRoomId == room['id'];
+                  return GestureDetector(
+                    onTap: () {
                       setState(() {
-                        _selectedRoomId = v;
+                        _selectedRoomId = room['id'] as String?;
                         _selectedRoomName = room['name'] as String?;
                         _roomRentController.text = (room['price_per_night'] as num).toString();
                       });
                     },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primaryContainer : AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                          width: isSelected ? 2 : 1,
+                        ),
+                        boxShadow: isSelected 
+                          ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))]
+                          : [],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.primary : AppColors.surfaceContainerHigh,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.king_bed,
+                              color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '${room['name']} (${room['type']})',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected ? AppColors.onPrimaryContainer : AppColors.onSurface,
+                                    fontSize: 13,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '\$${room['price_per_night']}/night',
+                                  style: TextStyle(
+                                    color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isSelected)
+                            Icon(Icons.check_circle, color: AppColors.primary, size: 20),
+                        ],
+                      ),
+                    ),
                   );
-                }).toList(),
+                },
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),

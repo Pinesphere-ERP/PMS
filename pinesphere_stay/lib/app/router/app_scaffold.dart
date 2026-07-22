@@ -72,27 +72,82 @@ class AppScaffold extends ConsumerWidget {
 }
 
   Widget _buildDrawer(BuildContext context, AuthState authState, WidgetRef ref) {
+    final user = authState.maybeWhen(
+      authenticated: (u) => u,
+      orElse: () => null,
+    );
+
+    final userName = user?.name ?? 'Guest';
+    final userRole = user?.role.displayName ?? 'Unknown Role';
+    final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'G';
+
     return Drawer(
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+      ),
       child: Column(
         children: [
-          DrawerHeader(
+          // Premium Header
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 24,
+              bottom: 24,
+              left: 24,
+              right: 24,
+            ),
             decoration: const BoxDecoration(
-              color: AppColors.primaryContainer,
+              gradient: LinearGradient(
+                colors: [AppColors.primary, Color(0xFF1E3A8A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Icon(Icons.signal_wifi_off, color: AppColors.primary, size: 40),
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Colors.white,
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Pinesphere Stay', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.primary)),
-                      authState.maybeWhen(
-                        authenticated: (user) => Text(user.role.displayName, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                        orElse: () => const SizedBox.shrink(),
+                      Text(
+                        userName,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          userRole.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -100,68 +155,111 @@ class AppScaffold extends ConsumerWidget {
               ],
             ),
           ),
+          
+          // Drawer Items
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
               children: [
-                _buildDrawerItem(context, Module.dashboard, Icons.dashboard, 'Dashboard', () => navigationShell.goBranch(0)),
-                _buildDrawerItem(context, Module.roomManagement, Icons.bed, 'Room Management', () => navigationShell.goBranch(1)),
-                _buildDrawerItem(context, Module.bookingManagement, Icons.book_online, 'Booking Management', () => navigationShell.goBranch(2)),
-                _buildDrawerItem(context, Module.checkInCheckOut, Icons.login, 'Check-in', () => context.push('/checkin')),
-                _buildDrawerItem(context, Module.checkInCheckOut, Icons.logout, 'Check-out', () => context.push('/checkout')),
-                _buildDrawerItem(context, Module.housekeeping, Icons.cleaning_services, 'Housekeeping', () => context.push('/housekeeping')),
-                _buildDrawerItem(context, Module.guestManagement, Icons.people, 'Guest Management', () => _showComingSoon(context)),
-                _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Devices & Connectivity', () => context.push('/devices')),
-                _buildDrawerItem(context, Module.housekeeping, Icons.assignment, 'Request Management', () => context.push('/requests')),
-                const Divider(),
-                _buildDrawerItem(context, Module.payments, Icons.payments, 'Payments', () => context.push('/payments')),
-                _buildDrawerItem(context, Module.reports, Icons.analytics, 'Reports', () => navigationShell.goBranch(3)),
-                _buildDrawerItem(context, Module.auditLogs, Icons.history, 'Audit Logs', () => context.push('/audit-logs')),
-                const Divider(),
-                _buildDrawerItem(context, Module.propertyOnboarding, Icons.business, 'Property Settings', () => context.push('/property-settings')),
-                _buildDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts, 'User & Role Management', () => context.push('/user-roles')),
-                _buildDrawerItem(context, Module.staffManagement, Icons.badge, 'Staff Management', () => context.push('/staff')),
-                _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Device Management', () => context.push('/device-registration')),
-                _buildDrawerItem(context, Module.subscriptionManagement, Icons.subscriptions, 'Subscription Management', () => _showComingSoon(context)),
-                _buildDrawerItem(context, Module.settings, Icons.settings, 'Settings', () => navigationShell.goBranch(4)),
+                _buildSectionHeader('CORE'),
+                _buildPremiumDrawerItem(context, Module.dashboard, Icons.dashboard_rounded, 'Dashboard', () => navigationShell.goBranch(0)),
+                _buildPremiumDrawerItem(context, Module.roomManagement, Icons.bed_rounded, 'Rooms', () => navigationShell.goBranch(1)),
+                _buildPremiumDrawerItem(context, Module.bookingManagement, Icons.calendar_month_rounded, 'Bookings', () => navigationShell.goBranch(2)),
+                _buildPremiumDrawerItem(context, Module.reports, Icons.analytics_rounded, 'Reports', () => navigationShell.goBranch(3)),
+                
+                _buildSectionHeader('OPERATIONS'),
+                _buildPremiumDrawerItem(context, Module.checkInCheckOut, Icons.login_rounded, 'Check-in', () => context.push('/checkin')),
+                _buildPremiumDrawerItem(context, Module.checkInCheckOut, Icons.logout_rounded, 'Check-out', () => context.push('/checkout')),
+                _buildPremiumDrawerItem(context, Module.payments, Icons.payments_rounded, 'Payments', () => context.push('/payments')),
+                _buildPremiumDrawerItem(context, Module.housekeeping, Icons.cleaning_services_rounded, 'Housekeeping', () => context.push('/housekeeping')),
+                _buildPremiumDrawerItem(context, Module.housekeeping, Icons.assignment_rounded, 'Requests', () => context.push('/requests')),
+                
+                _buildSectionHeader('MANAGEMENT'),
+                _buildPremiumDrawerItem(context, Module.propertyOnboarding, Icons.business_rounded, 'Property Settings', () => context.push('/property-settings')),
+                _buildPremiumDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts_rounded, 'User & Roles', () => context.push('/user-roles')),
+                _buildPremiumDrawerItem(context, Module.staffManagement, Icons.badge_rounded, 'Staff', () => context.push('/staff')),
+                _buildPremiumDrawerItem(context, Module.deviceManagement, Icons.devices_rounded, 'Devices', () => context.push('/device-registration')),
+                _buildPremiumDrawerItem(context, Module.auditLogs, Icons.history_rounded, 'Audit Logs', () => context.push('/audit-logs')),
               ],
             ),
           ),
+          
+          // Bottom Actions
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextButton.icon(
-              onPressed: () {
-                ref.read(authProvider.notifier).logout();
-              },
-              icon: const Icon(Icons.logout, color: AppColors.error),
-              label: const Text('Logout', style: TextStyle(color: AppColors.error)),
+            child: SafeArea(
+              top: false,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context); // close drawer
+                  ref.read(authProvider.notifier).logout();
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.errorContainer,
+                  foregroundColor: AppColors.onErrorContainer,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDrawerItem(BuildContext context, Module module, IconData icon, String title, VoidCallback onTap) {
-    return RoleGuard(
-      module: module,
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.onSurfaceVariant),
-        title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
-        onTap: () {
-          Navigator.pop(context); // close drawer
-          onTap();
-        },
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: AppColors.outline,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('This feature is currently in development.'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildPremiumDrawerItem(BuildContext context, Module module, IconData icon, String title, VoidCallback onTap) {
+    return RoleGuard(
+      module: module,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: InkWell(
+          onTap: () {
+            Navigator.pop(context);
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(12),
+          splashColor: AppColors.primary.withValues(alpha: 0.1),
+          highlightColor: AppColors.primary.withValues(alpha: 0.05),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, color: AppColors.primary, size: 22),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.outlineVariant, size: 18),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

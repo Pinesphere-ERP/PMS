@@ -528,14 +528,32 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildKPIsGrid(BuildContext context, WidgetRef ref) {
     final dashboardAsync = ref.watch(dashboardMetricsProvider);
+    final pmsState = ref.watch(pmsProvider);
     final authState = ref.watch(authProvider);
     final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
     final canHousekeeping = PermissionMatrix.hasAccess(role, Module.housekeeping);
     
+    // Live calculations from PMS provider state
+    final liveOccupied = pmsState.rooms.where((r) => r.status.toLowerCase() == 'occupied').length;
+    final liveVacant = pmsState.rooms.where((r) => r.status.toLowerCase() == 'vacant').length;
+    final liveTotal = liveOccupied + liveVacant;
+    final liveOccupancyPct = liveTotal > 0 ? (liveOccupied / liveTotal * 100).toStringAsFixed(0) : '0';
+    final liveArrivals = pmsState.bookings.where((b) => b.checkInDate.year == DateTime.now().year && b.checkInDate.month == DateTime.now().month && b.checkInDate.day == DateTime.now().day).length;
+    final liveDepartures = pmsState.bookings.where((b) => b.checkOutDate.year == DateTime.now().year && b.checkOutDate.month == DateTime.now().month && b.checkOutDate.day == DateTime.now().day).length;
+    final livePendingPayments = pmsState.bookings.where((b) => b.status == 'Active' || b.status == 'Upcoming').length;
+    final liveRevenue = pmsState.bookings.where((b) => b.status == 'Active').fold<double>(0.0, (sum, b) => sum + b.depositPaid);
+
     return dashboardAsync.when(
       data: (dashboardState) {
-        final totalRooms = dashboardState.occupiedRooms + dashboardState.vacantRooms;
-        final occupancy = totalRooms > 0 ? (dashboardState.occupiedRooms / totalRooms * 100).toStringAsFixed(0) : '0';
+        final occupiedRooms = dashboardState.occupiedRooms > 0 ? dashboardState.occupiedRooms : liveOccupied;
+        final vacantRooms = dashboardState.vacantRooms > 0 ? dashboardState.vacantRooms : liveVacant;
+        final totalRooms = occupiedRooms + vacantRooms;
+        final occupancy = totalRooms > 0 ? (occupiedRooms / totalRooms * 100).toStringAsFixed(0) : liveOccupancyPct;
+        final arrivals = dashboardState.todaysArrivals > 0 ? dashboardState.todaysArrivals : liveArrivals;
+        final departures = dashboardState.todaysDepartures > 0 ? dashboardState.todaysDepartures : liveDepartures;
+        final pendingPayments = dashboardState.pendingPaymentsCount > 0 ? dashboardState.pendingPaymentsCount : livePendingPayments;
+        final revenue = dashboardState.revenueToday > 0 ? dashboardState.revenueToday : liveRevenue;
+        final housekeeping = dashboardState.housekeepingCount;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,10 +567,10 @@ class DashboardScreen extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _buildKPICard(context, 'Revenue Today', '\$${dashboardState.revenueToday.toStringAsFixed(0)}', const Color(0xFF10B981), Icons.monetization_on_rounded, onTap: () => context.push('/todays-revenue')),
-                _buildKPICard(context, 'Pending Payments', '${dashboardState.pendingPaymentsCount}', AppColors.error, Icons.receipt_long_rounded, onTap: () => context.push('/pending-payments')),
+                _buildKPICard(context, 'Revenue Today', '\$${revenue.toStringAsFixed(0)}', const Color(0xFF10B981), Icons.monetization_on_rounded, onTap: () => context.push('/todays-revenue')),
+                _buildKPICard(context, 'Pending Payments', '$pendingPayments', AppColors.error, Icons.receipt_long_rounded, onTap: () => context.push('/pending-payments')),
                 _buildKPICard(context, 'Occupancy', '$occupancy%', const Color(0xFF3B82F6), Icons.analytics_rounded, onTap: () => context.push('/reports')),
-                _buildKPICard(context, 'Occupied Rooms', '${dashboardState.occupiedRooms}', AppColors.primary, Icons.hotel_rounded, onTap: () => context.push('/occupied-rooms')),
+                _buildKPICard(context, 'Occupied Rooms', '$occupiedRooms', AppColors.primary, Icons.hotel_rounded, onTap: () => context.push('/occupied-rooms')),
               ],
             ),
             _buildSectionTitle(context, 'Daily Operations'),
@@ -564,11 +582,11 @@ class DashboardScreen extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _buildKPICard(context, 'Arrivals', '${dashboardState.todaysArrivals}', const Color(0xFF8B5CF6), Icons.login_rounded, onTap: () => context.push('/todays-arrivals')),
-                _buildKPICard(context, 'Departures', '${dashboardState.todaysDepartures}', const Color(0xFFF59E0B), Icons.logout_rounded, onTap: () => context.push('/todays-departures')),
-                _buildKPICard(context, 'Vacant Rooms', '${dashboardState.vacantRooms}', const Color(0xFF64748B), Icons.vpn_key_rounded, onTap: () => context.push('/vacant-rooms')),
+                _buildKPICard(context, 'Arrivals', '$arrivals', const Color(0xFF8B5CF6), Icons.login_rounded, onTap: () => context.push('/todays-arrivals')),
+                _buildKPICard(context, 'Departures', '$departures', const Color(0xFFF59E0B), Icons.logout_rounded, onTap: () => context.push('/todays-departures')),
+                _buildKPICard(context, 'Vacant Rooms', '$vacantRooms', const Color(0xFF64748B), Icons.vpn_key_rounded, onTap: () => context.push('/vacant-rooms')),
                 if (canHousekeeping)
-                  _buildKPICard(context, 'Housekeeping', '${dashboardState.housekeepingCount}', const Color(0xFFEC4899), Icons.cleaning_services_rounded, onTap: () => context.push('/housekeeping')),
+                  _buildKPICard(context, 'Housekeeping', '$housekeeping', const Color(0xFFEC4899), Icons.cleaning_services_rounded, onTap: () => context.push('/housekeeping')),
               ],
             ),
           ],

@@ -17,7 +17,7 @@ FlutterSecureStorage secureStorage(Ref ref) {
 @riverpod
 Dio dioClient(Ref ref) {
   // Use dart-define for physical device IP, fallback to hosted backend
-  const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://pms-bvko.onrender.com/api/v1');
+  const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'http://127.0.0.1:8000/api/v1');
 
   final dio = Dio(
     BaseOptions(

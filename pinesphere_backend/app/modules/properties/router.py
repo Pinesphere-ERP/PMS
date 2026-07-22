@@ -432,7 +432,7 @@ async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Dep
             "price": float(cat.base_price if cat else 1000.0),
             "status": room.occupancy_status or "vacant",
             "resort_id": prop_id_str,
-            "description": cat.description if cat else "",
+            "description": getattr(cat, 'description', '') if cat else "",
             "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
@@ -470,7 +470,7 @@ async def get_property_rooms(property_id: str, db: AsyncSession = Depends(get_db
             "status": room.occupancy_status or "vacant",
             "resort_id": str(p_uuid),
             "property_id": str(p_uuid),
-            "description": cat.description if cat else "",
+            "description": getattr(cat, 'description', '') if cat else "",
             "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
@@ -505,7 +505,7 @@ async def get_room_detail(room_id: str, db: AsyncSession = Depends(get_db)):
         "price": float(cat.base_price or 1000.0),
         "status": room.occupancy_status or "vacant",
         "resort_id": str(cat.property_id),
-        "description": cat.description or "",
+        "description": getattr(cat, 'description', '') or "",
         "images": images
     })
 
@@ -685,7 +685,8 @@ async def update_room(room_id: str, payload: RoomUpdateInput, db: AsyncSession =
     
     category.room_name = payload.type
     category.base_price = payload.price
-    category.description = payload.description
+    if hasattr(category, 'description'):
+        category.description = payload.description
     
     db.add(room)
     db.add(category)

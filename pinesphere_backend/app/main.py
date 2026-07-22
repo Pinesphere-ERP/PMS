@@ -41,6 +41,7 @@ async def lifespan(app: FastAPI):
         from app.infra.database import engine
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
+            await conn.execute(text("ALTER TABLE room_categories ADD COLUMN IF NOT EXISTS description TEXT;"))
         logger.info("Startup check: Database connection successful")
     except Exception as e:
         logger.warning(f"Startup check: Database connection failed: {e}")

@@ -2,3 +2,8 @@ Validation Error: [{'type': 'missing', 'loc': ('body', 'email'), 'msg': 'Field r
 Body: {'login_id': 'super@test.com', 'password': 'password123', 'device_fp': 'test_device', 'property_id': None}
 Validation Error: [{'type': 'missing', 'loc': ('body', 'email'), 'msg': 'Field required', 'input': {'mobile_number': '9999999999', 'password': 'password123'}}]
 Body: {'mobile_number': '9999999999', 'password': 'password123'}
+[e7744555-306f-4f5a-b777-cd47f4840a34] Validation Error on fields: ['to_user_id']
+[f6c589ea-640e-46d8-8b2a-b715cf1f7c9b] Validation Error on fields: ['password', 'property_type']
+[89dd924f-554c-4042-804d-4ddf9959ed14] Validation Error on fields: ['password', 'property_type']
+[1cace74e-5a80-45b2-b2b1-cf233155c3ce] Validation Error on fields: ['password', 'property_type']
+[28ed937e-3c4f-4b18-a0e5-eae25fdfcebd] Validation Error on fields: ['password', 'property_type']

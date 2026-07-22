@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/network/error_formatter.dart';
 import '../../../../core/permissions/user_role.dart';
 import '../../../../core/utils/device_info.dart';
 import '../../../../main.dart';
@@ -180,7 +181,7 @@ class UserRepository {
           return Right(mockUser);
         }
       }
-      return Left(Failure.auth(e.response?.data['detail'] ?? 'Authentication failed'));
+      return Left(Failure.auth(formatError(e)));
     } catch (e, stack) {
       return Left(Failure.unknown(e.toString(), error: e, stackTrace: stack));
     }

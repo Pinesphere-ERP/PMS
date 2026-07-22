@@ -8,6 +8,7 @@ import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/subscription_notifier.dart';
 import '../../domain/models/subscription_model.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -95,6 +96,14 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.onBackground),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              ref.read(authProvider.notifier).logout();
+            },
+          ),
+        ],
       ),
       floatingActionButton: subState.when(
         data: (subscription) {

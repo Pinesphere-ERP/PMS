@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/session_context.dart';
 import '../../../../core/auth/owner_onboarding_status.dart';
-import '../../../../core/presentation/widgets/bento_card.dart';
+import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/subscription_notifier.dart';
 import '../../domain/models/subscription_model.dart';
@@ -64,7 +64,7 @@ class SubscriptionScreen extends ConsumerWidget {
                 }
                 final isActive = subscription.isActive;
                 final isTrial = subscription.isTrial;
-                return BentoCard(
+                return PineCard(
                   backgroundColor: AppColors.primaryContainer,
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -158,9 +158,8 @@ class SubscriptionScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            BentoCard(
+            PineCard(
               padding: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
               child: ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -219,59 +218,58 @@ class SubscriptionScreen extends ConsumerWidget {
 
   Widget _buildPlanItem(
       BuildContext context, WidgetRef ref, SubscriptionPlanModel plan, bool isCurrent) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isCurrent ? Theme.of(context).primaryColor : Colors.grey.shade300,
-          width: isCurrent ? 2 : 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  plan.name,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+    return PineCard(
+      padding: const EdgeInsets.all(24),
+      backgroundColor: isCurrent ? AppColors.primaryContainer.withValues(alpha: 0.2) : AppColors.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                plan.name,
+                style: const TextStyle(
+                    fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isCurrent ? AppColors.primary : AppColors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                Text(
+                child: Text(
                   '\$${plan.amount}/mo',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+                    color: isCurrent ? Colors.white : AppColors.onSurface,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              plan.features,
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isCurrent
-                    ? null
-                    : () => _upgradePlan(context, ref, plan.name),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isCurrent ? Colors.grey.shade300 : Theme.of(context).primaryColor,
-                  foregroundColor: isCurrent ? Colors.grey.shade600 : Colors.white,
-                ),
-                child: Text(isCurrent ? 'Current Plan' : 'Upgrade'),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            plan.features,
+            style: const TextStyle(color: AppColors.outline),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: isCurrent
+                  ? null
+                  : () => _upgradePlan(context, ref, plan.name),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isCurrent ? AppColors.surfaceContainerHigh : AppColors.primary,
+                foregroundColor: isCurrent ? AppColors.outline : Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text(isCurrent ? 'Current Plan' : 'Upgrade'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../../../core/presentation/widgets/design_system/pine_background.dart
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../main.dart';
 import '../../../sync/data/sync_service.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class UserDirectoryScreen extends ConsumerWidget {
   const UserDirectoryScreen({super.key});
@@ -40,27 +41,76 @@ class UserDirectoryScreen extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final user = userList[index];
                       return PineCard(
-                        padding: EdgeInsets.zero,
+                        padding: const EdgeInsets.all(4), // Tight padding for list tile
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddEditUserScreen(existingUser: user),
+                            ),
+                          );
+                        },
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           leading: CircleAvatar(
-                            child: Text(user.name.isNotEmpty ? user.name[0].toUpperCase() : '?'),
+                            radius: 24,
+                            backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.5),
+                            child: Text(
+                              user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
                           ),
-                          title: Text(user.name),
-                          subtitle: Text(user.email ?? user.mobileNumber ?? 'No contact info'),
-                          trailing: user.isPrimaryOwner
-                              ? const Chip(label: Text('Owner'))
-                              : PopupMenuButton<String>(
-                                  icon: const Icon(Icons.more_vert),
-                                  onSelected: (action) {
-                                    if (action == 'edit') {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => AddEditUserScreen(existingUser: user),
-                                        ),
-                                      );
-                                    } else if (action == 'delete') {
+                          title: Text(
+                            user.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          subtitle: Text(
+                            user.email ?? user.mobileNumber ?? 'No contact info',
+                            style: const TextStyle(color: AppColors.outline),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (user.isPrimaryOwner)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
+                                  ),
+                                  child: const Text(
+                                    'OWNER',
+                                    style: TextStyle(color: AppColors.secondary, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                )
+                              else
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    user.roleId.toUpperCase(),
+                                    style: const TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert, color: AppColors.outline),
+                                onSelected: (action) {
+                                  if (action == 'edit') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => AddEditUserScreen(existingUser: user),
+                                      ),
+                                    );
+                                  } else if (action == 'delete') {
                                       showDialog(
                                         context: context,
                                         builder: (ctx) => AlertDialog(
@@ -98,16 +148,8 @@ class UserDirectoryScreen extends ConsumerWidget {
                                     const PopupMenuItem(value: 'delete', child: Text('Delete')),
                                   ],
                                 ),
-                          onTap: () {
-                            if (!user.isPrimaryOwner) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => AddEditUserScreen(existingUser: user),
-                                ),
-                              );
-                            }
-                          },
+                            ],
+                          ),
                         ),
                       );
                     },

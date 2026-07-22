@@ -100,6 +100,20 @@ class SessionContextNotifier extends _$SessionContextNotifier {
     );
   }
 
+  void forcePaymentPending() {
+    final current = state;
+    if (current.isOwner) {
+      state = SessionContext(
+        user: current.user,
+        activePropertyId: current.activePropertyId,
+        ownerStatus: OwnerOnboardingStatus.paymentPending,
+        isOwner: current.isOwner,
+        isSuperAdmin: current.isSuperAdmin,
+        accessibleProperties: current.accessibleProperties,
+      );
+    }
+  }
+
   void overrideOwnerStatus(OwnerOnboardingStatus newStatus) {
     state = SessionContext(
       user: state.user,

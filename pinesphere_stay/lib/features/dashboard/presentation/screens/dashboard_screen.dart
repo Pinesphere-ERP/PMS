@@ -664,20 +664,65 @@ class DashboardScreen extends ConsumerWidget {
             itemCount: recentLogs.length,
             itemBuilder: (context, index) {
               final log = recentLogs[index];
-              return Card(
-                elevation: 0,
-                margin: const EdgeInsets.only(bottom: 8.0),
-                shape: RoundedRectangleBorder(
-                  side: const BorderSide(color: AppColors.outlineVariant),
-                  borderRadius: BorderRadius.circular(12),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12.0),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
                 ),
-                child: ListTile(
-                  leading: const Icon(Icons.history, color: AppColors.primary),
-                  title: Text(log.actionType ?? 'Unknown Action'),
-                  subtitle: Text('By: ${log.userId}'),
-                  trailing: Text(
-                    DateFormat('HH:mm').format(log.timestamp),
-                    style: Theme.of(context).textTheme.bodySmall,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.history_toggle_off, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              log.actionType ?? 'Unknown Action',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'By: ${log.userId}',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppColors.outline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        DateFormat('HH:mm').format(log.timestamp),
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );

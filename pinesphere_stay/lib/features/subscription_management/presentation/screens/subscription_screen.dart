@@ -1,19 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../../../core/auth/session_context.dart';
 import '../../../../core/auth/owner_onboarding_status.dart';
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/subscription_notifier.dart';
 import '../../domain/models/subscription_model.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-class SubscriptionScreen extends ConsumerWidget {
+class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SubscriptionScreen> createState() => _SubscriptionScreenState();
+}
+
+class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
+  late Razorpay _razorpay;
+  String? _currentCheckoutPlan;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    final paymentId = response.paymentId ?? 'mock_payment_id';
+    final success = await ref.read(subscriptionProvider.notifier).activateRazorpay(paymentId, _currentCheckoutPlan ?? 'Standard');
+    if (success && mounted) {
+      ref.read(sessionContextProvider.notifier).overrideOwnerStatus(OwnerOnboardingStatus.active);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment Successful! Welcome to Pinesphere.')),
+      );
+      context.go('/dashboard');
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment verification failed! Please contact support.')),
+      );
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Payment Failed: ${response.message}')),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('External Wallet Selected: ${response.walletName}')),
+    );
+  }
+
+  void _upgradePlan(String planName, String amount) {
+    _currentCheckoutPlan = planName;
+    final parsedAmount = double.tryParse(amount.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
+    
+    var options = {
+      'key': 'rzp_test_mockkey',
+      'amount': (parsedAmount * 100).toInt(),
+      'name': 'Pinesphere Stay',
+      'description': '$planName Plan Subscription',
+      'prefill': {
+        'contact': '9876543210',
+        'email': 'owner@pinesphere.com'
+      }
+    };
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final subState = ref.watch(subscriptionProvider);
 
     return Scaffold(
@@ -239,7 +311,7 @@ class SubscriptionScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '\$${plan.amount}/mo',
+                  '₹${plan.amount}/mo',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -260,7 +332,7 @@ class SubscriptionScreen extends ConsumerWidget {
             child: ElevatedButton(
               onPressed: isCurrent
                   ? null
-                  : () => _upgradePlan(context, ref, plan.name),
+                  : () => _upgradePlan(plan.name, plan.amount),
               style: ElevatedButton.styleFrom(
                 backgroundColor: isCurrent ? AppColors.surfaceContainerHigh : AppColors.primary,
                 foregroundColor: isCurrent ? AppColors.outline : Colors.white,
@@ -272,41 +344,6 @@ class SubscriptionScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  void _upgradePlan(BuildContext context, WidgetRef ref, String planName) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-    final url = await ref.read(subscriptionProvider.notifier).upgradePlan(planName);
-    if (context.mounted) {
-      Navigator.pop(context); // Dismiss loading
-      if (url == 'placeholder_success') {
-        // Refresh session to update router guards (paymentPending -> active)
-        ref.read(sessionContextProvider.notifier).overrideOwnerStatus(OwnerOnboardingStatus.active);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment Successful! Welcome to Pinesphere.')),
-        );
-        // Router will automatically redirect to dashboard because status is active!
-        context.go('/dashboard');
-      } else if (url != null && url.isNotEmpty) {
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open checkout page')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to initiate checkout')),
-        );
-      }
-    }
   }
 
   void _showCancelDialog(BuildContext context, WidgetRef ref) {

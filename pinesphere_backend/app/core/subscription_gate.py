@@ -67,7 +67,7 @@ async def require_active_subscription(
         except Exception:
             return
 
-    if subscription.status not in ("Active", "active"):
+    if subscription.status not in ("Active", "active", "Trial", "trial"):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail=(

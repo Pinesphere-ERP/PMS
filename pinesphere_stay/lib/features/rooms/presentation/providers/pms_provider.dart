@@ -360,6 +360,7 @@ class PmsNotifier extends Notifier<PmsState> {
           );
         }).where((room) => !_locallyDeletedRoomIds.contains(room.id)).toList();
         
+        debugPrint('Final parsed rooms count: ${loadedRooms.length}');
         state = state.copyWith(rooms: loadedRooms);
       }
     } catch (e) {

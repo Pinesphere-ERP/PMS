@@ -296,7 +296,8 @@ class PmsNotifier extends Notifier<PmsState> {
       final dio = ref.read(dioClientProvider);
       final response = await dio.get('/properties/rooms');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final List<dynamic> data = response.data['data'] ?? (response.data is List ? response.data : []);
+        debugPrint('Loaded API rooms count: ${data.length}');
         final loadedRooms = data.map((json) {
           final double baseRent = (json['price'] as num).toDouble();
           String descText = json['description'] ?? '';
@@ -353,6 +354,7 @@ class PmsNotifier extends Notifier<PmsState> {
           );
         }).where((room) => !_locallyDeletedRoomIds.contains(room.id)).toList();
         
+        debugPrint('Final parsed rooms count: ${loadedRooms.length}');
         state = state.copyWith(rooms: loadedRooms);
       }
     } catch (e) {
@@ -365,7 +367,7 @@ class PmsNotifier extends Notifier<PmsState> {
       final dio = ref.read(dioClientProvider);
       final response = await dio.get('/properties');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final List<dynamic> data = response.data['data'] ?? (response.data is List ? response.data : []);
         final loadedResorts = data.map((json) {
           final id = json['id'].toString();
           

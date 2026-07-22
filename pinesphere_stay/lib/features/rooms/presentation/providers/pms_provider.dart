@@ -474,7 +474,7 @@ class PmsNotifier extends Notifier<PmsState> {
         try {
           final offlineEntities = databaseService.bookingDao.getAll();
           for (final entity in offlineEntities) {
-            if (!loadedBookings.any((b) => b.id == entity.serverId)) {
+            if (entity.syncStatus == 'Pending' && !loadedBookings.any((b) => b.id == entity.serverId)) {
               loadedBookings.add(BookingModel(
                 id: entity.serverId,
                 resortId: entity.propertyId,

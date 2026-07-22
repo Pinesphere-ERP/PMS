@@ -32,7 +32,10 @@ class HousekeeperDashboardScreen extends ConsumerWidget {
           onRefresh: () async => ref.refresh(housekeeperRoomsProvider.future),
           child: roomsAsync.when(
             data: (rooms) {
-              final cleaningTasks = rooms.where((r) => r.cleanStatus == 'not_cleaned' || r.cleanStatus == 'cleaning_requested' || r.cleanStatus == 'in_progress').toList();
+              final cleaningTasks = rooms.where((r) {
+                final status = r.cleanStatus.toLowerCase();
+                return status != 'clean' && status != 'verified';
+              }).toList();
               if (cleaningTasks.isEmpty) {
                 return _buildEmptyState(context);
               }

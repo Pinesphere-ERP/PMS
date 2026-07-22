@@ -33,7 +33,7 @@ class CheckOutNotifier extends _$CheckOutNotifier {
       final result = await service.getPendingCheckOuts(propertyId);
       final checkouts = result.cast<Map<String, dynamic>>().where((co) {
         final status = co['booking_status']?.toString().toLowerCase() ?? co['status']?.toString().toLowerCase() ?? 'active';
-        return status == 'active';
+        return status == 'active' || status == 'checked_in';
       }).toList();
       state = CheckOutState.loadedPendingCheckouts(checkouts);
     } catch (e) {

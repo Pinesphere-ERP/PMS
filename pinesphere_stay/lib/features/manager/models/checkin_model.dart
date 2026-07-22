@@ -1,1 +1,0 @@
-class Checkin { final String id; Checkin({required this.id}); factory Checkin.fromJson(Map<String, dynamic> json) => Checkin(id: json['id'] ?? ''); }

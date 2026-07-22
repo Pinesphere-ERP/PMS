@@ -7,7 +7,6 @@ from datetime import date, timedelta
 from typing import List, Optional
 
 from app.infra.database import get_db, provision_tenant_schema
-from app.core.config import settings
 from app.core.dependencies import assert_property_access, get_current_user, require_room_access, require_super_admin, get_current_role
 from app.infra.models import Property, Owner, Business, Subscription, AuditLog, Room, RoomCategory, User, Role
 import uuid
@@ -385,29 +384,23 @@ async def delete_property(property_id: str, db: AsyncSession = Depends(get_db)):
 
 
 
-from pydantic import BaseModel, validator
-from typing import Optional, Any
+from pydantic import BaseModel
 
 class RoomCreateInput(BaseModel):
     room_number: str
     type: str
     price: float
     resort_id: str
-    description: Any = ""
+    description: Optional[str] = ""
     image_url: Optional[str] = ""
 
-    @validator("description", pre=True, always=True)
-    def validate_description(cls, v):
-        if isinstance(v, dict):
-            raise ValueError("description must be a string")
-        return v
 
 @router.get("/rooms")
 async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     role = await get_current_role(current_user, db)
     
-    # Select all rooms joined with their category
-    q = select(Room, RoomCategory).join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
+    # Select all rooms outer joined with their category
+    q = select(Room, RoomCategory).outerjoin(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
     
     if role.role_code != "SUPER_ADMIN":
         from app.infra.models import UserPropertyAccess, Property, Owner
@@ -432,12 +425,11 @@ async def get_rooms(db: AsyncSession = Depends(get_db), current_user: User = Dep
         data.append({
             "id": str(room.room_id),
             "room_number": room.room_number,
-            "floor": getattr(room, 'floor', '1') or '1',
             "type": cat.room_name if cat else "Standard",
             "price": float(cat.base_price if cat else 1000.0),
             "status": room.occupancy_status or "vacant",
             "resort_id": str(cat.property_id) if cat else str(current_user.property_id or ""),
-            "description": getattr(cat, 'description', '') if cat else "",
+            "description": cat.description if cat else "",
             "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
@@ -467,7 +459,6 @@ async def get_property_rooms(property_id: str, db: AsyncSession = Depends(get_db
             "id": str(room.room_id),
             "room_id": str(room.room_id),
             "room_number": room.room_number,
-            "floor": getattr(room, 'floor', '1') or '1',
             "type": cat.room_name if cat else "Standard",
             "category": cat.room_name if cat else "Standard",
             "price": float(cat.base_price if cat else 1000.0),
@@ -475,7 +466,7 @@ async def get_property_rooms(property_id: str, db: AsyncSession = Depends(get_db
             "status": room.occupancy_status or "vacant",
             "resort_id": str(p_uuid),
             "property_id": str(p_uuid),
-            "description": getattr(cat, 'description', '') if cat else "",
+            "description": cat.description if cat else "",
             "images": [url.strip() for url in (room.image_url or "").split(",") if url.strip()] if room.image_url else [
                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=500&q=80"
             ]
@@ -510,7 +501,7 @@ async def get_room_detail(room_id: str, db: AsyncSession = Depends(get_db)):
         "price": float(cat.base_price or 1000.0),
         "status": room.occupancy_status or "vacant",
         "resort_id": str(cat.property_id),
-        "description": getattr(cat, 'description', '') if cat else "",
+        "description": cat.description or "",
         "images": images
     }
 
@@ -542,50 +533,67 @@ async def upload_image(file: UploadFile = File(...)):
 @router.post("/rooms", status_code=201)
 async def create_room(payload: RoomCreateInput, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     import uuid as _uuid
-    resort_uuid = _uuid.UUID(payload.resort_id)
+    resort_uuid = None
+    if payload.resort_id:
+        try:
+            resort_uuid = _uuid.UUID(payload.resort_id)
+        except Exception:
+            pass
+
+    if not resort_uuid:
+        if current_user.property_id:
+            resort_uuid = current_user.property_id
+        else:
+            first_prop = (await db.execute(select(Property))).scalars().first()
+            if first_prop:
+                resort_uuid = first_prop.property_id
+
+    if not resort_uuid:
+        raise HTTPException(status_code=400, detail="Invalid resort_id format")
+
     await assert_property_access(resort_uuid, current_user, db)
     
-    # 0. Check if property/resort exists. If not, auto-create a mock property
+    # 0. Check if property/resort exists. If not, return error
     prop_q = select(Property).where(Property.property_id == resort_uuid)
     prop_result = await db.execute(prop_q)
     prop = prop_result.scalar_one_or_none()
     
     if not prop:
-        prop = Property(
-            property_id=resort_uuid,
-            property_name="Resort Property",
-            property_type="Resort",
-            onboarding_status="completed"
-        )
-        db.add(prop)
-        await db.flush()
+        return {
+            "success": False,
+            "status": "property_not_found",
+            "message": "Property does not exist"
+        }
 
     # 1. Check if category with this name and resort exists
     cat_q = select(RoomCategory).where(
         and_(
             RoomCategory.property_id == resort_uuid,
-            RoomCategory.name == payload.type
+            RoomCategory.room_name == payload.type
         )
     )
     cat_result = await db.execute(cat_q)
     category = cat_result.scalar_one_or_none()
     
     if not category:
-        try:
-            # Create a new category
-            category = RoomCategory(
-                property_id=resort_uuid,
-                name=payload.type,
-                category=payload.type,
-                description=str(payload.description) if payload.description else ""
-            )
-            db.add(category)
-            await db.flush()
-        except TypeError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        # Create a new category
+        category = RoomCategory(
+            property_id=resort_uuid,
+            room_name=payload.type,
+            base_price=payload.price,
+            number_of_rooms=1,
+            description=payload.description
+        )
+        db.add(category)
+        await db.flush()
     else:
-        # RoomType doesn't track number_of_rooms directly in this model anymore
-        pass
+        # Increment room count, but do NOT overwrite existing price and amenities
+        if category.number_of_rooms:
+            category.number_of_rooms += 1
+        else:
+            category.number_of_rooms = 1
+        db.add(category)
+        await db.flush()
         
     new_room = Room(
         property_id=resort_uuid,
@@ -724,7 +732,6 @@ async def delete_room(room_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("")
-@router.get("/")
 async def get_properties(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """List properties. Super admins see all, owners see their own."""
     role = await get_current_role(current_user, db)
@@ -732,15 +739,17 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
     q = (
         select(Property, Owner, Business, Subscription)
         .select_from(Property)
-        .outerjoin(Owner, Property.owner_id == Owner.owner_id)
+        .join(Owner, Property.owner_id == Owner.owner_id)
         .outerjoin(Business, Property.business_id == Business.business_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
     )
     
     if role.role_code != "SUPER_ADMIN":
+        # Non-super admins only see properties they have access to
         from app.infra.models import UserPropertyAccess
         from sqlalchemy import or_
         
+        # Outerjoin to allow matching EITHER condition
         q = q.outerjoin(UserPropertyAccess, UserPropertyAccess.property_id == Property.property_id)
         
         conditions = [UserPropertyAccess.user_id == current_user.id]
@@ -755,6 +764,7 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
     result = await db.execute(q)
     rows = result.unique().all()
 
+    # De-duplicate: one row per property (take first subscription found)
     seen = {}
     for prop, owner, biz, sub in rows:
         pid = str(prop.property_id)
@@ -766,77 +776,40 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
         status = _property_status(prop.onboarding_status, sub.status if sub else None)
         data.append({
             "id": pid,
-            "property_id": pid,
             "name": prop.property_name,
             "property_name": prop.property_name,
             "type": prop.property_type or "Hotel",
             "property_type": prop.property_type or "Hotel",
             "image": prop.cover_image or "https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80",
-            "star_category": prop.star_category or "5",
-            "year_established": prop.year_established or "2024",
-            "floors": prop.total_floors or 2,
-            "rooms": prop.total_rooms or 10,
-            "description": prop.description or "Luxury Beachfront Property",
-            "owner": owner.full_name if owner else "Super Admin",
-            "owner_email": owner.email if owner else "admin@pinesphere.com",
-            "mobile": owner.mobile_number if owner else "+91 9876543210",
-            "owner_pan": owner.pan_number if owner else "N/A",
-            "owner_designation": owner.designation if owner else "Owner",
-            "business": biz.business_name if biz else "Pinesphere Group",
-            "business_name": biz.business_name if biz else "Pinesphere Group",
-            "business_type": biz.business_type if biz else "Hospitality",
-            "business_reg": biz.business_reg_number if biz else "N/A",
-            "business_gst": biz.gst_number if biz else "N/A",
-            "business_pan": biz.pan_number if biz else "N/A",
-            "city": prop.city or "Beachside",
+            "star_category": prop.star_category or "N/A",
+            "year_established": prop.year_established or "N/A",
+            "floors": prop.total_floors or 0,
+            "rooms": prop.total_rooms or 0,
+            "description": prop.description or "",
+            "owner": owner.full_name,
+            "owner_email": owner.email or "N/A",
+            "mobile": owner.mobile_number,
+            "owner_pan": owner.pan_number or "N/A",
+            "owner_designation": owner.designation or "N/A",
+            "business": biz.business_name,
+            "business_name": biz.business_name,
+            "business_type": biz.business_type or "N/A",
+            "business_reg": biz.business_reg_number or "N/A",
+            "business_gst": biz.gst_number or "N/A",
+            "business_pan": biz.pan_number or "N/A",
+            "city": prop.city or "Unknown",
             "status": status,
             "verificationStatus": _verification_status(prop.onboarding_status),
-            "subscriptionStatus": sub.status if sub else "Active",
-            "plan": sub.plan if sub else "Enterprise",
-            "lastUpdated": str(prop.updated_at)[:10] if prop.updated_at else "2026-07-21",
+            "subscriptionStatus": sub.status if sub else "No Subscription",
+            "plan": sub.plan if sub else "N/A",
+            "lastUpdated": str(prop.updated_at)[:10] if prop.updated_at else "N/A",
             "onboarding": "100%" if prop.onboarding_status == "completed" else "50%",
-            "lastSync": "Live",
+            "lastSync": "N/A",
         })
-
-    if not data:
-        data = [{
-            "id": "511e5f8b-bb1e-4f76-a817-6133613f1dd0",
-            "property_id": "511e5f8b-bb1e-4f76-a817-6133613f1dd0",
-            "name": "Sunset Cove Resort",
-            "property_name": "Sunset Cove Resort",
-            "type": "Resort",
-            "property_type": "Resort",
-            "image": "https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80",
-            "star_category": 5,
-            "year_established": 2024,
-            "floors": 2,
-            "rooms": 10,
-            "description": "Luxury Bayfront Resort",
-            "owner": "Super Admin",
-            "owner_email": "admin@pinesphere.com",
-            "mobile": "+91 9876543210",
-            "owner_pan": "ABCDE1234F",
-            "owner_designation": "Owner",
-            "business": "Pinesphere Group",
-            "business_name": "Pinesphere Group",
-            "business_type": "Hospitality",
-            "business_reg": "REG12345",
-            "business_gst": "22AAAAA0000A1Z5",
-            "business_pan": "ABCDE1234F",
-            "city": "Goa",
-            "status": "Active",
-            "verificationStatus": "Verified",
-            "subscriptionStatus": "Active",
-            "plan": "Enterprise",
-            "lastUpdated": "2026-07-21",
-            "onboarding": "100%",
-            "lastSync": "Live"
-        }]
-
     return data
 
 
-@router.get("/kpis")
+@router.get("/kpis", dependencies=[Depends(require_super_admin)])
 async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     """Aggregate KPI counts for the Property Management dashboard."""
     total_q = await db.execute(select(func.count(Property.property_id)))
@@ -860,10 +833,6 @@ async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     )
     suspended = suspended_q.scalar() or 0
 
-    if total == 0:
-        total = 1
-        active = 1
-
     return [
         {"name": "Total Properties", "value": str(total), "icon": "Building2", "color": "text-pine-DEFAULT", "bg": "bg-pine-50"},
         {"name": "Active", "value": str(active), "icon": "CheckCircle2", "color": "text-green-600", "bg": "bg-green-50"},
@@ -872,7 +841,7 @@ async def get_property_kpis(db: AsyncSession = Depends(get_db)):
     ]
 
 
-@router.get("/dashboard")
+@router.get("/dashboard", dependencies=[Depends(require_super_admin)])
 async def get_property_dashboard(db: AsyncSession = Depends(get_db)):
     """Super Admin overview dashboard: KPIs + recent audit activity."""
     # --- KPIs ---
@@ -967,70 +936,32 @@ async def get_property_detail(property_id: str, db: AsyncSession = Depends(get_d
         pid = _uuid.UUID(property_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid property ID format")
-    try:
-        await assert_property_access(pid, current_user, db)
-    except HTTPException as http_err:
-        if http_err.status_code == 404:
-            return {
-                "id": str(pid),
-                "property_id": str(pid),
-                "property_name": "Resort Property",
-                "name": "Resort Property",
-                "type": "Resort",
-                "rooms": 10,
-                "floors": 2,
-                "owner": "Super Admin",
-                "mobile": "+91 9876543210",
-                "email": "admin@pinesphere.com",
-                "business": "Pinesphere Stay",
-                "onboarding_status": "completed",
-                "description": "Property Management",
-                "subscription": None
-            }
-        raise http_err
+    await assert_property_access(pid, current_user, db)
 
     q = (
         select(Property, Owner, Business, Subscription)
         .select_from(Property)
-        .outerjoin(Owner, Property.owner_id == Owner.owner_id)
-        .outerjoin(Business, Property.business_id == Business.business_id)
+        .join(Owner, Property.owner_id == Owner.owner_id)
+        .join(Business, Property.business_id == Business.business_id)
         .outerjoin(Subscription, Subscription.property_id == Property.property_id)
         .where(Property.property_id == pid)
     )
     result = await db.execute(q)
     row = result.first()
     if not row:
-        prop = (await db.execute(select(Property).where(Property.property_id == pid))).scalar_one_or_none()
-        if not prop:
-            raise HTTPException(status_code=404, detail="Property not found")
-        return {
-            "id": str(prop.property_id),
-            "property_name": prop.property_name,
-            "name": prop.property_name,
-            "type": prop.property_type,
-            "rooms": prop.total_rooms,
-            "floors": prop.total_floors,
-            "owner": "N/A",
-            "mobile": "",
-            "email": "",
-            "business": "",
-            "onboarding_status": prop.onboarding_status,
-            "description": prop.description,
-            "subscription": None
-        }
+        raise HTTPException(status_code=404, detail="Property not found")
 
     prop, owner, biz, sub = row
     return {
         "id": str(prop.property_id),
-        "property_name": prop.property_name,
         "name": prop.property_name,
         "type": prop.property_type,
         "rooms": prop.total_rooms,
         "floors": prop.total_floors,
-        "owner": owner.full_name if owner else "N/A",
-        "mobile": owner.mobile_number if owner else "",
-        "email": owner.email if owner else "",
-        "business": biz.business_name if biz else "",
+        "owner": owner.full_name,
+        "mobile": owner.mobile_number,
+        "email": owner.email,
+        "business": biz.business_name,
         "onboarding_status": prop.onboarding_status,
         "description": prop.description,
         "subscription": {

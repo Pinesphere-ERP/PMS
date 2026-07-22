@@ -95,7 +95,7 @@ async def _resolve_user(db: AsyncSession, identifier: str) -> Optional[User]:
             User.username == identifier,
             User.mobile_number == identifier,
         )
-    )
+    ).order_by(User.created_at.desc())
     result = await db.execute(stmt)
     return result.scalars().first()
 

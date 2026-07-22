@@ -30,12 +30,9 @@ class AppScaffold extends ConsumerWidget {
     }
 
     return PopScope(
-      canPop: false,
+      canPop: navigationShell.currentIndex == 0,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (context.canPop()) {
-          context.pop();
-        } else if (navigationShell.currentIndex != 0) {
+        if (!didPop) {
           navigationShell.goBranch(0);
         }
       },
@@ -122,7 +119,7 @@ class AppScaffold extends ConsumerWidget {
                 _buildDrawerItem(context, Module.auditLogs, Icons.history, 'Audit Logs', () => context.push('/audit-logs')),
                 const Divider(),
                 _buildDrawerItem(context, Module.propertyOnboarding, Icons.business, 'Property Settings', () => context.push('/property-settings')),
-                _buildDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts, 'User & Role Management', () => _showComingSoon(context)),
+                _buildDrawerItem(context, Module.userRoleManagement, Icons.manage_accounts, 'User & Role Management', () => context.push('/user-roles')),
                 _buildDrawerItem(context, Module.staffManagement, Icons.badge, 'Staff Management', () => context.push('/staff')),
                 _buildDrawerItem(context, Module.deviceManagement, Icons.devices, 'Device Management', () => context.push('/device-registration')),
                 _buildDrawerItem(context, Module.subscriptionManagement, Icons.subscriptions, 'Subscription Management', () => _showComingSoon(context)),

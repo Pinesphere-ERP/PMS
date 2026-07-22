@@ -35,21 +35,14 @@ logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Database connection check & schema column alignment
+    # 1. Database connection check
     try:
-        from app.infra.database import engine, Base
+        from app.infra.database import engine
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
-            await conn.run_sync(Base.metadata.create_all)
-            try:
-                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS floor VARCHAR(10);"))
-                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS housekeeping_status VARCHAR(20) DEFAULT 'clean';"))
-                await conn.execute(text("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS occupancy_status VARCHAR(20) DEFAULT 'vacant';"))
-            except Exception:
-                pass
-        logger.info("Startup check: Database connection and auto-schema alignment successful")
+        logger.info("Startup check: Database connection successful")
     except Exception as e:
-        logger.warning(f"Startup check: Database connection/schema alignment failed: {e}")
+        logger.warning(f"Startup check: Database connection failed: {e}")
 
     # 2. Redis connection check
     try:
@@ -97,11 +90,11 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# CORS - allow configured origins only
+# CORS - allow all origins for web and local dev
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -124,6 +117,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         
     return JSONResponse(
         status_code=422,
+        headers={"Access-Control-Allow-Origin": "*"},
         content={
             "detail": exc.errors(),
             "request_id": request_id,
@@ -133,13 +127,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    import traceback
-    with open("crash.log", "w") as f:
-        f.write(traceback.format_exc())
     logger.error(f"Unhandled Exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error"},
+        headers={"Access-Control-Allow-Origin": "*"},
+        content={"detail": str(exc)},
     )
 
 @app.get("/health")

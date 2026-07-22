@@ -1,1 +1,0 @@
-class RoomBlock { final String id; final String reason; RoomBlock({required this.id, required this.reason}); factory RoomBlock.fromJson(Map<String, dynamic> json) => RoomBlock(id: json['block_id'] ?? '', reason: json['reason'] ?? ''); }

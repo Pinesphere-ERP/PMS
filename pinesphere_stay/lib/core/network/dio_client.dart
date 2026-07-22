@@ -48,7 +48,21 @@ class OfflineOutboxInterceptor extends Interceptor {
         err.type == DioExceptionType.connectionError ||
         err.error.toString().contains('SocketException');
 
-    // The automatic local fallback was removed to ensure the app only communicates with the hosted backend.
+    // If hosted backend (render) fails, automatically fallback to local server
+    if (isNetworkError && err.requestOptions.baseUrl.contains('onrender.com')) {
+      try {
+        final localBaseUrl = defaultTargetPlatform == TargetPlatform.android
+            ? 'http://10.0.2.2:8000/api/v1'
+            : 'http://localhost:8000/api/v1';
+
+        final options = err.requestOptions;
+        options.baseUrl = localBaseUrl;
+        final fallbackDio = Dio();
+        final response = await fallbackDio.fetch(options);
+        return handler.resolve(response);
+      } catch (_) {}
+    }
+
     final method = err.requestOptions.method.toUpperCase();
 
     // If it's a mutating request, not an auth endpoint, and the network is down, queue it!

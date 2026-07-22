@@ -15,20 +15,6 @@ class RoleDirectoryScreen extends ConsumerWidget {
     final roleAsync = ref.watch(roleListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Role Management'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddEditRoleScreen()),
-              );
-            },
-          )
-        ],
-      ),
       body: PineBackground(
         child: Column(
           children: [

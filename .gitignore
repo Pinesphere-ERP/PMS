@@ -27,4 +27,3 @@ node_modules/
 pinesphere_backend\venve
 full-history.txt
 web/admin/.env
-pinesphere_backend/pinesphere.db

@@ -35,7 +35,7 @@ class _PropertySettingsScreenState extends ConsumerState<PropertySettingsScreen>
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Property Settings',

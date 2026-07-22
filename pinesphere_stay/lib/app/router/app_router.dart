@@ -11,7 +11,6 @@ import '../../features/auth/presentation/screens/owner_registration_screen.dart'
 import '../../features/requests/presentation/screens/requests_screen.dart';
 import '../../features/requests/presentation/screens/create_request_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
-import '../../features/manager/screens/manager_dashboard_screen.dart';
 import '../../features/rooms/presentation/screens/room_grid_screen.dart';
 import '../../features/reports/presentation/screens/reports_dashboard_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
@@ -45,6 +44,7 @@ import '../../features/housekeeping/presentation/screens/housekeeper_image_uploa
 
 // Owner Platform screens
 import '../../features/property_onboarding/presentation/screens/property_wizard_screen.dart';
+import '../../features/user_role_management/presentation/screens/user_role_dashboard_screen.dart';
 
 import '../../features/subscription_management/presentation/screens/subscription_screen.dart';
 import '../../features/subscription_management/presentation/screens/subscription_expired_screen.dart';
@@ -147,7 +147,6 @@ GoRouter appRouter(Ref ref) {
             if (roleCode == 'HOUSEKEEPING') return '/housekeeper-dashboard';
             if (roleCode == 'KITCHEN') return '/kitchen';
             if (roleCode == 'ACCOUNTANT') return '/accountant-dashboard';
-            if (roleCode == 'PROPERTY_MANAGER') return '/manager-dashboard';
             // All other roles land on dashboard (which has its own state guard)
             return '/dashboard';
           },
@@ -275,6 +274,10 @@ GoRouter appRouter(Ref ref) {
         builder: (context, state) => const StaffManagementScreen(),
       ),
       GoRoute(
+        path: '/user-roles',
+        builder: (context, state) => const UserRoleDashboardScreen(),
+      ),
+      GoRoute(
         path: '/housekeeper-dashboard',
         builder: (context, state) => const HousekeeperDashboardScreen(),
       ),
@@ -299,10 +302,6 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/dashboard',
                 builder: (context, state) => const DashboardScreen(),
-              ),
-              GoRoute(
-                path: '/manager-dashboard',
-                builder: (context, state) => const ManagerDashboardScreen(),
               ),
               GoRoute(
                 path: '/checkin',

@@ -18,6 +18,11 @@ import '../../features/settings/presentation/screens/property_settings_screen.da
 import '../../features/bookings/presentation/screens/booking_list_screen.dart';
 import '../../features/accountant/presentation/screens/accountant_dashboard_screen.dart';
 import '../../features/accountant/presentation/screens/accountant_guest_detail_screen.dart';
+import '../../features/accountant/presentation/screens/income_detail_screen.dart';
+import '../../features/accountant/presentation/screens/expense_detail_screen.dart';
+import '../../features/accountant/presentation/screens/profit_loss_screen.dart';
+import '../../features/accountant/presentation/screens/gst_invoice_screen.dart';
+import '../../features/accountant/presentation/screens/reports_manager_screen.dart';
 import '../../features/bookings/presentation/screens/pending_checkouts_screen.dart';
 import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart';
 import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
@@ -298,7 +303,7 @@ GoRouter appRouter(Ref ref) {
       // ── Main App Shell (StatefulShellRoute) ────────────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return AppScaffold(navigationShell: navigationShell);
+          return AppScaffold(navigationShell: navigationShell, routerState: state);
         },
         branches: [
           // Branch 0: Dashboard & operations
@@ -358,7 +363,18 @@ GoRouter appRouter(Ref ref) {
               ),
               GoRoute(
                 path: '/payment-collection',
-                builder: (context, state) => const PaymentCollectionScreen(),
+                builder: (context, state) {
+                  final extra = state.extra as Map<String, dynamic>?;
+                  final bookingId = extra?['bookingId'] as String? ?? state.uri.queryParameters['bookingId'];
+                  final invoiceId = extra?['invoiceId'] as String? ?? state.uri.queryParameters['invoiceId'];
+                  final amountStr = extra?['amount'] as String? ?? state.uri.queryParameters['amount'];
+                  final initialAmount = amountStr != null ? double.tryParse(amountStr) : null;
+                  return PaymentCollectionScreen(
+                    bookingId: bookingId,
+                    invoiceId: invoiceId,
+                    initialAmount: initialAmount,
+                  );
+                },
               ),
               GoRoute(
                 path: '/accountant-dashboard',
@@ -367,6 +383,26 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/accountant-guest/:id',
                 builder: (context, state) => AccountantGuestDetailScreen(bookingId: state.pathParameters['id']!),
+              ),
+              GoRoute(
+                path: '/accountant/income',
+                builder: (context, state) => const IncomeDetailScreen(),
+              ),
+              GoRoute(
+                path: '/accountant/expenses',
+                builder: (context, state) => const ExpenseDetailScreen(),
+              ),
+              GoRoute(
+                path: '/accountant/profit-loss',
+                builder: (context, state) => const ProfitLossScreen(),
+              ),
+              GoRoute(
+                path: '/accountant/gst-invoices',
+                builder: (context, state) => const GSTInvoiceScreen(),
+              ),
+              GoRoute(
+                path: '/accountant/reports',
+                builder: (context, state) => const ReportsManagerScreen(),
               ),
             ],
           ),

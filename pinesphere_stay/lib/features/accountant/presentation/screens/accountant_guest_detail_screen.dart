@@ -98,9 +98,13 @@ class AccountantGuestDetailScreen extends ConsumerWidget {
                       foregroundColor: AppColors.onPrimary,
                     ),
                     onPressed: () {
-                      // Navigate to standard payment collection screen
-                      // Passing the required arguments via extras or router state
-                      context.push('/payment-collection');
+                      context.push(
+                        '/payment-collection',
+                        extra: {
+                          'bookingId': bookingId,
+                          'amount': (totalAmount - paidAmount).toString(),
+                        },
+                      );
                     },
                   ),
                 ),

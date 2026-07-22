@@ -29,6 +29,8 @@ class DashboardScreen extends ConsumerWidget {
       authenticated: (user) => user.name,
       orElse: () => 'Guest',
     );
+    final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
+    final isAccountant = role == UserRole.accountant;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -43,8 +45,10 @@ class DashboardScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildStaggeredItem(0, _buildGreeting(context, ref, userName)),
-                  const SizedBox(height: 24),
-                  _buildStaggeredItem(1, _buildQuickActions(context, ref)),
+                  if (!isAccountant) ...[
+                    const SizedBox(height: 24),
+                    _buildStaggeredItem(1, _buildQuickActions(context, ref)),
+                  ],
                   const SizedBox(height: 24),
                   _buildStaggeredItem(2, _buildKPIsGrid(context, ref)),
                   const SizedBox(height: 24),
@@ -115,6 +119,7 @@ class DashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final role = authState.maybeWhen(authenticated: (u) => u.role, orElse: () => UserRole.reception);
     final isReceptionist = role == UserRole.reception;
+    final isAccountant = role == UserRole.accountant;
     final session = ref.watch(sessionContextProvider);
     final String? assignedPropertyId = session.activePropertyId ??
         authState.maybeWhen(authenticated: (u) => u.propertyId, orElse: () => null);
@@ -203,111 +208,114 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryContainer.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
+        GestureDetector(
+          onTap: isAccountant ? () => context.push('/accountant-dashboard') : null,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.apartment_rounded, color: AppColors.primary, size: 22),
                     ),
-                    child: const Icon(Icons.apartment_rounded, color: AppColors.primary, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          resortName.isNotEmpty ? resortName : 'Property',
-                          style: GoogleFonts.outfit(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.onSurface,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on, size: 14, color: AppColors.primary),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                resortLocation.isNotEmpty ? resortLocation : 'Property Location',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: AppColors.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            resortName.isNotEmpty ? resortName : 'Property',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.onSurface,
                             ),
-                          ],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on, size: 14, color: AppColors.primary),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  resortLocation.isNotEmpty ? resortLocation : 'Property Location',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: AppColors.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isAccountant ? 'Accounting Desk ➔' : (isReceptionist ? 'Reception Desk' : 'Assigned'),
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
                         ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      isReceptionist ? 'Reception Desk' : 'Assigned',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: sharePropertyLocation,
-                      icon: const Icon(Icons.share_location_rounded, size: 18, color: AppColors.primary),
-                      label: const Text(
-                        'Share Location & Directions',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        side: const BorderSide(color: AppColors.primary),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(height: 1),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: sharePropertyLocation,
+                        icon: const Icon(Icons.share_location_rounded, size: 18, color: AppColors.primary),
+                        label: const Text(
+                          'Share Location & Directions',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: const BorderSide(color: AppColors.primary),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -512,6 +520,8 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+
+
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(

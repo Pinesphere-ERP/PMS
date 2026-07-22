@@ -7,14 +7,17 @@ import '../../core/permissions/permission_matrix.dart';
 import '../../core/presentation/widgets/role_guard.dart';
 import '../../features/auth/presentation/providers/auth_notifier.dart';
 import '../../core/presentation/widgets/connectivity_banner.dart';
+import '../../core/permissions/user_role.dart';
 
 class AppScaffold extends ConsumerWidget {
   const AppScaffold({
     super.key,
     required this.navigationShell,
+    required this.routerState,
   });
 
   final StatefulNavigationShell navigationShell;
+  final GoRouterState routerState;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,11 +27,20 @@ class AppScaffold extends ConsumerWidget {
       orElse: () => false,
     );
 
+    final role = authState.maybeWhen(
+      authenticated: (user) => user.role,
+      orElse: () => null,
+    );
+    final isAccountant = role == UserRole.accountant;
+
     // If housekeeping role, we don't use this scaffold at all (no bottom nav)
     // The HousekeeperDashboardScreen provides its own Scaffold + Drawer
     if (isHousekeeper) {
       return navigationShell;
     }
+
+    final location = routerState.uri.toString();
+    final isPropertyActive = location.contains('accountant');
 
     return PopScope(
       canPop: navigationShell.currentIndex == 0,
@@ -41,36 +53,72 @@ class AppScaffold extends ConsumerWidget {
         backgroundColor: AppColors.background,
         drawer: _buildDrawer(context, authState, ref),
         body: ConnectivityBanner(child: navigationShell),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              offset: const Offset(0, -1),
-              blurRadius: 3,
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                RoleGuard(module: Module.dashboard, child: _buildNavItem(context, index: 0, icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, label: 'Dashboard')),
-                RoleGuard(module: Module.roomManagement, child: _buildNavItem(context, index: 1, icon: Icons.bed_outlined, activeIcon: Icons.bed_rounded, label: 'Rooms')),
-                RoleGuard(module: Module.bookingManagement, child: _buildNavItem(context, index: 2, icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month_rounded, label: 'Bookings')),
-                RoleGuard(module: Module.reports, child: _buildNavItem(context, index: 3, icon: Icons.analytics_outlined, activeIcon: Icons.analytics_rounded, label: 'Reports')),
-                RoleGuard(module: Module.settings, child: _buildNavItem(context, index: 4, icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Settings')),
-              ],
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                offset: const Offset(0, -1),
+                blurRadius: 3,
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  RoleGuard(module: Module.dashboard, child: _buildNavItem(context, index: 0, icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, label: 'Dashboard', isPropertyActive: isPropertyActive)),
+                  if (isAccountant)
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => context.push('/accountant-dashboard'),
+                        behavior: HitTestBehavior.opaque,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isPropertyActive ? AppColors.secondaryContainer : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.apartment_rounded,
+                                color: isPropertyActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Property',
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: isPropertyActive ? AppColors.onSecondaryContainer : AppColors.onSurfaceVariant,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 10,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  RoleGuard(module: Module.roomManagement, child: _buildNavItem(context, index: 1, icon: Icons.bed_outlined, activeIcon: Icons.bed_rounded, label: 'Rooms', isPropertyActive: isPropertyActive)),
+                  RoleGuard(module: Module.bookingManagement, child: _buildNavItem(context, index: 2, icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month_rounded, label: 'Bookings', isPropertyActive: isPropertyActive)),
+                  RoleGuard(module: Module.reports, child: _buildNavItem(context, index: 3, icon: Icons.analytics_outlined, activeIcon: Icons.analytics_rounded, label: 'Reports', isPropertyActive: isPropertyActive)),
+                  RoleGuard(module: Module.settings, child: _buildNavItem(context, index: 4, icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Settings', isPropertyActive: isPropertyActive)),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildDrawer(BuildContext context, AuthState authState, WidgetRef ref) {
     final user = authState.maybeWhen(
@@ -289,8 +337,8 @@ class AppScaffold extends ConsumerWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, {required int index, required IconData icon, required IconData activeIcon, required String label}) {
-    final isActive = navigationShell.currentIndex == index;
+  Widget _buildNavItem(BuildContext context, {required int index, required IconData icon, required IconData activeIcon, required String label, required bool isPropertyActive}) {
+    final isActive = isPropertyActive ? false : (navigationShell.currentIndex == index);
 
     return Expanded(
       child: GestureDetector(

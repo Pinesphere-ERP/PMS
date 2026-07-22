@@ -70,24 +70,29 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialBookingData != null) {
-      final data = widget.initialBookingData!;
-      _isWalkInMode = true;
-      _fullNameController.text = data['guest_name']?.toString() ?? '';
-      _mobileController.text = data['guest_phone']?.toString() ?? data['mobile']?.toString() ?? '';
-      _emailController.text = data['guest_email']?.toString() ?? data['email']?.toString() ?? '';
-      _selectedRoomId = data['room_id']?.toString();
-      _selectedRoomName = data['room_number']?.toString();
-      if (data['check_in_date'] != null) {
-        _walkInCheckInDate = DateTime.tryParse(data['check_in_date'].toString());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialBookingData != null) {
+        final data = widget.initialBookingData!;
+        _isWalkInMode = true;
+        _fullNameController.text = data['guest_name']?.toString() ?? '';
+        _mobileController.text = data['guest_phone']?.toString() ?? data['mobile']?.toString() ?? '';
+        _emailController.text = data['guest_email']?.toString() ?? data['email']?.toString() ?? '';
+        _selectedRoomId = data['room_id']?.toString();
+        _selectedRoomName = data['room_number']?.toString();
+        if (data['check_in_date'] != null) {
+          _walkInCheckInDate = DateTime.tryParse(data['check_in_date'].toString());
+        }
+        if (data['check_out_date'] != null) {
+          _walkInCheckOutDate = DateTime.tryParse(data['check_out_date'].toString());
+        }
+        if (data['deposit'] != null) {
+          _walkInDepositController.text = data['deposit'].toString();
+        }
+        ref.read(checkInProvider.notifier).searchAvailableRooms(_propertyId);
+      } else {
+        ref.read(checkInProvider.notifier).searchBookings(_propertyId);
       }
-      if (data['check_out_date'] != null) {
-        _walkInCheckOutDate = DateTime.tryParse(data['check_out_date'].toString());
-      }
-      if (data['deposit'] != null) {
-        _walkInDepositController.text = data['deposit'].toString();
-      }
-    }
+    });
   }
 
   int get _walkInNights {
@@ -125,7 +130,14 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   }
 
   String get _propertyId {
-    return ref.read(tenantProvider) ?? '';
+    final tenant = ref.read(tenantProvider);
+    if (tenant != null && tenant.isNotEmpty) return tenant;
+    final pmsState = ref.read(pmsProvider);
+    if (pmsState.selectedResortId != null && pmsState.selectedResortId!.isNotEmpty) {
+      return pmsState.selectedResortId!;
+    }
+    if (pmsState.resorts.isNotEmpty) return pmsState.resorts.first.id;
+    return '';
   }
 
   void _onSearchChanged(String query) {

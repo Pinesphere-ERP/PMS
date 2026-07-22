@@ -18,11 +18,8 @@ class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
   @override
   Widget build(BuildContext context) {
     final pmsState = ref.watch(pmsProvider);
-    final now = DateTime.now();
-    
-    // Filter bookings where checkInDate is today
     final arrivals = pmsState.bookings.where((booking) {
-      return DateUtils.isSameDay(booking.checkInDate, now);
+      return booking.status != 'Completed';
     }).toList();
 
     return Scaffold(

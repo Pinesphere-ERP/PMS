@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../audit/data/audit_service.dart';
 import '../domain/models/kpi_dto.dart';
+import '../domain/models/report_dtos.dart';
 import '../../../../core/network/dio_client.dart';
 
 part 'reports_repository.g.dart';
@@ -100,4 +101,173 @@ class ReportsRepository {
     final items = response.data['items'] as List;
     return items.map((e) => ScheduledReportDto.fromJson(e)).toList();
   }
+
+  // ── New Report Endpoints ─────────────────────────────────────
+
+  Future<DailyReportDto> getDailyReport({
+    required String propertyId,
+    String? reportDate,
+  }) async {
+    final response = await _dio.get(
+      '/reports/daily',
+      queryParameters: {
+        'property_id': propertyId,
+        'report_date': reportDate,
+      },
+    );
+    return DailyReportDto.fromJson(response.data);
+  }
+
+  Future<MonthlyReportDto> getMonthlyReport({
+    required String propertyId,
+    required int month,
+    required int year,
+  }) async {
+    final response = await _dio.get(
+      '/reports/monthly',
+      queryParameters: {
+        'property_id': propertyId,
+        'month': month,
+        'year': year,
+      },
+    );
+    return MonthlyReportDto.fromJson(response.data);
+  }
+
+  Future<OccupancyReportDto> getOccupancyReport({
+    required String propertyId,
+    required String startDate,
+    required String endDate,
+    String? roomType,
+  }) async {
+    final response = await _dio.get(
+      '/reports/occupancy',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+        'room_type': roomType,
+      },
+    );
+    return OccupancyReportDto.fromJson(response.data);
+  }
+
+  Future<RevenueReportDto> getRevenueReport({
+    required String propertyId,
+    required String startDate,
+    required String endDate,
+  }) async {
+    final response = await _dio.get(
+      '/reports/revenue',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+      },
+    );
+    return RevenueReportDto.fromJson(response.data);
+  }
+
+  Future<CollectionReportDto> getCollectionReport({
+    required String propertyId,
+    required String startDate,
+    required String endDate,
+  }) async {
+    final response = await _dio.get(
+      '/reports/collection',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+      },
+    );
+    return CollectionReportDto.fromJson(response.data);
+  }
+
+  Future<OutstandingReportDto> getOutstandingReport({
+    required String propertyId,
+    required String startDate,
+    required String endDate,
+  }) async {
+    final response = await _dio.get(
+      '/reports/outstanding',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+      },
+    );
+    return OutstandingReportDto.fromJson(response.data);
+  }
+
+  Future<ExpensesReportDto> getExpensesReport({
+    required String propertyId,
+    required String startDate,
+    required String endDate,
+    String? category,
+  }) async {
+    final response = await _dio.get(
+      '/reports/expenses',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+        'category': category,
+      },
+    );
+    return ExpensesReportDto.fromJson(response.data);
+  }
+
+  Future<BestCustomersReportDto> getBestCustomers({
+    required String propertyId,
+    required String startDate,
+    required String endDate,
+  }) async {
+    final response = await _dio.get(
+      '/reports/best-customers',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+      },
+    );
+    return BestCustomersReportDto.fromJson(response.data);
+  }
+
+  Future<RoomUtilizationReportDto> getRoomUtilization({
+    required String propertyId,
+    required String startDate,
+    required String endDate,
+    String? roomType,
+  }) async {
+    final response = await _dio.get(
+      '/reports/room-utilization',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+        'room_type': roomType,
+      },
+    );
+    return RoomUtilizationReportDto.fromJson(response.data);
+  }
+
+  Future<StaffPerformanceReportDto> getStaffPerformance({
+    required String propertyId,
+    required String startDate,
+    required String endDate,
+    String? staffId,
+  }) async {
+    final response = await _dio.get(
+      '/reports/staff-performance',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+        'staff_id': staffId,
+      },
+    );
+    return StaffPerformanceReportDto.fromJson(response.data);
+  }
 }
+

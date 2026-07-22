@@ -46,6 +46,10 @@ const auditNavigation = [
   { name: 'System Audit Logs', to: '/audit', icon: ShieldAlert },
 ];
 
+const reportsNavigation = [
+  { name: 'Global Reports', to: '/reports/global', icon: PieChart },
+];
+
 const systemNavigation = [
   { name: 'System Configuration', to: '/settings/system', icon: Shield },
   { name: 'User Management', to: '/users', icon: User },
@@ -166,6 +170,30 @@ export default function AdminLayout() {
               >
                 <item.icon className={`mr-3 h-4 w-4 flex-shrink-0 ${
                   location.pathname === item.to ? 'text-pine-DEFAULT' : 'text-gray-400'
+                }`} />
+                {item.name}
+              </NavLink>
+            ))}
+          </nav>
+
+          <p className="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-6">
+            Reports & Analytics
+          </p>
+          <nav className="space-y-1 mb-6">
+            {reportsNavigation.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
+                    isActive
+                      ? 'bg-amber-50 text-amber-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`
+                }
+              >
+                <item.icon className={`mr-3 h-4 w-4 flex-shrink-0 ${
+                  location.pathname.startsWith(item.to) ? 'text-amber-600' : 'text-gray-400'
                 }`} />
                 {item.name}
               </NavLink>

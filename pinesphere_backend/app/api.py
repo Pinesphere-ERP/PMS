@@ -12,7 +12,7 @@ from app.modules.checkin import router as checkin
 from app.modules.checkout import router as checkout
 from app.modules.housekeeping import router as housekeeping
 from app.modules.staff.router import router as staff
-from app.modules.reports.router import router as reports
+from app.modules.reports.router import router as reports, global_router as global_reports
 from app.modules.settings.router import router as settings
 from app.modules.audit.router import router as audit
 from app.modules.users.router import router as users
@@ -58,6 +58,7 @@ api_router.include_router(checkin, prefix="/checkin", tags=["Check-In Management
 api_router.include_router(checkout, prefix="/checkout", tags=["Check-Out Management"], dependencies=_paywall)
 api_router.include_router(housekeeping, prefix="/housekeeping", tags=["Housekeeping & Maintenance"], dependencies=_paywall)
 api_router.include_router(reports, prefix="/reports", tags=["Reports & Analytics"], dependencies=_paywall)
+api_router.include_router(global_reports, tags=["Global Reports"])
 api_router.include_router(staff, dependencies=_paywall)
 api_router.include_router(settings, prefix="/settings", tags=["Settings & Configuration"], dependencies=_paywall)
 api_router.include_router(audit, prefix="/audit", tags=["Audit Logs"], dependencies=_paywall)

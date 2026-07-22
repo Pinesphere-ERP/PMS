@@ -686,6 +686,24 @@ class SplitPayment(Base, TimestampMixin):
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
 
 
+# ── L2. Expenses ──────────────────────────────────────────────────────────────
+
+class Expense(Base, TimestampMixin):
+    """Categorized property expense record for reporting."""
+    __tablename__ = "expenses"
+    __table_args__ = (
+        Index("ix_expenses_property_date", "property_id", "expense_date"),
+        {'extend_existing': True},
+    )
+    expense_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
+    category: Mapped[str] = mapped_column(String(30), nullable=False)  # staff, maintenance, utility, misc
+    description: Mapped[str] = mapped_column(String(200), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    expense_date: Mapped[date] = mapped_column(Date, nullable=False)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
 # ── M. Reports & Analytics ────────────────────────────────────────────────────
 from app.modules.reports.models import DailyKPISnapshot, ReportTemplate, ScheduledReport
 

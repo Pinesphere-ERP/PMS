@@ -152,12 +152,39 @@ class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                'Check-in',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.onSurfaceVariant,
+              if (!isCheckedIn)
+                ElevatedButton(
+                  onPressed: () {
+                    context.push('/checkin', extra: {
+                      'booking_id': arrival.id,
+                      'guest_name': arrival.guestName,
+                      'guest_phone': arrival.guestPhone,
+                      'guest_email': arrival.guestEmail,
+                      'room_id': arrival.roomId,
+                      'room_number': arrival.roomNumber,
+                      'check_in_date': arrival.checkInDate.toIso8601String(),
+                      'check_out_date': arrival.checkOutDate.toIso8601String(),
+                      'deposit': arrival.depositPaid,
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Check In', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                )
+              else
+                Text(
+                  'Checked In',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
             ],
           ),
         ],
@@ -242,7 +269,36 @@ class _TodaysArrivalsScreenState extends ConsumerState<TodaysArrivalsScreen> {
                     _buildDetailRow(Icons.local_parking, 'Parking Required', 'No'),
                     const SizedBox(height: 16),
                     _buildDetailRow(Icons.directions_car, 'Vehicle Number', '-'),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+                    if (!isCheckedIn)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            context.push('/checkin', extra: {
+                              'booking_id': arrival.id,
+                              'guest_name': arrival.guestName,
+                              'guest_phone': arrival.guestPhone,
+                              'guest_email': arrival.guestEmail,
+                              'room_id': arrival.roomId,
+                              'room_number': arrival.roomNumber,
+                              'check_in_date': arrival.checkInDate.toIso8601String(),
+                              'check_out_date': arrival.checkOutDate.toIso8601String(),
+                              'deposit': arrival.depositPaid,
+                            });
+                          },
+                          icon: const Icon(Icons.login),
+                          label: const Text('Check In Guest', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),

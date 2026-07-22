@@ -73,7 +73,7 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
     final guestIdCtrl = TextEditingController();
     String selectedIdProof = 'Address';
     String selectedSource = 'Walk-in';
-    final depositCtrl = TextEditingController(text: '1000');
+    final depositCtrl = TextEditingController(text: '0');
 
 
     // Pricing Rule states
@@ -498,6 +498,34 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
                               return;
                             }
 
+                            final hasOverlap = pmsState.bookings.any((b) {
+                              if (b.roomId != selectedRoom.id || b.status == 'Completed') return false;
+                              return b.checkInDate.isBefore(checkOutDate) && b.checkOutDate.isAfter(checkInDate);
+                            });
+
+                            if (hasOverlap) {
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Row(
+                                    children: [
+                                      Icon(Icons.error_outline, color: AppColors.error),
+                                      SizedBox(width: 8),
+                                      Text('Already Booked'),
+                                    ],
+                                  ),
+                                  content: Text('Room ${selectedRoom.roomNumber} is already booked for the selected dates. Please select another room or change dates.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              return;
+                            }
+
                             final newBooking = BookingModel(
                               id: 'booking_${DateTime.now().millisecondsSinceEpoch}',
                               resortId: selectedResort.id,
@@ -510,8 +538,8 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
                               bookingSource: selectedSource,
                               checkInDate: checkInDate,
                               checkOutDate: checkOutDate,
-                              status: 'Active',
-                              depositPaid: double.tryParse(depositCtrl.text) ?? 100.0,
+                              status: 'Upcoming',
+                              depositPaid: double.tryParse(depositCtrl.text) ?? 0.0,
                               basePriceSum: basePriceSum,
                               weekendSurcharge: weekendSum,
                               seasonSurcharge: seasonSum,

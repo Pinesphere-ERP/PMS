@@ -15,7 +15,7 @@ function OutstandingReportInner() {
   const [propertyId, setPropertyId] = useState('');
 
   const loadReport = async () => {
-    if (!propertyId || !filters.startDate || !filters.endDate) return;
+    if (!propertyId || !filters.startDate || !filters.endDate) { setLoading(false); return; }
     setLoading(true);
     try {
       const res = await fetchAPI(`/reports/outstanding?property_id=${propertyId}&start_date=${filters.startDate}&end_date=${filters.endDate}`);

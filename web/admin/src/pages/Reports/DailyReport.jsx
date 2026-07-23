@@ -18,7 +18,7 @@ function DailyReportInner() {
   }, [reportDate, propertyId]);
 
   const loadReport = async () => {
-    if (!propertyId) return;
+    if (!propertyId) { setLoading(false); return; }
     setLoading(true);
     try {
       const res = await fetchAPI(`/reports/daily?property_id=${propertyId}&report_date=${reportDate}`);

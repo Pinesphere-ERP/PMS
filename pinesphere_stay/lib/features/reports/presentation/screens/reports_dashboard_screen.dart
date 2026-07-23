@@ -8,6 +8,8 @@ import '../../../../core/presentation/widgets/design_system/pine_background.dart
 import '../../../../core/presentation/widgets/design_system/pine_card.dart';
 import '../../../../core/presentation/widgets/role_guard.dart';
 import '../../../../core/permissions/permission_matrix.dart';
+import '../../../../core/permissions/user_role.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
 
 import '../../data/kpi_aggregation_service.dart';
 
@@ -40,7 +42,7 @@ class ReportsDashboardScreen extends ConsumerWidget {
                           ),
                     ),
                     const SizedBox(height: 16),
-                    _buildReportGrid(context),
+                    _buildReportGrid(context, ref),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -212,7 +214,13 @@ class ReportsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildReportGrid(BuildContext context) {
+  Widget _buildReportGrid(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final userRole = authState.maybeWhen(
+      authenticated: (user) => user.role,
+      orElse: () => UserRole.guest,
+    );
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -221,104 +229,109 @@ class ReportsDashboardScreen extends ConsumerWidget {
       crossAxisSpacing: 16,
       childAspectRatio: 0.9,
       children: [
-        _buildReportNavCard(
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.daily))
+          _buildReportNavCard(
           context,
           title: 'Daily Report',
           desc: 'Check-ins, check-outs & daily ops',
           icon: Icons.today_outlined,
           color: AppColors.primary,
           route: '/reports/daily',
-          minAccess: AccessLevel.limited,
         ),
-        _buildReportNavCard(
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.monthly))
+          _buildReportNavCard(
           context,
           title: 'Monthly Report',
           desc: 'Month-over-month performance',
           icon: Icons.calendar_month_outlined,
           color: Colors.blue,
           route: '/reports/monthly',
-          minAccess: AccessLevel.limited,
         ),
-        _buildReportNavCard(
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.occupancy))
+          _buildReportNavCard(
           context,
           title: 'Occupancy',
           desc: 'Room utilization & forecasts',
           icon: Icons.bedroom_parent_outlined,
           color: AppColors.secondary,
           route: '/reports/occupancy',
-          minAccess: AccessLevel.limited,
         ),
-        _buildReportNavCard(
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.revenue))
+          _buildReportNavCard(
           context,
           title: 'Revenue',
           desc: 'Income breakdown by source',
           icon: Icons.account_balance_wallet_outlined,
           color: Colors.green,
           route: '/reports/revenue',
-          minAccess: AccessLevel.limited,
         ),
-        _buildReportNavCard(
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.collection))
+          _buildReportNavCard(
           context,
           title: 'Collections',
           desc: 'Cash flow & payment modes',
           icon: Icons.payments_outlined,
           color: Colors.teal,
           route: '/reports/collection',
-          minAccess: AccessLevel.limited,
         ),
-        _buildReportNavCard(
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.outstanding))
+          _buildReportNavCard(
           context,
           title: 'Outstanding',
           desc: 'Pending payments & ageing',
           icon: Icons.warning_amber_rounded,
           color: AppColors.error,
           route: '/reports/outstanding',
-          minAccess: AccessLevel.limited,
         ),
-        _buildReportNavCard(
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.expenses))
+          _buildReportNavCard(
           context,
           title: 'Expenses',
           desc: 'Categorized property expenses',
           icon: Icons.receipt_long_outlined,
           color: Colors.deepOrange,
           route: '/reports/expenses',
-          minAccess: AccessLevel.limited,
         ),
-        _buildReportNavCard(
-          context,
-          title: 'Best Customers',
-          desc: 'Top guests by revenue & stays',
-          icon: Icons.star_border_rounded,
-          color: Colors.amber.shade700,
-          route: '/reports/best-customers',
-          minAccess: AccessLevel.limited,
-        ),
-        _buildReportNavCard(
-          context,
-          title: 'Room Utilization',
-          desc: 'Performance per room',
-          icon: Icons.meeting_room_outlined,
-          color: Colors.indigo,
-          route: '/reports/room-utilization',
-          minAccess: AccessLevel.limited,
-        ),
-        _buildReportNavCard(
-          context,
-          title: 'Staff Performance',
-          desc: 'Task completion & productivity',
-          icon: Icons.badge_outlined,
-          color: Colors.purple,
-          route: '/reports/staff-performance',
-          minAccess: AccessLevel.limited,
-        ),
-        _buildReportNavCard(
-          context,
-          title: 'Profit & Loss',
-          desc: 'Comprehensive financial statement',
-          icon: Icons.insert_chart_outlined_rounded,
-          color: Colors.blueGrey,
-          route: '/pl-report',
-          minAccess: AccessLevel.full,
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.bestCustomers))
+          _buildReportNavCard(
+            context,
+            title: 'Best Customers',
+            desc: 'Top guests by revenue & stays',
+            icon: Icons.star_border_rounded,
+            color: Colors.amber.shade700,
+            route: '/reports/best-customers',
+          ),
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.roomUtilization))
+          _buildReportNavCard(
+            context,
+            title: 'Room Utilization',
+            desc: 'Performance per room',
+            icon: Icons.meeting_room_outlined,
+            color: Colors.indigo,
+            route: '/reports/room-utilization',
+          ),
+        if (PermissionMatrix.canAccessReport(userRole, ReportType.staffPerformance))
+          _buildReportNavCard(
+            context,
+            title: 'Staff Performance',
+            desc: 'Task completion & productivity',
+            icon: Icons.badge_outlined,
+            color: Colors.purple,
+            route: '/reports/staff-performance',
+          ),
+        // Note: Profit & Loss uses a different RoleGuard since it's older
+        RoleGuard(
+          module: Module.reports,
+          minimumLevel: AccessLevel.full,
+          fallback: const SizedBox.shrink(),
+          child: _buildReportNavCard(
+            context,
+            title: 'Profit & Loss',
+            desc: 'Comprehensive financial statement',
+            icon: Icons.insert_chart_outlined_rounded,
+            color: Colors.blueGrey,
+            route: '/pl-report',
+          ),
         ),
       ],
     );
@@ -331,15 +344,10 @@ class ReportsDashboardScreen extends ConsumerWidget {
     required IconData icon,
     required Color color,
     required String route,
-    required AccessLevel minAccess,
   }) {
-    return RoleGuard(
-      module: Module.reports,
-      minimumLevel: minAccess,
-      fallback: const SizedBox.shrink(),
-      child: InkWell(
-        onTap: () => context.push(route),
-        borderRadius: BorderRadius.circular(16),
+    return InkWell(
+      onTap: () => context.push(route),
+      borderRadius: BorderRadius.circular(16),
         child: PineCard(
           backgroundColor: AppColors.surfaceContainerLowest,
           padding: const EdgeInsets.all(16),
@@ -374,7 +382,6 @@ class ReportsDashboardScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
   }
 

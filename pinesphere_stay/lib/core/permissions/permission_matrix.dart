@@ -132,4 +132,44 @@ class PermissionMatrix {
   static bool hasAccess(UserRole role, Module module) {
     return getAccessLevel(role, module) != AccessLevel.none;
   }
+
+  static bool canAccessReport(UserRole role, ReportType type) {
+    if (role == UserRole.superAdmin) return true;
+    if (role == UserRole.owner) return true;
+
+    switch (role) {
+      case UserRole.manager:
+        return type == ReportType.daily ||
+            type == ReportType.monthly ||
+            type == ReportType.occupancy ||
+            type == ReportType.roomUtilization ||
+            type == ReportType.staffPerformance ||
+            type == ReportType.bestCustomers;
+      case UserRole.reception:
+        return type == ReportType.daily ||
+            type == ReportType.occupancy ||
+            type == ReportType.roomUtilization;
+      case UserRole.accountant:
+        return type == ReportType.revenue ||
+            type == ReportType.collection ||
+            type == ReportType.outstanding ||
+            type == ReportType.expenses ||
+            type == ReportType.monthly;
+      default:
+        return false;
+    }
+  }
+}
+
+enum ReportType {
+  daily,
+  monthly,
+  occupancy,
+  revenue,
+  collection,
+  outstanding,
+  expenses,
+  bestCustomers,
+  roomUtilization,
+  staffPerformance,
 }

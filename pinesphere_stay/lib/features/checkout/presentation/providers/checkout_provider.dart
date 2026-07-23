@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -6,7 +5,8 @@ import '../../data/checkout_service.dart';
 import '../../../audit/data/audit_service.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
-import '../../../housekeeping/presentation/providers/housekeeping_provider.dart';
+import '../../../housekeeping/presentation/providers/housekeeping_providers.dart';
+import '../../../housekeeping/presentation/providers/housekeeper_provider.dart';
 
 part 'checkout_provider.freezed.dart';
 part 'checkout_provider.g.dart';
@@ -106,24 +106,8 @@ class CheckOutNotifier extends _$CheckOutNotifier {
       ref.invalidate(pmsProvider);
       final checkoutId = result['id']?.toString();
 
-      // Automatically create a housekeeping task for room cleaning
-      try {
-        final hkData = {
-          'id': DateTime.now().millisecondsSinceEpoch.toString(),
-          'property_id': data['property_id'],
-          'room_id': data['room_id'],
-          'room_number': data['room_number'] ?? '',
-          'task_type': 'cleaning',
-          'priority': 'high',
-          'status': 'pending',
-          'remarks': 'Auto-generated cleaning request after checkout',
-        };
-        await ref.read(housekeepingProvider.notifier).createTask(data: hkData);
-      } catch (hkError) {
-        // Silently ignore or log if housekeeping auto-creation fails,
-        // so we don't break the successful checkout flow.
-        developer.log('Failed to auto-create housekeeping task: $hkError');
-      }
+      ref.invalidate(housekeepingTasksProvider);
+      ref.invalidate(housekeeperRoomsProvider);
 
       state = CheckOutState.success('Checkout completed successfully', checkoutId: checkoutId);
     } catch (e) {

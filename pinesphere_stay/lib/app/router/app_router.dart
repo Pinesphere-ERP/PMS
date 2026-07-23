@@ -30,7 +30,6 @@ import '../../features/bookings/presentation/screens/todays_arrivals_screen.dart
 import '../../features/bookings/presentation/screens/todays_departures_screen.dart';
 import '../../features/rooms/presentation/screens/occupied_rooms_screen.dart';
 import '../../features/rooms/presentation/screens/vacant_rooms_screen.dart';
-import '../../features/housekeeping/presentation/screens/housekeeping_screen.dart';
 import '../../features/kitchen/presentation/screens/kitchen_screen.dart';
 import '../../features/bookings/presentation/screens/pending_payments_screen.dart';
 import '../../features/reports/presentation/screens/todays_revenue_screen.dart';
@@ -56,8 +55,7 @@ import '../../features/splash/presentation/custom_splash_screen.dart';
 import '../../features/portal/presentation/screens/portal_login_screen.dart';
 import '../../features/portal/presentation/screens/guest_dashboard_screen.dart';
 import '../../features/housekeeping/presentation/screens/housekeeper_dashboard_screen.dart';
-import '../../features/housekeeping/presentation/screens/housekeeper_room_detail_screen.dart';
-import '../../features/housekeeping/presentation/screens/housekeeper_image_upload_screen.dart';
+import '../../features/housekeeping/presentation/screens/housekeeping_task_screen.dart';
 
 // Owner Platform screens
 import '../../features/property_onboarding/presentation/screens/property_wizard_screen.dart';
@@ -325,12 +323,8 @@ GoRouter appRouter(Ref ref) {
         builder: (context, state) => const HousekeeperDashboardScreen(),
       ),
       GoRoute(
-        path: '/housekeeper/room/:id',
-        builder: (context, state) => HousekeeperRoomDetailScreen(roomId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/housekeeper/room/:id/upload',
-        builder: (context, state) => HousekeeperImageUploadScreen(roomId: state.pathParameters['id']!),
+        path: '/housekeeper/task/:id',
+        builder: (context, state) => HousekeepingTaskScreen(taskId: state.pathParameters['id']!),
       ),
 
       // ── Main App Shell (StatefulShellRoute) ────────────────────────────────
@@ -376,7 +370,7 @@ GoRouter appRouter(Ref ref) {
               ),
               GoRoute(
                 path: '/housekeeping',
-                builder: (context, state) => const HousekeepingScreen(),
+                builder: (context, state) => const HousekeeperDashboardScreen(),
               ),
               GoRoute(
                 path: '/kitchen',

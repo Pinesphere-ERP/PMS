@@ -51,6 +51,12 @@ class HousekeepingService {
         assignedStaffName: body['assigned_staff_name']?.toString() ?? data['assigned_staff_name'] ?? '',
         status: body['status']?.toString() ?? 'pending',
         priority: body['priority']?.toString() ?? 'medium',
+        bookingId: body['booking_id']?.toString() ?? data['booking_id'] ?? '',
+        guestId: body['guest_id']?.toString() ?? data['guest_id'] ?? '',
+        createdBy: body['created_by']?.toString() ?? data['created_by'] ?? '',
+        startedAt: body['started_at']?.toString() ?? '',
+        startedBy: body['started_by']?.toString() ?? '',
+        duration: int.tryParse(body['duration']?.toString() ?? '') ?? 0,
         checklistStatus: body['checklist_status']?.toString() ?? '',
         remarks: body['remarks']?.toString() ?? data['remarks'] ?? '',
         beforePhoto: body['before_photo']?.toString() ?? data['before_photo'] ?? '',
@@ -125,6 +131,12 @@ class HousekeepingService {
         assignedStaffName: body['assigned_staff_name']?.toString() ?? '',
         status: body['status']?.toString() ?? 'pending',
         priority: body['priority']?.toString() ?? 'medium',
+        bookingId: body['booking_id']?.toString() ?? '',
+        guestId: body['guest_id']?.toString() ?? '',
+        createdBy: body['created_by']?.toString() ?? '',
+        startedAt: body['started_at']?.toString() ?? '',
+        startedBy: body['started_by']?.toString() ?? '',
+        duration: int.tryParse(body['duration']?.toString() ?? '') ?? 0,
         checklistStatus: body['checklist_status']?.toString() ?? '',
         remarks: body['remarks']?.toString() ?? '',
         beforePhoto: body['before_photo']?.toString() ?? '',
@@ -177,6 +189,93 @@ class HousekeepingService {
       return data;
     } catch (e) {
       AppLogger.e('updateTask unexpected error', e);
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> startCleaning(String taskId, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/housekeeping/tasks/$taskId/start', data: data);
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      AppLogger.w('startCleaning network failed, queuing sync', e);
+      _syncService.enqueueMutation(
+        entityType: 'HousekeepingTask',
+        entityId: taskId,
+        operation: 'UPDATE',
+        payload: {'id': taskId, ...data, 'action': 'start'},
+      );
+      
+      _audit.log(
+        moduleName: 'housekeeping',
+        actionType: 'start_cleaning',
+        targetEntity: 'housekeeping_task',
+        targetRecordId: taskId,
+        propertyId: data['property_id'],
+        newValue: data,
+      );
+      
+      return data;
+    } catch (e) {
+      AppLogger.e('startCleaning unexpected error', e);
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> completeCleaning(String taskId, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/housekeeping/tasks/$taskId/complete', data: data);
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      AppLogger.w('completeCleaning network failed, queuing sync', e);
+      _syncService.enqueueMutation(
+        entityType: 'HousekeepingTask',
+        entityId: taskId,
+        operation: 'UPDATE',
+        payload: {'id': taskId, ...data, 'action': 'complete'},
+      );
+      
+      _audit.log(
+        moduleName: 'housekeeping',
+        actionType: 'complete_cleaning',
+        targetEntity: 'housekeeping_task',
+        targetRecordId: taskId,
+        propertyId: data['property_id'],
+        newValue: data,
+      );
+      
+      return data;
+    } catch (e) {
+      AppLogger.e('completeCleaning unexpected error', e);
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> reportDamage(String taskId, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/housekeeping/tasks/$taskId/damage', data: data);
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      AppLogger.w('reportDamage network failed, queuing sync', e);
+      _syncService.enqueueMutation(
+        entityType: 'HousekeepingTask',
+        entityId: taskId,
+        operation: 'UPDATE',
+        payload: {'id': taskId, ...data, 'action': 'damage'},
+      );
+      
+      _audit.log(
+        moduleName: 'housekeeping',
+        actionType: 'report_damage',
+        targetEntity: 'housekeeping_task',
+        targetRecordId: taskId,
+        propertyId: data['property_id'],
+        newValue: data,
+      );
+      
+      return data;
+    } catch (e) {
+      AppLogger.e('reportDamage unexpected error', e);
       rethrow;
     }
   }

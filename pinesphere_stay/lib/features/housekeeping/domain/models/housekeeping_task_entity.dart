@@ -11,11 +11,17 @@ class HousekeepingTaskEntity {
   @Index()
   String propertyId;
   String roomNumber;
+  String bookingId;
+  String guestId;
+  String createdBy;
   String assignedStaffId;
   String assignedStaffName;
   @Index()
   String status;
   String priority;
+  String startedAt;
+  String startedBy;
+  int duration;
   String checklistStatus;
   String remarks;
   String beforePhoto;
@@ -34,10 +40,16 @@ class HousekeepingTaskEntity {
     required this.roomId,
     this.propertyId = '',
     this.roomNumber = '',
+    this.bookingId = '',
+    this.guestId = '',
+    this.createdBy = '',
     this.assignedStaffId = '',
     this.assignedStaffName = '',
     this.status = 'pending',
     this.priority = 'medium',
+    this.startedAt = '',
+    this.startedBy = '',
+    this.duration = 0,
     this.checklistStatus = '',
     this.remarks = '',
     this.beforePhoto = '',

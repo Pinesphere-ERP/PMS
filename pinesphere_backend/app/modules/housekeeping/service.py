@@ -15,8 +15,12 @@ from app.modules.housekeeping.schemas import (
     MaintenanceTicketCreate, MaintenanceTicketUpdate,
     LostAndFoundCreate, LostAndFoundUpdate,
     HousekeepingTaskResponse, MaintenanceTicketResponse,
-    LostAndFoundResponse, HousekeepingDashboard
+    LostAndFoundResponse, HousekeepingDashboard,
+    HousekeepingConfigCreate, HousekeepingConfigUpdate, HousekeepingConfigResponse,
+    StartCleaningRequest, CompleteCleaningRequest,
 )
+
+from app.infra.models import HousekeepingConfig
 
 
 # ─── Housekeeping Tasks ────────────────────────────────────────────
@@ -151,6 +155,116 @@ async def inspect_task(
     return task
 
 
+async def start_cleaning(
+    db: AsyncSession, task_id: uuid.UUID, req: StartCleaningRequest, current_user_id: uuid.UUID
+) -> HousekeepingTaskResponse:
+    task_stmt = select(HousekeepingTask).where(HousekeepingTask.task_id == task_id)
+    task_res = await db.execute(task_stmt)
+    task = task_res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Housekeeping task not found")
+
+    if task.status != "pending":
+        raise HTTPException(status_code=400, detail=f"Cannot start cleaning from status {task.status}")
+
+    task.status = "in_progress"
+    task.started_at = datetime.utcnow()
+    task.started_by = current_user_id
+
+    room_stmt = select(Room).where(Room.room_id == task.room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        room.housekeeping_status = "cleaning"
+
+    await AuditLogger.log(
+        db,
+        property_id=task.property_id,
+        user_id=current_user_id,
+        module_name="housekeeping",
+        action_type="start_cleaning",
+        target_entity="housekeeping_task",
+        target_record_id=task.task_id,
+        new_value={"status": "in_progress", "started_at": str(task.started_at)},
+    )
+    await db.commit()
+    await db.refresh(task)
+    return await _enrich_task(db, task)
+
+
+async def complete_cleaning(
+    db: AsyncSession, task_id: uuid.UUID, req: CompleteCleaningRequest, current_user_id: uuid.UUID
+) -> HousekeepingTaskResponse:
+    task_stmt = select(HousekeepingTask).where(HousekeepingTask.task_id == task_id)
+    task_res = await db.execute(task_stmt)
+    task = task_res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Housekeeping task not found")
+
+    if task.status != "in_progress":
+        raise HTTPException(status_code=400, detail=f"Cannot complete task from status {task.status}")
+
+    # Validate against config
+    config_stmt = select(HousekeepingConfig).where(HousekeepingConfig.property_id == task.property_id)
+    config_res = await db.execute(config_stmt)
+    config = config_res.scalar_one_or_none()
+
+    if config:
+        if config.require_before_photo and not req.before_photo:
+            raise HTTPException(status_code=400, detail="Before photo is required by property config.")
+        if config.require_after_photo and not req.after_photo:
+            raise HTTPException(status_code=400, detail="After photo is required by property config.")
+
+    task.status = "completed"
+    task.completed_at = datetime.utcnow()
+    if task.started_at:
+        task.duration = int((task.completed_at - task.started_at).total_seconds() / 60)
+    
+    if req.checklist_status:
+        task.checklist_status = req.checklist_status
+    if req.before_photo:
+        task.before_photo = req.before_photo
+    if req.after_photo:
+        task.after_photo = req.after_photo
+    if req.remarks:
+        task.remarks = req.remarks
+
+    room_stmt = select(Room).where(Room.room_id == task.room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
+    if room:
+        room.housekeeping_status = "clean"
+
+    await AuditLogger.log(
+        db,
+        property_id=task.property_id,
+        user_id=current_user_id,
+        module_name="housekeeping",
+        action_type="complete_cleaning",
+        target_entity="housekeeping_task",
+        target_record_id=task.task_id,
+        new_value={"status": "completed", "duration": task.duration},
+    )
+    await db.commit()
+    await db.refresh(task)
+    return await _enrich_task(db, task)
+
+
+async def report_damage(
+    db: AsyncSession, task_id: uuid.UUID, req: MaintenanceTicketCreate, current_user_id: uuid.UUID
+) -> MaintenanceTicketResponse:
+    task_stmt = select(HousekeepingTask).where(HousekeepingTask.task_id == task_id)
+    task_res = await db.execute(task_stmt)
+    task = task_res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Housekeeping task not found")
+
+    # Set housekeeping_task_id on request implicitly
+    req.housekeeping_task_id = task.task_id
+    ticket = await create_maintenance_ticket(db, req, current_user_id)
+    return await get_maintenance_ticket_detail(db, ticket.ticket_id)
+
+
 async def get_tasks(
     db: AsyncSession,
     property_id: Optional[uuid.UUID] = None,
@@ -203,9 +317,15 @@ async def _enrich_task(db: AsyncSession, task: HousekeepingTask) -> Housekeeping
         task_id=task.task_id,
         room_id=task.room_id,
         property_id=task.property_id,
+        booking_id=task.booking_id,
+        guest_id=task.guest_id,
+        created_by=task.created_by,
         assigned_staff_id=task.assigned_staff_id,
         status=task.status,
         priority=task.priority,
+        started_at=task.started_at,
+        started_by=task.started_by,
+        duration=task.duration,
         checklist_status=task.checklist_status,
         remarks=task.remarks,
         before_photo=task.before_photo,
@@ -215,6 +335,7 @@ async def _enrich_task(db: AsyncSession, task: HousekeepingTask) -> Housekeeping
         inspection_result=task.inspection_result,
         inspection_remarks=task.inspection_remarks,
         inspected_at=task.inspected_at,
+        synced_at=task.synced_at,
         created_at=task.created_at,
         updated_at=task.updated_at,
         room_number=room_number,
@@ -238,6 +359,7 @@ async def create_maintenance_ticket(
         property_id=room.property_id,
         reported_by=current_user_id,
         assigned_to=req.assigned_to,
+        housekeeping_task_id=req.housekeeping_task_id,
         category=req.category,
         priority=req.priority or "medium",
         issue_description=req.issue_description,
@@ -375,6 +497,7 @@ async def _enrich_ticket(db: AsyncSession, ticket: MaintenanceTicket) -> Mainten
         ticket_id=ticket.ticket_id,
         room_id=ticket.room_id,
         property_id=ticket.property_id,
+        housekeeping_task_id=ticket.housekeeping_task_id,
         reported_by=ticket.reported_by,
         assigned_to=ticket.assigned_to,
         category=ticket.category,
@@ -553,6 +676,62 @@ async def get_housekeeping_dashboard(
         inspection_pending_count=inspection_pending_res.scalar() or 0,
         maintenance_open_count=maintenance_open_res.scalar() or 0,
     )
+
+
+# ─── Configs ─────────────────────────────────────────────────────
+
+async def get_housekeeping_config(
+    db: AsyncSession, property_id: uuid.UUID
+) -> HousekeepingConfigResponse:
+    stmt = select(HousekeepingConfig).where(HousekeepingConfig.property_id == property_id)
+    res = await db.execute(stmt)
+    config = res.scalar_one_or_none()
+    
+    if not config:
+        # Create default if missing
+        config = HousekeepingConfig(property_id=property_id)
+        db.add(config)
+        await db.commit()
+        await db.refresh(config)
+        
+    return HousekeepingConfigResponse.model_validate(config, from_attributes=True)
+
+
+async def update_housekeeping_config(
+    db: AsyncSession, property_id: uuid.UUID, req: HousekeepingConfigUpdate, current_user_id: uuid.UUID
+) -> HousekeepingConfigResponse:
+    stmt = select(HousekeepingConfig).where(HousekeepingConfig.property_id == property_id)
+    res = await db.execute(stmt)
+    config = res.scalar_one_or_none()
+    
+    if not config:
+        config = HousekeepingConfig(property_id=property_id)
+        db.add(config)
+        
+    old_values = {
+        "require_before_photo": config.require_before_photo,
+        "require_after_photo": config.require_after_photo,
+        "default_checklist": config.default_checklist,
+    }
+    
+    update_data = req.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(config, field, value)
+        
+    await AuditLogger.log(
+        db,
+        property_id=property_id,
+        user_id=current_user_id,
+        module_name="housekeeping",
+        action_type="update_config",
+        target_entity="housekeeping_configs",
+        target_record_id=config.id,
+        old_value=old_values,
+        new_value=update_data,
+    )
+    await db.commit()
+    await db.refresh(config)
+    return HousekeepingConfigResponse.model_validate(config, from_attributes=True)
 
 
 # ─── Cloud Storage Abstraction ─────────────────────────────────────

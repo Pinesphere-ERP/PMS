@@ -187,16 +187,19 @@ async def perform_checkout(
         await _notify_housekeepers(db, hk_status)
 
     # Auto-generate Housekeeping Task
-    from app.modules.housekeeping.schemas import HousekeepingTaskCreate
-    from app.modules.housekeeping.service import create_task
+    from app.infra.models import HousekeepingTask
     try:
-        task_req = HousekeepingTaskCreate(
+        task = HousekeepingTask(
             room_id=room.room_id,
             property_id=room.property_id,
+            booking_id=booking.booking_id,
+            guest_id=booking.guest_id,
+            created_by="SYSTEM",
             priority="medium",
+            status="pending",
             remarks="Auto-generated upon checkout"
         )
-        await create_task(db, task_req, current_user_id)
+        db.add(task)
     except Exception as e:
         print(f"Failed to auto-generate housekeeping task on checkout: {e}")
 

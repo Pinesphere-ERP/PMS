@@ -525,18 +525,37 @@ class RoomAssignment(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(default=True)
 
 
+class HousekeepingConfig(Base, TimestampMixin, SyncMixin):
+    __tablename__ = "housekeeping_configs"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False, unique=True)
+    require_before_photo: Mapped[bool] = mapped_column(Boolean, default=False)
+    require_after_photo: Mapped[bool] = mapped_column(Boolean, default=False)
+    default_checklist: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+
 class HousekeepingTask(Base, TimestampMixin, SyncMixin):
     __tablename__ = "housekeeping_tasks"
     __table_args__ = {'extend_existing': True}
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     task_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
+    booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))
+    guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id"))
+    created_by: Mapped[Optional[str]] = mapped_column(String(50)) # e.g., "SYSTEM" or user ID
     assigned_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     status: Mapped[str] = mapped_column(String(20), default='pending')
     priority: Mapped[str] = mapped_column(String(10), default='medium')
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    started_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    duration: Mapped[Optional[int]] = mapped_column(Integer) # duration in minutes
     checklist_status: Mapped[Optional[dict]] = mapped_column(JSONB)
+    before_photo: Mapped[Optional[str]] = mapped_column(Text)
+    after_photo: Mapped[Optional[str]] = mapped_column(Text)
     remarks: Mapped[Optional[str]] = mapped_column(Text)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 
 class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
@@ -545,6 +564,7 @@ class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     ticket_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
+    housekeeping_task_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("housekeeping_tasks.task_id", ondelete="SET NULL"))
     reported_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     category: Mapped[str] = mapped_column(String(30), nullable=False)

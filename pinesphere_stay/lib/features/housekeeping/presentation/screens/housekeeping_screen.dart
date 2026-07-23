@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:pinesphere_stay/features/housekeeping/presentation/providers/housekeeping_providers.dart';
 import '../../../../core/presentation/widgets/design_system/pine_background.dart';
@@ -173,7 +174,18 @@ class _TaskSwipeCard extends ConsumerWidget {
           width: double.infinity,
           height: 60,
           child: ElevatedButton(
-            onPressed: () => controller.markCompleted(task.serverId),
+            onPressed: () async {
+              final picker = ImagePicker();
+              final pickedFile = await picker.pickImage(source: ImageSource.camera);
+              if (pickedFile != null) {
+                await controller.markCompleted(
+                  task.serverId,
+                  photoPath: pickedFile.path,
+                  roomId: task.roomId,
+                  propertyId: task.propertyId,
+                );
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

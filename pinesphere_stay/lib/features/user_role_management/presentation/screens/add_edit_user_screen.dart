@@ -41,7 +41,7 @@ class _AddEditUserScreenState extends ConsumerState<AddEditUserScreen> {
     setState(() {
       _allRoles = roles;
       if (!_isEditing && roles.isNotEmpty) {
-        _selectedRoleId = roles.first.roleCode;
+        _selectedRoleId = roles.first.serverId;
       }
     });
   }
@@ -136,7 +136,7 @@ class _AddEditUserScreenState extends ConsumerState<AddEditUserScreen> {
                 initialValue: _selectedRoleId,
                 items: _allRoles.map((role) {
                   return DropdownMenuItem(
-                    value: role.roleCode,
+                    value: role.serverId,
                     child: Text(role.roleName),
                   );
                 }).toList(),

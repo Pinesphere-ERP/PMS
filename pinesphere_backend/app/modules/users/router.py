@@ -129,7 +129,7 @@ async def create_user(
     db.add(user)
     await db.flush()
     await AuditLogger.log(db, module_name="userRoleManagement", action_type="user_create", target_entity="user", target_record_id=user.id, property_id=target_property_id, user_id=current_user.id, new_value={"name": user.name, "role": role.role_code})
-    return success_response(data=user, message="User created successfully")
+    return success_response(data=UserResponse.model_validate(user).model_dump(mode='json'), message="User created successfully")
 
 
 
@@ -182,7 +182,7 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdateRequest, current_us
         property_id=user.property_id, 
         user_id=current_user.id
     )
-    return success_response(data=user, message="User updated successfully")
+    return success_response(data=UserResponse.model_validate(user).model_dump(mode='json'), message="User updated successfully")
 
 
 @router.post("/{user_id}/deactivate", response_model=StandardResponse)

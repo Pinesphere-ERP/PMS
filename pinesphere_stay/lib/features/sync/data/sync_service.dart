@@ -23,6 +23,9 @@ import '../../../core/database/dao/role_dao.dart';
 import '../../../core/database/dao/perm_dao.dart';
 import '../../../core/database/dao/role_perm_dao.dart';
 import '../../../features/user_role_management/domain/entities.dart';
+import '../../../core/database/dao/housekeeping_dao.dart';
+import '../../housekeeping/domain/models/housekeeping_task_entity.dart';
+import 'package:uuid/uuid.dart';
 
 part 'sync_service.g.dart';
 
@@ -51,12 +54,15 @@ class SyncService {
   late final IPermDao _permDao;
   late final IRolePermDao _rolePermDao;
   
+  late final IHousekeepingDao _housekeepingDao;
+  
   bool _isSyncing = false;
 
   SyncService({required this._dio, required this._secureStorage});
 
   Future<void> initialize() async {
     _syncQueueDao = databaseService.syncQueueDao;
+    _housekeepingDao = databaseService.housekeepingDao;
     _bookingDao = databaseService.bookingDao;
     _roomDao = databaseService.roomDao;
     _guestDao = databaseService.guestDao;
@@ -245,6 +251,45 @@ class SyncService {
                 lastModifiedHlc: payload['updated_at']?.toString() ?? existing?.lastModifiedHlc ?? DateTime.now().toUtc().toIso8601String(),
               );
               _roomDao.put(entity);
+
+              final housekeepingStatus = payload['housekeeping_status']?.toString();
+              if (housekeepingStatus != null && housekeepingStatus.toLowerCase() != 'clean') {
+                final propertyId = payload['property_id']?.toString() ?? existing?.propertyId ?? '';
+                final existingTasks = _housekeepingDao.queryTasks(propertyId);
+                final hasActiveTask = existingTasks.any((t) => t.roomId == entityId && t.status != 'completed' && t.status != 'closed');
+                
+                if (!hasActiveTask) {
+                  final newTaskId = const Uuid().v4();
+                  final newTask = HousekeepingTaskEntity(
+                    serverId: newTaskId,
+                    roomId: entityId,
+                    propertyId: propertyId,
+                    roomNumber: entity.name,
+                    status: 'pending',
+                    priority: 'medium',
+                    remarks: 'Generated from sync - $housekeepingStatus',
+                    createdAt: DateTime.now().toUtc().toIso8601String(),
+                    lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
+                  );
+                  _housekeepingDao.put(newTask);
+                  
+                  // Enqueue creation so backend knows about this task
+                  enqueueMutation(
+                    entityType: 'HousekeepingTask',
+                    entityId: newTaskId,
+                    operation: 'CREATE',
+                    payload: {
+                      'uuid': newTaskId,
+                      'room_id': entityId,
+                      'property_id': propertyId,
+                      'room_number': entity.name,
+                      'status': 'pending',
+                      'priority': 'medium',
+                      'remarks': 'Generated from sync - $housekeepingStatus',
+                    },
+                  );
+                }
+              }
             } else if (entityType == 'Guest') {
               final existing = _guestDao.getByServerId(entityId);
               final entity = GuestEntity(

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinesphere_stay/features/housekeeping/data/housekeeping_service.dart';
 import 'package:pinesphere_stay/features/housekeeping/domain/models/housekeeping_task_entity.dart';
 import 'package:pinesphere_stay/features/rooms/presentation/providers/pms_provider.dart';
+import '../../../../main.dart';
+import '../../../sync/data/sync_service.dart';
 
 final housekeepingTasksProvider = FutureProvider<List<HousekeepingTaskEntity>>((ref) async {
   final service = ref.watch(housekeepingServiceProvider);
@@ -56,8 +58,41 @@ class HousekeepingTaskController {
     _ref.invalidate(housekeepingTasksProvider);
   }
 
-  Future<void> markCompleted(String taskId) async {
-    await _ref.read(housekeepingServiceProvider).updateTask(taskId, {'status': 'completed'});
+  Future<void> markCompleted(String taskId, {String? photoPath, String? roomId, String? propertyId}) async {
+    final updateData = <String, dynamic>{'status': 'completed'};
+    if (photoPath != null) {
+      updateData['after_photo'] = photoPath;
+    }
+    await _ref.read(housekeepingServiceProvider).updateTask(taskId, updateData);
+    
+    // Auto-update room status to clean
+    if (roomId != null && propertyId != null) {
+      // Assuming 'Available' is default, or just leave occupancy status unchanged
+      final roomDao = databaseService.roomDao;
+      final room = roomDao.getByServerId(roomId);
+      if (room != null) {
+        room.lastModifiedHlc = DateTime.now().toUtc().toIso8601String();
+        room.syncStatus = 'Pending';
+        roomDao.put(room);
+        
+        _ref.read(syncServiceProvider).enqueueMutation(
+          entityType: 'Room',
+          entityId: roomId,
+          operation: 'UPDATE',
+          payload: {
+            'server_id': roomId,
+            'housekeeping_status': 'clean',
+          },
+        );
+      }
+      
+      final housekeepingRoom = databaseService.housekeepingRoomStatusDao.getByRoomId(roomId);
+      if (housekeepingRoom != null) {
+        housekeepingRoom.cleanStatus = 'clean';
+        databaseService.housekeepingRoomStatusDao.put(housekeepingRoom);
+      }
+    }
+    
     _ref.invalidate(housekeepingTasksProvider);
   }
 }

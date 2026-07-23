@@ -225,8 +225,12 @@ class SyncService:
             # For platform models (in public schema), they might still use property_id
             # For tenant models, the session is already scoped via search_path
             filters = [model.updated_at > pull_ts]
+            from sqlalchemy import or_
             if hasattr(model, "property_id"):
-                filters.append(model.property_id == request.property_id)
+                if entity_type in ("Role", "RolePermission"):
+                    filters.append(or_(model.property_id == request.property_id, model.property_id.is_(None)))
+                else:
+                    filters.append(model.property_id == request.property_id)
 
             query = select(model).filter(*filters)
             result = await self.db.execute(query)

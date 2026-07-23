@@ -40,7 +40,7 @@ class _ExpensesReportScreenState extends ConsumerState<ExpensesReportScreen> {
       appBar: AppBar(title: const Text('Expenses Report'), backgroundColor: AppColors.background, elevation: 0,
         actions: [reportAsync.when(data: (r) => IconButton(icon: const Icon(Icons.picture_as_pdf, color: AppColors.primary), onPressed: () async {
           try { await ref.read(reportExportServiceProvider).exportExpensesReportToPdf(r); if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF generated'))); } catch (e) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'))); }
-        }), loading: () => const SizedBox.shrink(), error: (_, __) => const SizedBox.shrink())],
+        }), loading: () => const SizedBox.shrink(), error: (err, stack) => const SizedBox.shrink())],
       ),
       body: PineBackground(child: Column(children: [
         _buildDateFilter(),
@@ -70,7 +70,7 @@ class _ExpensesReportScreenState extends ConsumerState<ExpensesReportScreen> {
       if (report.byCategory.isNotEmpty) ...[const SizedBox(height: 24), Text('By Category', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 16),
         PineCard(child: Column(children: report.byCategory.map((c) => ListTile(title: Text(c['category'] ?? ''), subtitle: Text('${c['count']} expenses'), trailing: Text('₹${(c['amount'] as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))).toList()))],
       if (report.recentExpenses.isNotEmpty) ...[const SizedBox(height: 24), Text('Recent Expenses', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 16),
-        PineCard(child: Column(children: report.recentExpenses.take(10).map((e) => ListTile(title: Text(e['description'] ?? ''), subtitle: Text('${e['category']} - ${e['expense_date']}'), trailing: Text('₹${(e['amount'] as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)))).toList()))],
+        PineCard(child: Column(children: report.recentExpenses.take(10).map((e) => ListTile(title: Text(e.description), subtitle: Text('${e.category} - ${e.expenseDate}'), trailing: Text('₹${e.amount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)))).toList()))],
       const SizedBox(height: 48),
     ]);
   }

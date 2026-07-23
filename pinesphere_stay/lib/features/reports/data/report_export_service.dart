@@ -917,7 +917,7 @@ class ReportExportService {
               '${s.tasksPending}',
               '${s.housekeepingTasks}',
               '${s.bookingsHandled}',
-              '${s.avgTaskCompletionHours?.toStringAsFixed(1) ?? "N/A"}',
+              s.avgTaskCompletionHours?.toStringAsFixed(1) ?? "N/A",
             ]).toList(),
           ),
         ],

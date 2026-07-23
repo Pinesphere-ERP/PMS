@@ -60,7 +60,7 @@ class _OccupancyReportScreenState extends ConsumerState<OccupancyReportScreen> {
               },
             ),
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (err, stack) => const SizedBox.shrink(),
           ),
         ],
       ),
@@ -133,7 +133,7 @@ class _OccupancyReportScreenState extends ConsumerState<OccupancyReportScreen> {
           children: [
             _buildMetricCard(Icons.bed, AppColors.primary, 'Avg Occupancy', '${report.avgOccupancyPct}%'),
             _buildMetricCard(Icons.nightlife, Colors.blue, 'Occupied Nights', '${report.occupiedRoomNights}'),
-            _buildMetricCard(Icons.available_rooms, Colors.green, 'Available Nights', '${report.availableRoomNights}'),
+            _buildMetricCard(Icons.check_circle_outline, Colors.green, 'Available Nights', '${report.availableRoomNights}'),
             _buildMetricCard(Icons.event_available, Colors.orange, 'Reserved Today', '${report.reservedRoomsToday}'),
           ],
         ),

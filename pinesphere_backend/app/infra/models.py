@@ -265,12 +265,45 @@ class Device(Base, TimestampMixin):
     __tablename__ = "devices"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_uid: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
+    device_uid: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True)
     primary_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
-    device_name: Mapped[Optional[str]] = mapped_column(String(80))
-    os_type: Mapped[Optional[str]] = mapped_column(String(20), default='android')
+    device_name: Mapped[Optional[str]] = mapped_column(String(100))
+    manufacturer: Mapped[Optional[str]] = mapped_column(String(100))
+    device_type: Mapped[Optional[str]] = mapped_column(String(50))
+    platform: Mapped[Optional[str]] = mapped_column(String(50))
+    os_type: Mapped[Optional[str]] = mapped_column(String(50))
+    os_version: Mapped[Optional[str]] = mapped_column(String(50))
+    browser_name: Mapped[Optional[str]] = mapped_column(String(50))
+    browser_version: Mapped[Optional[str]] = mapped_column(String(50))
+    app_version: Mapped[Optional[str]] = mapped_column(String(50))
+    build_number: Mapped[Optional[str]] = mapped_column(String(50))
+    is_trusted: Mapped[bool] = mapped_column(default=False)
+    first_login_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    login_count: Mapped[int] = mapped_column(default=0)
     status: Mapped[Optional[str]] = mapped_column(String(20), default='pending_approval')
+
+
+class DeviceLoginHistory(Base, TimestampMixin):
+    __tablename__ = "device_login_history"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), nullable=False)
+    login_timestamp: Mapped[datetime] = mapped_column(server_default=func.now())
+    logout_timestamp: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    public_ip: Mapped[Optional[str]] = mapped_column(String(45))
+    network_type: Mapped[Optional[str]] = mapped_column(String(50))
+    isp: Mapped[Optional[str]] = mapped_column(String(100))
+    latitude: Mapped[Optional[float]] = mapped_column(nullable=True)
+    longitude: Mapped[Optional[float]] = mapped_column(nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(String(100))
+    state: Mapped[Optional[str]] = mapped_column(String(100))
+    country: Mapped[Optional[str]] = mapped_column(String(100))
+    postal_code: Mapped[Optional[str]] = mapped_column(String(20))
+    time_zone: Mapped[Optional[str]] = mapped_column(String(50))
+
 
 
 class UserDevice(Base):

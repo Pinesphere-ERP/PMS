@@ -57,11 +57,23 @@ class DeviceSyncCheckinResponse(BaseModel):
 class DeviceResponse(BaseModel):
     id: uuid.UUID
     device_uid: str
-    property_id: uuid.UUID
+    property_id: Optional[uuid.UUID] = None
     primary_user_id: Optional[uuid.UUID] = None
     primary_user_name: Optional[str] = None
     device_name: Optional[str] = None
+    manufacturer: Optional[str] = None
+    device_type: Optional[str] = None
+    platform: Optional[str] = None
     os_type: Optional[str] = None
+    os_version: Optional[str] = None
+    browser_name: Optional[str] = None
+    browser_version: Optional[str] = None
+    app_version: Optional[str] = None
+    build_number: Optional[str] = None
+    is_trusted: bool = False
+    first_login_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
+    login_count: int = 0
     status: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

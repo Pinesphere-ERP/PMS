@@ -12,10 +12,37 @@ export default function Login() {
     setError('');
     setLoading(true);
 
+    let device_uid = localStorage.getItem('device_uid');
+    if (!device_uid) {
+      device_uid = crypto.randomUUID();
+      localStorage.setItem('device_uid', device_uid);
+    }
+
+    let lat = null;
+    let lng = null;
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
+      });
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+    } catch (e) {
+      console.warn("Geolocation denied or unavailable:", e);
+    }
+
+    const telemetry = {
+      browser_name: navigator.userAgentData?.brands?.[0]?.brand || navigator.userAgent,
+      platform: navigator.platform,
+      os_version: navigator.userAgentData?.platform || navigator.oscpu || "Unknown",
+      time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      latitude: lat,
+      longitude: lng,
+    };
+
     try {
       const res = await fetchAPI('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, device_uid, telemetry })
       });
       
       // Persist auth context for the session

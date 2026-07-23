@@ -39,7 +39,6 @@ const subscriptionNavigation = [
 
 const deviceNavigation = [
   { name: 'Global Console (Admin)', to: '/devices/global', icon: Smartphone },
-  { name: 'My Devices (Owner)', to: '/devices/owner', icon: Key },
   { name: 'Diagnostics (Support)', to: '/devices/support', icon: ClipboardCheck },
 ];
 

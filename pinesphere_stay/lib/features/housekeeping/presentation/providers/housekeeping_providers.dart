@@ -137,11 +137,10 @@ class HousekeepingTaskController {
     Map<String, dynamic>? checklistStatus,
     String? completionNotes,
   }) async {
-    final updateData = <String, dynamic>{
-      if (checklistStatus != null) 'checklist_status': checklistStatus,
-      if (photoPath != null) 'after_photo': photoPath,
-      if (completionNotes != null) 'completion_notes': completionNotes,
-    };
+    final updateData = <String, dynamic>{};
+    if (checklistStatus != null) updateData['checklist_status'] = checklistStatus;
+    if (photoPath != null) updateData['after_photo'] = photoPath;
+    if (completionNotes != null) updateData['completion_notes'] = completionNotes;
     await _ref.read(housekeepingServiceProvider).completeCleaning(taskId, updateData);
 
     // Auto-update room status to clean in local DB

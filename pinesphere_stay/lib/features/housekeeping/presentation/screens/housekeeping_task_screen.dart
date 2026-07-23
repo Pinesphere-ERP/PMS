@@ -285,7 +285,7 @@ class _HousekeepingTaskScreenState extends ConsumerState<HousekeepingTaskScreen>
                 Text('Damage Category', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _damageCategory,
+                  initialValue: _damageCategory,
                   decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                   items: ['Furniture', 'Electrical', 'AC', 'Plumbing', 'TV', 'Other']
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -296,7 +296,7 @@ class _HousekeepingTaskScreenState extends ConsumerState<HousekeepingTaskScreen>
                 Text('Severity', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _damageSeverity,
+                  initialValue: _damageSeverity,
                   decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                   items: const [
                     DropdownMenuItem(value: 'low', child: Text('Low')),
@@ -441,7 +441,7 @@ class _HousekeepingTaskScreenState extends ConsumerState<HousekeepingTaskScreen>
           setState(() => _isProcessing = true);
           try {
             await controller.startCleaning(task.serverId);
-            if (!mounted) return;
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Cleaning started! Room status updated.'), backgroundColor: Colors.blue),
             );
@@ -500,17 +500,17 @@ class _HousekeepingTaskScreenState extends ConsumerState<HousekeepingTaskScreen>
                           propertyId: task.propertyId,
                           checklistStatus: Map<String, dynamic>.from(_checklist),
                         );
-                        if (!mounted) return;
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Room cleaned! Reception has been notified.'),
                             backgroundColor: Colors.green,
                           ),
                         );
-                        if (!mounted) return;
+                        if (!context.mounted) return;
                         context.pop();
                       } catch (e) {
-                        if (!mounted) return;
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
                         );

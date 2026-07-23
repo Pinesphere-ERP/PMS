@@ -48,7 +48,7 @@ class UserRepository {
   }) async {
     try {
       final deviceInfo = DeviceInfoService(_secureStorage);
-      final deviceName = await deviceInfo.getDeviceName();
+
       final deviceUid = await deviceInfo.getDeviceFingerprint();
       
       String platformStr = 'Unknown';

@@ -40,7 +40,7 @@ class _ExpensesReportScreenState extends ConsumerState<ExpensesReportScreen> {
       appBar: AppBar(title: const Text('Expenses Report'), backgroundColor: AppColors.background, elevation: 0,
         actions: [reportAsync.when(data: (r) => IconButton(icon: const Icon(Icons.picture_as_pdf, color: AppColors.primary), onPressed: () async {
           try { await ref.read(reportExportServiceProvider).exportExpensesReportToPdf(r); if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF generated'))); } catch (e) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'))); }
-        }), loading: () => const SizedBox.shrink(), error: (_, __) => const SizedBox.shrink())],
+        }), loading: () => const SizedBox.shrink(), error: (err, stack) => const SizedBox.shrink())],
       ),
       body: PineBackground(child: Column(children: [
         _buildDateFilter(),
@@ -63,35 +63,15 @@ class _ExpensesReportScreenState extends ConsumerState<ExpensesReportScreen> {
   }
 
   Widget _buildContent(ExpensesReportDto report) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverList.list(children: [
-          Text('Expenses Summary', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          PineCard(child: ListTile(leading: const Icon(Icons.receipt_long, color: Colors.red), title: const Text('Total Expenses'), trailing: Text('₹${report.totalExpenses.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.red)))),
-        ])),
-        if (report.byCategory.isNotEmpty) ...[
-          SliverPadding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), sliver: SliverToBoxAdapter(child: Text('By Category', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)))),
-          SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
-            itemCount: report.byCategory.length,
-            itemBuilder: (context, index) {
-              final c = report.byCategory[index];
-              return ListTile(title: Text(c['category'] ?? ''), subtitle: Text('${c['count']} expenses'), trailing: Text('₹${(c['amount'] as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)));
-            },
-          )),
-        ],
-        if (report.recentExpenses.isNotEmpty) ...[
-          SliverPadding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), sliver: SliverToBoxAdapter(child: Text('Recent Expenses', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)))),
-          SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
-            itemCount: report.recentExpenses.take(10).length,
-            itemBuilder: (context, index) {
-              final e = report.recentExpenses.take(10).elementAt(index);
-              return ListTile(title: Text(e.description), subtitle: Text('${e.category} - ${e.expenseDate}'), trailing: Text('₹${e.amount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)));
-            },
-          )),
-        ],
-        const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
-      ],
-    );
+    return ListView(padding: const EdgeInsets.all(16), children: [
+      Text('Expenses Summary', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+      const SizedBox(height: 16),
+      PineCard(child: ListTile(leading: const Icon(Icons.receipt_long, color: Colors.red), title: const Text('Total Expenses'), trailing: Text('₹${report.totalExpenses.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.red)))),
+      if (report.byCategory.isNotEmpty) ...[const SizedBox(height: 24), Text('By Category', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 16),
+        PineCard(child: Column(children: report.byCategory.map((c) => ListTile(title: Text(c['category'] ?? ''), subtitle: Text('${c['count']} expenses'), trailing: Text('₹${(c['amount'] as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))).toList()))],
+      if (report.recentExpenses.isNotEmpty) ...[const SizedBox(height: 24), Text('Recent Expenses', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 16),
+        PineCard(child: Column(children: report.recentExpenses.take(10).map((e) => ListTile(title: Text(e.description), subtitle: Text('${e.category} - ${e.expenseDate}'), trailing: Text('₹${e.amount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)))).toList()))],
+      const SizedBox(height: 48),
+    ]);
   }
 }

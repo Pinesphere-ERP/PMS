@@ -60,7 +60,7 @@ class _OccupancyReportScreenState extends ConsumerState<OccupancyReportScreen> {
               },
             ),
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (err, stack) => const SizedBox.shrink(),
           ),
         ],
       ),
@@ -118,10 +118,28 @@ class _OccupancyReportScreenState extends ConsumerState<OccupancyReportScreen> {
   }
 
   Widget _buildContent(OccupancyReportDto report) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverList.list(children: [
-          _buildSectionHeader('Occupancy Overview'),
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionHeader('Occupancy Overview'),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 1.3,
+          children: [
+            _buildMetricCard(Icons.bed, AppColors.primary, 'Avg Occupancy', '${report.avgOccupancyPct}%'),
+            _buildMetricCard(Icons.nightlife, Colors.blue, 'Occupied Nights', '${report.occupiedRoomNights}'),
+            _buildMetricCard(Icons.check_circle_outline, Colors.green, 'Available Nights', '${report.availableRoomNights}'),
+            _buildMetricCard(Icons.event_available, Colors.orange, 'Reserved Today', '${report.reservedRoomsToday}'),
+          ],
+        ),
+        const SizedBox(height: 24),
+        if (report.byRoomType.isNotEmpty) ...[
+          _buildSectionHeader('By Room Type'),
           const SizedBox(height: 16),
           GridView.count(
             crossAxisCount: 2,

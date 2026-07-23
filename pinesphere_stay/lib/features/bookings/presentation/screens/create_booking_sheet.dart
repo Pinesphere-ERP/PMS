@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../rooms/presentation/providers/pms_provider.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../widgets/room_availability_calendar_dialog.dart';
 
 void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? preselectedRoomId}) {
   final pmsState = ref.read(pmsProvider);
@@ -86,8 +87,10 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
     final List<String> selectedAmenities = [];
 
     // Stay dates
-    DateTime checkInDate = DateTime.now();
-    DateTime checkOutDate = DateTime.now().add(const Duration(days: 2));
+    bool hasSelectedDates = false;
+    final now = DateTime.now();
+    DateTime checkInDate = DateTime(now.year, now.month, now.day);
+    DateTime checkOutDate = checkInDate.add(const Duration(days: 1));
 
     // Dynamic manual amenities
     final List<Map<String, dynamic>> manualAmenities = [];
@@ -136,6 +139,26 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
 
             final nights = checkOutDate.difference(checkInDate).inDays.clamp(1, 365);
             final double basePriceSum = selectedRoom.price * nights;
+
+            Future<void> openRoomCalendar() async {
+              final pickedRange = await showDialog<DateTimeRange>(
+                context: sheetContext,
+                builder: (ctx) => RoomAvailabilityCalendarDialog(
+                  roomId: selectedRoom.id,
+                  roomNumber: selectedRoom.roomNumber,
+                  existingBookings: pmsState.bookings,
+                  initialCheckIn: checkInDate,
+                  initialCheckOut: checkOutDate,
+                ),
+              );
+              if (pickedRange != null) {
+                setSheetState(() {
+                  hasSelectedDates = true;
+                  checkInDate = pickedRange.start;
+                  checkOutDate = pickedRange.end;
+                });
+              }
+            }
             final double weekendSum = isWeekend ? (selectedRoom.weekendPrice * nights) : 0.0;
             final double seasonSum = isSeason ? (selectedRoom.seasonPrice * nights) : 0.0;
             final double holidaySum = isHoliday ? (selectedRoom.holidayPrice * nights) : 0.0;
@@ -263,44 +286,46 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // STAY DATES PICKER
+                      // SINGLE UNIFIED STAY DATES CARD
+                      const Text('Stay Dates', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                      const SizedBox(height: 8),
                       InkWell(
-                        onTap: () async {
-                          final pickedRange = await showDateRangePicker(
-                            context: context,
-                            initialDateRange: DateTimeRange(start: checkInDate, end: checkOutDate),
-                            firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                            helpText: 'Select Stay Dates',
-                          );
-                          if (pickedRange != null) {
-                            setSheetState(() {
-                              checkInDate = pickedRange.start;
-                              checkOutDate = pickedRange.end;
-                            });
-                          }
-                        },
+                        onTap: openRoomCalendar,
+                        borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.outlineVariant),
+                            border: Border.all(color: AppColors.primary, width: 1.5),
                             borderRadius: BorderRadius.circular(12),
+                            color: AppColors.primary.withValues(alpha: 0.05),
                           ),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Stay Dates', style: TextStyle(fontSize: 10, color: AppColors.outline)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${checkInDate.day} ${getMonth(checkInDate)} - ${checkOutDate.day} ${getMonth(checkOutDate)} ($nights Nights)',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                ],
+                              const Icon(Icons.calendar_month_rounded, color: AppColors.primary, size: 26),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                     Text(
+                                       hasSelectedDates
+                                           ? '${checkInDate.day} ${getMonth(checkInDate)} ${checkInDate.year}  ➔  ${checkOutDate.day} ${getMonth(checkOutDate)} ${checkOutDate.year}'
+                                           : 'Select Check-in ➔ Check-out Dates',
+                                       style: TextStyle(
+                                         fontWeight: FontWeight.bold,
+                                         fontSize: 13,
+                                         color: hasSelectedDates ? AppColors.onSurface : AppColors.outline,
+                                       ),
+                                     ),
+                                    const SizedBox(height: 3),
+                                    const Text(
+                                       'Tap to select dates',
+                                       style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+                                     ),
+                                  ],
+                                ),
                               ),
-                              const Icon(Icons.date_range_outlined, size: 20, color: AppColors.primary),
+                              const Icon(Icons.arrow_forward_ios, color: AppColors.primary, size: 14),
                             ],
                           ),
                         ),
@@ -498,14 +523,17 @@ void showCreateBookingSheet(BuildContext context, WidgetRef ref, {String? presel
                               return;
                             }
 
-                            final hasOverlap = pmsState.bookings.any((b) {
-                              if (b.roomId != selectedRoom.id || b.status == 'Completed') return false;
-                              return b.checkInDate.isBefore(checkOutDate) && b.checkOutDate.isAfter(checkInDate);
-                            });
+                             final hasOverlap = pmsState.bookings.any((b) {
+                               final st = b.status.toLowerCase();
+                               if (b.roomId != selectedRoom.id || st == 'completed' || st == 'cancelled' || st == 'checked_out') return false;
+                               final bStart = DateTime(b.checkInDate.year, b.checkInDate.month, b.checkInDate.day);
+                               final bEnd = DateTime(b.checkOutDate.year, b.checkOutDate.month, b.checkOutDate.day);
+                               return !checkInDate.isAfter(bEnd) && !checkOutDate.isBefore(bStart);
+                             });
 
                             if (hasOverlap) {
                               showDialog(
-                                context: context,
+                                context: sheetContext,
                                 builder: (ctx) => AlertDialog(
                                   title: const Row(
                                     children: [

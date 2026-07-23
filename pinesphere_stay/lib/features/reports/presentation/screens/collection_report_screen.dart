@@ -40,7 +40,7 @@ class _CollectionReportScreenState extends ConsumerState<CollectionReportScreen>
       appBar: AppBar(title: const Text('Collection Report'), backgroundColor: AppColors.background, elevation: 0,
         actions: [reportAsync.when(data: (r) => IconButton(icon: const Icon(Icons.picture_as_pdf, color: AppColors.primary), onPressed: () async {
           try { await ref.read(reportExportServiceProvider).exportCollectionReportToPdf(r); if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF generated'))); } catch (e) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'))); }
-        }), loading: () => const SizedBox.shrink(), error: (_, __) => const SizedBox.shrink())],
+        }), loading: () => const SizedBox.shrink(), error: (err, stack) => const SizedBox.shrink())],
       ),
       body: PineBackground(child: Column(children: [
         _buildDateFilter(),

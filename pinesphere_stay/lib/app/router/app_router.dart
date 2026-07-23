@@ -221,16 +221,16 @@ GoRouter appRouter(Ref ref) {
 
         // Map route paths to ReportType
         ReportType? reportType;
-        if (location == '/reports/daily') reportType = ReportType.daily;
-        else if (location == '/reports/monthly') reportType = ReportType.monthly;
-        else if (location == '/reports/occupancy') reportType = ReportType.occupancy;
-        else if (location == '/reports/revenue') reportType = ReportType.revenue;
-        else if (location == '/reports/collection') reportType = ReportType.collection;
-        else if (location == '/reports/outstanding') reportType = ReportType.outstanding;
-        else if (location == '/reports/expenses') reportType = ReportType.expenses;
-        else if (location == '/reports/best-customers') reportType = ReportType.bestCustomers;
-        else if (location == '/reports/room-utilization') reportType = ReportType.roomUtilization;
-        else if (location == '/reports/staff-performance') reportType = ReportType.staffPerformance;
+        if (location == '/reports/daily') { reportType = ReportType.daily; }
+        else if (location == '/reports/monthly') { reportType = ReportType.monthly; }
+        else if (location == '/reports/occupancy') { reportType = ReportType.occupancy; }
+        else if (location == '/reports/revenue') { reportType = ReportType.revenue; }
+        else if (location == '/reports/collection') { reportType = ReportType.collection; }
+        else if (location == '/reports/outstanding') { reportType = ReportType.outstanding; }
+        else if (location == '/reports/expenses') { reportType = ReportType.expenses; }
+        else if (location == '/reports/best-customers') { reportType = ReportType.bestCustomers; }
+        else if (location == '/reports/room-utilization') { reportType = ReportType.roomUtilization; }
+        else if (location == '/reports/staff-performance') { reportType = ReportType.staffPerformance; }
 
         if (reportType != null && !PermissionMatrix.canAccessReport(userRole, reportType)) {
           return '/reports'; // Redirect back to reports hub

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -47,13 +49,29 @@ class UserRepository {
     try {
       final deviceInfo = DeviceInfoService(_secureStorage);
       final deviceName = await deviceInfo.getDeviceName();
+      final deviceUid = await deviceInfo.getDeviceFingerprint();
+      
+      String platformStr = 'Unknown';
+      String osVersionStr = 'Unknown';
+      try {
+        if (!kIsWeb) {
+          platformStr = Platform.operatingSystem;
+          osVersionStr = Platform.operatingSystemVersion;
+        } else {
+          platformStr = 'Web';
+        }
+      } catch (_) {}
 
       final response = await _dio.post('/auth/login', data: {
         'email': email,
         'password': password,
-        'device_id': 'portal',
-        'device_name': deviceName,
-        'device_fingerprint': 'portal',
+        'device_uid': deviceUid,
+        'telemetry': {
+          'device_type': 'mobile',
+          'platform': platformStr,
+          'os_version': osVersionStr,
+          'app_version': '1.0.0', // from package_info ideally
+        }
       });
 
       final accessToken = response.data['access_token'] as String;

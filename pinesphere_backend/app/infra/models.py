@@ -422,6 +422,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     floor: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')
+    maintenance_status: Mapped[Optional[str]] = mapped_column(String(20), default='good')  # good | maintenance_needed
     occupancy_status: Mapped[Optional[str]] = mapped_column(String(20), default='vacant')
     image_url: Mapped[Optional[str]] = mapped_column(Text)
 
@@ -498,11 +499,25 @@ class CheckOut(Base, TimestampMixin, SyncMixin):
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     checkout_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    # Billing breakdown (all nullable for backward compat)
+    room_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    restaurant_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    laundry_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    minibar_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    damage_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    miscellaneous_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    discount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    gst: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     total_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     advance_paid: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     remaining_balance: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    refund_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     payment_status: Mapped[str] = mapped_column(String(20), default='pending')
     checkout_status: Mapped[str] = mapped_column(String(20), default='pending')
+    key_returned: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    id_returned: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    feedback_submitted: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    remarks: Mapped[Optional[str]] = mapped_column(Text)
 
 
 class InvoiceItem(Base, TimestampMixin):
@@ -576,18 +591,29 @@ class HousekeepingTask(Base, TimestampMixin, SyncMixin):
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))
     guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id"))
-    created_by: Mapped[Optional[str]] = mapped_column(String(50)) # e.g., "SYSTEM" or user ID
+    created_by: Mapped[Optional[str]] = mapped_column(String(50))  # "SYSTEM" or user ID string
     assigned_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     status: Mapped[str] = mapped_column(String(20), default='pending')
     priority: Mapped[str] = mapped_column(String(10), default='medium')
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     started_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
-    duration: Mapped[Optional[int]] = mapped_column(Integer) # duration in minutes
+    device_id: Mapped[Optional[str]] = mapped_column(String(128))  # device that started/completed
+    duration: Mapped[Optional[int]] = mapped_column(Integer)  # duration in minutes
     checklist_status: Mapped[Optional[dict]] = mapped_column(JSONB)
     before_photo: Mapped[Optional[str]] = mapped_column(Text)
     after_photo: Mapped[Optional[str]] = mapped_column(Text)
     remarks: Mapped[Optional[str]] = mapped_column(Text)
+    completion_notes: Mapped[Optional[str]] = mapped_column(Text)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    completed_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    # Inspection fields
+    inspected_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    inspection_result: Mapped[Optional[str]] = mapped_column(String(10))  # pass | fail
+    inspection_remarks: Mapped[Optional[str]] = mapped_column(Text)
+    inspected_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    # Denormalized for housekeeper dashboard display
+    checkout_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    guest_name: Mapped[Optional[str]] = mapped_column(String(150))  # shown only with permission
     synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 
@@ -602,7 +628,12 @@ class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
     assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     category: Mapped[str] = mapped_column(String(30), nullable=False)
     priority: Mapped[str] = mapped_column(String(10), default='medium')
+    severity: Mapped[Optional[str]] = mapped_column(String(10), default='medium')  # low | medium | high | critical
     issue_description: Mapped[str] = mapped_column(Text, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    photo_url: Mapped[Optional[str]] = mapped_column(Text)
+    repair_cost: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    created_at_ts: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     status: Mapped[str] = mapped_column(String(20), default='open')
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 

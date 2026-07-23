@@ -436,4 +436,21 @@ class HousekeepingService {
       rethrow;
     }
   }
+
+  /// Load housekeeping config for a property (checklist, photo requirements)
+  Future<Map<String, dynamic>?> getHousekeepingConfig(String propertyId) async {
+    try {
+      final response = await _dio.get(
+        '/housekeeping/config',
+        queryParameters: {'property_id': propertyId},
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      AppLogger.w('getHousekeepingConfig network failed, using defaults', e);
+      return null;
+    } catch (e) {
+      AppLogger.e('getHousekeepingConfig unexpected error', e);
+      return null;
+    }
+  }
 }

@@ -13,6 +13,9 @@ from app.modules.housekeeping.schemas import (
     MaintenanceTicketCreate, MaintenanceTicketUpdate, MaintenanceTicketResponse,
     LostAndFoundCreate, LostAndFoundUpdate, LostAndFoundResponse,
     HousekeepingDashboard,
+    HousekeepingRoomCardResponse, HousekeepingRoomDetailResponse,
+    CleaningCompleteRequest, CleaningScheduleRequest, HousekeepingStatusUpdate,
+    HousekeepingNotificationResponse,
 )
 from app.modules.housekeeping import service
 
@@ -243,3 +246,71 @@ async def get_housekeeping_dashboard(
     """Get housekeeping dashboard summary stats."""
     await assert_property_access(property_id, current_user, db)
     return await service.get_housekeeping_dashboard(db, property_id)
+
+
+# ─── Housekeeping Room Status ──────────────────────────────────────
+
+@router.get("/rooms", response_model=List[HousekeepingRoomCardResponse])
+async def list_housekeeping_rooms(
+    property_id: Optional[uuid.UUID] = Query(None, description="Property ID"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all rooms with their current housekeeping status."""
+    property_id = property_id or current_user.property_id
+    if not property_id:
+        raise HTTPException(status_code=403, detail="Property scope required")
+    await assert_property_access(property_id, current_user, db)
+    return await service.get_housekeeper_rooms(db, property_id, current_user)
+
+
+@router.get("/rooms/{room_id}", response_model=HousekeepingRoomDetailResponse)
+async def get_room_housekeeping_detail(
+    room_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get detailed housekeeping status for a single room."""
+    return await service.get_housekeeper_room_detail(db, room_id, current_user)
+
+
+@router.post("/rooms/{room_id}/complete", response_model=HousekeepingRoomDetailResponse)
+async def complete_room_housekeeping(
+    room_id: uuid.UUID,
+    req: CleaningCompleteRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Mark room-level cleaning as complete with photos (room status dashboard flow)."""
+    return await service.complete_room_cleaning(db, room_id, req, current_user)
+
+
+@router.post("/rooms/{room_id}/schedule", response_model=HousekeepingRoomDetailResponse)
+async def schedule_room_cleaning(
+    room_id: uuid.UUID,
+    req: CleaningScheduleRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Schedule cleaning for a room at a specific time."""
+    return await service.schedule_cleaning(db, room_id, req, current_user)
+
+
+@router.patch("/rooms/{room_id}/status", response_model=HousekeepingRoomDetailResponse)
+async def update_room_housekeeping_status(
+    room_id: uuid.UUID,
+    req: HousekeepingStatusUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update the clean status for a room (supports priority escalation)."""
+    return await service.update_housekeeping_status(db, room_id, req, current_user)
+
+
+@router.get("/notifications", response_model=List[HousekeepingNotificationResponse])
+async def get_housekeeping_notifications(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get pending housekeeping notifications for the logged-in housekeeper."""
+    return await service.get_housekeeper_notifications(db, current_user)

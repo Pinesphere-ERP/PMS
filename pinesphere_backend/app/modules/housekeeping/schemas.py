@@ -56,7 +56,9 @@ class HousekeepingTaskResponse(BaseModel):
     remarks: Optional[str] = None
     before_photo: Optional[str] = None
     after_photo: Optional[str] = None
+    completion_notes: Optional[str] = None
     completed_at: Optional[datetime] = None
+    completed_by: Optional[uuid.UUID] = None
     inspected_by: Optional[uuid.UUID] = None
     inspection_result: Optional[str] = None
     inspection_remarks: Optional[str] = None
@@ -66,6 +68,9 @@ class HousekeepingTaskResponse(BaseModel):
     updated_at: Optional[datetime] = None
     room_number: Optional[str] = None
     assigned_staff_name: Optional[str] = None
+    # Denormalized fields for housekeeper dashboard display
+    checkout_time: Optional[datetime] = None
+    guest_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -82,9 +87,11 @@ class MaintenanceTicketCreate(BaseModel):
     housekeeping_task_id: Optional[uuid.UUID] = None
     category: str
     priority: str = "medium"
+    severity: str = "medium"  # low | medium | high | critical
     issue_description: str
     assigned_to: Optional[uuid.UUID] = None
     photo_url: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class MaintenanceTicketUpdate(BaseModel):
@@ -103,7 +110,9 @@ class MaintenanceTicketResponse(BaseModel):
     assigned_to: Optional[uuid.UUID] = None
     category: str
     priority: str
+    severity: Optional[str] = "medium"
     issue_description: str
+    notes: Optional[str] = None
     status: str
     repair_cost: Optional[float] = None
     created_at_ts: Optional[datetime] = None
@@ -159,6 +168,7 @@ class CompleteCleaningRequest(BaseModel):
     before_photo: Optional[str] = None
     after_photo: Optional[str] = None
     remarks: Optional[str] = None
+    completion_notes: Optional[str] = None  # housekeeper's notes at completion
 
 class StartCleaningRequest(BaseModel):
     pass

@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 
 from app.infra.models import (
     HousekeepingTask, MaintenanceTicket, LostAndFound,
-    Room, User
+    Room, User, Role
 )
 from app.modules.audit.logger import AuditLogger
 from app.modules.housekeeping.schemas import (
@@ -171,11 +171,21 @@ async def start_cleaning(
     task.started_at = datetime.utcnow()
     task.started_by = current_user_id
 
+    # Update Room.housekeeping_status
     room_stmt = select(Room).where(Room.room_id == task.room_id)
     room_res = await db.execute(room_stmt)
     room = room_res.scalar_one_or_none()
     if room:
         room.housekeeping_status = "cleaning"
+
+    # Also update HousekeepingRoomStatus for the dashboard
+    from app.infra.models import HousekeepingRoomStatus
+    hk_stmt = select(HousekeepingRoomStatus).where(HousekeepingRoomStatus.room_id == task.room_id)
+    hk_res = await db.execute(hk_stmt)
+    hk_record = hk_res.scalar_one_or_none()
+    if hk_record:
+        hk_record.clean_status = "in_progress"
+        hk_record.updated_by = current_user_id
 
     await AuditLogger.log(
         db,
@@ -185,6 +195,7 @@ async def start_cleaning(
         action_type="start_cleaning",
         target_entity="housekeeping_task",
         target_record_id=task.task_id,
+        old_value={"status": "pending"},
         new_value={"status": "in_progress", "started_at": str(task.started_at)},
     )
     await db.commit()
@@ -204,22 +215,33 @@ async def complete_cleaning(
     if task.status != "in_progress":
         raise HTTPException(status_code=400, detail=f"Cannot complete task from status {task.status}")
 
-    # Validate against config
+    # Load property config for validation
     config_stmt = select(HousekeepingConfig).where(HousekeepingConfig.property_id == task.property_id)
     config_res = await db.execute(config_stmt)
     config = config_res.scalar_one_or_none()
 
     if config:
-        if config.require_before_photo and not req.before_photo:
+        if config.require_before_photo and not (req.before_photo or task.before_photo):
             raise HTTPException(status_code=400, detail="Before photo is required by property config.")
         if config.require_after_photo and not req.after_photo:
             raise HTTPException(status_code=400, detail="After photo is required by property config.")
 
+    # Validate checklist: all items must be checked if a checklist exists
+    effective_checklist = req.checklist_status or task.checklist_status
+    if effective_checklist:
+        unchecked = [k for k, v in effective_checklist.items() if not v]
+        if unchecked:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Checklist not fully completed. Unchecked: {', '.join(unchecked)}",
+            )
+
     task.status = "completed"
     task.completed_at = datetime.utcnow()
+    task.completed_by = current_user_id
     if task.started_at:
         task.duration = int((task.completed_at - task.started_at).total_seconds() / 60)
-    
+
     if req.checklist_status:
         task.checklist_status = req.checklist_status
     if req.before_photo:
@@ -228,12 +250,27 @@ async def complete_cleaning(
         task.after_photo = req.after_photo
     if req.remarks:
         task.remarks = req.remarks
+    if req.completion_notes:
+        task.completion_notes = req.completion_notes
 
+    # Update Room.housekeeping_status → ready/clean
     room_stmt = select(Room).where(Room.room_id == task.room_id)
     room_res = await db.execute(room_stmt)
     room = room_res.scalar_one_or_none()
+    room_number = None
     if room:
         room.housekeeping_status = "clean"
+        room_number = room.room_number
+
+    # Update HousekeepingRoomStatus for the dashboard
+    from app.infra.models import HousekeepingRoomStatus
+    hk_stmt = select(HousekeepingRoomStatus).where(HousekeepingRoomStatus.room_id == task.room_id)
+    hk_res = await db.execute(hk_stmt)
+    hk_record = hk_res.scalar_one_or_none()
+    if hk_record:
+        hk_record.clean_status = "clean"
+        hk_record.last_cleaned_at = task.completed_at
+        hk_record.updated_by = current_user_id
 
     await AuditLogger.log(
         db,
@@ -243,10 +280,18 @@ async def complete_cleaning(
         action_type="complete_cleaning",
         target_entity="housekeeping_task",
         target_record_id=task.task_id,
-        new_value={"status": "completed", "duration": task.duration},
+        old_value={"status": "in_progress"},
+        new_value={"status": "completed", "duration": task.duration, "room_number": room_number},
     )
     await db.commit()
     await db.refresh(task)
+
+    # Notify reception that room is ready (fire-and-forget, non-blocking)
+    try:
+        await _notify_reception_room_ready(db, task, room_number)
+    except Exception as e:
+        logger.warning(f"[HK] Failed to notify reception for room {room_number}: {e}")
+
     return await _enrich_task(db, task)
 
 
@@ -262,7 +307,22 @@ async def report_damage(
     # Set housekeeping_task_id on request implicitly
     req.housekeeping_task_id = task.task_id
     ticket = await create_maintenance_ticket(db, req, current_user_id)
-    return await get_maintenance_ticket_detail(db, ticket.ticket_id)
+    full_ticket = await get_maintenance_ticket_detail(db, ticket.ticket_id)
+
+    # Get room number for notification context
+    room_number = getattr(full_ticket, "room_number", None)
+
+    # Notify maintenance team (non-blocking)
+    try:
+        raw_ticket_stmt = select(MaintenanceTicket).where(MaintenanceTicket.ticket_id == ticket.ticket_id)
+        raw_res = await db.execute(raw_ticket_stmt)
+        raw_ticket = raw_res.scalar_one_or_none()
+        if raw_ticket:
+            await _notify_maintenance_team(db, raw_ticket, room_number)
+    except Exception as e:
+        logger.warning(f"[HK] Failed to notify maintenance team: {e}")
+
+    return full_ticket
 
 
 async def get_tasks(
@@ -826,13 +886,13 @@ async def get_housekeeper_room_detail(
     return HousekeepingRoomDetailResponse.model_validate(record, from_attributes=True)
 
 
-async def complete_cleaning(
+async def complete_room_cleaning(
     db: AsyncSession,
     room_id: uuid.UUID,
     req: CleaningCompleteRequest,
     user: "User",
 ) -> HousekeepingRoomDetailResponse:
-    """Mark cleaning as completed: update status, replace image URLs."""
+    """Mark cleaning as completed on the room status level: update status, replace image URLs."""
     record = await hk_repo.get_room_status_or_404(db, room_id)
 
     # Verify property access
@@ -861,7 +921,7 @@ async def complete_cleaning(
         property_id=record.property_id,
         user_id=user.id,
         module_name="housekeeping",
-        action_type="complete_cleaning",
+        action_type="complete_room_cleaning",
         target_entity="housekeeping_room_status",
         target_record_id=record.id,
         new_value={
@@ -1059,4 +1119,111 @@ async def _notify_housekeepers(
         )
     logger.info(
         f"Notified {len(housekeepers)} housekeepers for room {record.room_number}"
+    )
+
+
+# ─── Internal: Reception Room-Ready Notification ────────────────────
+
+async def _notify_reception_room_ready(
+    db: AsyncSession, task: HousekeepingTask, room_number: Optional[str]
+) -> None:
+    """Notify all RECEPTION-role users that a room is now clean and ready."""
+    # Find RECEPTION role for this property (try property-scoped first, then global)
+    for scope_filter in [
+        and_(Role.property_id == task.property_id, Role.role_code == "RECEPTION"),
+        and_(Role.property_id.is_(None), Role.role_code == "RECEPTION"),
+    ]:
+        role_res = await db.execute(select(Role).where(scope_filter))
+        reception_role = role_res.scalar_one_or_none()
+        if reception_role:
+            break
+
+    if not reception_role:
+        logger.warning(f"No RECEPTION role found for property {task.property_id}")
+        return
+
+    reception_query = select(User).where(
+        User.property_id == task.property_id,
+        User.role_id == reception_role.id,
+        User.status == "ACTIVE",
+    )
+    recv_result = await db.execute(reception_query)
+    reception_users = recv_result.scalars().all()
+
+    if not reception_users:
+        logger.info(f"No active reception users for property {task.property_id}")
+        return
+
+    display_room = room_number or "Unknown"
+    notification_service = NotificationDispatchService(db)
+    for recv in reception_users:
+        await notification_service.dispatch(
+            recipient_id=recv.id,
+            title=f"Room {display_room} is Ready",
+            message=f"Room {display_room} has been cleaned and is ready for the next guest.",
+            channel="in_app",
+            priority="high",
+            payload={
+                "type": "room_ready",
+                "task_id": str(task.task_id),
+                "room_id": str(task.room_id),
+                "room_number": display_room,
+                "property_id": str(task.property_id),
+            },
+        )
+    logger.info(
+        f"Notified {len(reception_users)} reception users: room {display_room} is ready"
+    )
+
+
+# ─── Internal: Maintenance Team Notification ────────────────────────
+
+async def _notify_maintenance_team(
+    db: AsyncSession, ticket: "MaintenanceTicket", room_number: Optional[str]
+) -> None:
+    """Notify maintenance users that a damage ticket has been created."""
+    for scope_filter in [
+        and_(Role.property_id == ticket.property_id, Role.role_code == "MAINTENANCE"),
+        and_(Role.property_id.is_(None), Role.role_code == "MAINTENANCE"),
+    ]:
+        role_res = await db.execute(select(Role).where(scope_filter))
+        maint_role = role_res.scalar_one_or_none()
+        if maint_role:
+            break
+
+    if not maint_role:
+        logger.warning(f"No MAINTENANCE role found for property {ticket.property_id}")
+        return
+
+    maint_query = select(User).where(
+        User.property_id == ticket.property_id,
+        User.role_id == maint_role.id,
+        User.status == "ACTIVE",
+    )
+    maint_result = await db.execute(maint_query)
+    maint_users = maint_result.scalars().all()
+
+    if not maint_users:
+        return
+
+    display_room = room_number or "Unknown"
+    notification_service = NotificationDispatchService(db)
+    for mu in maint_users:
+        await notification_service.dispatch(
+            recipient_id=mu.id,
+            title=f"Damage Reported in Room {display_room}",
+            message=f"Category: {ticket.category}. {ticket.issue_description[:100]}",
+            channel="in_app",
+            priority="high",
+            payload={
+                "type": "maintenance_ticket",
+                "ticket_id": str(ticket.ticket_id),
+                "room_id": str(ticket.room_id),
+                "room_number": display_room,
+                "category": ticket.category,
+                "severity": getattr(ticket, "severity", "medium"),
+            },
+        )
+    logger.info(
+        f"Notified {len(maint_users)} maintenance users about damage in room {display_room}"
     )

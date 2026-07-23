@@ -88,8 +88,8 @@ class _MyTasksView extends ConsumerWidget {
       onRefresh: () => ref.refresh(housekeepingTasksProvider.future),
       child: tasksAsync.when(
         data: (tasks) {
-          final activeTasks = tasks.where((t) => t.status != 'completed' && t.status != 'closed').toList();
-          
+          final activeTasks = tasks.where((t) => t.status != 'completed' && t.status != 'closed' && t.status != 'inspected').toList();
+
           if (activeTasks.isEmpty) {
             return Center(
               child: Column(
@@ -110,6 +110,7 @@ class _MyTasksView extends ConsumerWidget {
             itemCount: activeTasks.length,
             itemBuilder: (context, index) {
               final task = activeTasks[index];
+              final controller = ref.read(housekeepingTaskControllerProvider);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: InkWell(
@@ -117,50 +118,99 @@ class _MyTasksView extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: PineCard(
                     padding: const EdgeInsets.all(16),
-                    child: Row(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(task.status).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            task.roomNumber.isNotEmpty ? task.roomNumber : '-',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: _getStatusColor(task.status),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                task.remarks.isNotEmpty ? task.remarks : 'Standard Cleaning',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(task.status).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
+                              alignment: Alignment.center,
+                              child: Text(
+                                task.roomNumber.isNotEmpty ? task.roomNumber : '-',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: _getStatusColor(task.status),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildStatusBadge(task.status),
-                                  const SizedBox(width: 8),
-                                  if (task.createdAt.isNotEmpty)
-                                    Text(
-                                      'Waiting: ${_formatTimeWaiting(task.createdAt)}',
-                                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                                    ),
+                                  Text(
+                                    task.remarks.isNotEmpty ? task.remarks : 'Standard Cleaning',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      _buildStatusBadge(task.status),
+                                      const SizedBox(width: 6),
+                                      _buildPriorityBadge(task.priority),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      if (task.checkoutTime.isNotEmpty) ...[
+                                        const Icon(Icons.access_time, size: 12, color: Colors.grey),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'Waiting: ${_formatTimeWaiting(task.checkoutTime)}',
+                                          style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                        ),
+                                      ] else if (task.createdAt.isNotEmpty) ...[
+                                        const Icon(Icons.access_time, size: 12, color: Colors.grey),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'Waiting: ${_formatTimeWaiting(task.createdAt)}',
+                                          style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
-                          ),
+                            ),
+                            const Icon(Icons.chevron_right, color: AppColors.outline),
+                          ],
                         ),
-                        const Icon(Icons.chevron_right, color: AppColors.outline),
+                        // Quick action: START CLEANING directly from card
+                        if (task.status == 'pending') ...[
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.blue.shade700,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              onPressed: () async {
+                                await controller.startCleaning(task.serverId);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Cleaning started!'),
+                                      backgroundColor: Colors.blue,
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.cleaning_services, size: 18),
+                              label: const Text('Start Cleaning', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -179,10 +229,10 @@ class _MyTasksView extends ConsumerWidget {
     );
   }
 
-  String _formatTimeWaiting(String createdAtStr) {
+  String _formatTimeWaiting(String dateStr) {
     try {
-      final createdAt = DateTime.parse(createdAtStr);
-      final diff = DateTime.now().difference(createdAt);
+      final dt = DateTime.parse(dateStr);
+      final diff = DateTime.now().difference(dt);
       if (diff.inDays > 0) return '${diff.inDays}d ${diff.inHours % 24}h';
       if (diff.inHours > 0) return '${diff.inHours}h ${diff.inMinutes % 60}m';
       return '${diff.inMinutes}m';
@@ -193,8 +243,7 @@ class _MyTasksView extends ConsumerWidget {
 
   Widget _buildStatusBadge(String status) {
     Color color = _getStatusColor(status);
-    String label = status.toUpperCase();
-
+    String label = status.replaceAll('_', ' ').toUpperCase();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -202,13 +251,22 @@ class _MyTasksView extends ConsumerWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
+      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+    );
+  }
+
+  Widget _buildPriorityBadge(String priority) {
+    final colors = {'low': Colors.green, 'medium': Colors.orange, 'high': Colors.red, 'urgent': Colors.red};
+    final color = colors[priority.toLowerCase()] ?? Colors.grey;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
       child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
+        priority.toUpperCase(),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }
@@ -216,7 +274,6 @@ class _MyTasksView extends ConsumerWidget {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending': return Colors.orange;
-      case 'accepted': return Colors.blue;
       case 'in_progress': return Colors.purple;
       case 'completed': return Colors.green;
       default: return Colors.grey;

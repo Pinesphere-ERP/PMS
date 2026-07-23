@@ -63,27 +63,31 @@ class PLReportScreen extends ConsumerWidget {
   Widget _buildReportView(BuildContext context, PLReportDto report) {
     final formatCurrency = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        PineCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Summary', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              _buildSummaryRow('Total Revenue', formatCurrency.format(report.summaryTotalRevenue), AppColors.primary),
-              const SizedBox(height: 8),
-              _buildSummaryRow('Total Expenses', formatCurrency.format(report.summaryTotalExpenses), AppColors.error),
-              const Divider(height: 32),
-              _buildSummaryRow('Net Profit', formatCurrency.format(report.summaryNetProfit), AppColors.secondary),
-            ],
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverList.list(children: [
+          PineCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Summary', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 16),
+                _buildSummaryRow('Total Revenue', formatCurrency.format(report.summaryTotalRevenue), AppColors.primary),
+                const SizedBox(height: 8),
+                _buildSummaryRow('Total Expenses', formatCurrency.format(report.summaryTotalExpenses), AppColors.error),
+                const Divider(height: 32),
+                _buildSummaryRow('Net Profit', formatCurrency.format(report.summaryNetProfit), AppColors.secondary),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        Text('Monthly Breakdown', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 16),
-        ...report.monthlyBreakdown.map((monthData) => Padding(
+          const SizedBox(height: 24),
+          Text('Monthly Breakdown', style: Theme.of(context).textTheme.titleLarge),
+        ])),
+        SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
+          itemCount: report.monthlyBreakdown.length,
+          itemBuilder: (context, index) {
+            final monthData = report.monthlyBreakdown[index];
+            return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: PineCard(
                 child: Column(
@@ -99,7 +103,10 @@ class PLReportScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-            )),
+            );
+          },
+        )),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
       ],
     );
   }

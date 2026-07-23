@@ -4,6 +4,7 @@ import 'package:pinesphere_stay/features/housekeeping/domain/models/housekeeping
 import 'package:pinesphere_stay/features/rooms/presentation/providers/pms_provider.dart';
 import '../../../../main.dart';
 import '../../../sync/data/sync_service.dart';
+import 'package:uuid/uuid.dart';
 
 final housekeepingTasksProvider = FutureProvider<List<HousekeepingTaskEntity>>((ref) async {
   final service = ref.watch(housekeepingServiceProvider);
@@ -12,12 +13,51 @@ final housekeepingTasksProvider = FutureProvider<List<HousekeepingTaskEntity>>((
   
   if (propertyId == null) return [];
   
-  // getTasks returns List<dynamic>, so we need to fetch it from the database instead
-  // since the fallback already upserted it. Let's just call getTasks then query DB.
-  // Actually, getTasks returns raw json. The generic way the DAO works is better.
-  // Let's use the dao directly to stream it, or just use getTasks and map it.
+  // 1. Generate missing tasks for dirty rooms locally first
+  final housekeepingRoomDao = databaseService.housekeepingRoomStatusDao;
+  final housekeepingDao = databaseService.housekeepingDao;
+  
+  final dirtyRooms = housekeepingRoomDao.getByPropertyId(propertyId).where((r) => r.cleanStatus != 'clean').toList();
+  for (final room in dirtyRooms) {
+    final existingTasks = housekeepingDao.queryTasks(propertyId);
+    final hasActiveTask = existingTasks.any((t) => t.roomId == room.serverId && t.status != 'completed' && t.status != 'closed');
+    
+    if (!hasActiveTask) {
+      final newTaskId = const Uuid().v4();
+      final newTask = HousekeepingTaskEntity(
+        serverId: newTaskId,
+        roomId: room.serverId,
+        propertyId: propertyId,
+        roomNumber: room.roomNumber,
+        status: 'pending',
+        priority: 'medium',
+        remarks: 'Auto-generated for dirty room',
+        createdAt: DateTime.now().toUtc().toIso8601String(),
+        lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
+      );
+      housekeepingDao.put(newTask);
+      
+      // Enqueue sync so backend knows
+      ref.read(syncServiceProvider).enqueueMutation(
+        entityType: 'HousekeepingTask',
+        entityId: newTaskId,
+        operation: 'CREATE',
+        payload: {
+          'uuid': newTaskId,
+          'room_id': room.serverId,
+          'property_id': propertyId,
+          'room_number': room.roomNumber,
+          'status': 'pending',
+          'priority': 'medium',
+          'remarks': 'Auto-generated for dirty room',
+        },
+      );
+    }
+  }
+
+  // 2. Fetch tasks (local DB or API)
   final rawData = await service.getTasks(propertyId);
-  return rawData.map((body) => HousekeepingTaskEntity(
+  final tasks = rawData.map((body) => HousekeepingTaskEntity(
         serverId: body['id']?.toString() ?? '',
         roomId: body['room_id']?.toString() ?? '',
         propertyId: body['property_id']?.toString() ?? '',
@@ -38,6 +78,17 @@ final housekeepingTasksProvider = FutureProvider<List<HousekeepingTaskEntity>>((
         createdAt: body['created_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
         lastModifiedHlc: body['last_modified_hlc']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       )).toList().cast<HousekeepingTaskEntity>();
+      
+  // Also merge any local-only tasks that haven't synced yet
+  final localTasks = housekeepingDao.queryTasks(propertyId);
+  final serverTaskIds = tasks.map((t) => t.serverId).toSet();
+  for (final localTask in localTasks) {
+    if (!serverTaskIds.contains(localTask.serverId)) {
+      tasks.add(localTask);
+    }
+  }
+  
+  return tasks;
 });
 
 final housekeepingTaskControllerProvider = Provider((ref) {

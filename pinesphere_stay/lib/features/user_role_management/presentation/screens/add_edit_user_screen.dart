@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../main.dart';
 import '../../../user_role_management/domain/entities.dart';
 import '../../../sync/data/sync_service.dart';
+import '../../../../core/network/dio_client.dart';
 
 class AddEditUserScreen extends ConsumerStatefulWidget {
   final UserEntity? existingUser;
@@ -36,14 +37,39 @@ class _AddEditUserScreenState extends ConsumerState<AddEditUserScreen> {
     }
   }
 
-  void _loadRoles() {
-    final roles = databaseService.roleDao.getAll().where((r) => !r.isDeleted).toList();
-    setState(() {
-      _allRoles = roles;
-      if (!_isEditing && roles.isNotEmpty) {
-        _selectedRoleId = roles.first.serverId;
+  Future<void> _loadRoles() async {
+    List<RoleEntity> roles = databaseService.roleDao.getAll().where((r) => !r.isDeleted).toList();
+    
+    if (roles.isEmpty) {
+      try {
+        final dio = ref.read(dioClientProvider);
+        final response = await dio.get('/users/roles');
+        if (response.statusCode == 200) {
+          final data = response.data['data'] as List;
+          roles = data.map((json) => RoleEntity(
+            serverId: json['id'],
+            roleCode: json['role_code'],
+            roleName: json['role_name'],
+          )).toList();
+          
+          // Save to local DB for next time
+          for (var r in roles) {
+             databaseService.roleDao.put(r);
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to fetch roles: $e');
       }
-    });
+    }
+
+    if (mounted) {
+      setState(() {
+        _allRoles = roles;
+        if (!_isEditing && roles.isNotEmpty) {
+          _selectedRoleId = roles.first.serverId;
+        }
+      });
+    }
   }
 
   @override

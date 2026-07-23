@@ -296,16 +296,21 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     );
   }
 
-  Widget _buildDatePickerField(String label, DateTime? date, ValueChanged<DateTime> onPicked,
+  Widget _buildDatePickerField(
+      String label, DateTime? date, ValueChanged<DateTime> onPicked,
       {bool isRequired = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: InkWell(
         onTap: () async {
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final initial = date != null ? DateTime(date.year, date.month, date.day) : today;
+          final first = initial.isBefore(today) ? initial : today.subtract(const Duration(days: 365));
           final picked = await showDatePicker(
             context: context,
-            initialDate: date ?? DateTime.now(),
-            firstDate: DateTime.now(),
+            initialDate: initial,
+            firstDate: first,
             lastDate: DateTime(2100),
           );
           if (picked != null) onPicked(picked);
@@ -316,6 +321,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: AppColors.surface,
+            suffixIcon: const Icon(Icons.calendar_today_outlined, size: 20, color: AppColors.primary),
           ),
           child: Text(
             date == null ? 'Select Date' : _dateFormat.format(date),

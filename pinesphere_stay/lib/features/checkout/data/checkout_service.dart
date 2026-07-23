@@ -9,6 +9,7 @@ import '../../../core/database/dao/room_dao.dart';
 import '../../audit/data/audit_service.dart';
 import '../../sync/data/sync_service.dart';
 import '../domain/models/checkout_entity.dart';
+import '../../housekeeping/domain/models/housekeeping_task_entity.dart';
 
 part 'checkout_service.g.dart';
 
@@ -82,7 +83,7 @@ class CheckOutService {
         syncStatus: 'Synced',
       );
       _checkoutDao.put(entity);
-      _updateRoomToDirty(data['room_id']?.toString() ?? '');
+      _updateRoomToDirty(data['room_id']?.toString() ?? '', data['property_id']?.toString());
       _audit.log(
         moduleName: 'checkout',
         actionType: 'check_out',
@@ -135,7 +136,7 @@ class CheckOutService {
       );
       _checkoutDao.put(entity);
 
-      _updateRoomToDirty(data['room_id']?.toString() ?? '');
+      _updateRoomToDirty(data['room_id']?.toString() ?? '', data['property_id']?.toString());
       _syncService.enqueueMutation(
         entityType: 'CheckOut',
         entityId: localUuid.toString(),
@@ -317,13 +318,17 @@ class CheckOutService {
     }
   }
 
-  void _updateRoomToDirty(String roomId) {
+  void _updateRoomToDirty(String roomId, [String? fallbackPropertyId]) {
     final room = _roomDao.getByServerId(roomId);
+    String propertyId = fallbackPropertyId ?? '';
+    String roomName = '';
     if (room != null) {
       room.status = 'Cleaning';
       room.lastModifiedHlc = DateTime.now().toUtc().toIso8601String();
       room.syncStatus = 'Pending';
       _roomDao.put(room);
+      propertyId = room.propertyId;
+      roomName = room.name;
     }
     
     final housekeepingRoom = databaseService.housekeepingRoomStatusDao.getByRoomId(roomId);
@@ -331,6 +336,44 @@ class CheckOutService {
       housekeepingRoom.cleanStatus = 'not_cleaned';
       housekeepingRoom.occupancyStatus = 'vacant';
       databaseService.housekeepingRoomStatusDao.put(housekeepingRoom);
+    }
+
+    // Auto-generate a Housekeeping Task locally if it doesn't exist
+    if (propertyId.isNotEmpty) {
+      final housekeepingDao = databaseService.housekeepingDao;
+      final existingTasks = housekeepingDao.queryTasks(propertyId);
+      final hasActiveTask = existingTasks.any((t) => t.roomId == roomId && t.status != 'completed' && t.status != 'closed');
+      
+      if (!hasActiveTask) {
+        final newTaskId = const Uuid().v4();
+        final newTask = HousekeepingTaskEntity(
+          serverId: newTaskId,
+          roomId: roomId,
+          propertyId: propertyId,
+          roomNumber: roomName,
+          status: 'pending',
+          priority: 'medium',
+          remarks: 'Auto-generated upon checkout',
+          createdAt: DateTime.now().toUtc().toIso8601String(),
+          lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
+        );
+        housekeepingDao.put(newTask);
+        
+        _syncService.enqueueMutation(
+          entityType: 'HousekeepingTask',
+          entityId: newTaskId,
+          operation: 'CREATE',
+          payload: {
+            'uuid': newTaskId,
+            'room_id': roomId,
+            'property_id': propertyId,
+            'room_number': roomName,
+            'status': 'pending',
+            'priority': 'medium',
+            'remarks': 'Auto-generated upon checkout',
+          },
+        );
+      }
     }
   }
 }

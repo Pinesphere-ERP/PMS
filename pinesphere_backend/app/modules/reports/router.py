@@ -42,7 +42,7 @@ router = APIRouter(dependencies=[Depends(require_property_access)])
 
 FINANCIAL_ROLES = {"SUPER_ADMIN", "OWNER", "ACCOUNTANT"}
 MANAGEMENT_ROLES = {"SUPER_ADMIN", "OWNER", "PROPERTY_MANAGER"}
-OPERATIONAL_ROLES = {"SUPER_ADMIN", "OWNER", "PROPERTY_MANAGER", "RECEPTIONIST", "ACCOUNTANT"}
+OPERATIONAL_ROLES = {"SUPER_ADMIN", "OWNER", "PROPERTY_MANAGER", "RECEPTIONIST"}
 ALL_STAFF_ROLES = {"SUPER_ADMIN", "OWNER", "PROPERTY_MANAGER", "RECEPTIONIST", "ACCOUNTANT", "HOUSEKEEPING"}
 
 
@@ -151,7 +151,7 @@ async def get_occupancy_report(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _assert_roles(user, db, OPERATIONAL_ROLES - {"ACCOUNTANT"})
+    await _assert_roles(user, db, OPERATIONAL_ROLES)
     return await service.get_occupancy_report(db, property_id, start_date, end_date, room_type)
 
 
@@ -248,7 +248,7 @@ async def get_room_utilization(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _assert_roles(user, db, OPERATIONAL_ROLES - {"ACCOUNTANT"})
+    await _assert_roles(user, db, OPERATIONAL_ROLES)
     return await service.get_room_utilization_report(db, property_id, start_date, end_date, room_type)
 
 

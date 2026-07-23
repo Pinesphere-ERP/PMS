@@ -203,7 +203,7 @@ class HousekeepingService {
         entityType: 'HousekeepingTask',
         entityId: taskId,
         operation: 'UPDATE',
-        payload: {'id': taskId, ...data, 'action': 'start'},
+        payload: {'id': taskId, ...data, 'status': 'in_progress'},
       );
       
       _audit.log(
@@ -232,7 +232,7 @@ class HousekeepingService {
         entityType: 'HousekeepingTask',
         entityId: taskId,
         operation: 'UPDATE',
-        payload: {'id': taskId, ...data, 'action': 'complete'},
+        payload: {'id': taskId, ...data, 'status': 'completed'},
       );
       
       _audit.log(
@@ -257,11 +257,12 @@ class HousekeepingService {
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       AppLogger.w('reportDamage network failed, queuing sync', e);
+      final ticketId = const Uuid().v4();
       _syncService.enqueueMutation(
-        entityType: 'HousekeepingTask',
-        entityId: taskId,
-        operation: 'UPDATE',
-        payload: {'id': taskId, ...data, 'action': 'damage'},
+        entityType: 'MaintenanceTicket',
+        entityId: ticketId,
+        operation: 'CREATE',
+        payload: {'ticket_id': ticketId, 'status': 'open', ...data},
       );
       
       _audit.log(

@@ -83,7 +83,12 @@ class CheckOutService {
         syncStatus: 'Synced',
       );
       _checkoutDao.put(entity);
-      _updateRoomToDirty(data['room_id']?.toString() ?? '', data['property_id']?.toString());
+      _updateEntitiesOnCheckOut(
+        data['booking_id']?.toString() ?? '',
+        data['checkin_id']?.toString() ?? '',
+        data['room_id']?.toString() ?? '',
+        data['property_id']?.toString(),
+      );
       _audit.log(
         moduleName: 'checkout',
         actionType: 'check_out',
@@ -136,7 +141,12 @@ class CheckOutService {
       );
       _checkoutDao.put(entity);
 
-      _updateRoomToDirty(data['room_id']?.toString() ?? '', data['property_id']?.toString());
+      _updateEntitiesOnCheckOut(
+        data['booking_id']?.toString() ?? '',
+        data['checkin_id']?.toString() ?? '',
+        data['room_id']?.toString() ?? '',
+        data['property_id']?.toString(),
+      );
       _syncService.enqueueMutation(
         entityType: 'CheckOut',
         entityId: localUuid.toString(),
@@ -318,6 +328,30 @@ class CheckOutService {
     }
   }
 
+  void _updateEntitiesOnCheckOut(String bookingIdStr, String checkinIdStr, String roomId, String? propertyId) {
+    if (bookingIdStr.isNotEmpty) {
+      final bookingEntity = databaseService.bookingDao.getByServerId(bookingIdStr);
+      if (bookingEntity != null) {
+        bookingEntity.bookingStatus = 'completed';
+        bookingEntity.syncStatus = 'Pending';
+        bookingEntity.lastModifiedHlc = DateTime.now().toUtc().toIso8601String();
+        databaseService.bookingDao.put(bookingEntity);
+      }
+    }
+
+    if (checkinIdStr.isNotEmpty) {
+      final checkinEntity = databaseService.checkinDao.getByServerId(checkinIdStr);
+      if (checkinEntity != null) {
+        checkinEntity.status = 'completed';
+        checkinEntity.syncStatus = 'Pending';
+        checkinEntity.lastModifiedHlc = DateTime.now().toUtc().toIso8601String();
+        databaseService.checkinDao.put(checkinEntity);
+      }
+    }
+
+    _updateRoomToDirty(roomId, propertyId);
+  }
+
   void _updateRoomToDirty(String roomId, [String? fallbackPropertyId]) {
     final room = _roomDao.getByServerId(roomId);
     String propertyId = fallbackPropertyId ?? '';
@@ -344,36 +378,8 @@ class CheckOutService {
       final existingTasks = housekeepingDao.queryTasks(propertyId);
       final hasActiveTask = existingTasks.any((t) => t.roomId == roomId && t.status != 'completed' && t.status != 'closed');
       
-      if (!hasActiveTask) {
-        final newTaskId = const Uuid().v4();
-        final newTask = HousekeepingTaskEntity(
-          serverId: newTaskId,
-          roomId: roomId,
-          propertyId: propertyId,
-          roomNumber: roomName,
-          status: 'pending',
-          priority: 'medium',
-          remarks: 'Auto-generated upon checkout',
-          createdAt: DateTime.now().toUtc().toIso8601String(),
-          lastModifiedHlc: DateTime.now().toUtc().toIso8601String(),
-        );
-        housekeepingDao.put(newTask);
-        
-        _syncService.enqueueMutation(
-          entityType: 'HousekeepingTask',
-          entityId: newTaskId,
-          operation: 'CREATE',
-          payload: {
-            'uuid': newTaskId,
-            'room_id': roomId,
-            'property_id': propertyId,
-            'room_number': roomName,
-            'status': 'pending',
-            'priority': 'medium',
-            'remarks': 'Auto-generated upon checkout',
-          },
-        );
-      }
+      // Note: We no longer auto-create a HousekeepingTask locally because the backend's perform_checkout
+      // automatically generates one. SyncEngine will pull the officially generated task from the server.
     }
   }
 }

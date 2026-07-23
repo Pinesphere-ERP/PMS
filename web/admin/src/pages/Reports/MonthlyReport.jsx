@@ -18,7 +18,7 @@ function MonthlyReportInner() {
   useEffect(() => { loadReport(); }, [month, year, propertyId]);
 
   const loadReport = async () => {
-    if (!propertyId) return;
+    if (!propertyId) { setLoading(false); return; }
     setLoading(true);
     try {
       const res = await fetchAPI(`/reports/monthly?property_id=${propertyId}&month=${month}&year=${year}`);

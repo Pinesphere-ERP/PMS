@@ -63,30 +63,36 @@ class _RoomUtilizationReportScreenState extends ConsumerState<RoomUtilizationRep
   }
 
   Widget _buildContent(RoomUtilizationReportDto report) {
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      if (report.mostUtilized != null) ...[
-        Row(children: [
-          Expanded(child: PineCard(child: Column(children: [const Icon(Icons.trending_up, color: Colors.green, size: 28), const SizedBox(height: 4), const Text('Most Utilized', style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant)), Text('Room ${report.mostUtilized}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.green))]))),
-          const SizedBox(width: 16),
-          Expanded(child: PineCard(child: Column(children: [const Icon(Icons.trending_down, color: Colors.red, size: 28), const SizedBox(height: 4), const Text('Least Utilized', style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant)), Text('Room ${report.leastUtilized ?? "N/A"}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.red))]))),
-        ]),
-        const SizedBox(height: 24),
-      ],
-      Text('Room Details', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-      const SizedBox(height: 16),
-      ...report.rooms.map((r) => Padding(padding: const EdgeInsets.only(bottom: 8), child: PineCard(
-        child: ListTile(
-          title: Text('Room ${r.roomNumber}', style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('${r.roomType} | ${r.totalBookings} bookings | ${r.occupiedNights} nights'),
-          trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: r.occupancyPct >= 70 ? Colors.green.shade50 : r.occupancyPct >= 40 ? Colors.orange.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
-              child: Text('${r.occupancyPct}%', style: TextStyle(fontWeight: FontWeight.bold, color: r.occupancyPct >= 70 ? Colors.green : r.occupancyPct >= 40 ? Colors.orange : Colors.red, fontSize: 12))),
-            const SizedBox(height: 4),
-            Text('₹${r.revenue.toStringAsFixed(0)}', style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant)),
+    return CustomScrollView(
+      slivers: [
+        if (report.mostUtilized != null) SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverToBoxAdapter(
+          child: Row(children: [
+            Expanded(child: PineCard(child: Column(children: [const Icon(Icons.trending_up, color: Colors.green, size: 28), const SizedBox(height: 4), const Text('Most Utilized', style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant)), Text('Room ${report.mostUtilized}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.green))]))),
+            const SizedBox(width: 16),
+            Expanded(child: PineCard(child: Column(children: [const Icon(Icons.trending_down, color: Colors.red, size: 28), const SizedBox(height: 4), const Text('Least Utilized', style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant)), Text('Room ${report.leastUtilized ?? "N/A"}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.red))]))),
           ]),
-        ),
-      ))),
-      const SizedBox(height: 48),
-    ]);
+        )),
+        SliverPadding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), sliver: SliverToBoxAdapter(child: Text('Room Details', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)))),
+        SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
+          itemCount: report.rooms.length,
+          itemBuilder: (context, index) {
+            final r = report.rooms[index];
+            return Padding(padding: const EdgeInsets.only(bottom: 8), child: PineCard(
+              child: ListTile(
+                title: Text('Room ${r.roomNumber}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('${r.roomType} | ${r.totalBookings} bookings | ${r.occupiedNights} nights'),
+                trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: r.occupancyPct >= 70 ? Colors.green.shade50 : r.occupancyPct >= 40 ? Colors.orange.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
+                    child: Text('${r.occupancyPct}%', style: TextStyle(fontWeight: FontWeight.bold, color: r.occupancyPct >= 70 ? Colors.green : r.occupancyPct >= 40 ? Colors.orange : Colors.red, fontSize: 12))),
+                  const SizedBox(height: 4),
+                  Text('₹${r.revenue.toStringAsFixed(0)}', style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant)),
+                ]),
+              ),
+            ));
+          },
+        )),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
+      ],
+    );
   }
 }

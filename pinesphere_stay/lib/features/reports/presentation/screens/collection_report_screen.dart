@@ -63,21 +63,41 @@ class _CollectionReportScreenState extends ConsumerState<CollectionReportScreen>
   }
 
   Widget _buildContent(CollectionReportDto report) {
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Text('Collection Summary', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-      const SizedBox(height: 16),
-      GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 1.3, children: [
-        _buildMetricCard(Icons.payments, AppColors.primary, 'Total', '₹${report.totalCollections.toStringAsFixed(0)}'),
-        _buildMetricCard(Icons.money, Colors.amber, 'Cash', '₹${report.cashCollections.toStringAsFixed(0)}'),
-        _buildMetricCard(Icons.credit_card, Colors.blue, 'Card', '₹${report.cardCollections.toStringAsFixed(0)}'),
-        _buildMetricCard(Icons.phone_android, Colors.indigo, 'UPI', '₹${report.upiCollections.toStringAsFixed(0)}'),
-      ]),
-      if (report.byMethod.isNotEmpty) ...[const SizedBox(height: 24), Text('By Payment Method', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 16),
-        PineCard(child: Column(children: report.byMethod.map((m) => ListTile(title: Text(m['method'] ?? ''), subtitle: Text('${m['count']} transactions'), trailing: Text('₹${(m['amount'] as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))).toList()))],
-      if (report.dailyCollections.isNotEmpty) ...[const SizedBox(height: 24), Text('Daily Collections', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 16),
-        PineCard(child: Column(children: report.dailyCollections.take(14).map((d) => ListTile(title: Text(d['date'] ?? ''), trailing: Text('₹${(d['amount'] as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)))).toList()))],
-      const SizedBox(height: 48),
-    ]);
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverList.list(children: [
+          Text('Collection Summary', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 1.3, children: [
+            _buildMetricCard(Icons.payments, AppColors.primary, 'Total', '₹${report.totalCollections.toStringAsFixed(0)}'),
+            _buildMetricCard(Icons.money, Colors.amber, 'Cash', '₹${report.cashCollections.toStringAsFixed(0)}'),
+            _buildMetricCard(Icons.credit_card, Colors.blue, 'Card', '₹${report.cardCollections.toStringAsFixed(0)}'),
+            _buildMetricCard(Icons.phone_android, Colors.indigo, 'UPI', '₹${report.upiCollections.toStringAsFixed(0)}'),
+          ]),
+        ])),
+        if (report.byMethod.isNotEmpty) ...[
+          SliverPadding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), sliver: SliverToBoxAdapter(child: Text('By Payment Method', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)))),
+          SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
+            itemCount: report.byMethod.length,
+            itemBuilder: (context, index) {
+              final m = report.byMethod[index];
+              return ListTile(title: Text(m['method'] ?? ''), subtitle: Text('${m['count']} transactions'), trailing: Text('₹${(m['amount'] as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)));
+            },
+          )),
+        ],
+        if (report.dailyCollections.isNotEmpty) ...[
+          SliverPadding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), sliver: SliverToBoxAdapter(child: Text('Daily Collections', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)))),
+          SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
+            itemCount: report.dailyCollections.take(14).length,
+            itemBuilder: (context, index) {
+              final d = report.dailyCollections.take(14).elementAt(index);
+              return ListTile(title: Text(d['date'] ?? ''), trailing: Text('₹${(d['amount'] as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)));
+            },
+          )),
+        ],
+        const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
+      ],
+    );
   }
 
   Widget _buildMetricCard(IconData icon, Color color, String title, String value) {

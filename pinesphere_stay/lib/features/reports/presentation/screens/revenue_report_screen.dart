@@ -32,21 +32,29 @@ class RevenueReportScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Revenue Report')),
       body: PineBackground(
         child: reportAsync.when(
-          data: (report) => ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              PineCard(
-                child: Column(
-                  children: [
-                    Text('Total Revenue (Last 30 Days)', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Text('₹${report.totalRevenue.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
-                  ],
+          data: (report) => CustomScrollView(
+            slivers: [
+              SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverList.list(children: [
+                PineCard(
+                  child: Column(
+                    children: [
+                      Text('Total Revenue (Last 30 Days)', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Text('₹${report.totalRevenue.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text('By Payment Method', style: Theme.of(context).textTheme.titleMedium),
-              ...report.byPaymentMethod.map((m) => ListTile(title: Text(m['method']), trailing: Text('₹${m['revenue']?.toStringAsFixed(0)}'))),
+                const SizedBox(height: 16),
+                Text('By Payment Method', style: Theme.of(context).textTheme.titleMedium),
+              ])),
+              SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
+                itemCount: report.byPaymentMethod.length,
+                itemBuilder: (context, index) {
+                  final m = report.byPaymentMethod[index];
+                  return ListTile(title: Text(m['method']), trailing: Text('₹${m['revenue']?.toStringAsFixed(0)}'));
+                },
+              )),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
             ],
           ),
           loading: () => const Center(child: CircularProgressIndicator()),

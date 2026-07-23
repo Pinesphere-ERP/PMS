@@ -63,32 +63,40 @@ class _StaffPerformanceReportScreenState extends ConsumerState<StaffPerformanceR
   }
 
   Widget _buildContent(StaffPerformanceReportDto report) {
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Text('Performance Summary', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-      const SizedBox(height: 16),
-      GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 1.3, children: [
-        _buildMetricCard(Icons.check_circle, Colors.green, 'Completed', '${report.totalTasksCompleted}'),
-        _buildMetricCard(Icons.pending, Colors.orange, 'Pending', '${report.totalTasksPending}'),
-        _buildMetricCard(Icons.people, Colors.blue, 'Staff', '${report.staff.length}'),
-        _buildMetricCard(Icons.cleaning_services, Colors.purple, 'HK Tasks', '${report.staff.fold(0, (a, s) => a + s.housekeepingTasks)}'),
-      ]),
-      const SizedBox(height: 24),
-      Text('Staff Details', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-      const SizedBox(height: 16),
-      ...report.staff.map((s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: PineCard(
-        child: ListTile(
-          leading: CircleAvatar(backgroundColor: AppColors.primaryContainer, child: Text(s.staffName.isNotEmpty ? s.staffName[0] : '?', style: const TextStyle(color: AppColors.onPrimaryContainer, fontWeight: FontWeight.bold))),
-          title: Text(s.staffName, style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(s.role),
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            _buildMiniStat('${s.tasksCompleted}', Colors.green, 'Done'),
-            const SizedBox(width: 8),
-            _buildMiniStat('${s.tasksPending}', Colors.orange, 'Pending'),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverList.list(children: [
+          Text('Performance Summary', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 1.3, children: [
+            _buildMetricCard(Icons.check_circle, Colors.green, 'Completed', '${report.totalTasksCompleted}'),
+            _buildMetricCard(Icons.pending, Colors.orange, 'Pending', '${report.totalTasksPending}'),
+            _buildMetricCard(Icons.people, Colors.blue, 'Staff', '${report.staff.length}'),
+            _buildMetricCard(Icons.cleaning_services, Colors.purple, 'HK Tasks', '${report.staff.fold(0, (a, s) => a + s.housekeepingTasks)}'),
           ]),
-        ),
-      ))),
-      const SizedBox(height: 48),
-    ]);
+        ])),
+        SliverPadding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), sliver: SliverToBoxAdapter(child: Text('Staff Details', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)))),
+        SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
+          itemCount: report.staff.length,
+          itemBuilder: (context, index) {
+            final s = report.staff[index];
+            return Padding(padding: const EdgeInsets.only(bottom: 8), child: PineCard(
+              child: ListTile(
+                leading: CircleAvatar(backgroundColor: AppColors.primaryContainer, child: Text(s.staffName.isNotEmpty ? s.staffName[0] : '?', style: const TextStyle(color: AppColors.onPrimaryContainer, fontWeight: FontWeight.bold))),
+                title: Text(s.staffName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(s.role),
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                  _buildMiniStat('${s.tasksCompleted}', Colors.green, 'Done'),
+                  const SizedBox(width: 8),
+                  _buildMiniStat('${s.tasksPending}', Colors.orange, 'Pending'),
+                ]),
+              ),
+            ));
+          },
+        )),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
+      ],
+    );
   }
 
   Widget _buildMetricCard(IconData icon, Color color, String title, String value) {

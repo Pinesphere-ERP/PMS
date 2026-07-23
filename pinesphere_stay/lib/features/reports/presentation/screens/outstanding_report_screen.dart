@@ -32,36 +32,43 @@ class OutstandingReportScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Outstanding Report')),
       body: PineBackground(
         child: reportAsync.when(
-          data: (report) => ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              PineCard(
-                child: Column(
-                  children: [
-                    Text('Total Outstanding', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Text('₹${report.totalOutstanding.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.error)),
-                    const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Column(children: [Text('Pending Invoices'), Text('${report.pendingInvoicesCount}')]),
-                        Column(children: [Text('Overdue Bookings'), Text('${report.overdueCount}')]),
-                      ],
+          data: (report) => CustomScrollView(
+            slivers: [
+              SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverList.list(children: [
+                PineCard(
+                  child: Column(
+                    children: [
+                      Text('Total Outstanding', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Text('₹${report.totalOutstanding.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.error)),
+                      const Divider(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(children: [Text('Pending Invoices'), Text('${report.pendingInvoicesCount}')]),
+                          Column(children: [Text('Overdue Bookings'), Text('${report.overdueCount}')]),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Customer Wise Pending', style: Theme.of(context).textTheme.titleLarge),
+              ])),
+              SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
+                itemCount: report.customerWise.length,
+                itemBuilder: (context, index) {
+                  final c = report.customerWise[index];
+                  return Card(
+                    child: ListTile(
+                      title: Text(c['guest_name']),
+                      subtitle: Text('Due: ${c['due_date']} | Ref: ${c['booking_ref']}'),
+                      trailing: Text('₹${c['amount']}'),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text('Customer Wise Pending', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              ...report.customerWise.map((c) => Card(
-                child: ListTile(
-                  title: Text(c['guest_name']),
-                  subtitle: Text('Due: ${c['due_date']} | Ref: ${c['booking_ref']}'),
-                  trailing: Text('₹${c['amount']}'),
-                ),
+                  );
+                },
               )),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
             ],
           ),
           loading: () => const Center(child: CircularProgressIndicator()),

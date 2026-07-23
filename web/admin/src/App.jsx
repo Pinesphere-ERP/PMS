@@ -23,6 +23,19 @@ import DeviceDiagnosticsPanel from './pages/DeviceManagement/DeviceDiagnosticsPa
 import AuditLogs from './pages/AuditManagement/AuditLogs';
 // Global Reports
 import GlobalReports from './pages/GlobalReports/GlobalReports';
+
+// Property Reports
+import DailyReport from './pages/Reports/DailyReport';
+import MonthlyReport from './pages/Reports/MonthlyReport';
+import OccupancyReport from './pages/Reports/OccupancyReport';
+import RevenueReport from './pages/Reports/RevenueReport';
+import CollectionReport from './pages/Reports/CollectionReport';
+import OutstandingReport from './pages/Reports/OutstandingReport';
+import ExpensesReport from './pages/Reports/ExpensesReport';
+import BestCustomers from './pages/Reports/BestCustomers';
+import RoomUtilization from './pages/Reports/RoomUtilization';
+import StaffPerformance from './pages/Reports/StaffPerformance';
+
 // System Management
 import SystemSettings from './pages/SystemManagement/SystemSettings';
 
@@ -98,6 +111,17 @@ function App() {
           <Route path="audit" element={<AuditLogs />} />
           {/* Global Reports */}
           <Route path="reports/global" element={<GlobalReports />} />
+          {/* Property Reports */}
+          <Route path="reports/daily" element={<DailyReport />} />
+          <Route path="reports/monthly" element={<MonthlyReport />} />
+          <Route path="reports/occupancy" element={<OccupancyReport />} />
+          <Route path="reports/revenue" element={<RevenueReport />} />
+          <Route path="reports/collection" element={<CollectionReport />} />
+          <Route path="reports/outstanding" element={<OutstandingReport />} />
+          <Route path="reports/expenses" element={<ExpensesReport />} />
+          <Route path="reports/best-customers" element={<BestCustomers />} />
+          <Route path="reports/room-utilization" element={<RoomUtilization />} />
+          <Route path="reports/staff-performance" element={<StaffPerformance />} />
           {/* System Management */}
           <Route path="settings/system" element={<SystemSettings />} />
           {/* User Management */}

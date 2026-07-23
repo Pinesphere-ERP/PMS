@@ -1034,8 +1034,9 @@ async def get_room_utilization_report(
 ) -> RoomUtilizationReportResponse:
     num_days = (end_date - start_date).days + 1
 
+    # Single query: all rooms with their category names
     room_q = (
-        select(Room, RoomCategory.room_name)
+        select(Room.room_id, Room.room_number, RoomCategory.room_name)
         .join(RoomCategory, Room.room_category_id == RoomCategory.room_category_id)
         .where(Room.property_id == property_id)
     )
@@ -1045,21 +1046,39 @@ async def get_room_utilization_report(
     rooms_res = await db.execute(room_q)
     rooms_data = rooms_res.all()
 
+    if not rooms_data:
+        return RoomUtilizationReportResponse(
+            property_id=property_id, start_date=start_date, end_date=end_date,
+            rooms=[], most_utilized=None, least_utilized=None,
+        )
+
+    room_ids = [r[0] for r in rooms_data]
+
+    # Single query: all bookings for these rooms in the date range
+    bookings_q = (
+        select(Booking)
+        .where(
+            Booking.room_id.in_(room_ids),
+            Booking.check_in_date <= end_date,
+            Booking.check_out_date >= start_date,
+            Booking.booking_status.in_(['confirmed', 'checked_in', 'checked_out', 'upcoming'])
+        )
+    )
+    bookings_res = await db.execute(bookings_q)
+    all_bookings = bookings_res.scalars().all()
+
+    # Group bookings by room_id
+    from collections import defaultdict
+    bookings_by_room: Dict[uuid.UUID, list] = defaultdict(list)
+    for b in all_bookings:
+        bookings_by_room[b.room_id].append(b)
+
     utilization = []
     best_occ = ("", 0.0)
     worst_occ = ("", 101.0)
 
-    for room, cat_name in rooms_data:
-        # Bookings for this room
-        bk_res = await db.execute(
-            select(Booking).where(
-                Booking.room_id == room.room_id,
-                Booking.check_in_date <= end_date,
-                Booking.check_out_date >= start_date,
-                Booking.booking_status.in_(['confirmed', 'checked_in', 'checked_out', 'upcoming'])
-            )
-        )
-        room_bookings = bk_res.scalars().all()
+    for room_id, room_number, cat_name in rooms_data:
+        room_bookings = bookings_by_room.get(room_id, [])
         occ_nights = 0
         rev = 0.0
         for b in room_bookings:
@@ -1072,8 +1091,8 @@ async def get_room_utilization_report(
         pct = round((occ_nights / num_days * 100) if num_days > 0 else 0, 1)
 
         utilization.append(RoomUtilizationRow(
-            room_id=room.room_id,
-            room_number=room.room_number,
+            room_id=room_id,
+            room_number=room_number,
             room_type=cat_name or "Unknown",
             total_bookings=len(room_bookings),
             occupied_nights=occ_nights,
@@ -1083,9 +1102,9 @@ async def get_room_utilization_report(
         ))
 
         if pct > best_occ[1]:
-            best_occ = (room.room_number, pct)
+            best_occ = (room_number, pct)
         if pct < worst_occ[1]:
-            worst_occ = (room.room_number, pct)
+            worst_occ = (room_number, pct)
 
     return RoomUtilizationReportResponse(
         property_id=property_id,
@@ -1108,7 +1127,7 @@ async def get_staff_performance_report(
 ) -> StaffPerformanceReportResponse:
     # Get staff users for this property
     staff_q = (
-        select(User, Role.role_name)
+        select(User.id, User.name, Role.role_name)
         .join(Role, User.role_id == Role.id)
         .where(
             User.property_id == property_id,
@@ -1122,54 +1141,98 @@ async def get_staff_performance_report(
     staff_res = await db.execute(staff_q)
     staff_data = staff_res.all()
 
+    if not staff_data:
+        return StaffPerformanceReportResponse(
+            property_id=property_id, start_date=start_date, end_date=end_date,
+            staff=[], total_tasks_completed=0, total_tasks_pending=0,
+        )
+
+    staff_ids = [s[0] for s in staff_data]
+
+    # Batch query: all tasks for these staff in the date range
+    tasks_q = (
+        select(
+            Task.assigned_to,
+            func.count(Task.task_id).label("cnt"),
+        )
+        .where(
+            Task.property_id == property_id,
+            Task.assigned_to.in_(staff_ids),
+            Task.status == 'completed',
+            func.date(Task.completed_at) >= start_date,
+            func.date(Task.completed_at) <= end_date,
+        )
+        .group_by(Task.assigned_to)
+    )
+    tasks_res = await db.execute(tasks_q)
+    completed_map = {row[0]: row[1] for row in tasks_res.all()}
+
+    # Batch query: pending tasks
+    pending_q = (
+        select(
+            Task.assigned_to,
+            func.count(Task.task_id).label("cnt"),
+        )
+        .where(
+            Task.property_id == property_id,
+            Task.assigned_to.in_(staff_ids),
+            Task.status.in_(['pending', 'accepted', 'in_progress']),
+        )
+        .group_by(Task.assigned_to)
+    )
+    pending_res = await db.execute(pending_q)
+    pending_map = {row[0]: row[1] for row in pending_res.all()}
+
+    # Batch query: housekeeping tasks
+    hk_q = (
+        select(
+            HousekeepingTask.assigned_staff_id,
+            func.count(HousekeepingTask.task_id).label("cnt"),
+        )
+        .where(
+            HousekeepingTask.property_id == property_id,
+            HousekeepingTask.assigned_staff_id.in_(staff_ids),
+            func.date(HousekeepingTask.completed_at) >= start_date,
+            func.date(HousekeepingTask.completed_at) <= end_date,
+        )
+        .group_by(HousekeepingTask.assigned_staff_id)
+    )
+    hk_res = await db.execute(hk_q)
+    hk_map = {row[0]: row[1] for row in hk_res.all()}
+
+    # Batch query: bookings handled (check-ins)
+    checkin_q = (
+        select(
+            CheckIn.staff_id,
+            func.count(CheckIn.checkin_id).label("cnt"),
+        )
+        .where(
+            CheckIn.property_id == property_id,
+            CheckIn.staff_id.in_(staff_ids),
+            func.date(CheckIn.checked_in_at) >= start_date,
+            func.date(CheckIn.checked_in_at) <= end_date,
+        )
+        .group_by(CheckIn.staff_id)
+    )
+    checkin_res = await db.execute(checkin_q)
+    checkin_map = {row[0]: row[1] for row in checkin_res.all()}
+
     perf = []
     total_completed = 0
     total_pending = 0
 
-    for user, role_name in staff_data:
-        # Tasks completed
-        completed = await db.scalar(
-            select(func.count(Task.task_id)).where(
-                Task.property_id == property_id,
-                Task.assigned_to == user.id,
-                Task.status == 'completed',
-                func.date(Task.completed_at) >= start_date,
-                func.date(Task.completed_at) <= end_date,
-            )
-        ) or 0
-
-        pending = await db.scalar(
-            select(func.count(Task.task_id)).where(
-                Task.property_id == property_id,
-                Task.assigned_to == user.id,
-                Task.status.in_(['pending', 'accepted', 'in_progress']),
-            )
-        ) or 0
-
-        hk_tasks = await db.scalar(
-            select(func.count(HousekeepingTask.task_id)).where(
-                HousekeepingTask.property_id == property_id,
-                HousekeepingTask.assigned_staff_id == user.id,
-                func.date(HousekeepingTask.completed_at) >= start_date,
-                func.date(HousekeepingTask.completed_at) <= end_date,
-            )
-        ) or 0
-
-        bookings_handled = await db.scalar(
-            select(func.count(CheckIn.checkin_id)).where(
-                CheckIn.property_id == property_id,
-                CheckIn.staff_id == user.id,
-                func.date(CheckIn.checked_in_at) >= start_date,
-                func.date(CheckIn.checked_in_at) <= end_date,
-            )
-        ) or 0
+    for user_id, user_name, role_name in staff_data:
+        completed = completed_map.get(user_id, 0)
+        pending = pending_map.get(user_id, 0)
+        hk_tasks = hk_map.get(user_id, 0)
+        bookings_handled = checkin_map.get(user_id, 0)
 
         total_completed += completed
         total_pending += pending
 
         perf.append(StaffPerformanceRow(
-            user_id=user.id,
-            staff_name=user.name,
+            user_id=user_id,
+            staff_name=user_name,
             role=role_name,
             tasks_completed=completed,
             tasks_pending=pending,

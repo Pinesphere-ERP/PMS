@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'app_scaffold.dart';
 import '../../core/auth/owner_onboarding_status.dart';
 import '../../core/auth/session_context.dart';
+import '../../core/permissions/permission_matrix.dart';
+import '../../core/permissions/user_role.dart';
 import '../../features/auth/presentation/providers/auth_notifier.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/pin_login_screen.dart';
@@ -41,7 +43,12 @@ import '../../features/reports/presentation/screens/daily_report_screen.dart';
 import '../../features/reports/presentation/screens/monthly_report_screen.dart';
 import '../../features/reports/presentation/screens/outstanding_report_screen.dart';
 import '../../features/reports/presentation/screens/revenue_report_screen.dart';
-import '../../features/reports/presentation/screens/placeholder_report_screen.dart';
+import '../../features/reports/presentation/screens/occupancy_report_screen.dart';
+import '../../features/reports/presentation/screens/collection_report_screen.dart';
+import '../../features/reports/presentation/screens/expenses_report_screen.dart';
+import '../../features/reports/presentation/screens/best_customers_screen.dart';
+import '../../features/reports/presentation/screens/room_utilization_report_screen.dart';
+import '../../features/reports/presentation/screens/staff_performance_report_screen.dart';
 import '../../features/payments/presentation/payment_history_screen.dart';
 import '../../features/payments/presentation/payment_collection_screen.dart';
 import '../../features/audit/presentation/screens/audit_logs_screen.dart';
@@ -201,6 +208,32 @@ GoRouter appRouter(Ref ref) {
             case OwnerOnboardingStatus.unknown:
               break;
           }
+        }
+      }
+
+      // ── Layer 5: Report Role Guard ────────────────────────────────────────
+      if (isAuth && location.startsWith('/reports/')) {
+        final authState2 = ref.read(authProvider);
+        final userRole = authState2.maybeWhen(
+          authenticated: (user) => user.role,
+          orElse: () => UserRole.guest,
+        );
+
+        // Map route paths to ReportType
+        ReportType? reportType;
+        if (location == '/reports/daily') reportType = ReportType.daily;
+        else if (location == '/reports/monthly') reportType = ReportType.monthly;
+        else if (location == '/reports/occupancy') reportType = ReportType.occupancy;
+        else if (location == '/reports/revenue') reportType = ReportType.revenue;
+        else if (location == '/reports/collection') reportType = ReportType.collection;
+        else if (location == '/reports/outstanding') reportType = ReportType.outstanding;
+        else if (location == '/reports/expenses') reportType = ReportType.expenses;
+        else if (location == '/reports/best-customers') reportType = ReportType.bestCustomers;
+        else if (location == '/reports/room-utilization') reportType = ReportType.roomUtilization;
+        else if (location == '/reports/staff-performance') reportType = ReportType.staffPerformance;
+
+        if (reportType != null && !PermissionMatrix.canAccessReport(userRole, reportType)) {
+          return '/reports'; // Redirect back to reports hub
         }
       }
 
@@ -449,27 +482,27 @@ GoRouter appRouter(Ref ref) {
                   ),
                   GoRoute(
                     path: 'occupancy',
-                    builder: (context, state) => const PlaceholderReportScreen(title: 'Occupancy Report'),
+                    builder: (context, state) => const OccupancyReportScreen(),
                   ),
                   GoRoute(
                     path: 'collection',
-                    builder: (context, state) => const PlaceholderReportScreen(title: 'Collection Report'),
+                    builder: (context, state) => const CollectionReportScreen(),
                   ),
                   GoRoute(
                     path: 'expenses',
-                    builder: (context, state) => const PlaceholderReportScreen(title: 'Expenses Report'),
+                    builder: (context, state) => const ExpensesReportScreen(),
                   ),
                   GoRoute(
                     path: 'best-customers',
-                    builder: (context, state) => const PlaceholderReportScreen(title: 'Best Customers Report'),
+                    builder: (context, state) => const BestCustomersScreen(),
                   ),
                   GoRoute(
                     path: 'room-utilization',
-                    builder: (context, state) => const PlaceholderReportScreen(title: 'Room Utilization Report'),
+                    builder: (context, state) => const RoomUtilizationReportScreen(),
                   ),
                   GoRoute(
                     path: 'staff-performance',
-                    builder: (context, state) => const PlaceholderReportScreen(title: 'Staff Performance Report'),
+                    builder: (context, state) => const StaffPerformanceReportScreen(),
                   ),
                 ],
               ),

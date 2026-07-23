@@ -5,12 +5,21 @@ import 'package:pinesphere_stay/features/rooms/presentation/providers/pms_provid
 import '../../../../main.dart';
 import '../../../sync/data/sync_service.dart';
 import 'package:uuid/uuid.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
 
-final housekeepingTasksProvider = FutureProvider<List<HousekeepingTaskEntity>>((ref) async {
+final housekeepingTasksProvider = FutureProvider.autoDispose<List<HousekeepingTaskEntity>>((ref) async {
   final service = ref.watch(housekeepingServiceProvider);
   final pms = ref.watch(pmsProvider);
-  final propertyId = pms.selectedResortId;
+  String? propertyId = pms.selectedResortId;
   
+  if (propertyId == null) {
+    final authState = ref.watch(authProvider);
+    propertyId = authState.maybeWhen(
+      authenticated: (user) => user.propertyId,
+      orElse: () => null,
+    );
+  }
+
   if (propertyId == null) return [];
   
   // 1. Generate missing tasks for dirty rooms locally first

@@ -345,3 +345,11 @@ class GlobalSummaryResponse(BaseModel):
     avg_occupancy_pct: float
     total_outstanding: float
     properties: List[PropertySummaryRow]
+
+
+# ── Access Matrix (for frontends) ─────────────────────────────
+
+class AccessMatrixResponse(BaseModel):
+    role_code: str
+    reports: List[str]
+    can_download_all: bool

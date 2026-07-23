@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { fetchAPI } from '../../services/api';
 import { BarChart3, TrendingUp, Users, Building2, Wallet, CalendarDays, IndianRupee } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+
+const COLORS = ['#059669', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
 export default function GlobalReports() {
   const [data, setData] = useState(null);
@@ -35,6 +38,9 @@ export default function GlobalReports() {
   );
 
   if (!data) return null;
+
+  const occupancyData = data.properties?.map(p => ({ name: p.property_name, occupancy: p.occupancy_pct })) || [];
+  const revenueData = data.properties?.map(p => ({ name: p.property_name, revenue: p.revenue })) || [];
 
   return (
     <div className="p-6 space-y-6">
@@ -71,6 +77,36 @@ export default function GlobalReports() {
           color="purple" 
         />
       </div>
+
+      {occupancyData.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Occupancy by Property</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={occupancyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(val) => `${val}%`} />
+                <Bar dataKey="occupancy" fill="#059669" radius={[4, 4, 0, 0]} name="Occupancy %" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Revenue by Property</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(val) => `₹${val.toLocaleString()}`} />
+                <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Revenue" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">

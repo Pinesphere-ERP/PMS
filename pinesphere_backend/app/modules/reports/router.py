@@ -3,6 +3,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import require_property_access, get_current_user, get_current_role
@@ -34,6 +35,7 @@ from app.modules.reports.schemas import (
     RoomUtilizationReportResponse,
     StaffPerformanceReportResponse,
     GlobalSummaryResponse,
+    AccessMatrixResponse,
 )
 
 router = APIRouter(dependencies=[Depends(require_property_access)])
@@ -44,6 +46,23 @@ FINANCIAL_ROLES = {"SUPER_ADMIN", "OWNER", "ACCOUNTANT"}
 MANAGEMENT_ROLES = {"SUPER_ADMIN", "OWNER", "PROPERTY_MANAGER"}
 OPERATIONAL_ROLES = {"SUPER_ADMIN", "OWNER", "PROPERTY_MANAGER", "RECEPTIONIST"}
 ALL_STAFF_ROLES = {"SUPER_ADMIN", "OWNER", "PROPERTY_MANAGER", "RECEPTIONIST", "ACCOUNTANT", "HOUSEKEEPING"}
+
+# ── Report → allowed roles mapping ─────────────────────────────
+
+REPORT_ACCESS_MAP = {
+    "daily": OPERATIONAL_ROLES,
+    "monthly": FINANCIAL_ROLES | MANAGEMENT_ROLES,
+    "occupancy": OPERATIONAL_ROLES,
+    "revenue": FINANCIAL_ROLES,
+    "collection": FINANCIAL_ROLES,
+    "outstanding": FINANCIAL_ROLES,
+    "expenses": FINANCIAL_ROLES,
+    "best_customers": MANAGEMENT_ROLES,
+    "room_utilization": OPERATIONAL_ROLES,
+    "staff_performance": MANAGEMENT_ROLES,
+    "pl": FINANCIAL_ROLES | MANAGEMENT_ROLES,
+    "gst_returns": FINANCIAL_ROLES,
+}
 
 
 async def _get_role_code(user: User, db: AsyncSession) -> str:
@@ -267,6 +286,64 @@ async def get_staff_performance(
     return await service.get_staff_performance_report(db, property_id, start_date, end_date, staff_id)
 
 
+# ── Access Matrix (for frontends) ─────────────────────────────
+
+@router.get("/access-matrix", response_model=AccessMatrixResponse)
+async def get_access_matrix(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    role_code = await _get_role_code(user, db)
+    allowed = REPORT_ACCESS_MAP.get("_all", set())
+    reports_allowed = [
+        report for report, roles in REPORT_ACCESS_MAP.items()
+        if role_code in roles
+    ]
+    return AccessMatrixResponse(
+        role_code=role_code,
+        reports=reports_allowed,
+        can_download_all=role_code in {"SUPER_ADMIN", "OWNER"},
+    )
+
+
+# ── PDF Export Endpoint ───────────────────────────────────────
+
+@router.get("/{report_type}/pdf")
+async def download_report_pdf(
+    report_type: str,
+    property_id: uuid.UUID = Query(...),
+    start_date: Optional[date] = Query(default=None),
+    end_date: Optional[date] = Query(default=None),
+    report_date: Optional[date] = Query(default=None),
+    month: Optional[int] = Query(default=None),
+    year: Optional[int] = Query(default=None),
+    room_type: Optional[str] = Query(default=None),
+    category: Optional[str] = Query(default=None),
+    staff_id: Optional[uuid.UUID] = Query(default=None),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    allowed_roles = REPORT_ACCESS_MAP.get(report_type)
+    if allowed_roles is None:
+        raise HTTPException(status_code=404, detail=f"Unknown report type: {report_type}")
+    await _assert_roles(user, db, allowed_roles)
+
+    from app.modules.reports.pdf_generator import generate_report_pdf
+    return await generate_report_pdf(
+        db=db,
+        report_type=report_type,
+        property_id=property_id,
+        start_date=start_date,
+        end_date=end_date,
+        report_date=report_date,
+        month=month,
+        year=year,
+        room_type=room_type,
+        category=category,
+        staff_id=staff_id,
+    )
+
+
 # ── Global Summary (Superadmin only) ──────────────────────────
 
 global_router = APIRouter()
@@ -280,7 +357,9 @@ async def get_global_summary(
     return await service.get_global_summary(db)
 
 
-# ── Report Templates (existing) ───────────────────────────────
+# ── Report Templates (secured) ────────────────────────────────
+
+TEMPLATE_ACCESS = MANAGEMENT_ROLES | FINANCIAL_ROLES
 
 @router.post(
     "/templates",
@@ -290,16 +369,20 @@ async def get_global_summary(
 async def create_template(
     property_id: uuid.UUID = Query(...),
     req: ReportTemplateCreateRequest = ...,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_roles(user, db, TEMPLATE_ACCESS)
     return await service.create_report_template(db, property_id, req)
 
 
 @router.get("/templates", response_model=ReportTemplateListResponse)
 async def list_templates(
     property_id: uuid.UUID = Query(...),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_roles(user, db, TEMPLATE_ACCESS)
     return await service.list_report_templates(db, property_id)
 
 
@@ -307,8 +390,10 @@ async def list_templates(
 async def get_template(
     template_id: uuid.UUID,
     property_id: uuid.UUID = Query(...),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_roles(user, db, TEMPLATE_ACCESS)
     return await service.get_report_template(db, property_id, template_id)
 
 
@@ -317,8 +402,10 @@ async def update_template(
     template_id: uuid.UUID,
     property_id: uuid.UUID = Query(...),
     req: ReportTemplateUpdateRequest = ...,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_roles(user, db, TEMPLATE_ACCESS)
     return await service.update_report_template(db, property_id, template_id, req)
 
 
@@ -329,12 +416,16 @@ async def update_template(
 async def delete_template(
     template_id: uuid.UUID,
     property_id: uuid.UUID = Query(...),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_roles(user, db, TEMPLATE_ACCESS)
     await service.delete_report_template(db, property_id, template_id)
 
 
-# ── Scheduled Reports (existing) ──────────────────────────────
+# ── Scheduled Reports (secured) ───────────────────────────────
+
+SCHEDULE_ACCESS = MANAGEMENT_ROLES | FINANCIAL_ROLES
 
 @router.post(
     "/schedules",
@@ -344,16 +435,20 @@ async def delete_template(
 async def create_schedule(
     property_id: uuid.UUID = Query(...),
     req: ScheduledReportCreateRequest = ...,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_roles(user, db, SCHEDULE_ACCESS)
     return await service.create_scheduled_report(db, property_id, req)
 
 
 @router.get("/schedules", response_model=ScheduledReportListResponse)
 async def list_schedules(
     property_id: uuid.UUID = Query(...),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_roles(user, db, SCHEDULE_ACCESS)
     return await service.list_scheduled_reports(db, property_id)
 
 
@@ -362,6 +457,8 @@ async def update_schedule(
     schedule_id: uuid.UUID,
     property_id: uuid.UUID = Query(...),
     req: ScheduledReportUpdateRequest = ...,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_roles(user, db, SCHEDULE_ACCESS)
     return await service.update_scheduled_report(db, property_id, schedule_id, req)

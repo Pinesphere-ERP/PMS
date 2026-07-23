@@ -1,4 +1,4 @@
-﻿"""add housekeeping workflow fields
+"""add housekeeping workflow fields
 
 Revision ID: a1b2c3d4e5f6
 Revises: c9b7e813a94c
@@ -31,7 +31,6 @@ def upgrade() -> None:
     # rooms: add maintenance_status
     op.add_column('rooms', sa.Column('maintenance_status', sa.String(20), nullable=True, server_default='good'))
     # housekeeping_tasks: inspection + completion + display fields
-    op.add_column('housekeeping_tasks', sa.Column('device_id', sa.String(128), nullable=True))
     op.add_column('housekeeping_tasks', sa.Column('completion_notes', sa.Text(), nullable=True))
     op.add_column('housekeeping_tasks', sa.Column('completed_by', sa.String(36), nullable=True))
     op.add_column('housekeeping_tasks', sa.Column('inspected_by', sa.String(36), nullable=True))
@@ -62,7 +61,6 @@ def downgrade() -> None:
     op.drop_column('housekeeping_tasks', 'inspected_by')
     op.drop_column('housekeeping_tasks', 'completed_by')
     op.drop_column('housekeeping_tasks', 'completion_notes')
-    op.drop_column('housekeeping_tasks', 'device_id')
     op.drop_column('rooms', 'maintenance_status')
     op.drop_column('check_outs', 'remarks')
     op.drop_column('check_outs', 'feedback_submitted')

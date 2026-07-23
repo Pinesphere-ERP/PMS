@@ -27,61 +27,15 @@ class ReportsRepository {
     required String startDate,
     required String endDate,
   }) async {
-    try {
-      final response = await _dio.get(
-        '/reports/pl',
-        queryParameters: {
-          'property_id': propertyId,
-          'start_date': startDate,
-          'end_date': endDate,
-        },
-      );
-      return PLReportDto.fromJson(response.data);
-    } catch (e) {
-      if (e.toString().contains('401') || e.toString().contains('403') || e is DioException) {
-        return PLReportDto(
-          propertyId: propertyId,
-          periodStart: startDate,
-          periodEnd: endDate,
-          monthlyBreakdown: [
-            const MonthlyPLRowDto(
-              month: 'May',
-              totalRoomRent: 75000.0,
-              totalAddons: 10000.0,
-              totalRevenue: 85000.0,
-              totalExpenses: 42000.0,
-              netProfit: 43000.0,
-              gstCollected: 15300.0,
-              outstanding: 5000.0,
-            ),
-            const MonthlyPLRowDto(
-              month: 'June',
-              totalRoomRent: 90000.0,
-              totalAddons: 12000.0,
-              totalRevenue: 102000.0,
-              totalExpenses: 38000.0,
-              netProfit: 64000.0,
-              gstCollected: 18360.0,
-              outstanding: 0.0,
-            ),
-            const MonthlyPLRowDto(
-              month: 'July',
-              totalRoomRent: 100000.0,
-              totalAddons: 12000.0,
-              totalRevenue: 112000.0,
-              totalExpenses: 30000.0,
-              netProfit: 82000.0,
-              gstCollected: 20160.0,
-              outstanding: 0.0,
-            ),
-          ],
-          summaryTotalRevenue: 299000.0,
-          summaryTotalExpenses: 110000.0,
-          summaryNetProfit: 189000.0,
-        );
-      }
-      rethrow;
-    }
+    final response = await _dio.get(
+      '/reports/pl',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+      },
+    );
+    return PLReportDto.fromJson(response.data);
   }
 
   Future<GSTReturnDto> getGSTReturns({
@@ -89,65 +43,24 @@ class ReportsRepository {
     required String startDate,
     required String endDate,
   }) async {
-    try {
-      final response = await _dio.get(
-        '/reports/gst-returns',
-        queryParameters: {
-          'property_id': propertyId,
-          'start_date': startDate,
-          'end_date': endDate,
-        },
-      );
-      return GSTReturnDto.fromJson(response.data);
-    } catch (e) {
-      if (e.toString().contains('401') || e.toString().contains('403') || e is DioException) {
-        return GSTReturnDto(
-          propertyId: propertyId,
-          periodStart: startDate,
-          periodEnd: endDate,
-          totalTaxableRevenue: 299000.0,
-          totalGstCollected: 53820.0,
-          cgst: 26910.0,
-          sgst: 26910.0,
-          igst: 0.0,
-          monthlyGst: [
-            {'month': 'May', 'gst': 15300.0},
-            {'month': 'June', 'gst': 18360.0},
-            {'month': 'July', 'gst': 20160.0},
-          ],
-        );
-      }
-      rethrow;
-    }
+    final response = await _dio.get(
+      '/reports/gst-returns',
+      queryParameters: {
+        'property_id': propertyId,
+        'start_date': startDate,
+        'end_date': endDate,
+      },
+    );
+    return GSTReturnDto.fromJson(response.data);
   }
 
   Future<List<ReportTemplateDto>> getTemplates(String propertyId) async {
-    try {
-      final response = await _dio.get(
-        '/reports/templates',
-        queryParameters: {'property_id': propertyId},
-      );
-      final items = response.data['items'] as List;
-      return items.map((e) => ReportTemplateDto.fromJson(e)).toList();
-    } catch (e) {
-      if (e.toString().contains('401') || e.toString().contains('403') || e is DioException) {
-        return [
-          const ReportTemplateDto(
-            templateId: 'tpl-1',
-            propertyId: 'PineStay Resort',
-            reportName: 'Monthly Profit & Loss Summary',
-            reportType: 'PL',
-          ),
-          const ReportTemplateDto(
-            templateId: 'tpl-2',
-            propertyId: 'PineStay Resort',
-            reportName: 'Quarterly Tax Return Breakdown',
-            reportType: 'GST',
-          ),
-        ];
-      }
-      rethrow;
-    }
+    final response = await _dio.get(
+      '/reports/templates',
+      queryParameters: {'property_id': propertyId},
+    );
+    final items = response.data['items'] as List;
+    return items.map((e) => ReportTemplateDto.fromJson(e)).toList();
   }
 
   Future<ReportTemplateDto> createTemplate({

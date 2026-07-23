@@ -19,7 +19,8 @@ import {
   Crown,
   Users
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { getUserRole, canAccessReport } from '../utils/roleUtils';
 
 const ownerNavigation = [
   { name: 'Owners', to: '/owners', icon: Crown },
@@ -46,8 +47,18 @@ const auditNavigation = [
   { name: 'System Audit Logs', to: '/audit', icon: ShieldAlert },
 ];
 
-const reportsNavigation = [
-  { name: 'Global Reports', to: '/reports/global', icon: PieChart },
+const allReportsNavigation = [
+  { name: 'Global Reports', to: '/reports/global', icon: PieChart, reportType: 'global' },
+  { name: 'Daily Report', to: '/reports/daily', icon: PieChart, reportType: 'daily' },
+  { name: 'Monthly Report', to: '/reports/monthly', icon: PieChart, reportType: 'monthly' },
+  { name: 'Occupancy Report', to: '/reports/occupancy', icon: PieChart, reportType: 'occupancy' },
+  { name: 'Revenue Report', to: '/reports/revenue', icon: PieChart, reportType: 'revenue' },
+  { name: 'Collection Report', to: '/reports/collection', icon: PieChart, reportType: 'collection' },
+  { name: 'Outstanding Report', to: '/reports/outstanding', icon: PieChart, reportType: 'outstanding' },
+  { name: 'Expenses Report', to: '/reports/expenses', icon: PieChart, reportType: 'expenses' },
+  { name: 'Best Customers', to: '/reports/best-customers', icon: PieChart, reportType: 'best_customers' },
+  { name: 'Room Utilization', to: '/reports/room-utilization', icon: PieChart, reportType: 'room_utilization' },
+  { name: 'Staff Performance', to: '/reports/staff-performance', icon: PieChart, reportType: 'staff_performance' },
 ];
 
 const systemNavigation = [
@@ -59,6 +70,13 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const userRole = useMemo(() => getUserRole(), []);
+  const reportsNavigation = useMemo(() => {
+    if (!userRole) return [];
+    if (userRole === 'SUPER_ADMIN' || userRole === 'OWNER') return allReportsNavigation;
+    return allReportsNavigation.filter(item => canAccessReport(userRole, item.reportType));
+  }, [userRole]);
 
   // Helper to generate breadcrumbs from path
   const pathParts = location.pathname.split('/').filter(Boolean);
@@ -224,29 +242,33 @@ export default function AdminLayout() {
             ))}
           </nav>
 
-          <p className="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">
-            Security & Compliance
-          </p>
-          <nav className="space-y-1">
-            {auditNavigation.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.to}
-                className={({ isActive }) =>
-                  `flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
-                    isActive
-                      ? 'bg-pine-50 text-pine-DEFAULT'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`
-                }
-              >
-                <item.icon className={`mr-3 h-4 w-4 flex-shrink-0 ${
-                  location.pathname === item.to ? 'text-pine-DEFAULT' : 'text-gray-400'
-                }`} />
-                {item.name}
-              </NavLink>
-            ))}
-          </nav>
+          {reportsNavigation.length > 0 && (
+            <>
+              <p className="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">
+                Reports & Analytics
+              </p>
+              <nav className="space-y-1 mb-6">
+                {reportsNavigation.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
+                        isActive
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    <item.icon className={`mr-3 h-4 w-4 flex-shrink-0 ${
+                      location.pathname.startsWith(item.to) ? 'text-amber-600' : 'text-gray-400'
+                    }`} />
+                    {item.name}
+                  </NavLink>
+                ))}
+              </nav>
+            </>
+          )}
         </div>
       </aside>
 

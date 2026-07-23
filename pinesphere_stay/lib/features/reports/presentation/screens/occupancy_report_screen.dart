@@ -141,50 +141,31 @@ class _OccupancyReportScreenState extends ConsumerState<OccupancyReportScreen> {
         if (report.byRoomType.isNotEmpty) ...[
           _buildSectionHeader('By Room Type'),
           const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.3,
-            children: [
-              _buildMetricCard(Icons.bed, AppColors.primary, 'Avg Occupancy', '${report.avgOccupancyPct}%'),
-              _buildMetricCard(Icons.nightlife, Colors.blue, 'Occupied Nights', '${report.occupiedRoomNights}'),
-              _buildMetricCard(Icons.meeting_room, Colors.green, 'Available Nights', '${report.availableRoomNights}'),
-              _buildMetricCard(Icons.event_available, Colors.orange, 'Reserved Today', '${report.reservedRoomsToday}'),
-            ],
-          ),
-        ])),
-        if (report.byRoomType.isNotEmpty) ...[
-          SliverPadding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), sliver: SliverToBoxAdapter(child: _buildSectionHeader('By Room Type'))),
-          SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
-            itemCount: report.byRoomType.length,
-            itemBuilder: (context, index) {
-              final t = report.byRoomType[index];
-              return ListTile(
+          PineCard(
+            child: Column(
+              children: report.byRoomType.map((t) => ListTile(
                 title: Text(t['room_type'] ?? 'Unknown'),
                 subtitle: Text('${t['count']} rooms'),
                 trailing: Text('${t['occupancy_pct']}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              );
-            },
-          )),
+              )).toList(),
+            ),
+          ),
         ],
         if (report.dailyOccupancy.isNotEmpty) ...[
-          SliverPadding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), sliver: SliverToBoxAdapter(child: _buildSectionHeader('Daily Trend'))),
-          SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
-            itemCount: report.dailyOccupancy.take(14).length,
-            itemBuilder: (context, index) {
-              final d = report.dailyOccupancy.take(14).elementAt(index);
-              return ListTile(
+          const SizedBox(height: 24),
+          _buildSectionHeader('Daily Trend'),
+          const SizedBox(height: 16),
+          PineCard(
+            child: Column(
+              children: report.dailyOccupancy.take(14).map((d) => ListTile(
                 title: Text(d['date'] ?? ''),
                 subtitle: Text('Occupied: ${d['occupied']} | Vacant: ${d['vacant']}'),
                 trailing: Text('${d['pct']}%', style: const TextStyle(fontWeight: FontWeight.bold)),
-              );
-            },
-          )),
+              )).toList(),
+            ),
+          ),
         ],
-        const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
+        const SizedBox(height: 48),
       ],
     );
   }

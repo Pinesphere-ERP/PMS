@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/tenant_provider.dart';
@@ -12,8 +13,10 @@ import '../../data/reports_repository.dart';
 import '../../domain/models/kpi_dto.dart';
 
 final plReportProvider = FutureProvider.autoDispose<PLReportDto>((ref) async {
-  final propertyId = ref.watch(tenantProvider) ?? '';
-  if (propertyId.isEmpty) throw Exception('No property ID');
+  final propertyId = ref.watch(tenantProvider);
+  if (propertyId == null || propertyId.isEmpty) {
+    await Completer<Never>().future;
+  }
 
   final now = DateTime.now();
   final startDate = DateFormat('yyyy-MM-dd').format(DateTime(now.year, 1, 1));
@@ -49,11 +52,36 @@ class PLReportScreen extends ConsumerWidget {
       body: PineBackground(
         child: reportAsync.when(
           data: (report) => _buildReportView(context, report),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => EmptyStateWidget(
-          icon: Icons.error_outline,
-          title: 'Error',
-          message: error.toString(),
+        loading: () => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('Loading report...', style: TextStyle(color: AppColors.onSurfaceVariant)),
+            ],
+          ),
+        ),
+        error: (error, stack) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text('Failed to load report', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Text('$error', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 12)),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => ref.invalidate(plReportProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
         ),

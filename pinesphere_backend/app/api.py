@@ -23,6 +23,7 @@ from app.modules.portal.router import router as portal
 from app.modules.onboarding.router import router as onboarding
 from app.modules.owners.router import router as owners
 from app.modules.inventory.router import router as inventory
+from app.modules.public.router import router as public
 # ── New modules (Wave 5–9 completions) ────────────────────────────────────────
 from app.modules.pricing.router import router as pricing
 from app.modules.documents.router import router as documents
@@ -40,6 +41,7 @@ _paywall = [Depends(require_active_subscription)]
 api_router = APIRouter()
 
 # ── Core (exempt from paywall — needed before/without a subscription) ─────────
+api_router.include_router(public, prefix="/public", tags=["Public Property Showcase"])
 api_router.include_router(auth, prefix="/auth", tags=["Authentication"])
 api_router.include_router(sync, prefix="/sync", tags=["Sync Engine"])
 api_router.include_router(property, prefix="/properties", tags=["Property Management"])

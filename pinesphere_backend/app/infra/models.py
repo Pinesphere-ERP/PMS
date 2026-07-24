@@ -74,6 +74,7 @@ class Property(Base, TimestampMixin, SyncMixin):
     created_by_admin_id: Mapped[Optional[uuid.UUID]] = mapped_column(PGUUID(as_uuid=True))
     city: Mapped[Optional[str]] = mapped_column(String(100))
     cover_image: Mapped[Optional[str]] = mapped_column(String(500))
+    slug: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True)
     owner: Mapped["Owner"] = relationship(back_populates="properties")
 
 
@@ -350,6 +351,8 @@ class RoomCategory(Base, TimestampMixin):
     number_of_rooms: Mapped[Optional[int]] = mapped_column(Integer)
     base_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    max_capacity: Mapped[Optional[int]] = mapped_column(Integer, default=2)
+
 class RoomInventory(Base, TimestampMixin):
     __tablename__ = "room_inventory"
     __table_args__ = {'extend_existing': True}
@@ -365,6 +368,8 @@ class RoomPricing(Base, TimestampMixin):
     room_type_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("room_types.id", ondelete="CASCADE"), nullable=False, unique=True)
     base_price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     weekend_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    seasonal_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    holiday_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
     extra_adult: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
     extra_child: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
     tax: Mapped[Optional[str]] = mapped_column(String(20))

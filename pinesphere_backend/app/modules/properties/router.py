@@ -107,6 +107,30 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
     db.add(new_business)
     await db.flush()
 
+    import re
+    import unicodedata
+    from app.infra.models import select
+    
+    # Normalize unicode (e.g. Café -> cafe)
+    normalized = unicodedata.normalize('NFKD', payload.property_name).encode('ascii', 'ignore').decode('ascii')
+    base_slug = re.sub(r'[^a-z0-9]+', '-', normalized.lower()).strip('-')
+    
+    # Max length protection (leave room for -999 suffix)
+    base_slug = base_slug[:90]
+    
+    if not base_slug:
+        base_slug = "property"
+        
+    slug = base_slug
+    counter = 2
+    while True:
+        existing_stmt = select(Property.property_id).where(Property.slug == slug)
+        existing_res = await db.execute(existing_stmt)
+        if not existing_res.first():
+            break
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
     new_property = Property(
         business_id=new_business.business_id,
         owner_id=owner.owner_id,
@@ -120,6 +144,7 @@ async def create_property(payload: PropertyCreateInput, background_tasks: Backgr
         city=payload.city,
         cover_image=payload.cover_image,
         onboarding_status="draft",
+        slug=slug,
     )
     db.add(new_property)
     await db.flush()
@@ -808,6 +833,8 @@ async def get_properties(db: AsyncSession = Depends(get_db), current_user: User 
             "lastUpdated": str(prop.updated_at)[:10] if prop.updated_at else "N/A",
             "onboarding": "100%" if prop.onboarding_status == "completed" else "50%",
             "lastSync": "N/A",
+            "slug": prop.slug,
+            "public_url": f"{settings.GUEST_PORTAL_URL}/p/{prop.slug}" if prop.slug else None,
         })
     return success_response(data=data)
 
@@ -967,6 +994,8 @@ async def get_property_detail(property_id: str, db: AsyncSession = Depends(get_d
         "business": biz.business_name,
         "onboarding_status": prop.onboarding_status,
         "description": prop.description,
+        "slug": prop.slug,
+        "public_url": f"{settings.GUEST_PORTAL_URL}/p/{prop.slug}" if prop.slug else None,
         "subscription": {
             "plan": sub.plan if sub else None,
             "status": sub.status if sub else None,

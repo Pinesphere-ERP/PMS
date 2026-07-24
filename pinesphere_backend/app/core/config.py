@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     # URLs
     BASE_URL: str = "http://localhost:8000"
     FRONTEND_URL: str = "http://localhost:3000"
+    GUEST_PORTAL_URL: str = "http://localhost:3001"
     
     # CORS setup
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:8000"]

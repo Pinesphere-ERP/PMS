@@ -648,14 +648,28 @@ export default function PropertyDetails() {
           </div>
         </div>
 
-        {/* Action: Create User (quick access from header) */}
-        <button
-          onClick={() => navigate(`/properties/${id}/users/create`)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition whitespace-nowrap"
-        >
-          <Plus className="w-4 h-4" />
-          Create User
-        </button>
+        {/* Action: Create User & Share Property (quick access from header) */}
+        <div className="flex items-center gap-3">
+          {property.slug && (
+            <button
+              onClick={() => {
+                const shareUrl = property.public_url || `${import.meta.env.VITE_GUEST_PORTAL_URL || 'http://localhost:3000'}/p/${property.slug}`;
+                const text = encodeURIComponent(`Check out our property: ${property.name}\n${shareUrl}`);
+                window.open(`https://wa.me/?text=${text}`, '_blank');
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl shadow-sm transition whitespace-nowrap"
+            >
+              Share Property
+            </button>
+          )}
+          <button
+            onClick={() => navigate(`/properties/${id}/users/create`)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            Create User
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

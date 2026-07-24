@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,8 +11,11 @@ import '../../data/report_export_service.dart';
 import '../../domain/models/report_dtos.dart';
 
 final dailyReportProvider = FutureProvider.autoDispose.family<DailyReportDto, DateTime>((ref, date) async {
-  final propertyId = ref.watch(tenantProvider) ?? '';
-  if (propertyId.isEmpty) throw Exception('No property selected');
+  final propertyId = ref.watch(tenantProvider);
+  if (propertyId == null || propertyId.isEmpty) {
+    // Stay in loading state until tenantProvider resolves
+    await Completer<Never>().future;
+  }
   final repo = ref.watch(reportsRepositoryProvider);
   return repo.getDailyReport(
     propertyId: propertyId,
@@ -68,8 +72,37 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
             Expanded(
               child: reportAsync.when(
                 data: (report) => _buildContent(report),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, _) => Center(child: Text('Error: $err')),
+                loading: () => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text('Loading report...', style: TextStyle(color: AppColors.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+                error: (err, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                        const SizedBox(height: 16),
+                        Text('Failed to load report', style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        Text('$err', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 12)),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => ref.invalidate(dailyReportProvider(_selectedDate)),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

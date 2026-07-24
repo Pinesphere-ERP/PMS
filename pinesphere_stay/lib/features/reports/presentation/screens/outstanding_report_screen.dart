@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -9,8 +10,10 @@ import '../../data/reports_repository.dart';
 import '../../domain/models/report_dtos.dart';
 
 final outstandingReportProvider = FutureProvider.autoDispose<OutstandingReportDto>((ref) async {
-  final propertyId = ref.watch(tenantProvider) ?? '';
-  if (propertyId.isEmpty) throw Exception('No property selected');
+  final propertyId = ref.watch(tenantProvider);
+  if (propertyId == null || propertyId.isEmpty) {
+    await Completer<Never>().future;
+  }
   final repo = ref.watch(reportsRepositoryProvider);
   final end = DateTime.now();
   final start = end.subtract(const Duration(days: 30));
@@ -71,8 +74,37 @@ class OutstandingReportScreen extends ConsumerWidget {
               const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
             ],
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('Error: $err')),
+          loading: () => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text('Loading report...', style: TextStyle(color: AppColors.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          error: (err, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text('Failed to load report', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Text('$err', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 12)),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => ref.invalidate(outstandingReportProvider),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,8 +11,10 @@ import '../../data/report_export_service.dart';
 import '../../domain/models/report_dtos.dart';
 
 final roomUtilizationProvider = FutureProvider.autoDispose.family<RoomUtilizationReportDto, Map<String, String>>((ref, params) async {
-  final propertyId = ref.watch(tenantProvider) ?? '';
-  if (propertyId.isEmpty) throw Exception('No property selected');
+  final propertyId = ref.watch(tenantProvider);
+  if (propertyId == null || propertyId.isEmpty) {
+    await Completer<Never>().future;
+  }
   final repo = ref.watch(reportsRepositoryProvider);
   return repo.getRoomUtilization(propertyId: propertyId, startDate: params['startDate']!, endDate: params['endDate']!);
 });
@@ -44,7 +47,36 @@ class _RoomUtilizationReportScreenState extends ConsumerState<RoomUtilizationRep
       ),
       body: PineBackground(child: Column(children: [
         _buildDateFilter(),
-        Expanded(child: reportAsync.when(data: _buildContent, loading: () => const Center(child: CircularProgressIndicator()), error: (e, _) => Center(child: Text('Error: $e')))),
+        Expanded(child: reportAsync.when(data: _buildContent, loading: () => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('Loading report...', style: TextStyle(color: AppColors.onSurfaceVariant)),
+            ],
+          ),
+        ), error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text('Failed to load report', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Text('$e', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 12)),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => ref.invalidate(roomUtilizationProvider(_params)),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ))),
       ])),
     );
   }

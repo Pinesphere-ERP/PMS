@@ -31,10 +31,15 @@ class TodaysRevenueScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: propertyId.isEmpty
-            ? const EmptyStateWidget(
-                icon: Icons.login,
-                title: 'Not Logged In',
-                message: 'Please log in to view your revenue.',
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text('Loading...', style: TextStyle(color: AppColors.onSurfaceVariant)),
+                  ],
+                ),
               )
             : _RevenueBody(propertyId: propertyId),
       ),

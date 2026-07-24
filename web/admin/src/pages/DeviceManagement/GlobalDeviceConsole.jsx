@@ -265,6 +265,28 @@ export default function GlobalDeviceConsole() {
                 </div>
 
                 <div>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Telemetry & Usage</h3>
+                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3 text-sm">
+                    <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                      <span className="text-gray-500">Platform</span>
+                      <span className="font-medium text-gray-900">{selectedDevice.platform}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                      <span className="text-gray-500">Browser/App</span>
+                      <span className="font-medium text-gray-900">{selectedDevice.browser}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                      <span className="text-gray-500">Login Count</span>
+                      <span className="font-medium text-gray-900">{selectedDevice.loginCount}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 flex items-center"><History className="h-4 w-4 mr-2 text-gray-400"/> Last Login At</span>
+                      <span className="font-medium text-gray-900">{selectedDevice.lastLoginAt ? new Date(selectedDevice.lastLoginAt).toLocaleString() : 'Never'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Security & Status</h3>
                   <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3 text-sm">
                     <div className="flex justify-between items-center">

@@ -16,7 +16,7 @@ from app.modules.devices import service
 from app.infra.models import Device, User
 from app.core.responses import success_response, StandardResponse
 
-router = APIRouter(dependencies=[Depends(require_optional_resource_property_access(Device, Device.id, "id"))])
+router = APIRouter(dependencies=[Depends(require_super_admin)])
 
 @router.get("/kpis", response_model=StandardResponse, dependencies=[Depends(require_super_admin)])
 async def get_device_kpis(db: AsyncSession = Depends(get_db)):
@@ -42,13 +42,17 @@ async def get_device_diagnostics(db: AsyncSession = Depends(get_db)):
         {
             "id": str(d.id),
             "name": d.device_name or "Unnamed Device",
-            "model": d.os_type or "Unknown",
+            "model": d.device_type or d.os_type or "Unknown",
             "uid": d.device_uid,
-            "property": str(d.property_id),
+            "property": str(d.property_id) if d.property_id else "Unassigned",
             "battery": 0,
             "lastSync": "Unknown",
-            "appVersion": "Unknown",
-            "osVersion": d.os_type or "Unknown",
+            "appVersion": d.app_version or "Unknown",
+            "osVersion": d.os_version or d.os_type or "Unknown",
+            "platform": d.platform or "Unknown",
+            "browser": d.browser_name or "App",
+            "loginCount": d.login_count,
+            "lastLoginAt": d.last_login_at.isoformat() if d.last_login_at else None,
             "syncStatus": "SYNCED" if d.status == "active" else "OFFLINE",
             "approvalStatus": d.status,
             "syncAttempts": []

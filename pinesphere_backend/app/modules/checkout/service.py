@@ -175,32 +175,97 @@ async def perform_checkout(
 
     room.occupancy_status = "vacant"
     room.housekeeping_status = "dirty"
-    
-    # Update new housekeeping_room_status table
+
+    # Upsert housekeeping_room_status (ensure record exists before notifying)
     hk_stmt = select(HousekeepingRoomStatus).where(HousekeepingRoomStatus.room_id == room.room_id)
     hk_res = await db.execute(hk_stmt)
     hk_status = hk_res.scalar_one_or_none()
     if hk_status:
         hk_status.clean_status = "not_cleaned"
+        hk_status.occupancy_status = "vacant"
         if current_user_id:
             hk_status.updated_by = current_user_id
-        await _notify_housekeepers(db, hk_status)
+    else:
+        # Create missing housekeeping_room_status record
+        from app.infra.models import RoomCategory
+        cat_res = await db.execute(select(RoomCategory).where(RoomCategory.room_category_id == room.room_category_id))
+        cat = cat_res.scalar_one_or_none()
+        hk_status = HousekeepingRoomStatus(
+            property_id=room.property_id,
+            room_id=room.room_id,
+            room_number=room.room_number,
+            room_type=cat.room_name if cat else None,
+            floor=room.floor,
+            occupancy_status="vacant",
+            clean_status="not_cleaned",
+            priority="medium",
+            created_by=current_user_id,
+            updated_by=current_user_id,
+        )
+        db.add(hk_status)
+        await db.flush()
+    await _notify_housekeepers(db, hk_status)
 
-    # Auto-generate Housekeeping Task
-    from app.modules.housekeeping.schemas import HousekeepingTaskCreate
-    from app.modules.housekeeping.service import create_task
+    # Auto-generate Housekeeping Task with full context
+    from app.infra.models import HousekeepingTask, HousekeepingConfig
     try:
-        task_req = HousekeepingTaskCreate(
+        # Load default checklist from property config if available
+        config_stmt = select(HousekeepingConfig).where(HousekeepingConfig.property_id == room.property_id)
+        config_res = await db.execute(config_stmt)
+        hk_config = config_res.scalar_one_or_none()
+        default_checklist = None
+        if hk_config and hk_config.default_checklist:
+            # Convert checklist items to {item_name: False} dict for tracking completion
+            cl = hk_config.default_checklist
+            if isinstance(cl, list):
+                default_checklist = {item: False for item in cl}
+            elif isinstance(cl, dict):
+                default_checklist = {k: False for k in cl.keys()}
+
+        # Build guest display name for housekeeper dashboard
+        guest_display = None
+        if booking.guest_id:
+            from app.infra.models import Guest
+            g_res = await db.execute(select(Guest).where(Guest.guest_id == booking.guest_id))
+            g = g_res.scalar_one_or_none()
+            if g:
+                guest_display = f"{g.first_name or ''} {g.last_name or ''}".strip()
+
+        task = HousekeepingTask(
             room_id=room.room_id,
             property_id=room.property_id,
+            booking_id=booking.booking_id,
+            guest_id=booking.guest_id,
+            created_by="SYSTEM",
             priority="medium",
-            remarks="Auto-generated upon checkout"
+            status="pending",
+            remarks="Auto-generated upon checkout",
+            checklist_status=default_checklist,
+            checkout_time=checkout.checkout_time,
+            guest_name=guest_display,
         )
-        await create_task(db, task_req, current_user_id)
-    except Exception as e:
-        print(f"Failed to auto-generate housekeeping task on checkout: {e}")
+        db.add(task)
+        await db.flush()
 
-    await db.flush()
+        await AuditLogger.log(
+            db,
+            property_id=room.property_id,
+            user_id=current_user_id,
+            module_name="housekeeping",
+            action_type="auto_create_task",
+            target_entity="housekeeping_task",
+            target_record_id=task.task_id,
+            new_value={
+                "trigger": "checkout",
+                "room_id": str(room.room_id),
+                "room_number": room.room_number,
+                "booking_id": str(booking.booking_id),
+                "status": "pending",
+                "has_checklist": default_checklist is not None,
+            },
+        )
+    except Exception as e:
+        logger.warning(f"[Checkout] Failed to auto-generate housekeeping task: {e}")
 
     booking.booking_status = "completed"
     if remaining_balance <= 0:

@@ -266,12 +266,45 @@ class Device(Base, TimestampMixin):
     __tablename__ = "devices"
     __table_args__ = {'extend_existing': True}
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_uid: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False)
+    device_uid: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    property_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True)
     primary_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
-    device_name: Mapped[Optional[str]] = mapped_column(String(80))
-    os_type: Mapped[Optional[str]] = mapped_column(String(20), default='android')
+    device_name: Mapped[Optional[str]] = mapped_column(String(100))
+    manufacturer: Mapped[Optional[str]] = mapped_column(String(100))
+    device_type: Mapped[Optional[str]] = mapped_column(String(50))
+    platform: Mapped[Optional[str]] = mapped_column(String(50))
+    os_type: Mapped[Optional[str]] = mapped_column(String(50))
+    os_version: Mapped[Optional[str]] = mapped_column(String(50))
+    browser_name: Mapped[Optional[str]] = mapped_column(String(50))
+    browser_version: Mapped[Optional[str]] = mapped_column(String(50))
+    app_version: Mapped[Optional[str]] = mapped_column(String(50))
+    build_number: Mapped[Optional[str]] = mapped_column(String(50))
+    is_trusted: Mapped[bool] = mapped_column(default=False)
+    first_login_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    login_count: Mapped[int] = mapped_column(default=0)
     status: Mapped[Optional[str]] = mapped_column(String(20), default='pending_approval')
+
+
+class DeviceLoginHistory(Base, TimestampMixin):
+    __tablename__ = "device_login_history"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), nullable=False)
+    login_timestamp: Mapped[datetime] = mapped_column(server_default=func.now())
+    logout_timestamp: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    public_ip: Mapped[Optional[str]] = mapped_column(String(45))
+    network_type: Mapped[Optional[str]] = mapped_column(String(50))
+    isp: Mapped[Optional[str]] = mapped_column(String(100))
+    latitude: Mapped[Optional[float]] = mapped_column(nullable=True)
+    longitude: Mapped[Optional[float]] = mapped_column(nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(String(100))
+    state: Mapped[Optional[str]] = mapped_column(String(100))
+    country: Mapped[Optional[str]] = mapped_column(String(100))
+    postal_code: Mapped[Optional[str]] = mapped_column(String(20))
+    time_zone: Mapped[Optional[str]] = mapped_column(String(50))
+
 
 
 class UserDevice(Base):
@@ -394,6 +427,7 @@ class Room(Base, TimestampMixin, SyncMixin):
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     floor: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     housekeeping_status: Mapped[Optional[str]] = mapped_column(String(20), default='clean')
+    maintenance_status: Mapped[Optional[str]] = mapped_column(String(20), default='good')  # good | maintenance_needed
     occupancy_status: Mapped[Optional[str]] = mapped_column(String(20), default='vacant')
     image_url: Mapped[Optional[str]] = mapped_column(Text)
 
@@ -470,11 +504,25 @@ class CheckOut(Base, TimestampMixin, SyncMixin):
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
     staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     checkout_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    # Billing breakdown (all nullable for backward compat)
+    room_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    restaurant_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    laundry_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    minibar_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    damage_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    miscellaneous_charges: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    discount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    gst: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     total_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     advance_paid: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     remaining_balance: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
+    refund_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), default=0)
     payment_status: Mapped[str] = mapped_column(String(20), default='pending')
     checkout_status: Mapped[str] = mapped_column(String(20), default='pending')
+    key_returned: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    id_returned: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    feedback_submitted: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    remarks: Mapped[Optional[str]] = mapped_column(Text)
 
 
 class InvoiceItem(Base, TimestampMixin):
@@ -530,18 +578,48 @@ class RoomAssignment(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(default=True)
 
 
+class HousekeepingConfig(Base, TimestampMixin, SyncMixin):
+    __tablename__ = "housekeeping_configs"
+    __table_args__ = {'extend_existing': True}
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=False, unique=True)
+    require_before_photo: Mapped[bool] = mapped_column(Boolean, default=False)
+    require_after_photo: Mapped[bool] = mapped_column(Boolean, default=False)
+    default_checklist: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+
 class HousekeepingTask(Base, TimestampMixin, SyncMixin):
     __tablename__ = "housekeeping_tasks"
     __table_args__ = {'extend_existing': True}
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     task_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
+    booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bookings.booking_id"))
+    guest_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("guests.guest_id"))
+    created_by: Mapped[Optional[str]] = mapped_column(String(50))  # "SYSTEM" or user ID string
     assigned_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     status: Mapped[str] = mapped_column(String(20), default='pending')
     priority: Mapped[str] = mapped_column(String(10), default='medium')
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    started_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    device_id: Mapped[Optional[str]] = mapped_column(String(128))  # device that started/completed
+    duration: Mapped[Optional[int]] = mapped_column(Integer)  # duration in minutes
     checklist_status: Mapped[Optional[dict]] = mapped_column(JSONB)
+    before_photo: Mapped[Optional[str]] = mapped_column(Text)
+    after_photo: Mapped[Optional[str]] = mapped_column(Text)
     remarks: Mapped[Optional[str]] = mapped_column(Text)
+    completion_notes: Mapped[Optional[str]] = mapped_column(Text)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    completed_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    # Inspection fields
+    inspected_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    inspection_result: Mapped[Optional[str]] = mapped_column(String(10))  # pass | fail
+    inspection_remarks: Mapped[Optional[str]] = mapped_column(Text)
+    inspected_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    # Denormalized for housekeeper dashboard display
+    checkout_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    guest_name: Mapped[Optional[str]] = mapped_column(String(150))  # shown only with permission
+    synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 
 class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
@@ -550,11 +628,17 @@ class MaintenanceTicket(Base, TimestampMixin, SyncMixin):
     property_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("properties.property_id"), nullable=False)
     ticket_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.room_id"), nullable=False)
+    housekeeping_task_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("housekeeping_tasks.task_id", ondelete="SET NULL"))
     reported_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     category: Mapped[str] = mapped_column(String(30), nullable=False)
     priority: Mapped[str] = mapped_column(String(10), default='medium')
+    severity: Mapped[Optional[str]] = mapped_column(String(10), default='medium')  # low | medium | high | critical
     issue_description: Mapped[str] = mapped_column(Text, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    photo_url: Mapped[Optional[str]] = mapped_column(Text)
+    repair_cost: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    created_at_ts: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     status: Mapped[str] = mapped_column(String(20), default='open')
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 

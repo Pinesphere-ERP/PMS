@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CalendarDays } from 'lucide-react';
 
 export default function DateRangeFilter({ onChange, defaults = {} }) {
   const today = new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState(defaults.startDate || today);
   const [endDate, setEndDate] = useState(defaults.endDate || today);
+
+  useEffect(() => {
+    onChange({ startDate, endDate });
+  }, []);
 
   const handleApply = () => {
     onChange({ startDate, endDate });

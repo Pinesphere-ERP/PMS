@@ -48,10 +48,10 @@ class CheckInService {
       if (bookingId == null || bookingId.toString().isEmpty) {
         throw Exception('Booking ID is required for check-in');
       }
-      final response = await _dio.post('/bookings/$bookingId/check-in', data: data);
+      final response = await _dio.post('/checkin', data: data);
       final body = response.data as Map<String, dynamic>;
       final entity = CheckInEntity(
-        serverId: body['id']?.toString() ?? data['server_id'] ?? '',
+        serverId: body['checkin_id']?.toString() ?? body['id']?.toString() ?? data['server_id'] ?? '',
         bookingId: body['booking_id']?.toString() ?? data['booking_id'] ?? '',
         roomId: body['room_id']?.toString() ?? data['room_id'] ?? '',
         guestId: body['guest_id']?.toString() ?? data['guest_id'] ?? '',
@@ -119,6 +119,21 @@ class CheckInService {
         syncStatus: 'Pending',
       );
       _checkinDao.put(entity);
+
+      try {
+        final bookingIdStr = data['booking_id']?.toString() ?? '';
+        if (bookingIdStr.isNotEmpty) {
+          final bookingEntity = databaseService.bookingDao.getByServerId(bookingIdStr);
+          if (bookingEntity != null) {
+            bookingEntity.bookingStatus = 'checked_in';
+            bookingEntity.syncStatus = 'Pending';
+            bookingEntity.lastModifiedHlc = DateTime.now().toUtc().toIso8601String();
+            databaseService.bookingDao.put(bookingEntity);
+          }
+        }
+      } catch (dbErr) {
+        AppLogger.w('Failed to update local booking status', dbErr);
+      }
 
       _updateRoomStatus(data['room_id']?.toString() ?? '', 'Occupied', 'Occupied');
       _syncService.enqueueMutation(

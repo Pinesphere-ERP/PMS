@@ -4,6 +4,25 @@ from datetime import datetime
 import uuid
 
 
+class HousekeepingConfigBase(BaseModel):
+    require_before_photo: bool = False
+    require_after_photo: bool = False
+    default_checklist: Optional[Dict[str, Any]] = None
+
+class HousekeepingConfigCreate(HousekeepingConfigBase):
+    property_id: uuid.UUID
+
+class HousekeepingConfigUpdate(BaseModel):
+    require_before_photo: Optional[bool] = None
+    require_after_photo: Optional[bool] = None
+    default_checklist: Optional[Dict[str, Any]] = None
+
+class HousekeepingConfigResponse(HousekeepingConfigBase):
+    id: uuid.UUID
+    property_id: uuid.UUID
+    class Config:
+        from_attributes = True
+
 class HousekeepingTaskCreate(BaseModel):
     room_id: uuid.UUID
     assigned_staff_id: Optional[uuid.UUID] = None
@@ -24,22 +43,34 @@ class HousekeepingTaskResponse(BaseModel):
     task_id: uuid.UUID
     room_id: uuid.UUID
     property_id: uuid.UUID
+    booking_id: Optional[uuid.UUID] = None
+    guest_id: Optional[uuid.UUID] = None
+    created_by: Optional[str] = None
     assigned_staff_id: Optional[uuid.UUID] = None
     status: str
     priority: str
+    started_at: Optional[datetime] = None
+    started_by: Optional[uuid.UUID] = None
+    duration: Optional[int] = None
     checklist_status: Optional[Dict[str, Any]] = None
     remarks: Optional[str] = None
     before_photo: Optional[str] = None
     after_photo: Optional[str] = None
+    completion_notes: Optional[str] = None
     completed_at: Optional[datetime] = None
+    completed_by: Optional[uuid.UUID] = None
     inspected_by: Optional[uuid.UUID] = None
     inspection_result: Optional[str] = None
     inspection_remarks: Optional[str] = None
     inspected_at: Optional[datetime] = None
+    synced_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     room_number: Optional[str] = None
     assigned_staff_name: Optional[str] = None
+    # Denormalized fields for housekeeper dashboard display
+    checkout_time: Optional[datetime] = None
+    guest_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -53,11 +84,14 @@ class HousekeepingTaskInspect(BaseModel):
 
 class MaintenanceTicketCreate(BaseModel):
     room_id: uuid.UUID
+    housekeeping_task_id: Optional[uuid.UUID] = None
     category: str
     priority: str = "medium"
+    severity: str = "medium"  # low | medium | high | critical
     issue_description: str
     assigned_to: Optional[uuid.UUID] = None
     photo_url: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class MaintenanceTicketUpdate(BaseModel):
@@ -71,11 +105,14 @@ class MaintenanceTicketResponse(BaseModel):
     ticket_id: uuid.UUID
     room_id: uuid.UUID
     property_id: uuid.UUID
+    housekeeping_task_id: Optional[uuid.UUID] = None
     reported_by: Optional[uuid.UUID] = None
     assigned_to: Optional[uuid.UUID] = None
     category: str
     priority: str
+    severity: Optional[str] = "medium"
     issue_description: str
+    notes: Optional[str] = None
     status: str
     repair_cost: Optional[float] = None
     created_at_ts: Optional[datetime] = None
@@ -124,6 +161,17 @@ class HousekeepingDashboard(BaseModel):
     completed_today_count: int = 0
     inspection_pending_count: int = 0
     maintenance_open_count: int = 0
+
+
+class CompleteCleaningRequest(BaseModel):
+    checklist_status: Optional[Dict[str, Any]] = None
+    before_photo: Optional[str] = None
+    after_photo: Optional[str] = None
+    remarks: Optional[str] = None
+    completion_notes: Optional[str] = None  # housekeeper's notes at completion
+
+class StartCleaningRequest(BaseModel):
+    pass
 
 
 # ─── Housekeeping Room Status Schemas ──────────────────────────────

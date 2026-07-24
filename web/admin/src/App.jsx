@@ -16,7 +16,6 @@ import RenewalManagement from './pages/SubscriptionManagement/RenewalManagement'
 
 // Device Management (New)
 import GlobalDeviceConsole from './pages/DeviceManagement/GlobalDeviceConsole';
-import MyDevicesPanel from './pages/DeviceManagement/MyDevicesPanel';
 import DeviceDiagnosticsPanel from './pages/DeviceManagement/DeviceDiagnosticsPanel';
 
 // Audit Logs (New)
@@ -104,7 +103,6 @@ function App() {
 
           {/* Device Management */}
           <Route path="devices/global" element={<GlobalDeviceConsole />} />
-          <Route path="devices/owner" element={<MyDevicesPanel />} />
           <Route path="devices/support" element={<DeviceDiagnosticsPanel />} />
 
           {/* Audit Logs */}
